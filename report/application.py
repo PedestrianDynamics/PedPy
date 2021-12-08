@@ -2,6 +2,9 @@ import argparse
 import textwrap
 from typing import Final
 
+from report.io.geometry_parser import parse_geometry
+from report.io.ini_parser import parse_ini_file
+from report.io.trajectory_parser import parse_trajectory_files
 from report.util.loghelper import *
 
 
@@ -50,7 +53,8 @@ class Application:
             "-vv for debug and -vvv for everything",
         )
         self.parser.add_argument(
-            "ini-file.xml",
+            "ini_file",
+            default="ini-file.xml",
             help="ini-file containing the configuration of the analysis to run",
             type=argparse.FileType("r", encoding="UTF-8"),
         )
@@ -61,3 +65,13 @@ class Application:
     def run(self):
         self.parse_arguments()
         self.upgrade_logging()
+        self.run_analysis()
+
+    def run_analysis(self):
+        configuration = parse_ini_file(self.args.ini_file)
+        trajectory_data = parse_trajectory_files(configuration.trajectory_files)
+        geometry = parse_geometry(configuration.geometry_file)
+
+        log_info(configuration)
+        log_info(trajectory_data)
+        log_info(geometry)
