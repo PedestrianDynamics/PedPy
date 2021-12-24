@@ -2,7 +2,7 @@
 
 set -e
 
-origin=$(dirname "$(readlink -f "$0")")
-root=$(readlink -f "${origin}"/..)
+location="$(cd "$(dirname "${0}")";pwd -P)"
+root=$(readlink -f "${location}"/..)
 isort --jobs "$(nproc)" "${root}"
 black "${root}"
