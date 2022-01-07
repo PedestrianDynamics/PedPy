@@ -1,4 +1,5 @@
-"""This module provides the functionalities to parse the analysis configuration from the given
+"""
+This module provides the functionalities to parse the analysis configuration from the given
 ini-file.
 """
 
@@ -9,6 +10,21 @@ from xml.etree.ElementTree import Element, parse
 from shapely.geometry import LineString, Point
 
 from report.data.configuration import Configuration, ConfigurationVelocity
+
+
+class IniFileParseException(ValueError):
+    error_footer: str = (
+        "For more detail check the documentation at: https://www.jupedsim.org/jpsreport_inifile.html."
+        "\nPlease check your ini-file."
+    )
+
+    def __init__(self, message):
+        self.message = f"{message}\n{self.error_footer}"
+        super().__init__(self.message)
+
+
+class IniFileValueException(ValueError):
+    pass
 
 
 def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
@@ -49,28 +65,21 @@ def parse_output_directory(xml_root: Element) -> pathlib.Path:
     """
     output_directory_node = xml_root.find("output")
     if output_directory_node is None:
-        raise ValueError(
+        raise IniFileParseException(
             "There could no output tag be found in your ini-file, but it is "
             "mandatory, e.g.,  \n"
-            '<output location="results"/>\n'
-            "For more detail check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+            '<output location="results"/>'
         )
     if "location" not in output_directory_node.attrib:
-        raise ValueError(
+        raise IniFileParseException(
             "The output tag is incomplete, it should contain 'location', e.g., \n"
-            '<output location="results"/>\n'
-            "For more detail check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+            '<output location="results"/>'
         )
     output_directory = pathlib.Path(output_directory_node.attrib["location"])
     if not output_directory.is_dir():
-        raise ValueError(
+        raise IniFileValueException(
             f"The output directory does not exist or is not a directory: "
-            f"{output_directory.__str__()}. "
-            f"Please check your ini-file."
+            f"{output_directory.__str__()}. Please check your ini-file."
         )
 
     return output_directory
@@ -86,27 +95,20 @@ def parse_geometry_file(xml_root: Element) -> pathlib.Path:
     """
     geometry_node = xml_root.find("geometry")
     if geometry_node is None:
-        raise ValueError(
+        raise IniFileParseException(
             "There could no geometry tag be found in your ini-file, but it is "
             "mandatory, e.g.,  \n"
-            '<geometry file="geometry.xml"/>\n'
-            "For more detail check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+            '<geometry file="geometry.xml"/>'
         )
     if "file" not in geometry_node.attrib:
-        raise ValueError(
+        raise IniFileParseException(
             "The geometry tag is incomplete, it should contain 'name', e.g., \n"
-            '<geometry file="geometry.xml"/>\n'
-            "For more detail check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+            '<geometry file="geometry.xml"/>'
         )
     geometry_file = pathlib.Path(geometry_node.attrib["file"])
     if not geometry_file.is_file():
-        raise ValueError(
-            f"The geometry file does not exist: {geometry_file.__str__()}. "
-            f"Please check your ini-file."
+        raise IniFileValueException(
+            f"The geometry file does not exist: {geometry_file.__str__()}. Please check your ini-file."
         )
 
     return geometry_file
@@ -123,28 +125,17 @@ def parse_trajectory_files(xml_root: Element) -> List[pathlib.Path]:
 
     trajectory_node = xml_root.find("trajectories")
     if trajectory_node is None:
-        raise ValueError(
-            "There could no trajectories tag be found in your ini-file, but it is "
-            "mandatory. For more detailed check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+        raise IniFileParseException(
+            "There could no trajectories tag be found in your ini-file, but it is mandatory."
         )
 
     if trajectory_node.attrib["format"]:
         traj_format = trajectory_node.attrib["format"]
         if traj_format != "txt":
-            raise ValueError(
-                "Only 'txt' is supported as trajectory file format. "
-                "For more detailed check the documentation at: "
-                "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                "Please check your ini-file."
-            )
+            raise IniFileValueException("Only 'txt' is supported as trajectory file format. ")
     if len(trajectory_node.findall("file")) == 0:
-        raise ValueError(
-            "There could no trajectories/name tag be found in your ini-file, but it is "
-            "mandatory. For more detailed check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+        raise IniFileParseException(
+            "There could no trajectories/name tag be found in your ini-file, but it is mandatory."
         )
 
     trajectory_files = []
@@ -152,11 +143,8 @@ def parse_trajectory_files(xml_root: Element) -> List[pathlib.Path]:
         if "name" in file.attrib:
             trajectory_files.append(pathlib.Path(file.attrib["name"]))
         else:
-            raise ValueError(
-                "There seems to be a trajectories/name tag be missing in your ini-file, but it is "
-                "mandatory. For more detailed check the documentation at: "
-                "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                "Please check your ini-file."
+            raise IniFileParseException(
+                "There seems to be a trajectories/name tag be missing in your ini-file, but it is mandatory."
             )
 
     file_not_existing = []
@@ -165,7 +153,7 @@ def parse_trajectory_files(xml_root: Element) -> List[pathlib.Path]:
             file_not_existing.append(file)
 
     if file_not_existing:
-        raise ValueError(
+        raise IniFileValueException(
             f"The following trajectory files do not exist: "
             f"{[file.__str__() for file in file_not_existing]}. "
             f"Please check your ini-file."
@@ -184,45 +172,36 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
     measurement_lines = {}
 
     if xml_root.find("measurement_areas") is None:
-        raise ValueError(
-            "There could no measurement_areas tag be found in your ini-file, but it is "
-            "mandatory. For more detailed check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+        raise IniFileParseException(
+            "There could no measurement_areas tag be found in your ini-file, but it is mandatory."
         )
 
     for measurement in xml_root.iter("measurement_areas"):
         if "unit" in measurement.attrib.keys():
             unit = measurement.attrib["unit"]
             if unit.lower() != "m":
-                raise ValueError(
+                raise IniFileValueException(
                     "Only 'm' is supported as unit in the measurement areas tag. "
-                    "For more detailed check the documentation at: "
-                    "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                    "Please check your ini-file."
                 )
         for measurement_line in measurement.iter("area_L"):
             needed_tags = {"id"}
             point_needed_tags = {"x", "y"}
             if not needed_tags.issubset(measurement_line.attrib.keys()):
                 needed_tags_text = ", ".join(str(e) for e in needed_tags)
-                raise ValueError(
+                raise IniFileParseException(
                     f"The measurement_areas/area_L tag is incomplete, it should contain "
                     f"{needed_tags_text}, e.g., \n"
                     '<area_L id="1">\n'
                     '    <start x="62.0" y="102.600"/>\n'
                     '    <end x="62.0" y="101.400"/>\n'
-                    "</area_L>\n"
-                    "For more detail check the documentation at: "
-                    "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                    "Please check your ini-file."
+                    "</area_L>"
                 )
 
             try:
                 line_id = int(measurement_line.attrib["id"])
             except ValueError:
                 line_id = measurement_line.attrib["id"]
-                raise ValueError(
+                raise IniFileValueException(
                     f"The measurement_areas/area_L id needs to be a integer value, "
                     f"but is {line_id}. "
                     f"Please check your velocity tag in your ini-file."
@@ -236,20 +215,14 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
                     '<area_L id="1">\n'
                     '    <start x="62.0" y="102.600"/>\n'
                     '    <end x="62.0" y="101.400"/>\n'
-                    "</area_L>\n"
-                    "For more detail check the documentation at: "
-                    "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                    "Please check your ini-file."
+                    "</area_L>"
                 )
             if not point_needed_tags.issubset(start_node.attrib.keys()):
                 point_needed_tags_text = ", ".join(str(e) for e in point_needed_tags)
-                raise ValueError(
+                raise IniFileParseException(
                     f"The measurement_areas/area_L/start tag is incomplete, it should contain "
                     f"{point_needed_tags_text}, e.g., \n"
-                    '<start x="62.0" y="102.600"/>\n'
-                    "For more detail check the documentation at: "
-                    "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                    "Please check your ini-file."
+                    '<start x="62.0" y="102.600"/>'
                 )
 
             try:
@@ -258,7 +231,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
             except ValueError:
                 start_x = start_node.attrib["x"]
                 start_y = start_node.attrib["y"]
-                raise ValueError(
+                raise IniFileValueException(
                     f"The start point coordinates of measurement line {id} need to be floating "
                     f"point values, but are {start_x} and {start_y}. "
                     f"Please check your velocity tag in your ini-file."
@@ -266,27 +239,21 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
 
             end_node = measurement_line.find("end")
             if end_node is None:
-                raise ValueError(
+                raise IniFileParseException(
                     "The measurement_areas/area_L tag is incomplete, it should contain a end "
                     "child, e.g., \n"
                     '<area_L id="1">\n'
                     '    <start x="62.0" y="102.600"/>\n'
                     '    <end x="62.0" y="101.400"/>\n'
-                    "</area_L>\n"
-                    "For more detail check the documentation at: "
-                    "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                    "Please check your ini-file."
+                    "</area_L>"
                 )
 
             if not point_needed_tags.issubset(end_node.attrib.keys()):
                 point_needed_tags_text = ", ".join(str(e) for e in point_needed_tags)
-                raise ValueError(
+                raise IniFileParseException(
                     f"The measurement_areas/area_L/end tag is incomplete, it should contain "
                     f"{point_needed_tags_text}, e.g., \n"
-                    '<end x="62.0" y="101.400"/>\n'
-                    "For more detail check the documentation at: "
-                    "https://www.jupedsim.org/jpsreport_inifile.html\n"
-                    "Please check your ini-file."
+                    '<end x="62.0" y="101.400"/>'
                 )
             try:
                 end_x = float(end_node.attrib["x"])
@@ -294,7 +261,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
             except ValueError:
                 end_x = end_node.attrib["x"]
                 end_y = end_node.attrib["y"]
-                raise ValueError(
+                raise IniFileValueException(
                     f"The end point coordinates of measurement line {id} need to be floating "
                     f"point values, but are {end_x} and {end_y}. "
                     f"Please check your velocity tag in your ini-file."
@@ -302,7 +269,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
 
             line = LineString([Point(start_x, start_y), Point(end_x, end_y)])
             if line.length <= 1e-5:
-                raise ValueError(
+                raise IniFileValueException(
                     f"The measurement line {id} is too narrow. Check your start and end point."
                     f"Distance between start and end is {line.length}."
                     "Please check your ini-file."
@@ -311,7 +278,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
             if line_id not in measurement_lines:
                 measurement_lines[line_id] = line
             else:
-                raise ValueError(
+                raise IniFileValueException(
                     f"There is a duplicated id ({line_id}) in your measurement lines. "
                     "Please check your ini-file."
                 )
@@ -329,39 +296,33 @@ def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
     """
     velocity_root = xml_root.find("velocity")
     if velocity_root is None:
-        raise ValueError(
+        raise IniFileParseException(
             "There could no velocity tag be found in your ini-file, but it is "
             "mandatory, e.g.,  \n"
             '<velocity frame_step="10" set_movement_direction="None" '
-            'ignore_backward_movement="false"/>\n'
-            "For more detail check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+            'ignore_backward_movement="false"/>'
         )
 
     needed_tags = {"frame_step", "set_movement_direction", "ignore_backward_movement"}
     if not needed_tags.issubset(velocity_root.attrib.keys()):
         needed_tags_text = ", ".join(str(e) for e in needed_tags)
-        raise ValueError(
+        raise IniFileParseException(
             f"The velocity tag is incomplete, it should contain {needed_tags_text}, e.g., \n"
             '<velocity frame_step="10" set_movement_direction="None" '
-            'ignore_backward_movement="false"/>\n'
-            "For more detail check the documentation at: "
-            "https://www.jupedsim.org/jpsreport_inifile.html\n"
-            "Please check your ini-file."
+            'ignore_backward_movement="false"/>'
         )
 
     try:
         frame_step = int(velocity_root.attrib["frame_step"])
     except ValueError:
         frame_step = velocity_root.attrib["frame_step"]
-        raise ValueError(
+        raise IniFileValueException(
             f"The velocity frame_step needs to be a positive integer value, but is {frame_step}. "
             f"Please check your velocity tag in your ini-file."
         )
 
     if frame_step <= 0:
-        raise ValueError(
+        raise IniFileValueException(
             f"The velocity frame_step needs to be a positive integer value, but is {frame_step}. "
             f"Please check your velocity tag in your ini-file."
         )
@@ -373,7 +334,7 @@ def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
         "true" not in ignore_backward_movement_lower
         and "false" not in ignore_backward_movement_lower
     ):
-        raise ValueError(
+        raise IniFileValueException(
             f"The velocity ignore_backward_movement needs to be a boolean value ('True', 'False'),"
             f" but is {ignore_backward_movement_lower}. "
             f"Please check your velocity tag in your ini-file."
