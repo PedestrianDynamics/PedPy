@@ -62,7 +62,8 @@ def parse_trajectory_files(trajectory_files: List[pathlib.Path]) -> TrajectoryDa
 
 
 def parse_trajectory_file(trajectory_file: pathlib.Path) -> (pd.DataFrame, float, TrajectoryType):
-    """Parse the trajectory file for the relevant data: trajectory data, frame rate, and type of trajectory.
+    """Parse the trajectory file for the relevant data: trajectory data, frame rate, and type of
+    trajectory.
 
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
@@ -106,7 +107,7 @@ def parse_trajectory_data(trajectory_file: pathlib.Path) -> pd.DataFrame:
 
         if data.empty:
             raise ValueError(
-                f"The given trajectory file seem to be empty. It should contain at least 5 columns: "
+                f"The given trajectory file seem to be empty. It should contain at least 5 columns:"
                 f"ID, frame, X, Y, Z. The values should be separated by any white space. Comment "
                 f"line may start with a '#' and will be ignored. "
                 f"Please check your trajectory file: {trajectory_file}."
