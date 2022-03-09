@@ -2,13 +2,14 @@ import xml.etree.ElementTree
 
 import pytest
 
+from report.application import Application
 from report.io.ini_parser import *
 
 
 def get_ini_file_as_string(content: str):
     return (
         f'<?xml version="1.0" encoding="UTF-8"?>\n'
-        f'<JPSreport project="JPS-Project" version="1.0.0">\n'
+        f'<JPSreport project="JPS-Project" version="{Application.JPS_REPORT_VERSION}">\n'
         f"{content}\n"
         f"</JPSreport>\n"
     )

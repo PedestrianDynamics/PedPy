@@ -4,7 +4,7 @@ ini-file.
 """
 
 import pathlib
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Tuple, Union
 from xml.etree.ElementTree import Element, parse
 
 from shapely.geometry import LineString, Point
@@ -34,7 +34,7 @@ def parse_xml_attrib(
     xml_element: Element,
     attrib: str,
     type_func: Callable[[str], Union[int, float, str, pathlib.Path, bool]],
-    condition: tuple[Callable[[Union[int, float, str, pathlib.Path, bool]], bool], str] = None,
+    condition: Tuple[Callable[[Union[int, float, str, pathlib.Path, bool]], bool], str] = None,
     mandatory: bool = True,
 ) -> Union[int, float, str, pathlib.Path, bool, None]:
     """Parses a specific xml_element.attrib to the desired type and can also check if some
