@@ -6,9 +6,13 @@ import pytest
 from shapely.geometry import LineString, Point
 
 from report.application import Application
+from report.data.configuration import ConfigurationMethodA
 from report.io.ini_parser import (
+    IniFileParseException,
+    IniFileValueException,
     parse_geometry_file,
     parse_measurement_lines,
+    parse_method_a_configuration,
     parse_output_directory,
     parse_trajectory_files,
     parse_velocity_calculator,
@@ -683,4 +687,119 @@ def test_parse_velocity_parser_wrong_input(content, expected_message):
 
     with pytest.raises(ValueError) as error_info:
         parse_velocity_calculator(root)
+    assert expected_message in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "expected_configurations",
+    [
+        {},
+        {0: ConfigurationMethodA(1)},
+        {
+            10: ConfigurationMethodA(100),
+            20: ConfigurationMethodA(200),
+            30: ConfigurationMethodA(300),
+        },
+    ],
+)
+def test_parse_method_a_parser_success(expected_configurations: Dict[int, ConfigurationMethodA]):
+    method_a_configuration = "<method_A>\n"
+    for id, config in expected_configurations.items():
+        method_a_configuration += (
+            f'<measurement_area id="{id}" frame_interval="{config.frame_interval}"/>\n'
+        )
+    method_a_configuration += "</method_A>\n"
+
+    xml_content = get_ini_file_as_string(method_a_configuration)
+    root = xml.etree.ElementTree.fromstring(xml_content)
+
+    configurations_from_file = parse_method_a_configuration(root)
+    assert expected_configurations == configurations_from_file
+
+
+@pytest.mark.parametrize(
+    "id, frame_interval, duplicated, expected_message",
+    [
+        (
+            "not an integer",
+            100,
+            False,
+            'The "id"-attribute needs to be a int value',
+        ),
+        (
+            1.0,
+            100,
+            False,
+            'The "id"-attribute needs to be a int value',
+        ),
+        (
+            1,
+            "not an integer",
+            False,
+            'The "frame_interval"-attribute needs to be a int value',
+        ),
+        (
+            1,
+            100.0,
+            False,
+            'The "frame_interval"-attribute needs to be a int value',
+        ),
+        (
+            1,
+            -100,
+            False,
+            "There is a duplicated ID in your method a configurations:",
+        ),
+        (
+            1,
+            100,
+            True,
+            "There is a duplicated ID in your method a configurations:",
+        ),
+    ],
+)
+def test_parse_method_a_parser_wrong_data(id, frame_interval, duplicated, expected_message):
+    method_a_configuration = "<method_A>\n"
+    method_a_configuration += f'\t<measurement_area id="{id}" frame_interval="{frame_interval}"/>\n'
+    if duplicated:
+        method_a_configuration += (
+            f'\t<measurement_area id="{id}" frame_interval="{frame_interval}"/>\n'
+        )
+    method_a_configuration += "</method_A>\n"
+
+    xml_content = get_ini_file_as_string(method_a_configuration)
+    root = xml.etree.ElementTree.fromstring(xml_content)
+
+    with pytest.raises(IniFileValueException) as error_info:
+        parse_method_a_configuration(root)
+    assert expected_message in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "content, expected_message",
+    [
+        (
+            "<method_A>\n\t<measurement_area/>\n</method_A>",
+            'Could not find "id"-attribute in "measurement_area"-tag,',
+        ),
+        (
+            '<method_A>\n\t<measurement_area id="1"/>\n</method_A>',
+            'Could not find "frame_interval"-attribute in "measurement_area"-tag,',
+        ),
+        (
+            '<method_A>\n\t<measurement_area frame_interval="1"/>\n</method_A>',
+            'Could not find "id"-attribute in "measurement_area"-tag,',
+        ),
+        (
+            '<method_A>\n\t<measurement_area not_id="1" not_frame_interval="1"/>\n</method_A>',
+            'Could not find "id"-attribute in "measurement_area"-tag,',
+        ),
+    ],
+)
+def test_parse_method_a_parser_wrong_input(content, expected_message):
+    xml_content = get_ini_file_as_string(content)
+    root = xml.etree.ElementTree.fromstring(xml_content)
+
+    with pytest.raises(IniFileParseException) as error_info:
+        parse_method_a_configuration(root)
     assert expected_message in str(error_info.value)

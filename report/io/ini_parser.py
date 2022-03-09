@@ -9,7 +9,7 @@ from xml.etree.ElementTree import Element, parse
 
 from shapely.geometry import LineString, Point
 
-from report.data.configuration import Configuration
+from report.data.configuration import Configuration, ConfigurationMethodA
 from report.methods.velocity_calculator import VelocityCalculator
 
 
@@ -100,6 +100,7 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
     measurement_areas = {}
     measurement_lines = parse_measurement_lines(root)
     velocity_calculator = parse_velocity_calculator(root)
+    method_a_configuration = parse_method_a_configuration(root)
 
     return Configuration(
         output_directory=output_directory,
@@ -107,7 +108,8 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
         geometry_file=geometry_file,
         measurement_areas=measurement_areas,
         measurement_lines=measurement_lines,
-        velocity_configuration=velocity_calculator,
+        velocity_calculator=velocity_calculator,
+        config_method_a=method_a_configuration,
     )
 
 
@@ -358,3 +360,39 @@ def parse_velocity_calculator(xml_root: Element) -> VelocityCalculator:
     ignore_backward_movement = ignore_backward_movement_str == "true"
 
     return VelocityCalculator(frame_step, set_movement_direction, ignore_backward_movement)
+
+
+def parse_method_a_configuration(xml_root: Element) -> Dict[int, ConfigurationMethodA]:
+    """Parses the configuration for method_A from the given xml root
+
+    Args:
+        xml_root (ET.ElementTree):  root of the xml file
+
+    Returns:
+        configuration for method A per measurement line computation to use in the analysis
+    """
+    configurations = {}
+
+    for method_a in xml_root.iter("method_A"):
+        for config in method_a.iter("measurement_area"):
+            line_id = parse_xml_attrib(
+                config,
+                "id",
+                int,
+                (
+                    lambda x: x not in configurations,
+                    "There is a duplicated ID in your method a configurations: ",
+                ),
+            )
+            frame_interval = parse_xml_attrib(
+                config,
+                "frame_interval",
+                int,
+                (
+                    lambda x: x >= 0,
+                    "There is a duplicated ID in your method a configurations: ",
+                ),
+            )
+            configurations[line_id] = ConfigurationMethodA(frame_interval=frame_interval)
+
+    return configurations

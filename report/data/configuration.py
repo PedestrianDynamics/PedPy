@@ -6,21 +6,18 @@ from typing import Dict, List
 
 from shapely.geometry import LineString, Polygon
 
+from report.methods.velocity_calculator import VelocityCalculator
+
 
 @dataclass(frozen=True)
-class ConfigurationVelocity:
-    """Configuration for velocity computation
+class ConfigurationMethodA:
+    """Configuration for method_A
 
     Attributes:
-         frame_step (int): gives the size of time interval for calculating the velocity
-         set_movement_direction (str): indicates in which direction the velocity will be projected
-         ignore_backward_movement (bool):  indicates whether you want to ignore the movement opposite to
-                                           the direction from `set_movement_direction`
+        frame_interval (int): specifies the size of frame interval for calculating flow rate.
     """
 
-    frame_step: int
-    set_movement_direction: str
-    ignore_backward_movement: bool
+    frame_interval: int
 
 
 @dataclass(frozen=True)
@@ -35,8 +32,12 @@ class Configuration:
         measurement_areas (Dict[int, Polygon]): measurement areas to be used in the analysis
         measurement_lines (Dict[int, LineString]): measurement line to be used in the analysis
 
-        velocity_configuration (ConfigurationVelocity): configuration for the velocity compuation
-                (see :class:ConfigurationVelocity for more detail)
+        velocity_calculator (VelocityCalculator): configuration for the velocity computation
+                (see :class:VelocityCalculator for more detail)
+
+        config_method_a (Dict[int, ConfigurationMethodA]): configuration for the method a
+                computation per measurement_line (see :class:ConfigurationMethodA for more detail)
+
     """
 
     output_directory: pathlib.Path
@@ -46,4 +47,6 @@ class Configuration:
     measurement_areas: Dict[int, Polygon]
     measurement_lines: Dict[int, LineString]
 
-    velocity_configuration: ConfigurationVelocity
+    velocity_calculator: VelocityCalculator
+
+    config_method_a: Dict[int, ConfigurationMethodA]

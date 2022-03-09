@@ -88,3 +88,31 @@ class TrajectoryData:
         return [
             Point(row["X"], row["Y"]) for _, row in pedestrian_positions_frame_window.iterrows()
         ]
+
+    def get_min_frame(self) -> int:
+        """Returns first frame for which data a position is recorded"""
+        return self._data["frame"].min()
+
+    def get_max_frame(self) -> int:
+        """Returns last frame for which data a position is recorded"""
+        return self._data["frame"].max()
+
+    def get_positions(self, frame):
+        """Return the position of all pedestrians in a specific frame
+
+        Args:
+            frame (int): frame for which the positions are returned
+
+        Returns:
+            Dict from pedestrian id to Point(x,y) in frame
+        """
+        positions = self._data.loc[self._data["frame"] == frame][["ID", "X", "Y"]]
+        positions = positions.set_index("ID")
+        return {
+            agent_id: Point(position["X"], position["Y"])
+            for agent_id, position in positions.to_dict("index").items()
+        }
+
+    def get_time_in_s(self, frame: int) -> float:
+        """Returns the time in seconds for a specific frame (frame 0 is at 0 s)"""
+        return frame / self.frame_rate
