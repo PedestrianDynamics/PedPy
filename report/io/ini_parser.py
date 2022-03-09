@@ -4,7 +4,7 @@ ini-file.
 """
 
 import pathlib
-from typing import Dict, List
+from typing import Callable, Dict, List, Tuple, Union
 from xml.etree.ElementTree import Element, parse
 
 from shapely.geometry import LineString, Point
@@ -13,9 +13,12 @@ from report.data.configuration import Configuration, ConfigurationVelocity
 
 
 class IniFileParseException(ValueError):
+    """Custom exception for incomplete ini-files"""
+
     error_footer: str = (
-        "For more detail check the documentation at: https://www.jupedsim.org/jpsreport_inifile.html."
-        "\nPlease check your ini-file."
+        "For more detail check the documentation at: "
+        "https://www.jupedsim.org/jpsreport_inifile.html.\n"
+        "Please check your ini-file."
     )
 
     def __init__(self, message):
@@ -24,7 +27,59 @@ class IniFileParseException(ValueError):
 
 
 class IniFileValueException(ValueError):
-    pass
+    """Custom exception for wrong values inside the ini-file"""
+
+
+def parse_xml_attrib(
+    xml_element: Element,
+    attrib: str,
+    type_func: Callable[[str], Union[int, float, str, pathlib.Path, bool]],
+    condition: Tuple[Callable[[Union[int, float, str, pathlib.Path, bool]], bool], str] = None,
+    mandatory: bool = True,
+) -> Union[int, float, str, pathlib.Path, bool, None]:
+    """Parses a specific xml_element.attrib to the desired type and can also check if some
+    condition is met.
+
+    Args:
+        xml_element (Element): xml Element to parse for the desired attrib
+        attrib (str): name of the attrib to parse
+        type_func (Callable[[str], Union[int, float, str, pathlib.Path, bool]]): cast operator to
+            the desired data type
+        condition (tuple[Callable[[Union[int, float, str, pathlib.Path, bool]], bool], str] = None):
+            first element: condition which should be met for the output value,
+            second element: error message to display then condition not met
+        mandatory (bool = True): when not mandatory return None when element not found
+
+    Returns:
+        content of the xml_element.attrib in the desired datatype
+
+    """
+    if not callable(type_func):
+        raise ValueError(f"{type_func} is not callable.")
+
+    if attrib not in xml_element.attrib:
+        if mandatory:
+            raise IniFileParseException(
+                f'Could not find "{attrib}"-attribute in "{xml_element.tag}"-tag, but is mandatory.'
+            )
+        return None
+
+    try:
+        result = type_func(xml_element.attrib[attrib])
+    except ValueError as value_error:
+        raise IniFileValueException(
+            f'The "{attrib}"-attribute needs to be a {type_func.__name__} value, but is '
+            f'"{xml_element.attrib[attrib]}". Please check your "{xml_element.tag}"-tag in '
+            f"your ini-file."
+        ) from value_error
+
+    if condition is None:
+        return result
+
+    if not condition[0](result):
+        raise IniFileValueException(condition[1] + f'("{xml_element.attrib[attrib]}")')
+
+    return result
 
 
 def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
@@ -70,17 +125,16 @@ def parse_output_directory(xml_root: Element) -> pathlib.Path:
             "mandatory, e.g.,  \n"
             '<output location="results"/>'
         )
-    if "location" not in output_directory_node.attrib:
-        raise IniFileParseException(
-            "The output tag is incomplete, it should contain 'location', e.g., \n"
-            '<output location="results"/>'
-        )
-    output_directory = pathlib.Path(output_directory_node.attrib["location"])
-    if not output_directory.is_dir():
-        raise IniFileValueException(
-            f"The output directory does not exist or is not a directory: "
-            f"{output_directory.__str__()}. Please check your ini-file."
-        )
+
+    output_directory = parse_xml_attrib(
+        output_directory_node,
+        "location",
+        pathlib.Path,
+        (
+            lambda x: (x.exists() and x.is_dir()) or (not x.exists()),
+            "The output directory does exist but is not a directory: ",
+        ),
+    )
 
     return output_directory
 
@@ -100,16 +154,16 @@ def parse_geometry_file(xml_root: Element) -> pathlib.Path:
             "mandatory, e.g.,  \n"
             '<geometry file="geometry.xml"/>'
         )
-    if "file" not in geometry_node.attrib:
-        raise IniFileParseException(
-            "The geometry tag is incomplete, it should contain 'name', e.g., \n"
-            '<geometry file="geometry.xml"/>'
-        )
-    geometry_file = pathlib.Path(geometry_node.attrib["file"])
-    if not geometry_file.is_file():
-        raise IniFileValueException(
-            f"The geometry file does not exist: {geometry_file.__str__()}. Please check your ini-file."
-        )
+
+    geometry_file = parse_xml_attrib(
+        geometry_node,
+        "file",
+        pathlib.Path,
+        (
+            lambda x: x.exists() and x.is_file(),
+            "The geometry file does not exist or is not a file: ",
+        ),
+    )
 
     return geometry_file
 
@@ -140,13 +194,14 @@ def parse_trajectory_files(xml_root: Element) -> List[pathlib.Path]:
 
     trajectory_files = []
     for file in trajectory_node.findall("file"):
-        if "name" in file.attrib:
-            trajectory_files.append(pathlib.Path(file.attrib["name"]))
-        else:
-            raise IniFileParseException(
-                "There seems to be a trajectories/name tag be missing in your ini-file, but it is mandatory."
-            )
+        trajectory_file = parse_xml_attrib(
+            file,
+            "name",
+            pathlib.Path,
+        )
+        trajectory_files.append(trajectory_file)
 
+    # Check for missing trajectory files afterwards to report all missing files at once
     file_not_existing = []
     for file in trajectory_files:
         if not file.is_file():
@@ -177,35 +232,27 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
         )
 
     for measurement in xml_root.iter("measurement_areas"):
-        if "unit" in measurement.attrib.keys():
-            unit = measurement.attrib["unit"]
-            if unit.lower() != "m":
-                raise IniFileValueException(
-                    "Only 'm' is supported as unit in the measurement areas tag. "
-                )
-        for measurement_line in measurement.iter("area_L"):
-            needed_tags = {"id"}
-            point_needed_tags = {"x", "y"}
-            if not needed_tags.issubset(measurement_line.attrib.keys()):
-                needed_tags_text = ", ".join(str(e) for e in needed_tags)
-                raise IniFileParseException(
-                    f"The measurement_areas/area_L tag is incomplete, it should contain "
-                    f"{needed_tags_text}, e.g., \n"
-                    '<area_L id="1">\n'
-                    '    <start x="62.0" y="102.600"/>\n'
-                    '    <end x="62.0" y="101.400"/>\n'
-                    "</area_L>"
-                )
+        parse_xml_attrib(
+            measurement,
+            "unit",
+            str,
+            (
+                lambda x: x.lower() == "m",
+                "Only 'm' is supported as unit in the measurement areas tag: ",
+            ),
+            mandatory=False,
+        )
 
-            try:
-                line_id = int(measurement_line.attrib["id"])
-            except ValueError:
-                line_id = measurement_line.attrib["id"]
-                raise IniFileValueException(
-                    f"The measurement_areas/area_L id needs to be a integer value, "
-                    f"but is {line_id}. "
-                    f"Please check your velocity tag in your ini-file."
-                )
+        for measurement_line in measurement.iter("area_L"):
+            line_id = parse_xml_attrib(
+                measurement_line,
+                "id",
+                int,
+                (
+                    lambda x: x not in measurement_lines,
+                    "There is a duplicated ID in your measurement lines: ",
+                ),
+            )
 
             start_node = measurement_line.find("start")
             if start_node is None:
@@ -217,25 +264,16 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
                     '    <end x="62.0" y="101.400"/>\n'
                     "</area_L>"
                 )
-            if not point_needed_tags.issubset(start_node.attrib.keys()):
-                point_needed_tags_text = ", ".join(str(e) for e in point_needed_tags)
-                raise IniFileParseException(
-                    f"The measurement_areas/area_L/start tag is incomplete, it should contain "
-                    f"{point_needed_tags_text}, e.g., \n"
-                    '<start x="62.0" y="102.600"/>'
-                )
-
-            try:
-                start_x = float(start_node.attrib["x"])
-                start_y = float(start_node.attrib["y"])
-            except ValueError:
-                start_x = start_node.attrib["x"]
-                start_y = start_node.attrib["y"]
-                raise IniFileValueException(
-                    f"The start point coordinates of measurement line {id} need to be floating "
-                    f"point values, but are {start_x} and {start_y}. "
-                    f"Please check your velocity tag in your ini-file."
-                )
+            start_x = parse_xml_attrib(
+                start_node,
+                "x",
+                float,
+            )
+            start_y = parse_xml_attrib(
+                start_node,
+                "y",
+                float,
+            )
 
             end_node = measurement_line.find("end")
             if end_node is None:
@@ -247,25 +285,16 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
                     '    <end x="62.0" y="101.400"/>\n'
                     "</area_L>"
                 )
-
-            if not point_needed_tags.issubset(end_node.attrib.keys()):
-                point_needed_tags_text = ", ".join(str(e) for e in point_needed_tags)
-                raise IniFileParseException(
-                    f"The measurement_areas/area_L/end tag is incomplete, it should contain "
-                    f"{point_needed_tags_text}, e.g., \n"
-                    '<end x="62.0" y="101.400"/>'
-                )
-            try:
-                end_x = float(end_node.attrib["x"])
-                end_y = float(end_node.attrib["y"])
-            except ValueError:
-                end_x = end_node.attrib["x"]
-                end_y = end_node.attrib["y"]
-                raise IniFileValueException(
-                    f"The end point coordinates of measurement line {id} need to be floating "
-                    f"point values, but are {end_x} and {end_y}. "
-                    f"Please check your velocity tag in your ini-file."
-                )
+            end_x = parse_xml_attrib(
+                end_node,
+                "x",
+                float,
+            )
+            end_y = parse_xml_attrib(
+                end_node,
+                "y",
+                float,
+            )
 
             line = LineString([Point(start_x, start_y), Point(end_x, end_y)])
             if line.length <= 1e-5:
@@ -275,13 +304,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
                     "Please check your ini-file."
                 )
 
-            if line_id not in measurement_lines:
-                measurement_lines[line_id] = line
-            else:
-                raise IniFileValueException(
-                    f"There is a duplicated id ({line_id}) in your measurement lines. "
-                    "Please check your ini-file."
-                )
+            measurement_lines[line_id] = line
     return measurement_lines
 
 
@@ -303,42 +326,34 @@ def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
             'ignore_backward_movement="false"/>'
         )
 
-    needed_tags = {"frame_step", "set_movement_direction", "ignore_backward_movement"}
-    if not needed_tags.issubset(velocity_root.attrib.keys()):
-        needed_tags_text = ", ".join(str(e) for e in needed_tags)
-        raise IniFileParseException(
-            f"The velocity tag is incomplete, it should contain {needed_tags_text}, e.g., \n"
-            '<velocity frame_step="10" set_movement_direction="None" '
-            'ignore_backward_movement="false"/>'
-        )
+    frame_step = parse_xml_attrib(
+        velocity_root,
+        "frame_step",
+        int,
+        (
+            lambda x: x > 0,
+            "The velocity frame_step needs to be a positive integer value, but is: ",
+        ),
+    )
 
-    try:
-        frame_step = int(velocity_root.attrib["frame_step"])
-    except ValueError:
-        frame_step = velocity_root.attrib["frame_step"]
-        raise IniFileValueException(
-            f"The velocity frame_step needs to be a positive integer value, but is {frame_step}. "
-            f"Please check your velocity tag in your ini-file."
-        )
+    set_movement_direction = parse_xml_attrib(
+        velocity_root,
+        "set_movement_direction",
+        str,
+    )
 
-    if frame_step <= 0:
-        raise IniFileValueException(
-            f"The velocity frame_step needs to be a positive integer value, but is {frame_step}. "
-            f"Please check your velocity tag in your ini-file."
-        )
+    ignore_backward_movement_str = parse_xml_attrib(
+        velocity_root,
+        "ignore_backward_movement",
+        str,
+    ).lower()
 
-    set_movement_direction = velocity_root.attrib["set_movement_direction"]
-
-    ignore_backward_movement_lower = velocity_root.attrib["ignore_backward_movement"].lower()
-    if (
-        "true" not in ignore_backward_movement_lower
-        and "false" not in ignore_backward_movement_lower
-    ):
+    if "true" not in ignore_backward_movement_str and "false" not in ignore_backward_movement_str:
         raise IniFileValueException(
             f"The velocity ignore_backward_movement needs to be a boolean value ('True', 'False'),"
-            f" but is {ignore_backward_movement_lower}. "
+            f" but is {ignore_backward_movement_str}. "
             f"Please check your velocity tag in your ini-file."
         )
-    ignore_backward_movement = velocity_root.attrib["ignore_backward_movement"].lower() == "true"
+    ignore_backward_movement = ignore_backward_movement_str == "true"
 
     return ConfigurationVelocity(frame_step, set_movement_direction, ignore_backward_movement)

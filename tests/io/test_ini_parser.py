@@ -28,12 +28,12 @@ def test_parse_output_directory_success(tmp_path):
 
 
 def test_parse_output_directory_directory_does_not_exist():
-    xml_content = get_ini_file_as_string('<output location="results"/>')
+    folder_name = "results"
+    xml_content = get_ini_file_as_string(f'<output location="{folder_name}"/>')
     root = xml.etree.ElementTree.fromstring(xml_content)
 
-    with pytest.raises(ValueError) as error_info:
-        parse_output_directory(root)
-    assert "The output directory does not exist or is not a directory:" in str(error_info.value)
+    output_directory_from_file = parse_output_directory(root)
+    assert folder_name == output_directory_from_file.name
 
 
 def test_parse_output_directory_directory_is_not_a_directory(tmp_path):
@@ -44,7 +44,7 @@ def test_parse_output_directory_directory_is_not_a_directory(tmp_path):
 
     with pytest.raises(ValueError) as error_info:
         parse_output_directory(root)
-    assert "The output directory does not exist or is not a directory:" in str(error_info.value)
+    assert "The output directory does exist but is not a directory:" in str(error_info.value)
 
 
 @pytest.mark.parametrize(
@@ -57,11 +57,11 @@ def test_parse_output_directory_directory_is_not_a_directory(tmp_path):
         ),
         (
             "<output/>",
-            "The output tag is incomplete,",
+            'Could not find "location"-attribute in "output"-tag',
         ),
         (
             '<output not_location="results"/>',
-            "The output tag is incomplete,",
+            'Could not find "location"-attribute in "output"-tag',
         ),
     ],
 )
@@ -91,7 +91,7 @@ def test_parse_geometry_file_success(tmp_path):
     [
         (
             '<geometry file="geo.xml"/>',
-            "The geometry file does not exist:",
+            "The geometry file does not exist or is not a file:",
         ),
     ],
 )
@@ -114,11 +114,11 @@ def test_parse_geometry_file_wrong_data(tmp_path, content, expected_message):
         ),
         (
             "<geometry/>",
-            "The geometry tag is incomplete,",
+            'Could not find "file"-attribute in "geometry"-tag,',
         ),
         (
             '<geometry not_file="geo.xml"/>',
-            "The geometry tag is incomplete,",
+            'Could not find "file"-attribute in "geometry"-tag,',
         ),
     ],
 )
@@ -190,7 +190,7 @@ def test_parse_trajectory_files_wrong_data(tmp_path, content, expected_message):
         ),
         (
             '<trajectories format="txt">\n' '\t<file not_name="traj.txt"/>\n' "</trajectories>\n",
-            "here seems to be a trajectories/name tag be missing in your ini-file",
+            'Could not find "name"-attribute in "file"-tag,',
         ),
     ],
 )
@@ -280,7 +280,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L id needs to be a integer value,",
+            'The "id"-attribute needs to be a int value,',
         ),
         (
             "<measurement_areas>\n"
@@ -289,7 +289,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L id needs to be a integer value,",
+            'The "id"-attribute needs to be a int value,',
         ),
         (
             "<measurement_areas>\n"
@@ -298,7 +298,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The start point coordinates of measurement line",
+            'The "x"-attribute needs to be a float value',
         ),
         (
             "<measurement_areas>\n"
@@ -307,7 +307,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The start point coordinates of measurement line",
+            'The "y"-attribute needs to be a float value',
         ),
         (
             "<measurement_areas>\n"
@@ -316,7 +316,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The start point coordinates of measurement line",
+            'The "x"-attribute needs to be a float value',
         ),
         (
             "<measurement_areas>\n"
@@ -325,7 +325,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<start x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The end point coordinates of measurement line",
+            'The "x"-attribute needs to be a float value',
         ),
         (
             "<measurement_areas>\n"
@@ -334,7 +334,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<start x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The end point coordinates of measurement line",
+            'The "y"-attribute needs to be a float value',
         ),
         (
             "<measurement_areas>\n"
@@ -343,7 +343,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="not a float" y="not a float"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The end point coordinates of measurement line",
+            'The "x"-attribute needs to be a float value',
         ),
         (
             "<measurement_areas>\n"
@@ -352,7 +352,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="not a float" y="not a float"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The end point coordinates of measurement line",
+            'The "x"-attribute needs to be a float value',
         ),
         (
             "<measurement_areas>\n"
@@ -365,7 +365,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="1" y="7."/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "There is a duplicated id ",
+            "There is a duplicated ID",
         ),
         (
             "<measurement_areas>\n"
@@ -378,7 +378,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="1" y="7."/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "There is a duplicated id ",
+            "There is a duplicated ID ",
         ),
         (
             "<measurement_areas>\n"
@@ -391,7 +391,7 @@ def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_
             '\t\t<end x="1" y="7."/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "There is a duplicated id ",
+            "There is a duplicated ID ",
         ),
         (
             "<measurement_areas>\n"
@@ -424,7 +424,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "Only 'm' is supported as unit in the measurement areas tag.",
+            "Only 'm' is supported as unit in the measurement areas tag:",
         ),
         (
             "<measurement_areas>\n"
@@ -433,7 +433,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L tag is incomplete,",
+            'Could not find "id"-attribute in "area_L"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -476,7 +476,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/start tag is incomplete, it should contain ",
+            'Could not find "x"-attribute in "start"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -485,7 +485,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/start tag is incomplete, it should contain ",
+            'Could not find "x"-attribute in "start"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -494,7 +494,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/start tag is incomplete, it should contain ",
+            'Could not find "y"-attribute in "start"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -503,7 +503,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end x="-2.0" y="-3.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/start tag is incomplete, it should contain ",
+            'Could not find "x"-attribute in "start"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -512,7 +512,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end not_x="0.0" y="-1.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/end tag is incomplete, it should contain ",
+            'Could not find "x"-attribute in "end"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -521,7 +521,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end y="-1.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/end tag is incomplete, it should contain ",
+            'Could not find "x"-attribute in "end"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -530,7 +530,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             '\t\t<end x="0.0" not_y="-1.0"/>\n'
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/end tag is incomplete, it should contain ",
+            'Could not find "y"-attribute in "end"-tag,',
         ),
         (
             "<measurement_areas>\n"
@@ -539,7 +539,7 @@ def test_parse_measurement_lines_wrong_data(content, expected_message):
             "\t\t<end/>\n"
             "\t</area_L>\n"
             "</measurement_areas>",
-            "The measurement_areas/area_L/end tag is incomplete, it should contain ",
+            'Could not find "x"-attribute in "end"-tag,',
         ),
     ],
 )
@@ -589,13 +589,13 @@ def test_parse_velocity_parser_success(frame_step, movement_direction, ignore_ba
             3.0,
             "anything",
             "foo",
-            "The velocity frame_step needs to be a positive integer value,",
+            'The "frame_step"-attribute needs to be a int value,',
         ),
         (
             "not a integer point value",
             "anything",
             "foo",
-            "The velocity frame_step needs to be a positive integer value,",
+            'The "frame_step"-attribute needs to be a int value,',
         ),
         (
             1,
@@ -632,27 +632,30 @@ def test_parse_velocity_parser_wrong_data(
     "content, expected_message",
     [
         (" ", "There could no velocity tag be found in your ini-file,"),
-        ("<velocity/>", "The velocity tag is incomplete, it should contain"),
-        ('<velocity frame_step="10"/>', "The velocity tag is incomplete, it should contain"),
+        ("<velocity/>", 'Could not find "frame_step"-attribute in "velocity"-tag,'),
+        (
+            '<velocity frame_step="10"/>',
+            'Could not find "set_movement_direction"-attribute in "velocity"-tag,',
+        ),
         (
             '<velocity set_movement_direction="None"/>',
-            "The velocity tag is incomplete, it should contain",
+            'Could not find "frame_step"-attribute in "velocity"-tag,',
         ),
         (
             '<velocity ignore_backward_movement="false"/>',
-            "The velocity tag is incomplete, it should contain",
+            'Could not find "frame_step"-attribute in "velocity"-tag,',
         ),
         (
             '<velocity ignore_backward_movement="false" set_movement_direction="None"/>',
-            "The velocity tag is incomplete, it should contain",
+            'Could not find "frame_step"-attribute in "velocity"-tag,',
         ),
         (
             '<velocity frame_step="10" set_movement_direction="None"/>',
-            "The velocity tag is incomplete, it should contain",
+            'Could not find "ignore_backward_movement"-attribute in "velocity"-tag,',
         ),
         (
             '<velocity frame_step="10" ignore_backward_movement="false"/>',
-            "The velocity tag is incomplete, it should contain",
+            'Could not find "set_movement_direction"-attribute in "velocity"-tag,',
         ),
     ],
 )
