@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import pytest
 from numpy import dtype
@@ -64,6 +66,9 @@ def write_trajectory_file(
         if unit is not None:
             if unit == TrajectoryUnit.CENTIMETER:
                 f.write("# id frame x/cm y/cm z/cm\n")
+            else:
+                f.write("# id frame x/m y/m z/m\n")
+
         f.write(data.to_csv(sep=" ", header=False, index=False))
 
 
@@ -71,40 +76,37 @@ def write_trajectory_file(
     "data, expected_frame_rate, expected_type, expected_unit",
     [
         (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([(1, 0, -5, -1, -10)])],
+            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
             7.0,
             TrajectoryType.JUPEDSIM,
             TrajectoryUnit.METER,
         ),
         (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([(1, 0, -5, -1, -10)])],
+            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
             50.0,
             TrajectoryType.JUPEDSIM,
             TrajectoryUnit.CENTIMETER,
         ),
         (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([(1, 0, -5, -1, -10)])],
+            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
             15.0,
             TrajectoryType.PETRACK,
             TrajectoryUnit.METER,
         ),
         (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([(1, 0, -5, -1, -10)])],
+            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
             50.0,
             TrajectoryType.PETRACK,
             TrajectoryUnit.CENTIMETER,
         ),
         (
-            [np.array([(0, 0, 5, 1, 10, 123)]), np.array([(1, 0, -5, -1, -10, 123)])],
+            np.array([[0, 0, 5, 1, 10, 123], [1, 0, -5, -1, -10, 123]]),
             50.0,
             TrajectoryType.PETRACK,
             TrajectoryUnit.CENTIMETER,
         ),
         (
-            [
-                np.array([(0, 0, 5, 1, 10, "should be ignore")]),
-                np.array([(1, 0, -5, -1, -10, "this too")]),
-            ],
+            np.array([[0, 0, 5, 1, 10, "should be ignore"], [1, 0, -5, -1, -10, "this too"]]),
             50.0,
             TrajectoryType.PETRACK,
             TrajectoryUnit.CENTIMETER,
@@ -118,117 +120,25 @@ def test_parse_trajectory_files_success(
     expected_type: TrajectoryType,
     expected_unit: TrajectoryUnit,
 ):
-    trajectory_files = list()
+    trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
-    counter = 0
-    expected_data = pd.DataFrame()
+    expected_data = pd.DataFrame(data=data)
 
-    for d in data:
-        trajectory_txt = pathlib.Path(tmp_path / f"trajectory_{counter:02d}.txt")
-
-        data_frame = pd.DataFrame(data=d)
-        written_data = get_data_frame_to_write(data_frame, expected_unit)
-
-        if expected_data.empty:
-            expected_data = data_frame.copy(deep=True)
-        else:
-            expected_data = expected_data.append(data_frame)
-
-        write_trajectory_file(
-            file=trajectory_txt,
-            frame_rate=expected_frame_rate,
-            traj_type=expected_type,
-            unit=expected_unit,
-            data=written_data,
-        )
-
-        trajectory_files.append(trajectory_txt)
-        counter += 1
+    written_data = get_data_frame_to_write(expected_data, expected_unit)
+    write_trajectory_file(
+        file=trajectory_txt,
+        frame_rate=expected_frame_rate,
+        traj_type=expected_type,
+        unit=expected_unit,
+        data=written_data,
+    )
 
     expected_data = prepare_data_frame(expected_data)
-    traj_data_from_file = parse_trajectory_files(trajectory_files)
+    traj_data_from_file = parse_trajectory(trajectory_txt)
 
     assert (traj_data_from_file._data.to_numpy() == expected_data.to_numpy()).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
     assert traj_data_from_file.trajectory_type == expected_type
-
-
-@pytest.mark.parametrize(
-    "data, expected_frame_rate, expected_type, expected_unit, expected_exception, expected_message",
-    [
-        (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([(0, 0, 5, 1, 10)])],
-            [7.0, 7.0],
-            [TrajectoryType.JUPEDSIM, TrajectoryType.JUPEDSIM],
-            [TrajectoryUnit.METER, TrajectoryUnit.METER],
-            ValueError,
-            "The trajectory data could not be stored in one data frame.",
-        ),
-        (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([(1, 0, -5, -1, -10)])],
-            [7.0, 123.0],
-            [TrajectoryType.PETRACK, TrajectoryType.PETRACK],
-            [TrajectoryUnit.METER, TrajectoryUnit.METER],
-            ValueError,
-            "Frame rates of the trajectory files differ:",
-        ),
-        (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([(1, 0, -5, -1, -10)])],
-            [50.0, 50.0],
-            [TrajectoryType.PETRACK, TrajectoryType.JUPEDSIM],
-            [TrajectoryUnit.METER, TrajectoryUnit.METER],
-            ValueError,
-            "Types of the trajectory files differ:",
-        ),
-        (
-            [np.array([(0, 0, 5, 1, 10)]), np.array([])],
-            [50.0, 50.0],
-            [TrajectoryType.PETRACK, TrajectoryType.JUPEDSIM],
-            [TrajectoryUnit.METER, TrajectoryUnit.METER],
-            ValueError,
-            "The given trajectory file seem to be empty.",
-        ),
-    ],
-)
-def test_parse_trajectory_files_failure(
-    tmp_path,
-    data: List[np.array],
-    expected_frame_rate: List[float],
-    expected_type: List[TrajectoryType],
-    expected_unit: List[TrajectoryUnit],
-    expected_exception,
-    expected_message: str,
-):
-    trajectory_files = list()
-
-    counter = 0
-    expected_data = pd.DataFrame()
-
-    for (d, frame_rate, type, unit) in zip(data, expected_frame_rate, expected_type, expected_unit):
-        trajectory_txt = pathlib.Path(tmp_path / f"trajectory_{counter:02d}.txt")
-
-        data_frame = pd.DataFrame(data=d)
-        written_data = get_data_frame_to_write(data_frame, unit)
-        if expected_data.empty:
-            expected_data = data_frame.copy(deep=True)
-        else:
-            expected_data = expected_data.append(data_frame)
-
-        write_trajectory_file(
-            file=trajectory_txt,
-            frame_rate=frame_rate,
-            traj_type=type,
-            unit=unit,
-            data=written_data,
-        )
-
-        trajectory_files.append(trajectory_txt)
-        counter += 1
-
-    with pytest.raises(ValueError) as error_info:
-        parse_trajectory_files(trajectory_files)
-
-    assert expected_message in str(error_info.value)
 
 
 @pytest.mark.parametrize(

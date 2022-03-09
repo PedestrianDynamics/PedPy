@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pathlib
 from dataclasses import dataclass
-from typing import List
 
 import pandas as pd
 from aenum import Enum, auto
@@ -43,11 +42,11 @@ class TrajectoryData:
 
         trajectory_type (TrajectoryType): type of the trajectory used
 
-        files (List[pothlib.Path): files from which is trajectories were read
+        file (pothlib.Path): file from which is trajectories was read
 
     """
 
     _data: pd.DataFrame
     frame_rate: float
     trajectory_type: TrajectoryType
-    files: List[pathlib.Path]
+    file: pathlib.Path
