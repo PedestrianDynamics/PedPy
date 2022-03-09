@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 from dataclasses import dataclass
+from typing import List
 
 import pandas as pd
 from aenum import Enum, auto
@@ -36,7 +37,7 @@ class TrajectoryData:
         The coordinate data is stored in meter ('m')!
 
     Attributes:
-        __data (pd.DataFrame): data frame containing the actual data in the form:
+        _data (pd.DataFrame): data frame containing the actual data in the form:
             "ID", "frame", "X", "Y", "Z"
 
         frame_rate (float): frame rate of the trajectory file
@@ -52,7 +53,7 @@ class TrajectoryData:
     trajectory_type: TrajectoryType
     file: pathlib.Path
 
-    def get_pedestrian_positions(self, frame: int, pedestrian_id: int, window: int):
+    def get_pedestrian_positions(self, frame: int, pedestrian_id: int, window: int) -> List[Point]:
         """Return the pedestrian position within a given frame window.
 
         The frame window ([min_frame, max_frame]) is determined by frame and the window:
