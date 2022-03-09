@@ -1,9 +1,19 @@
+import pathlib
 import xml.etree.ElementTree
+from typing import Dict, List
 
 import pytest
+from shapely.geometry import LineString, Point
 
 from report.application import Application
-from report.io.ini_parser import *
+from report.io.ini_parser import (
+    parse_geometry_file,
+    parse_measurement_lines,
+    parse_output_directory,
+    parse_trajectory_files,
+    parse_velocity_calculator,
+)
+from report.methods.velocity_calculator import VelocityCalculator
 
 
 def get_ini_file_as_string(content: str):
@@ -572,12 +582,20 @@ def test_parse_velocity_parser_success(frame_step, movement_direction, ignore_ba
     root = xml.etree.ElementTree.fromstring(xml_content)
 
     ignore_backward_movement_bool = ignore_backward_movement.lower() == "true"
-    expected_velocity_configuration = ConfigurationVelocity(
+    expected_velocity_calculator = VelocityCalculator(
         frame_step, movement_direction, ignore_backward_movement_bool
     )
 
-    velocity_configuration_from_file = parse_velocity_configuration(root)
-    assert velocity_configuration_from_file == expected_velocity_configuration
+    velocity_calculator_from_file = parse_velocity_calculator(root)
+    assert velocity_calculator_from_file.frame_step == expected_velocity_calculator.frame_step
+    assert (
+        velocity_calculator_from_file.set_movement_direction
+        == expected_velocity_calculator.set_movement_direction
+    )
+    assert (
+        velocity_calculator_from_file.ignore_backward_movement
+        == expected_velocity_calculator.ignore_backward_movement
+    )
 
 
 @pytest.mark.parametrize(
@@ -614,17 +632,17 @@ def test_parse_velocity_parser_success(frame_step, movement_direction, ignore_ba
 def test_parse_velocity_parser_wrong_data(
     frame_step, movement_direction, ignore_backward_movement, expected_message
 ):
-    velocity_configuration = (
+    velocity_calculator = (
         f'<velocity frame_step="{frame_step}" '
         f'set_movement_direction="{movement_direction}" '
         f'ignore_backward_movement="{ignore_backward_movement}"/>'
     )
 
-    xml_content = get_ini_file_as_string(velocity_configuration)
+    xml_content = get_ini_file_as_string(velocity_calculator)
     root = xml.etree.ElementTree.fromstring(xml_content)
 
     with pytest.raises(ValueError) as error_info:
-        parse_velocity_configuration(root)
+        parse_velocity_calculator(root)
     assert expected_message in str(error_info.value)
 
 
@@ -664,5 +682,5 @@ def test_parse_velocity_parser_wrong_input(content, expected_message):
     root = xml.etree.ElementTree.fromstring(xml_content)
 
     with pytest.raises(ValueError) as error_info:
-        parse_velocity_configuration(root)
+        parse_velocity_calculator(root)
     assert expected_message in str(error_info.value)

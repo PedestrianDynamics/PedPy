@@ -9,7 +9,8 @@ from xml.etree.ElementTree import Element, parse
 
 from shapely.geometry import LineString, Point
 
-from report.data.configuration import Configuration, ConfigurationVelocity
+from report.data.configuration import Configuration
+from report.methods.velocity_calculator import VelocityCalculator
 
 
 class IniFileParseException(ValueError):
@@ -98,7 +99,7 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
     geometry_file = parse_geometry_file(root)
     measurement_areas = {}
     measurement_lines = parse_measurement_lines(root)
-    velocity_configuration = parse_velocity_configuration(root)
+    velocity_calculator = parse_velocity_calculator(root)
 
     return Configuration(
         output_directory=output_directory,
@@ -106,7 +107,7 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
         geometry_file=geometry_file,
         measurement_areas=measurement_areas,
         measurement_lines=measurement_lines,
-        velocity_configuration=velocity_configuration,
+        velocity_configuration=velocity_calculator,
     )
 
 
@@ -308,7 +309,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
     return measurement_lines
 
 
-def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
+def parse_velocity_calculator(xml_root: Element) -> VelocityCalculator:
     """Parses the configuration for velocity computation from the given xml root
 
     Args:
@@ -356,4 +357,4 @@ def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
         )
     ignore_backward_movement = ignore_backward_movement_str == "true"
 
-    return ConfigurationVelocity(frame_step, set_movement_direction, ignore_backward_movement)
+    return VelocityCalculator(frame_step, set_movement_direction, ignore_backward_movement)
