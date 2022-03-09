@@ -3,62 +3,25 @@ TrajectoryData format.
 """
 
 import pathlib
-from typing import List
 
 import pandas as pd
 
 from report.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
 
 
-def parse_trajectory_files(trajectory_files: List[pathlib.Path]) -> TrajectoryData:
-    """Parses the given files for the relevant data.
-
-    Raises:
-        ValueError: if there is a mismatch of the frame rate or type in the given files
-        ValueError: if there are the same (ID and frame) in multiple files
+def parse_trajectory(trajectory_file: pathlib.Path) -> TrajectoryData:
+    """Parses the given file for the relevant data.
 
     Args:
-        trajectory_files (List[pathlib.Path]): list of files containing the trajectory
+        trajectory_file (pathlib.Path): files containing the trajectory data
 
     Returns:
         TrajectoryData containing the data from all trajectory files.
     """
-    traj_dataframe = pd.DataFrame()
-    traj_frame_rate = None
-    traj_type = None
 
-    for traj_file in trajectory_files:
-        tmp_dataframe, tmp_frame_rate, tmp_traj_type = parse_trajectory_file(traj_file)
+    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(trajectory_file)
 
-        if traj_frame_rate is None and traj_type is None:
-            traj_frame_rate = tmp_frame_rate
-            traj_type = tmp_traj_type
-
-        if traj_frame_rate != tmp_frame_rate:
-            raise ValueError(
-                f"Frame rates of the trajectory files differ: {traj_frame_rate} != "
-                f"{tmp_frame_rate}. Please check the trajectory files: {trajectory_files}."
-            )
-
-        if traj_type != tmp_traj_type:
-            raise ValueError(
-                f"Types of the trajectory files differ: {traj_type} != {tmp_traj_type}. "
-                f"Please check the trajectory files: {trajectory_files}."
-            )
-
-        if traj_dataframe.empty:
-            traj_dataframe = tmp_dataframe.copy(deep=True)
-        else:
-            traj_dataframe = traj_dataframe.append(tmp_dataframe)
-
-        if traj_dataframe.duplicated(subset=["ID", "frame"]).any():
-            raise ValueError(
-                f"The trajectory data could not be stored in one data frame. This happens when "
-                f"there is a ID + frame combination in multiple files. "
-                f"Please check the trajectory files: {trajectory_files}."
-            )
-
-    return TrajectoryData(traj_dataframe, traj_frame_rate, traj_type, trajectory_files)
+    return TrajectoryData(traj_dataframe, traj_frame_rate, traj_type, trajectory_file)
 
 
 def parse_trajectory_file(trajectory_file: pathlib.Path) -> (pd.DataFrame, float, TrajectoryType):

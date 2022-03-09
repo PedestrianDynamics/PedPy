@@ -4,7 +4,7 @@ from typing import Final
 
 from report.io.geometry_parser import parse_geometry
 from report.io.ini_parser import parse_ini_file
-from report.io.trajectory_parser import parse_trajectory_files
+from report.io.trajectory_parser import parse_trajectory
 from report.util.loghelper import *
 
 
@@ -69,9 +69,10 @@ class Application:
 
     def run_analysis(self):
         configuration = parse_ini_file(self.args.ini_file)
-        trajectory_data = parse_trajectory_files(configuration.trajectory_files)
-        geometry = parse_geometry(configuration.geometry_file)
+        for trajectory_file in configuration.trajectory_files:
+            trajectory_data = parse_trajectory(trajectory_file)
+            geometry = parse_geometry(configuration.geometry_file)
 
-        log_info(configuration)
-        log_info(trajectory_data)
-        log_info(geometry)
+            log_info(f"Analyse: {trajectory_file.name}")
+
+        log_info("Finished analysis")
