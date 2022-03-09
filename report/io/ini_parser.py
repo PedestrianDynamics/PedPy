@@ -131,8 +131,8 @@ def parse_output_directory(xml_root: Element) -> pathlib.Path:
         "location",
         pathlib.Path,
         (
-            lambda x: x.exists() and x.is_dir(),
-            "The output directory does not exist or is not a directory: ",
+            lambda x: (x.exists() and x.is_dir()) or (not x.exists()),
+            "The output directory does exist but is not a directory: ",
         ),
     )
 

@@ -28,12 +28,12 @@ def test_parse_output_directory_success(tmp_path):
 
 
 def test_parse_output_directory_directory_does_not_exist():
-    xml_content = get_ini_file_as_string('<output location="results"/>')
+    folder_name = "results"
+    xml_content = get_ini_file_as_string(f'<output location="{folder_name}"/>')
     root = xml.etree.ElementTree.fromstring(xml_content)
 
-    with pytest.raises(ValueError) as error_info:
-        parse_output_directory(root)
-    assert "The output directory does not exist or is not a directory:" in str(error_info.value)
+    output_directory_from_file = parse_output_directory(root)
+    assert folder_name == output_directory_from_file.name
 
 
 def test_parse_output_directory_directory_is_not_a_directory(tmp_path):
@@ -44,7 +44,7 @@ def test_parse_output_directory_directory_is_not_a_directory(tmp_path):
 
     with pytest.raises(ValueError) as error_info:
         parse_output_directory(root)
-    assert "The output directory does not exist or is not a directory:" in str(error_info.value)
+    assert "The output directory does exist but is not a directory:" in str(error_info.value)
 
 
 @pytest.mark.parametrize(
