@@ -4,6 +4,7 @@ import pathlib
 from dataclasses import dataclass
 from typing import Dict, List
 
+import numpy as np
 from shapely.geometry import LineString, Polygon
 
 
@@ -18,6 +19,7 @@ class ConfigurationVelocity:
     """
 
     frame_step: int
+    movement_direction: np.ndarray
     ignore_backward_movement: bool
 
 
