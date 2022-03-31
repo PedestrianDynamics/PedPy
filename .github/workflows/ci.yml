@@ -1,6 +1,9 @@
 name: jpsreport-ci
 
 on:
+  schedule:
+    # Runs at 2:00 am each day
+    - cron: '00 2 * * *'
   push:
     branches:
       - main
