@@ -107,7 +107,7 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
         geometry_file=geometry_file,
         measurement_areas=measurement_areas,
         measurement_lines=measurement_lines,
-        velocity_configuration=velocity_calculator,
+        velocity_calculator=velocity_calculator,
     )
 
 
