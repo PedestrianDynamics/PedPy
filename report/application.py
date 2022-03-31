@@ -12,6 +12,7 @@ from report.util.loghelper import *
 def main():
     sys.exit(Application().run())
 
+
 class Application:
     JPS_REPORT_VERSION: Final = "1.0.0"
 
