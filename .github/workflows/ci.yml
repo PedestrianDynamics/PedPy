@@ -31,11 +31,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -VV
-          python -m site
-          python -m pip install --upgrade pip setuptools wheel
-          python -m pip install -r requirements.txt
+          python3 -m pip install --upgrade pip
+          python3 -VV
+          python3 -m site
+          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install -r requirements.txt
 
       - name: Check format
         if: matrix.os == 'ubuntu-latest'
@@ -44,12 +44,12 @@ jobs:
 
       - name: Run pytests
         run: |
-          python -m pytest -vv -s tests
+          python3 -m pytest -vv -s tests
 
       - name: Build wheel
         if: matrix.os == 'ubuntu-latest'
         run: |
-          python -m build
+          python3 -m build
           cd dist
           echo "wheel=$(ls *.whl)" >> $GITHUB_ENV          
 
@@ -76,14 +76,13 @@ jobs:
       - name: Download wheel
         uses: actions/download-artifact@v3
         with:
-          name: jpsreport-1.0.0-py3-none-any.whl
+          name: jpsreport-1.0.0.1-py3-none-any.whl
 
       - name: Install wheel
         run: |
-          ls -la
           wheel=$(ls *.whl)
-          python -m pip install --upgrade pip
-          python -m pip install ${{github.workspace}}/$wheel
+          python3 -m pip install --upgrade pip
+          python3 -m pip install ${{github.workspace}}/$wheel
           
       - name: Test if install was successful
         run: |
