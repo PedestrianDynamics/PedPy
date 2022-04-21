@@ -40,7 +40,7 @@ jobs:
       - name: Check format
         if: matrix.os == 'ubuntu-latest'
         run: |
-          $GITHUB_WORKSPACE/scripts/check-format.sh
+          ${{github.workspace}}/scripts/check-format.sh
 
       - name: Run pytests
         run: |
@@ -50,10 +50,41 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           python -m build
+          cd dist
+          echo "wheel=$(ls *.whl)" >> $GITHUB_ENV          
 
       - name: Upload wheel as artifact
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: jpsreport-installer
-          path: ${{github.workspace}}/dist/jpsreport-*
+          path: ${{github.workspace}}/dist/${{ env.wheel }}
+          name: ${{ env.wheel }}
+
+    outputs:
+      wheel: ${{ env.wheel }}
+
+  test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ '3.8' ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Download wheel
+        uses: actions/download-artifact@v3
+        with:
+          name: jpsreport-1.0.0-py3-none-any.whl
+
+      - name: Install wheel
+        run: |
+          ls -la
+          wheel=$(ls *.whl)
+          python -m pip install --upgrade pip
+          python -m pip install ${{github.workspace}}/$wheel
+          
+      - name: Test if install was successful
+        run: |
+          jpsreport --version
