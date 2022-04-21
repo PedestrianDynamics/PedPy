@@ -5,7 +5,6 @@ from typing import Dict, List
 import pytest
 from shapely.geometry import LineString, Point
 
-from report.application import Application
 from report.io.ini_parser import (
     parse_geometry_file,
     parse_measurement_lines,
@@ -14,12 +13,13 @@ from report.io.ini_parser import (
     parse_velocity_calculator,
 )
 from report.methods.velocity_calculator import VelocityCalculator
+from report.version import __version__
 
 
 def get_ini_file_as_string(content: str):
     return (
         f'<?xml version="1.0" encoding="UTF-8"?>\n'
-        f'<JPSreport project="JPS-Project" version="{Application.JPS_REPORT_VERSION}">\n'
+        f'<JPSreport project="JPS-Project" version="{__version__}">\n'
         f"{content}\n"
         f"</JPSreport>\n"
     )

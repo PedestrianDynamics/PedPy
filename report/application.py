@@ -1,12 +1,12 @@
 import argparse
 import sys
 import textwrap
-from typing import Final
 
 from report.io.geometry_parser import parse_geometry
 from report.io.ini_parser import parse_ini_file
 from report.io.trajectory_parser import parse_trajectory
 from report.util.loghelper import *
+from report.version import __version__
 
 
 def main():
@@ -14,8 +14,6 @@ def main():
 
 
 class Application:
-    JPS_REPORT_VERSION: Final = "1.0.0"
-
     def __init__(self):
         self.parser = argparse.ArgumentParser(
             formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -62,6 +60,9 @@ class Application:
             default="ini-file.xml",
             help="ini-file containing the configuration of the analysis to run",
             type=argparse.FileType("r", encoding="UTF-8"),
+        )
+        self.parser.add_argument(
+            "--version", action="version", version="%(prog)s {version}".format(version=__version__)
         )
 
     def parse_arguments(self):
