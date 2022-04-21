@@ -38,7 +38,7 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Check format
-        if: matrix.os == 'ubuntu-latest' || matrix.os == 'macos-latest'
+        if: matrix.os == 'ubuntu-latest'
         run: |
           $GITHUB_WORKSPACE/scripts/check-format.sh
 
@@ -46,3 +46,14 @@ jobs:
         run: |
           python -m pytest -vv -s tests
 
+      - name: Build wheel
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          python -m build
+
+      - name: Upload wheel as artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v2
+        with:
+          name: jpsreport-installer
+          path: ${{github.workspace}}/dist/jpsreport-*
