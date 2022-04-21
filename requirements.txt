@@ -7,3 +7,4 @@ pytest==6.2.5
 pytest-mock==3.7.0
 Shapely==1.8.0
 click==8.0.2
+build==0.7.0
