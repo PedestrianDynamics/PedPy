@@ -47,11 +47,13 @@ jobs:
           python3 -m pytest -vv -s tests
 
       - name: Build wheel
+        id: build-wheel
         if: matrix.os == 'ubuntu-latest'
         run: |
           python3 -m build
           cd dist
-          echo "wheel=$(ls *.whl)" >> $GITHUB_ENV          
+          echo "wheel=$(ls *.whl)" >> $GITHUB_ENV
+          echo "::set-output name=wheel::$(ls *.whl)"
 
       - name: Upload wheel as artifact
         if: matrix.os == 'ubuntu-latest'
@@ -61,7 +63,7 @@ jobs:
           name: ${{ env.wheel }}
 
     outputs:
-      wheel: ${{ env.wheel }}
+      wheel: ${{ steps.build-wheel.outputs.wheel }}
 
   test:
     needs: build
@@ -76,14 +78,15 @@ jobs:
       - name: Download wheel
         uses: actions/download-artifact@v3
         with:
-          name: jpsreport-1.0.0.1-py3-none-any.whl
+          name: ${{ needs.build.outputs.wheel }}
 
       - name: Install wheel
+        shell: bash
         run: |
-          wheel=$(ls *.whl)
           python3 -m pip install --upgrade pip
-          python3 -m pip install ${{github.workspace}}/$wheel
+          python3 -m pip install ${{ needs.build.outputs.wheel }}
           
       - name: Test if install was successful
         run: |
           jpsreport --version
+          python3 -c "import report"
