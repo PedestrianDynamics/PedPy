@@ -14,14 +14,9 @@ setuptools.setup(
     name="jpsreport",
     version=main_ns["__version__"],
     author="T. Schroedter",
-    author_email="author@example.com",
     description="JPSreport is a command line module to analyze trajectories of pedestrians.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/schroedtert/jpsreport-python",
-    project_urls={
-        "Bug Tracker": "https://github.com/schroedtert/jpsreport-python/issues",
-    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
