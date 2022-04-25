@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 from shapely.geometry import MultiPoint, Point
 
+from helper.create_trajectories import get_grid_trajectory
 from report.data.trajectory_data import TrajectoryData, TrajectoryType
-from tests.helper.create_trajectories import get_grid_trajectory
 
 
 def get_trajectory_data(
