@@ -136,7 +136,10 @@ def test_parse_trajectory_files_success(
     expected_data = prepare_data_frame(expected_data)
     traj_data_from_file = parse_trajectory(trajectory_txt)
 
-    assert (traj_data_from_file._data.to_numpy() == expected_data.to_numpy()).all()
+    assert (
+        traj_data_from_file._data[["ID", "frame", "X", "Y", "Z"]].to_numpy()
+        == expected_data.to_numpy()
+    ).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
     assert traj_data_from_file.trajectory_type == expected_type
 
@@ -205,7 +208,9 @@ def test_parse_trajectory_file(
     data_from_file, frame_rate_from_file, type_from_file = parse_trajectory_file(trajectory_txt)
     expected_data = prepare_data_frame(expected_data)
 
-    assert (data_from_file.to_numpy() == expected_data.to_numpy()).all()
+    assert (
+        data_from_file[["ID", "frame", "X", "Y", "Z"]].to_numpy() == expected_data.to_numpy()
+    ).all()
     assert frame_rate_from_file == expected_frame_rate
     assert type_from_file == expected_type
 
@@ -261,15 +266,18 @@ def test_parse_trajectory_data_success(
     expected_data = prepare_data_frame(expected_data)
 
     data_from_file = parse_trajectory_data(trajectory_txt)
-    assert list(data_from_file.columns.values) == ["ID", "frame", "X", "Y", "Z"]
-    assert list(data_from_file.dtypes.values) == [
+    print(list(data_from_file.dtypes.values))
+    # assert list(data_from_file.columns.values) == ["ID", "frame", "X", "Y", "Z", "geometry"]
+    assert list(data_from_file.dtypes.values)[:-1] == [
         dtype("int64"),
         dtype("int64"),
         dtype("float64"),
         dtype("float64"),
         dtype("float64"),
     ]
-    assert (data_from_file.to_numpy() == expected_data.to_numpy()).all()
+    assert (
+        data_from_file[["ID", "frame", "X", "Y", "Z"]].to_numpy() == expected_data.to_numpy()
+    ).all()
 
 
 @pytest.mark.parametrize(

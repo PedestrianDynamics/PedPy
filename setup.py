@@ -29,6 +29,7 @@ setuptools.setup(
         "numpy >= 1.21.4",
         "pandas >= 1.3.4",
         "Shapely >= 1.8.1",
+        "pygeos==0.12.0",
     ],
     entry_points={"console_scripts": [" jpsreport=report.application:main"]},
 )
