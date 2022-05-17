@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import List
 
 import pandas as pd
+import pygeos
 from aenum import Enum, auto
 from shapely.geometry import Point
 
@@ -27,7 +28,7 @@ class TrajectoryType(Enum):
     FALLBACK = auto(), "trajectory of unknown type"
 
 
-@dataclass(frozen=True)
+@dataclass
 class TrajectoryData:
     """Trajectory Data
 
@@ -52,6 +53,20 @@ class TrajectoryData:
     frame_rate: float
     trajectory_type: TrajectoryType
     file: pathlib.Path
+
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        frame_rate: float,
+        trajectory_type: TrajectoryType,
+        file: pathlib.Path,
+    ):
+        self.frame_rate = frame_rate
+        self.trajectory_type = trajectory_type
+        self.file = file
+
+        self._data = data
+        self._data["points"] = pygeos.points(self._data["X"], self._data["Y"])
 
     def get_pedestrian_positions(self, frame: int, pedestrian_id: int, window: int) -> List[Point]:
         """Return the pedestrian position within a given frame window.
