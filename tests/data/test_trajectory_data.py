@@ -1,26 +1,8 @@
-import pathlib
-
 import numpy as np
 import pytest
 from shapely.geometry import MultiPoint, Point
 
-from helper.create_trajectories import get_grid_trajectory
-from report.data.trajectory_data import TrajectoryData, TrajectoryType
-
-
-def get_trajectory_data(
-    *, num_pedestrians, number_frames, start_position, movement_direction, ped_distance
-):
-    grid = get_grid_trajectory(
-        shape=[num_pedestrians, 1],
-        start_position=start_position,
-        movement_direction=movement_direction,
-        ped_distance=ped_distance,
-        random_ids=False,
-        number_frames=number_frames,
-    )
-    grid = grid.rename(columns={"FR": "frame"})
-    return TrajectoryData(grid, 10, TrajectoryType.FALLBACK, pathlib.Path("not_relevant"))
+from tests.utils.utils import get_trajectory_data
 
 
 @pytest.mark.parametrize(
@@ -34,7 +16,7 @@ def test_get_pedestrian_positions_all_included(
     num_pedestrian, frame, window_size, movement_direction, start_position, ped_distance
 ):
     trajectory_data = get_trajectory_data(
-        num_pedestrians=num_pedestrian,
+        grid_shape=[num_pedestrian, 1],
         number_frames=frame + 1.5 * window_size,
         movement_direction=movement_direction,
         start_position=start_position,
@@ -66,7 +48,7 @@ def test_get_pedestrian_positions_window_start_to_frame_included(
     num_pedestrian, frame, window_size, movement_direction, start_position, ped_distance
 ):
     trajectory_data = get_trajectory_data(
-        num_pedestrians=num_pedestrian,
+        grid_shape=[num_pedestrian, 1],
         number_frames=frame + 0.5 * window_size,
         movement_direction=movement_direction,
         start_position=start_position,
@@ -98,7 +80,7 @@ def test_get_pedestrian_positions_frame_to_window_end_included(
     num_pedestrian, frame, window_size, movement_direction, start_position, ped_distance
 ):
     trajectory_data = get_trajectory_data(
-        num_pedestrians=num_pedestrian,
+        grid_shape=[num_pedestrian, 1],
         number_frames=frame + window_size,
         movement_direction=movement_direction,
         start_position=start_position,
@@ -132,7 +114,7 @@ def test_get_pedestrian_position_only_frame_included(
     num_frames = window_size - 1
     frame = int(num_frames / 2)
     trajectory_data = get_trajectory_data(
-        num_pedestrians=num_pedestrian,
+        grid_shape=[num_pedestrian, 1],
         number_frames=num_frames,
         movement_direction=movement_direction,
         start_position=start_position,
