@@ -5,6 +5,7 @@ TrajectoryData format.
 import pathlib
 
 import pandas as pd
+import pygeos
 
 from report.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
 
@@ -75,6 +76,9 @@ def parse_trajectory_data(trajectory_file: pathlib.Path) -> pd.DataFrame:
                 f"line may start with a '#' and will be ignored. "
                 f"Please check your trajectory file: {trajectory_file}."
             )
+
+        data["points"] = pygeos.points(data["X"], data["Y"])
+
         return data
     except pd.errors.ParserError:
         raise ValueError(
