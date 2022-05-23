@@ -9,26 +9,21 @@ from tests.utils.utils import get_trajectory_data
 
 
 @pytest.mark.parametrize(
-    "measurement_area, ped_distance, num_ped_col, num_ped_row, frame_min, frame_max",
+    "measurement_area, ped_distance, num_ped_col, num_ped_row",
     [
-        (pygeos.polygons([(-5, -5), (-5, 5), (5, 5), (5, -5)]), 1.0, 5, 5, None, None),
+        (pygeos.polygons([(-5, -5), (-5, 5), (5, 5), (5, -5)]), 1.0, 5, 5),
         (
             pygeos.polygons([(0.1, -0.1), (-0.1, 0.1), (0.1, 0.1), (0.1, -0.1)]),
             0.5,
             5,
             5,
-            None,
-            None,
         ),
     ],
 )
-def test_compute_classic_density(
-    measurement_area, ped_distance, num_ped_col, num_ped_row, frame_min, frame_max
-):
+def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, num_ped_row):
     velocity = 1
     movement_direction = np.array([velocity, 0])
     num_frames = 50
-    num_peds = num_ped_col * num_ped_row
 
     trajectory_data = get_trajectory_data(
         grid_shape=[num_ped_col, num_ped_row],
@@ -39,14 +34,9 @@ def test_compute_classic_density(
         fps=25,
     )
 
-    computed_density = compute_classic_density(
-        trajectory_data, measurement_area, frame_min, frame_max
-    )
+    computed_density = compute_classic_density(trajectory_data, measurement_area)
 
-    frame_min = frame_min if frame_min is not None else 0
-    frame_max = frame_max if frame_max is not None else num_frames - 1
-
-    num_peds_in_area_per_frame = {frame: 0 for frame in range(frame_min, frame_max + 1)}
+    num_peds_in_area_per_frame = {frame: 0 for frame in range(0, num_frames)}
 
     for index, row in trajectory_data.data.iterrows():
         point = Point([row.X, row.Y])
@@ -63,6 +53,6 @@ def test_compute_classic_density(
     )
     expected_density.index.name = "frame"
 
-    assert computed_density.index.min() == frame_min
-    assert computed_density.index.max() == frame_max
+    assert computed_density.index.min() == 0
+    assert computed_density.index.max() == num_frames - 1
     assert expected_density.equals(computed_density)
