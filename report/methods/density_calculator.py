@@ -18,13 +18,13 @@ def compute_classic_density(
         measurement_area (pygeos.Geometry): area for which the density is computed
 
     Returns:
-        DataFrame containing the columns: 'frame' and 'density'
+        DataFrame containing the columns: 'frame' and 'classic density'
     """
     peds_in_area = get_peds_in_area(traj_data.data, measurement_area)
     peds_in_area_per_frame = get_num_peds_per_frame(peds_in_area)
 
     density = peds_in_area_per_frame / pygeos.area(measurement_area)
-    density.columns = ["density"]
+    density.columns = ["classic density"]
     density = density.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
