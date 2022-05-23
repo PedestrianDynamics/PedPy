@@ -137,7 +137,7 @@ def test_parse_trajectory_files_success(
     traj_data_from_file = parse_trajectory(trajectory_txt)
 
     assert (
-        traj_data_from_file._data[["ID", "frame", "X", "Y", "Z"]].to_numpy()
+        traj_data_from_file.data[["ID", "frame", "X", "Y", "Z"]].to_numpy()
         == expected_data.to_numpy()
     ).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
@@ -267,8 +267,7 @@ def test_parse_trajectory_data_success(
 
     data_from_file = parse_trajectory_data(trajectory_txt)
     print(list(data_from_file.dtypes.values))
-    # assert list(data_from_file.columns.values) == ["ID", "frame", "X", "Y", "Z", "geometry"]
-    assert list(data_from_file.dtypes.values)[:-1] == [
+    assert list(data_from_file.dtypes.values) == [
         dtype("int64"),
         dtype("int64"),
         dtype("float64"),
