@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import List
 
-from shapely.geometry import LineString
+import pygeos
 
 
 @dataclass
 class Geometry:
-    walls: List[LineString]
+    walkable_area: pygeos.Geometry
