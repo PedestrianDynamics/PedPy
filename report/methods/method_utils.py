@@ -181,6 +181,22 @@ def _clip_voronoi_polygons(voronoi, diameter):
 
 
 def compute_individual_movement(traj_data: pd.DataFrame, frame_step: int) -> pd.DataFrame:
+    """Compute the individual movement in the time interval frame_step
+
+    The movement is computed for the interval [frame - frame_step: frame + frame_step], if one of
+    the boundaries is not contained in the trajectory frame will be used as boundary. Hence, the
+    intervals become [frame, frame + frame_step], or [frame - frame_step, frame] respectively.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        frame_step (int): how frames back and forwards are used to compute the movement
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame', 'start', 'end', 'start_frame, and
+        'end_frame'. Where 'start'/'end' are the points where the movement start/ends, and
+        'start_frame'/'end_frame' are the corresponding frames.
+
+    """
     df_movement = traj_data.copy(deep=True)
 
     df_movement["start"] = (
@@ -200,6 +216,16 @@ def compute_individual_movement(traj_data: pd.DataFrame, frame_step: int) -> pd.
 
 
 def compute_individual_speed(movement_data, frame_rate):
+    """Compute the instantaneous velocity of each pedestrian.
+
+    Args:
+        movement_data (pd.DataFrame): movement data (see compute_individual_movement)
+        frame_rate (float): frame rate of the trajectory data
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame', and 'speed' with the speed in m/s
+
+    """
     movement_data["distance"] = pygeos.distance(movement_data["start"], movement_data["end"])
     movement_data["speed"] = (
         (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate

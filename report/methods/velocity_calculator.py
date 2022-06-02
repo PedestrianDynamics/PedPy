@@ -1,3 +1,4 @@
+import pandas as pd
 from shapely.geometry import LineString, Point
 
 from report.data.trajectory_data import TrajectoryData
@@ -50,7 +51,16 @@ class VelocityCalculator:
         return speed
 
 
-def compute_individual_velocity(traj_data: TrajectoryData, frame_step: int):
+def compute_individual_velocity(traj_data: TrajectoryData, frame_step: int) -> pd.DataFrame:
+    """Compute the individual velocity for each pedestrian
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        frame_step (int): gives the size of time interval for calculating the velocity
+
+    Returns:
+        DataFrame containing the columns 'ID', 'frame', 'speed'
+    """
     df_movement = compute_individual_movement(traj_data.data, frame_step)
     df_speed = compute_individual_speed(df_movement, traj_data.frame_rate)
 
