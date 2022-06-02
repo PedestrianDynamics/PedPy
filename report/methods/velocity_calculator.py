@@ -1,6 +1,7 @@
 from shapely.geometry import LineString, Point
 
 from report.data.trajectory_data import TrajectoryData
+from report.methods.method_utils import compute_individual_movement, compute_individual_speed
 
 
 class VelocityCalculator:
@@ -47,3 +48,10 @@ class VelocityCalculator:
         speed = length / time_movement
 
         return speed
+
+
+def compute_individual_velocity(traj_data: TrajectoryData, frame_step: int):
+    df_movement = compute_individual_movement(traj_data.data, frame_step)
+    df_speed = compute_individual_speed(df_movement, traj_data.frame_rate)
+
+    return df_speed

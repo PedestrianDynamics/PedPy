@@ -178,3 +178,31 @@ def _clip_voronoi_polygons(voronoi, diameter):
 
         polygons.append(pygeos.polygons(np.concatenate((finite_part, extra_edge))))
     return polygons
+
+
+def compute_individual_movement(traj_data: pd.DataFrame, frame_step: int) -> pd.DataFrame:
+    df_movement = traj_data.copy(deep=True)
+
+    df_movement["start"] = (
+        df_movement.groupby("ID")["points"].shift(frame_step).fillna(df_movement["points"])
+    )
+    df_movement["end"] = (
+        df_movement.groupby("ID")["points"].shift(-frame_step).fillna(df_movement["points"])
+    )
+    df_movement["start_frame"] = (
+        df_movement.groupby("ID")["frame"].shift(frame_step).fillna(df_movement["frame"])
+    )
+    df_movement["end_frame"] = (
+        df_movement.groupby("ID")["frame"].shift(-frame_step).fillna(df_movement["frame"])
+    )
+
+    return df_movement[["ID", "frame", "start", "end", "start_frame", "end_frame"]]
+
+
+def compute_individual_speed(movement_data, frame_rate):
+    movement_data["distance"] = pygeos.distance(movement_data["start"], movement_data["end"])
+    movement_data["speed"] = (
+        (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
+    ) * movement_data["distance"]
+
+    return movement_data[["ID", "frame", "speed"]]
