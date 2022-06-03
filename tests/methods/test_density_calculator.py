@@ -4,8 +4,8 @@ import pygeos
 import pytest
 from shapely.geometry import Point
 
-from report.methods.density_calculator import compute_classic_density
-from tests.utils.utils import get_trajectory_data
+from report.methods.density_calculator import _get_num_peds_per_frame, compute_classic_density
+from tests.utils.utils import get_trajectory, get_trajectory_data
 
 
 @pytest.mark.parametrize(
@@ -34,7 +34,7 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
         fps=25,
     )
 
-    computed_density = compute_classic_density(trajectory_data, measurement_area)
+    computed_density = compute_classic_density(trajectory_data.data, measurement_area)
 
     num_peds_in_area_per_frame = {frame: 0 for frame in range(0, num_frames)}
 
@@ -56,3 +56,26 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
     assert computed_density.index.min() == 0
     assert computed_density.index.max() == num_frames - 1
     assert expected_density.equals(computed_density)
+
+
+@pytest.mark.parametrize(
+    "num_peds_row, num_peds_col, num_frames",
+    (
+        [
+            (4, 5, 100),
+            (1, 1, 200),
+        ]
+    ),
+)
+def test_get_num_peds_per_frame(num_peds_row, num_peds_col, num_frames):
+    traj_data = get_trajectory(
+        shape=[num_peds_col, num_peds_row],
+        number_frames=num_frames,
+        start_position=np.array([0, 0]),
+        movement_direction=np.array([0, 0.1]),
+        ped_distance=1.0,
+    )
+    num_peds = num_peds_col * num_peds_row
+    num_peds_per_frame = _get_num_peds_per_frame(traj_data)
+
+    assert (num_peds_per_frame["num_peds"] == num_peds).all()
