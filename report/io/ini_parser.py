@@ -9,8 +9,7 @@ from xml.etree.ElementTree import Element, parse
 
 from shapely.geometry import LineString, Point
 
-from report.data.configuration import Configuration
-from report.methods.velocity_calculator import VelocityCalculator
+from report.data.configuration import Configuration, ConfigurationVelocity
 
 
 class IniFileParseException(ValueError):
@@ -99,7 +98,7 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
     geometry_file = parse_geometry_file(root)
     measurement_areas = {}
     measurement_lines = parse_measurement_lines(root)
-    velocity_calculator = parse_velocity_calculator(root)
+    velocity_configuration = parse_velocity_configuration(root)
 
     return Configuration(
         output_directory=output_directory,
@@ -107,7 +106,7 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
         geometry_file=geometry_file,
         measurement_areas=measurement_areas,
         measurement_lines=measurement_lines,
-        velocity_calculator=velocity_calculator,
+        velocity_configuration=velocity_configuration,
     )
 
 
@@ -309,7 +308,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
     return measurement_lines
 
 
-def parse_velocity_calculator(xml_root: Element) -> VelocityCalculator:
+def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
     """Parses the configuration for velocity computation from the given xml root
 
     Args:
@@ -337,12 +336,6 @@ def parse_velocity_calculator(xml_root: Element) -> VelocityCalculator:
         ),
     )
 
-    set_movement_direction = parse_xml_attrib(
-        velocity_root,
-        "set_movement_direction",
-        str,
-    )
-
     ignore_backward_movement_str = parse_xml_attrib(
         velocity_root,
         "ignore_backward_movement",
@@ -357,4 +350,4 @@ def parse_velocity_calculator(xml_root: Element) -> VelocityCalculator:
         )
     ignore_backward_movement = ignore_backward_movement_str == "true"
 
-    return VelocityCalculator(frame_step, set_movement_direction, ignore_backward_movement)
+    return ConfigurationVelocity(frame_step, ignore_backward_movement)

@@ -6,7 +6,19 @@ from typing import Dict, List
 
 from shapely.geometry import LineString, Polygon
 
-from report.methods.velocity_calculator import VelocityCalculator
+
+@dataclass(frozen=True)
+class ConfigurationVelocity:
+    """Configuration for velocity computation
+
+    Attributes:
+         frame_step (int): gives the size of time interval for calculating the velocity
+         ignore_backward_movement (bool):  indicates whether you want to ignore the movement opposite to
+                                           the direction from `set_movement_direction`
+    """
+
+    frame_step: int
+    ignore_backward_movement: bool
 
 
 @dataclass(frozen=True)
@@ -21,8 +33,8 @@ class Configuration:
         measurement_areas (Dict[int, Polygon]): measurement areas to be used in the analysis
         measurement_lines (Dict[int, LineString]): measurement line to be used in the analysis
 
-        velocity_calculator (VelocityCalculator): VelocityCalculator used for computing the
-                velocities (see :class:VelocityCalculator for more detail)
+        velocity_configuration (ConfigurationVelocity): Configuration used for computing the
+                velocities (see :class:ConfigurationVelocity for more detail)
     """
 
     output_directory: pathlib.Path
@@ -32,4 +44,4 @@ class Configuration:
     measurement_areas: Dict[int, Polygon]
     measurement_lines: Dict[int, LineString]
 
-    velocity_calculator: VelocityCalculator
+    velocity_configuration: ConfigurationVelocity
