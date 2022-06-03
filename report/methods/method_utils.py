@@ -227,8 +227,8 @@ def compute_individual_speed(movement_data, frame_rate):
 
     """
     movement_data["distance"] = pygeos.distance(movement_data["start"], movement_data["end"])
-    movement_data["speed"] = (
+    movement_data["speed"] = movement_data["distance"] / (
         (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
-    ) * movement_data["distance"]
+    )
 
     return movement_data[["ID", "frame", "speed"]]

@@ -79,7 +79,7 @@ def compute_mean_velocity_per_frame(traj_data: TrajectoryData, frame_step: int) 
         DataFrame containing the columns 'ID', 'frame', 'speed' and
     """
     df_speed = compute_individual_velocity(traj_data, frame_step)
-    df_mean = df_speed.groupby('frame')['speed'].mean()
+    df_mean = df_speed.groupby("frame")["speed"].mean()
     df_mean = df_mean.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
