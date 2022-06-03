@@ -1,6 +1,8 @@
+import pandas as pd
 from shapely.geometry import LineString, Point
 
 from report.data.trajectory_data import TrajectoryData
+from report.methods.method_utils import compute_individual_movement, compute_individual_speed
 
 
 class VelocityCalculator:
@@ -47,3 +49,39 @@ class VelocityCalculator:
         speed = length / time_movement
 
         return speed
+
+
+def compute_individual_velocity(traj_data: TrajectoryData, frame_step: int) -> pd.DataFrame:
+    """Compute the individual velocity for each pedestrian
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        frame_step (int): gives the size of time interval for calculating the velocity
+
+    Returns:
+        DataFrame containing the columns 'ID', 'frame', 'speed'
+    """
+    df_movement = compute_individual_movement(traj_data.data, frame_step)
+    df_speed = compute_individual_speed(df_movement, traj_data.frame_rate)
+
+    return df_speed
+
+
+def compute_mean_velocity_per_frame(traj_data: TrajectoryData, frame_step: int) -> pd.DataFrame:
+    """Compute mean velocity per frame
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        frame_step (int): gives the size of time interval for calculating the velocity
+
+    Returns:
+        DataFrame containing the columns 'frame' and 'speed' and
+        DataFrame containing the columns 'ID', 'frame', 'speed' and
+    """
+    df_speed = compute_individual_velocity(traj_data, frame_step)
+    df_mean = df_speed.groupby("frame")["speed"].mean()
+    df_mean = df_mean.reindex(
+        list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
+        fill_value=0.0,
+    )
+    return df_mean, df_speed
