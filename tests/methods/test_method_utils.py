@@ -2,11 +2,7 @@ import numpy as np
 import pygeos
 import pytest
 
-from report.methods.method_utils import (
-    get_num_peds_per_frame,
-    get_peds_in_area,
-    get_peds_in_frame_range,
-)
+from report.methods.method_utils import get_peds_in_area, get_peds_in_frame_range
 from tests.utils.utils import get_trajectory
 
 
@@ -52,26 +48,3 @@ def test_peds_in_frame_range(min_frame, max_frame):
 
     if min_frame is None and max_frame is None:
         assert filtered_data.equals(traj_data)
-
-
-@pytest.mark.parametrize(
-    "num_peds_row, num_peds_col, num_frames",
-    (
-        [
-            (4, 5, 100),
-            (1, 1, 200),
-        ]
-    ),
-)
-def test_get_num_peds_per_frame(num_peds_row, num_peds_col, num_frames):
-    traj_data = get_trajectory(
-        shape=[num_peds_col, num_peds_row],
-        number_frames=num_frames,
-        start_position=np.array([0, 0]),
-        movement_direction=np.array([0, 0.1]),
-        ped_distance=1.0,
-    )
-    num_peds = num_peds_col * num_peds_row
-    num_peds_per_frame = get_num_peds_per_frame(traj_data)
-
-    assert (num_peds_per_frame["num_peds"] == num_peds).all()
