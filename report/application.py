@@ -2,7 +2,6 @@ import argparse
 import sys
 import textwrap
 import time
-from typing import Final
 
 from report.io.geometry_parser import parse_geometry
 from report.io.ini_parser import parse_ini_file
@@ -94,7 +93,7 @@ class Application:
                 trajectory_data,
                 configuration.measurement_lines,
                 geometry,
-                configuration.velocity_calculator,
+                configuration.velocity_configuration,
             )
 
             write_results(

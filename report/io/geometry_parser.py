@@ -8,6 +8,8 @@ import pathlib
 import xml.etree.ElementTree as ET
 from typing import List
 
+import pygeos
+import shapely.ops
 from shapely.geometry import LineString, Point
 
 from report.data.geometry import Geometry
@@ -26,7 +28,8 @@ def parse_geometry(geometry_file: pathlib.Path) -> Geometry:
     root = ET.parse(geometry_file).getroot()
     walls = parse_geometry_walls(root)
 
-    return Geometry(walls)
+    poly = shapely.ops.polygonize_full(walls)
+    return Geometry(pygeos.from_shapely(poly[0]))
 
 
 def parse_geometry_walls(xml_root: ET.Element) -> List[LineString]:

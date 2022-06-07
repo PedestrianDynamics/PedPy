@@ -8,9 +8,10 @@ from typing import Callable, Dict, List, Tuple, Union
 from xml.etree.ElementTree import Element, parse
 
 import numpy as np
+import pygeos
 from shapely.geometry import LineString, Point
 
-from report.data.configuration import Configuration, ConfigurationVelocity
+from report.data.configuration import Configuration, ConfigurationMethodCCM, ConfigurationVelocity
 
 
 class IniFileParseException(ValueError):
@@ -109,7 +110,7 @@ def parse_ini_file(ini_file: pathlib.Path) -> Configuration:
         geometry_file=geometry_file,
         measurement_areas=measurement_areas,
         measurement_lines=measurement_lines,
-        velocity_configuration=velocity_calculator,
+        velocity_configuration=velocity_configuration,
         config_method_ccm=method_ccm_configuration,
     )
 
@@ -308,7 +309,7 @@ def parse_measurement_lines(xml_root: Element) -> Dict[int, LineString]:
                     "Please check your ini-file."
                 )
 
-            measurement_lines[line_id] = line
+            measurement_lines[line_id] = pygeos.from_shapely(line)
     return measurement_lines
 
 

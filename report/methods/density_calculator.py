@@ -92,7 +92,7 @@ def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def _compute_individual_voronoi_polygons(
-    traj_data: pd.DataFrame, geometry: Geometry
+    traj_data: pd.DataFrame, geometry: Geometry, use_blind_points: bool = True
 ) -> pd.DataFrame:
     """Compute the individual voronoi cells for each person and frame
 
@@ -108,15 +108,31 @@ def _compute_individual_voronoi_polygons(
     bounds = pygeos.bounds(geometry.walkable_area)
     clipping_diameter = 2 * max(abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1]))
 
+    blind_points = np.array([])
+
+    if use_blind_points:
+        blind_points = np.array(
+            [
+                [100 * bounds[0], 100 * bounds[1]],
+                [100 * bounds[2], 100 * bounds[1]],
+                [100 * bounds[0], 100 * bounds[3]],
+                [100 * bounds[2], 100 * bounds[3]],
+            ]
+        )
+
     for _, peds_in_frame in traj_data.groupby(traj_data.frame):
-        points = peds_in_frame.sort_values(by="ID")[["X", "Y"]]
+        points = peds_in_frame.sort_values(by="ID")[["X", "Y"]].to_numpy()
+        if use_blind_points:
+            points = np.concatenate([points, blind_points])
         if len(points) < 4:
             continue
-        vor = Voronoi(points.to_numpy())
-        vornoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
+        vor = Voronoi(points)
+        voronoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
+        if use_blind_points:
+            voronoi_polygons = voronoi_polygons[:-4]
         voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame")]
         voronoi_in_frame["individual voronoi"] = pygeos.intersection(
-            vornoi_polygons, geometry.walkable_area
+            voronoi_polygons, geometry.walkable_area
         )
 
         dfs.append(voronoi_in_frame)

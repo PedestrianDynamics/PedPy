@@ -33,7 +33,6 @@ def write_method_ccm_results(
             mean_output_file.write(
                 (f"#framerate:	{frame_rate}\n" "\n" "#Frame	Density 	Velocity\n")
             )
-
             result.df_mean.to_csv(
                 mean_output_file,
                 sep="\t",
