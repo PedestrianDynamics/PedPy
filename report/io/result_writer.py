@@ -37,29 +37,28 @@ def write_method_ccm_results(
                 mean_output_file,
                 sep="\t",
                 header=False,
+                index_label=False,
+                index=True,
+                float_format="%.5f",
+            )
+
+        with open(
+            method_ccm_output_directory / f"ICCM_{traj_file_name}_id_{line_id}.dat", "w"
+        ) as individual_output_file:
+            individual_output_file.write(
+                (
+                    f"#framerate:	{frame_rate}\n"
+                    "\n"
+                    "#Frame\tPersID\tx/m\ty/m\tz/m\tIndividual density(m^(-2))\tIndividual velocity\t"
+                    "Voronoi Polygon\tIntersection Polygon\n"
+                )
+            )
+            result.df_individual.to_csv(
+                individual_output_file,
+                sep="\t",
+                header=False,
                 mode="a",
                 index_label=False,
                 index=False,
                 float_format="%.5f",
             )
-
-        # with open(
-        #     method_ccm_output_directory / f"ICCM_{traj_file_name}_id_{line_id}.dat", "w"
-        # ) as individual_output_file:
-        #     individual_output_file.write(
-        #         (
-        #             f"#framerate:	{frame_rate}\n"
-        #             "\n"
-        #             "#Frame\tPersID\tx/m\ty/m\tz/m\tIndividual density(m^(-2))\tIndividual velocity\t"
-        #             "Proportion\tVoronoi Polygon\tIntersection Polygon\n"
-        #         )
-        #     )
-        #     result.df_individual.to_csv(
-        #         individual_output_file,
-        #         sep="\t",
-        #         header=False,
-        #         mode="a",
-        #         index_label=False,
-        #         index=False,
-        #         float_format="%.5f",
-        #     )

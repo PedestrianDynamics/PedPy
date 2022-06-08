@@ -170,3 +170,88 @@ def _compute_individual_speed(
     )
 
     return movement_data[["ID", "frame", "speed"]]
+
+
+def compute_individual_speed_main_movement(
+    traj_data: pd.DataFrame,
+    measurement_line: pygeos.Geometry,
+    frame_rate: float,
+    frame_step: int,
+):
+    """Compute the individual velocity in direction of the main movement direction for each
+    pedestrian.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        measurement_line (pygeos.Geometry): for which the speed is computed
+        frame_rate (float): frame rate of the trajectory
+        frame_step (int): gives the size of time interval for calculating the velocity
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame', and 'speed' with the speed in m/s
+    """
+    movement_direction, normal_vector = _compute_main_movement_direction(
+        traj_data, measurement_line
+    )
+    movement_data = _compute_individual_movement(traj_data, frame_step)
+
+    movement_data = pd.merge(movement_data, movement_direction, on="ID")
+
+    movement_data["distance"] = movement_data["main movement direction"] * (
+        np.dot(
+            pygeos.get_coordinates(movement_data["end"])
+            - pygeos.get_coordinates(movement_data["start"]),
+            normal_vector,
+        )
+        / np.linalg.norm(normal_vector)
+    )
+
+    movement_data["speed"] = movement_data["distance"] / (
+        (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
+    )
+
+    return movement_data[["ID", "frame", "speed"]]
+
+
+def _compute_main_movement_direction(traj_data: pd.DataFrame, measurement_line: pygeos.Geometry):
+    """Detect the main movement direction of each pedestrian
+
+    The main movement direction is always orthogonal to the given measurement line. For detection
+    a rectangle with width of 1m is created with the measurement line in the middle. Then the first
+    and last point inside the area is detected, from which the main movement direction can be
+    computed.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        measurement_line (pygeos.Geometry): line at which the main movement direction is computed
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'main movement direction' (which is either +1 or -1)
+        normalized normal vector of the measurement line
+    """
+    line_width = 0.5
+    buffered = pygeos.buffer(measurement_line, line_width, cap_style="flat")
+
+    inside = traj_data[pygeos.within(traj_data["points"], buffered)]
+
+    first_frame = inside.loc[inside.groupby("ID")["frame"].idxmin()][["ID", "points"]]
+    last_frame = inside.loc[inside.groupby("ID")["frame"].idxmax()][["ID", "points"]]
+
+    movement_direction = pd.merge(first_frame, last_frame, on="ID")
+
+    # Compute normal vector of measurement_line
+    coordinates = pygeos.get_coordinates(measurement_line)
+    normal_vector = np.array(
+        [-1 * (coordinates[1, 1] - coordinates[0, 1]), coordinates[1, 0] - coordinates[0, 0]]
+    )
+    normal_vector /= np.linalg.norm(normal_vector)
+
+    movement_direction["main movement direction"] = np.sign(
+        np.dot(
+            pygeos.get_coordinates(movement_direction["points_y"])
+            - pygeos.get_coordinates(movement_direction["points_x"]),
+            normal_vector,
+        )
+    )
+
+    return movement_direction[["ID", "main movement direction"]], normal_vector

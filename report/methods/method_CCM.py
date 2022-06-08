@@ -14,7 +14,7 @@ from report.methods.density_calculator import (
     _compute_individual_voronoi_polygons,
     _compute_intersecting_polygons,
 )
-from report.methods.velocity_calculator import compute_individual_velocity
+from report.methods.velocity_calculator import compute_individual_speed_main_movement
 
 
 @dataclass(frozen=True)
@@ -58,27 +58,21 @@ def _run_method_ccm(
     geometry: Geometry,
     velocity_configuration: ConfigurationVelocity,
 ):
-    # TODO get_main_movement_direction for each pedestrian and switch (second step)
+    individual_speed = compute_individual_speed_main_movement(
+        trajectory.data, measurement_line, trajectory.frame_rate, velocity_configuration.frame_step
+    )
+    individual_voronoi = _compute_individual_voronoi_polygons(trajectory.data, geometry, True)
 
     line_width = configuration.line_width
     if line_width > 0:
-        measurement_line = pygeos.union(
-            pygeos.buffer(measurement_line, line_width, single_sided=True),
-            pygeos.buffer(measurement_line, -line_width, single_sided=True),
-        )
+        measurement_line = pygeos.buffer(measurement_line, line_width, cap_style="flat")
 
-    individual_speed = compute_individual_velocity(
-        trajectory.data,
-        trajectory.frame_rate,
-        velocity_configuration.frame_step,
-        velocity_configuration.movement_direction,
-    )
-
-    individual_voronoi = _compute_individual_voronoi_polygons(trajectory.data, geometry, True)
     intersection_voronoi = _compute_intersecting_polygons(individual_voronoi, measurement_line)
 
-    combined = individual_voronoi.merge(intersection_voronoi, on=["ID", "frame"]).merge(
-        individual_speed, on=["ID", "frame"]
+    combined = (
+        individual_voronoi.merge(intersection_voronoi, on=["ID", "frame"])
+        .merge(individual_speed, on=["ID", "frame"])
+        .merge(trajectory.data, on=["ID", "frame"])
     )
 
     if pygeos.area(measurement_line) > 0:
@@ -102,9 +96,24 @@ def _run_method_ccm(
         else pygeos.area(measurement_line)
     )
 
-    mean_rho_v = combined.groupby("frame")[["density", "speed"]].agg(
+    mean_rho_v = combined.groupby("frame")[["frame", "density", "speed"]].agg(
         {"density": "sum", "speed": "mean"}
     )
     mean_rho_v["density"] = mean_rho_v["density"] / scaling_factor
 
-    return mean_rho_v, combined
+    return (
+        mean_rho_v,
+        combined[
+            [
+                "ID",
+                "frame",
+                "X",
+                "Y",
+                "Z",
+                "density",
+                "speed",
+                "individual voronoi",
+                "intersection voronoi",
+            ]
+        ],
+    )
