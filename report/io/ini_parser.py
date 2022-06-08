@@ -343,42 +343,32 @@ def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
 
     movement_direction_str = parse_xml_attrib(
         velocity_root,
-        "set_movement_direction",
+        "movement_direction",
         str,
+        mandatory=False,
     )
 
-    try:
-        movement_direction_str = movement_direction_str.replace("(", "").replace(")", "")
-        movement_direction = np.fromstring(movement_direction_str, dtype=float, sep=",")
-    except:
-        raise IniFileParseException(
-            f'The "set_movement_direction"-attribute needs to be a 2 element vector, but is '
-            f'"{velocity_root.attrib["set_movement_direction"]}". Please check your "velocity"-tag in '
-            f"your ini-file."
-        )
+    if movement_direction_str == "None":
+        movement_direction = None
+    else:
+        try:
+            movement_direction_str = movement_direction_str.replace("(", "").replace(")", "")
+            movement_direction = np.fromstring(movement_direction_str, dtype=float, sep=",")
+        except:
+            raise IniFileParseException(
+                f'The "movement_direction"-attribute needs to be a 2 element vector, but is '
+                f'"{velocity_root.attrib["movement_direction"]}". Please check your "velocity"-tag in '
+                f"your ini-file."
+            )
 
-    if movement_direction.size != 2:
-        raise IniFileValueException(
-            f"The velocity set_movement_direction needs to be a 2 element sized vector with "
-            f'non-zero length, e.g., "(1, 2)", but is "{movement_direction_str}". '
-            f"Please check your velocity tag in your ini-file."
-        )
+        if movement_direction.size != 2:
+            raise IniFileValueException(
+                f"The velocity movement_direction needs to be a 2 element sized vector with "
+                f'non-zero length, e.g., "(1, 2)", but is "{movement_direction_str}". '
+                f"Please check your velocity tag in your ini-file."
+            )
 
-    ignore_backward_movement_str = parse_xml_attrib(
-        velocity_root,
-        "ignore_backward_movement",
-        str,
-    ).lower()
-
-    if "true" not in ignore_backward_movement_str and "false" not in ignore_backward_movement_str:
-        raise IniFileValueException(
-            f"The velocity ignore_backward_movement needs to be a boolean value ('True', 'False'),"
-            f" but is {ignore_backward_movement_str}. "
-            f"Please check your velocity tag in your ini-file."
-        )
-    ignore_backward_movement = ignore_backward_movement_str == "true"
-
-    return ConfigurationVelocity(frame_step, movement_direction, ignore_backward_movement)
+    return ConfigurationVelocity(frame_step, movement_direction)
 
 
 def parse_method_ccm_configuration(xml_root: Element) -> Dict[int, ConfigurationMethodCCM]:

@@ -14,13 +14,12 @@ class ConfigurationVelocity:
 
     Attributes:
          frame_step (int): gives the size of time interval for calculating the velocity
-         ignore_backward_movement (bool):  indicates whether you want to ignore the movement opposite to
-                                           the direction from `set_movement_direction`
+         movement_direction (np.ndarray): main movement direction. The real movement is projected
+            on this to get the velocity along this vector.
     """
 
     frame_step: int
     movement_direction: np.ndarray
-    ignore_backward_movement: bool
 
 
 @dataclass(frozen=True)

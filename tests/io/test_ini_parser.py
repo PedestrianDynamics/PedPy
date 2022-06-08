@@ -2,6 +2,7 @@ import pathlib
 import xml.etree.ElementTree
 from typing import Dict, List
 
+import numpy as np
 import pytest
 from shapely.geometry import LineString, Point
 
@@ -563,67 +564,73 @@ def test_parse_measurement_lines_wrong_input(content, expected_message):
 
 
 @pytest.mark.parametrize(
-    "frame_step, ignore_backward_movement",
+    "frame_step, movement_direction",
     [
-        (10, "True"),
-        (50, "true"),
-        (1, "False"),
-        (6, "FALSE"),
+        (10, "(0, 1)"),
+        (50, "(1, 1)"),
+        (1, "None"),
+        (6, "(-1, -10)"),
     ],
 )
-def test_parse_velocity_parser_success(frame_step, ignore_backward_movement):
+def test_parse_velocity_configuration_success(frame_step, movement_direction):
     velocity_configuration = (
-        f'<velocity frame_step="{frame_step}" '
-        f'ignore_backward_movement="{ignore_backward_movement}"/>'
+        f'<velocity frame_step="{frame_step}" ' f'movement_direction="{movement_direction}"/>'
     )
 
     xml_content = get_ini_file_as_string(velocity_configuration)
     root = xml.etree.ElementTree.fromstring(xml_content)
 
-    ignore_backward_movement_bool = ignore_backward_movement.lower() == "true"
-    expected_velocity_configuration = ConfigurationVelocity(
-        frame_step, ignore_backward_movement_bool
-    )
+    movement_direction_array = None
+    if movement_direction != "None":
+        movement_direction_str = movement_direction.replace("(", "").replace(")", "")
+        movement_direction_array = np.fromstring(movement_direction_str, dtype=float, sep=",")
+
+    expected_velocity_configuration = ConfigurationVelocity(frame_step, movement_direction_array)
 
     velocity_configuration_from_file = parse_velocity_configuration(root)
     assert velocity_configuration_from_file.frame_step == expected_velocity_configuration.frame_step
-    assert (
-        velocity_configuration_from_file.ignore_backward_movement
-        == expected_velocity_configuration.ignore_backward_movement
-    )
+    if movement_direction_array is not None:
+        assert (
+            velocity_configuration_from_file.movement_direction
+            == expected_velocity_configuration.movement_direction
+        ).all()
+    else:
+        assert (
+            velocity_configuration_from_file.movement_direction
+            == expected_velocity_configuration.movement_direction
+        )
 
 
 @pytest.mark.parametrize(
-    "frame_step, ignore_backward_movement, expected_message",
+    "frame_step, movement_direction, expected_message",
     [
-        (0, "True", "The velocity frame_step needs to be a positive integer value, "),
-        (-50, "True", "The velocity frame_step needs to be a positive integer value, "),
+        (0, "None", "The velocity frame_step needs to be a positive integer value, "),
+        (-50, "(1, 0)", "The velocity frame_step needs to be a positive integer value, "),
         (
             3.0,
-            "foo",
+            "(0, 5)",
             'The "frame_step"-attribute needs to be a int value,',
         ),
         (
             "not a integer point value",
-            "foo",
+            "(1, 0)",
             'The "frame_step"-attribute needs to be a int value,',
         ),
         (
             1,
             "",
-            "The velocity ignore_backward_movement needs to be a boolean value ('True', 'False'),",
+            "The velocity movement_direction needs to be a 2 element sized vector with",
         ),
         (
             6,
             "foo",
-            "The velocity ignore_backward_movement needs to be a boolean value ('True', 'False'),",
+            "The velocity movement_direction needs to be a 2 element sized vector with",
         ),
     ],
 )
-def test_parse_velocity_parser_wrong_data(frame_step, ignore_backward_movement, expected_message):
+def test_parse_velocity_parser_wrong_data(frame_step, movement_direction, expected_message):
     velocity_calculator = (
-        f'<velocity frame_step="{frame_step}" '
-        f'ignore_backward_movement="{ignore_backward_movement}"/>'
+        f'<velocity frame_step="{frame_step}" ' f'movement_direction="{movement_direction}"/>'
     )
 
     xml_content = get_ini_file_as_string(velocity_calculator)
@@ -640,20 +647,16 @@ def test_parse_velocity_parser_wrong_data(frame_step, ignore_backward_movement, 
         (" ", "There could no velocity tag be found in your ini-file,"),
         ("<velocity/>", 'Could not find "frame_step"-attribute in "velocity"-tag,'),
         (
-            '<velocity set_movement_direction="None"/>',
+            '<velocity movement_direction="None"/>',
             'Could not find "frame_step"-attribute in "velocity"-tag,',
         ),
         (
-            '<velocity ignore_backward_movement="false"/>',
+            '<velocity movement_direction="None"/>',
             'Could not find "frame_step"-attribute in "velocity"-tag,',
         ),
         (
-            '<velocity ignore_backward_movement="false" set_movement_direction="None"/>',
+            '<velocity ignore_backward_movement="false" movement_direction="None"/>',
             'Could not find "frame_step"-attribute in "velocity"-tag,',
-        ),
-        (
-            '<velocity frame_step="10" set_movement_direction="None"/>',
-            'Could not find "ignore_backward_movement"-attribute in "velocity"-tag,',
         ),
     ],
 )
