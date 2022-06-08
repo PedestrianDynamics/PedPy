@@ -615,7 +615,7 @@ def test_parse_velocity_configuration_success(frame_step, movement_direction):
         ),
         (
             1,
-            "",
+            "(1, 0, 0)",
             "The velocity movement_direction needs to be a 2 element sized vector with",
         ),
         (

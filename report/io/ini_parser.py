@@ -348,7 +348,7 @@ def parse_velocity_configuration(xml_root: Element) -> ConfigurationVelocity:
         mandatory=False,
     )
 
-    if movement_direction_str == "None":
+    if not movement_direction_str or movement_direction_str == "None":
         movement_direction = None
     else:
         try:

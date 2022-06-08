@@ -39,6 +39,8 @@ def run_method_ccm(
     velocity_configuration: ConfigurationVelocity,
 ) -> Dict[int, ResultMethodCCM]:
     results = {}
+    individual_voronoi = _compute_individual_voronoi_polygons(trajectory.data, geometry, True)
+
     for measurement_line_id, configuration in configurations.items():
         result = _run_method_ccm(
             configuration,
@@ -46,6 +48,7 @@ def run_method_ccm(
             measurement_lines[measurement_line_id],
             geometry,
             velocity_configuration,
+            individual_voronoi,
         )
         results[measurement_line_id] = ResultMethodCCM(result[0], result[1])
     return results
@@ -57,11 +60,12 @@ def _run_method_ccm(
     measurement_line: pygeos.Geometry,
     geometry: Geometry,
     velocity_configuration: ConfigurationVelocity,
+    individual_voronoi: pd.DataFrame,
 ):
     individual_speed = compute_individual_speed_main_movement(
         trajectory.data, measurement_line, trajectory.frame_rate, velocity_configuration.frame_step
     )
-    individual_voronoi = _compute_individual_voronoi_polygons(trajectory.data, geometry, True)
+    # individual_voronoi = _compute_individual_voronoi_polygons(trajectory.data, geometry, True)
 
     line_width = configuration.line_width
     if line_width > 0:
