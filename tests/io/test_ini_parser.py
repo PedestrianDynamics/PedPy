@@ -3,8 +3,8 @@ import xml.etree.ElementTree
 from typing import Dict, List
 
 import numpy as np
+import pygeos
 import pytest
-from shapely.geometry import LineString, Point
 
 from report.data.configuration import ConfigurationVelocity
 from report.io.ini_parser import (
@@ -220,51 +220,48 @@ def test_parse_trajectory_files_wrong_input(tmp_path, content, expected_message)
     "lines, split_in_tags",
     [
         ({}, False),
-        ({0: LineString([Point(0, 1), Point(2, 3)])}, False),
+        ({0: pygeos.linestrings([[[0, 1], [2, 3]]])[0]}, False),
         (
             {
-                0: LineString([Point(0, 1), Point(2, 3)]),
-                1: LineString([Point(0, -1), Point(-2, -3)]),
+                0: pygeos.linestrings([[[0, 1], [2, 3]]])[0],
+                1: pygeos.linestrings([[[0, -1], [-2, -3]]])[0],
             },
             False,
         ),
         (
             {
-                0: LineString([Point(0, 1), Point(2, 3)]),
-                1: LineString([Point(0, -1), Point(-2, -3)]),
+                0: pygeos.linestrings([[[0, 1], [2, 3]]]),
+                1: pygeos.linestrings([[[0, -1], [-2, -3]]]),
             },
             True,
         ),
         (
             {
-                0: LineString([Point(0, 1), Point(2, 3)]),
-                1: LineString([Point(0, -1), Point(-2, -3)]),
-                -1: LineString([Point(0, -1), Point(-2, -3)]),
+                0: pygeos.linestrings([[[0, 1], [2, 3]]]),
+                1: pygeos.linestrings([[[0, -1], [-2, -3]]]),
+                -1: pygeos.linestrings([[[0, -1], [-2, -3]]]),
             },
             True,
         ),
     ],
 )
-def test_parse_measurement_lines_success(lines: Dict[int, LineString], split_in_tags: bool):
+def test_parse_measurement_lines_success(lines: Dict[int, pygeos.Geometry], split_in_tags: bool):
     measurement_lines_xml = ""
 
     if not split_in_tags:
         measurement_lines_xml += "<measurement_areas>\n"
     for line_id, line in lines.items():
+        coords = pygeos.get_coordinates(line)
         if split_in_tags:
             measurement_lines_xml += "<measurement_areas>\n"
 
         measurement_lines_xml += f'\t<area_L id="{line_id}">\n'
         if line_id < 0:
-            measurement_lines_xml += f'\t\t<end x="{line.xy[0][1]}" y="{line.coords.xy[1][1]}"/>\n'
-            measurement_lines_xml += (
-                f'\t\t<start x="{line.xy[0][0]}" y="{line.coords.xy[1][0]}"/>\n'
-            )
+            measurement_lines_xml += f'\t\t<end x="{coords[1][0]}" y="{coords[1][1]}"/>\n'
+            measurement_lines_xml += f'\t\t<start x="{coords[0][0]}" y="{coords[0][1]}"/>\n'
         else:
-            measurement_lines_xml += (
-                f'\t\t<start x="{line.xy[0][0]}" y="{line.coords.xy[1][0]}"/>\n'
-            )
-            measurement_lines_xml += f'\t\t<end x="{line.xy[0][1]}" y="{line.coords.xy[1][1]}"/>\n'
+            measurement_lines_xml += f'\t\t<start x="{coords[0][0]}" y="{coords[0][1]}"/>\n'
+            measurement_lines_xml += f'\t\t<end x="{coords[1][0]}" y="{coords[1][1]}"/>\n'
 
         measurement_lines_xml += "\t</area_L>\n"
         if split_in_tags:
