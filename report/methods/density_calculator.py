@@ -40,7 +40,10 @@ def compute_classic_density(
 
 
 def compute_voronoi_density(
-    traj_data: pd.DataFrame, measurement_area: pygeos.Geometry, geometry: Geometry
+    traj_data: pd.DataFrame,
+    measurement_area: pygeos.Geometry,
+    geometry: Geometry,
+    cuf_off: float = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi density of the trajectory per frame inside the given measurement area
 
@@ -48,12 +51,13 @@ def compute_voronoi_density(
         traj_data (pd.DataFrame): trajectory data to analyze
         measurement_area (pygeos.Geometry): area for which the density is computed
         geometry (Geometry): bounding area, where pedestrian are supposed to be
+        cuf_off (float): radius of max extended voronoi cell (in m)
 
     Returns:
           DataFrame containing the columns: 'frame' and 'voronoi density',
           DataFrame containing the columns: 'ID', 'frame', 'individual voronoi'
     """
-    df_individual = _compute_individual_voronoi_polygons(traj_data, geometry)
+    df_individual = _compute_individual_voronoi_polygons(traj_data, geometry, cuf_off)
     df_intersecting = _compute_intersecting_polygons(df_individual, measurement_area)
 
     df_combined = pd.merge(df_individual, df_intersecting, on=["ID", "frame"], how="outer")
@@ -92,13 +96,14 @@ def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def _compute_individual_voronoi_polygons(
-    traj_data: pd.DataFrame, geometry: Geometry
+    traj_data: pd.DataFrame, geometry: Geometry, cut_off: float = None
 ) -> pd.DataFrame:
     """Compute the individual voronoi cells for each person and frame
 
     Args:
         traj_data (pd.DataFrame): trajectory data
         geometry (Geometry): bounding area, where pedestrian are supposed to be
+        cuf_off (float): radius of max extended voronoi cell (in m)
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and 'individual voronoi'.
@@ -118,6 +123,11 @@ def _compute_individual_voronoi_polygons(
         voronoi_in_frame["individual voronoi"] = pygeos.intersection(
             vornoi_polygons, geometry.walkable_area
         )
+        if cut_off is not None:
+            voronoi_in_frame["individual voronoi"] = pygeos.intersection(
+                voronoi_in_frame["individual voronoi"],
+                pygeos.buffer(peds_in_frame["points"], cut_off),
+            )
 
         dfs.append(voronoi_in_frame)
 
