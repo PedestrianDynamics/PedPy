@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 main_ns = {}
-ver_path = convert_path("report/version.py")
+ver_path = convert_path("analyzer/version.py")
 with open(ver_path) as ver_file:
     exec(ver_file.read(), main_ns)
 
