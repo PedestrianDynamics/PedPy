@@ -10,7 +10,7 @@ from typing import List
 
 from shapely.geometry import LineString, Point
 
-from report.data.geometry import Geometry
+from analyzer.data.geometry import Geometry
 
 
 def parse_geometry(geometry_file: pathlib.Path) -> Geometry:

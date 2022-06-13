@@ -6,15 +6,15 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 main_ns = {}
-ver_path = convert_path("report/version.py")
+ver_path = convert_path("analyzer/version.py")
 with open(ver_path) as ver_file:
     exec(ver_file.read(), main_ns)
 
 setuptools.setup(
-    name="jpsreport",
+    name="pita",
     version=main_ns["__version__"],
     author="T. Schroedter",
-    description="JPSreport is a command line module to analyze trajectories of pedestrians.",
+    description="PiTA is a pythone library to analyze trajectories of pedestrians.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
@@ -32,5 +32,5 @@ setuptools.setup(
         "pygeos==0.12.0",
         "scipy==1.8.0",
     ],
-    entry_points={"console_scripts": [" jpsreport=report.application:main"]},
+    entry_points={"console_scripts": ["pita=analyzer.application:main"]},
 )

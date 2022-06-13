@@ -4,7 +4,7 @@ import pygeos
 import pytest
 from shapely.geometry import Point
 
-from report.methods.density_calculator import _get_num_peds_per_frame, compute_classic_density
+from analyzer.methods.density_calculator import _get_num_peds_per_frame, compute_classic_density
 from tests.utils.utils import get_trajectory, get_trajectory_data
 
 

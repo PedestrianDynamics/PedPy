@@ -6,7 +6,7 @@ import pathlib
 
 import pandas as pd
 
-from report.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
+from analyzer.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
 
 
 def parse_trajectory(trajectory_file: pathlib.Path) -> TrajectoryData:

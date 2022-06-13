@@ -2,7 +2,7 @@ import numpy as np
 import pygeos
 import pytest
 
-from report.methods.method_utils import get_peds_in_area, get_peds_in_frame_range
+from analyzer.methods.method_utils import get_peds_in_area, get_peds_in_frame_range
 from tests.utils.utils import get_trajectory
 
 

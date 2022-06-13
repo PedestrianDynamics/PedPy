@@ -5,15 +5,15 @@ from typing import Dict, List
 import pytest
 from shapely.geometry import LineString, Point
 
-from report.data.configuration import ConfigurationVelocity
-from report.io.ini_parser import (
+from analyzer.data.configuration import ConfigurationVelocity
+from analyzer.io.ini_parser import (
     parse_geometry_file,
     parse_measurement_lines,
     parse_output_directory,
     parse_trajectory_files,
     parse_velocity_configuration,
 )
-from report.version import __version__
+from analyzer.version import __version__
 
 
 def get_ini_file_as_string(content: str):
