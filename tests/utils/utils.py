@@ -2,8 +2,8 @@ import pathlib
 
 import pygeos
 
+from analyzer.data.trajectory_data import TrajectoryData, TrajectoryType
 from helper.create_trajectories import get_grid_trajectory
-from report.data.trajectory_data import TrajectoryData, TrajectoryType
 
 
 def get_trajectory(*, shape, number_frames, start_position, movement_direction, ped_distance):

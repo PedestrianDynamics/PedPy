@@ -2,11 +2,11 @@ import argparse
 import sys
 import textwrap
 
-from report.io.geometry_parser import parse_geometry
-from report.io.ini_parser import parse_ini_file
-from report.io.trajectory_parser import parse_trajectory
-from report.util.loghelper import *
-from report.version import __version__
+from analyzer.io.geometry_parser import parse_geometry
+from analyzer.io.ini_parser import parse_ini_file
+from analyzer.io.trajectory_parser import parse_trajectory
+from analyzer.util.loghelper import *
+from analyzer.version import __version__
 
 
 def main():

@@ -7,8 +7,8 @@ import pandas as pd
 import pygeos
 from scipy.spatial import Voronoi
 
-from report.data.geometry import Geometry
-from report.methods.method_utils import get_peds_in_area
+from analyzer.data.geometry import Geometry
+from analyzer.methods.method_utils import get_peds_in_area
 
 
 def compute_classic_density(

@@ -1,4 +1,4 @@
-name: jpsreport-ci
+name: pita-ci
 
 on:
   schedule:
@@ -88,5 +88,5 @@ jobs:
           
       - name: Test if install was successful
         run: |
-          jpsreport --version
-          python3 -c "import report"
+          pita --version
+          python3 -c "import analyzer"

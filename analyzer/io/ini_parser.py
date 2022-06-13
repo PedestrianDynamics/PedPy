@@ -9,7 +9,7 @@ from xml.etree.ElementTree import Element, parse
 
 from shapely.geometry import LineString, Point
 
-from report.data.configuration import Configuration, ConfigurationVelocity
+from analyzer.data.configuration import Configuration, ConfigurationVelocity
 
 
 class IniFileParseException(ValueError):

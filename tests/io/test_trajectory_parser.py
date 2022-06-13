@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from numpy import dtype
 
-from report.io.trajectory_parser import *
+from analyzer.io.trajectory_parser import *
 
 
 def prepare_data_frame(data_frame: pd.DataFrame):

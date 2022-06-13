@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pygeos
 
-from report.methods.method_utils import _compute_individual_movement
+from analyzer.methods.method_utils import _compute_individual_movement
 
 
 def compute_individual_velocity(
