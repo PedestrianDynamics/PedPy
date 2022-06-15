@@ -22,12 +22,15 @@ class ResultMethodCCM:
     """Result of method CCM
     Attributes:
         df_mean (pd.DataFrame): data frame containing: frame, density and mean_velocity
+        df_direction (pd.DataFrame): data frame containing: frame, main movement direction, speed,
+        density
         df_individual (pd.DataFrame): data frame containing when intersection not empty:
-            frame, id, x, y, z, individual density, individual velocity, proportion of measurement line,
+            frame, id, x, y, z, individual density, individual velocity, main movement direction,
             voronoi polygon, intersection with measurement line
     """
 
     df_mean: pd.DataFrame
+    df_direction: pd.DataFrame
     df_individual: pd.DataFrame
 
 
@@ -46,11 +49,10 @@ def run_method_ccm(
             configuration,
             trajectory,
             measurement_lines[measurement_line_id],
-            geometry,
             velocity_configuration,
             individual_voronoi,
         )
-        results[measurement_line_id] = ResultMethodCCM(result[0], result[1])
+        results[measurement_line_id] = ResultMethodCCM(result[0], result[1], result[2])
     return results
 
 
@@ -58,14 +60,12 @@ def _run_method_ccm(
     configuration: ConfigurationMethodCCM,
     trajectory: TrajectoryData,
     measurement_line: pygeos.Geometry,
-    geometry: Geometry,
     velocity_configuration: ConfigurationVelocity,
     individual_voronoi: pd.DataFrame,
 ):
     individual_speed = compute_individual_speed_main_movement(
         trajectory.data, measurement_line, trajectory.frame_rate, velocity_configuration.frame_step
     )
-    # individual_voronoi = _compute_individual_voronoi_polygons(trajectory.data, geometry, True)
 
     line_width = configuration.line_width
     if line_width > 0:
@@ -100,13 +100,20 @@ def _run_method_ccm(
         else pygeos.area(measurement_line)
     )
 
-    mean_rho_v = combined.groupby("frame")[["frame", "density", "speed"]].agg(
+    speed_per_direction = combined.groupby(["frame", 'main movement direction'])['speed'].mean()
+    density_per_direction = combined.groupby(["frame", 'main movement direction'])['density'].sum()
+
+    v_rho_direction = pd.merge(speed_per_direction, density_per_direction,
+                               on=['frame', 'main movement direction'])
+    v_rho_direction.reset_index(inplace=True)
+    v_rho_direction["density"] = v_rho_direction["density"] / scaling_factor
+
+    mean_rho_v = v_rho_direction.groupby("frame")[["frame", "density", "speed"]].agg(
         {"density": "sum", "speed": "mean"}
     )
-    mean_rho_v["density"] = mean_rho_v["density"] / scaling_factor
-
     return (
         mean_rho_v,
+        v_rho_direction,
         combined[
             [
                 "ID",
@@ -116,6 +123,7 @@ def _run_method_ccm(
                 "Z",
                 "density",
                 "speed",
+                "main movement direction",
                 "individual voronoi",
                 "intersection voronoi",
             ]

@@ -41,6 +41,24 @@ def write_method_ccm_results(
                 index=True,
                 float_format="%.5f",
             )
+        with open(
+            method_ccm_output_directory / f"rho_v_{traj_file_name}_direction_id_{line_id}.dat", "w"
+        ) as mean_output_file:
+            mean_output_file.write(
+                (
+                    f"#framerate:	{frame_rate}\n"
+                    "\n" 
+                    "#Frame\tMainMovementDirection\tDensity\tVelocity\n"
+                )
+            )
+            result.df_direction.to_csv(
+                mean_output_file,
+                sep="\t",
+                header=False,
+                index_label=False,
+                index=False,
+                float_format="%.5f",
+            )
 
         with open(
             method_ccm_output_directory / f"ICCM_{traj_file_name}_id_{line_id}.dat", "w"

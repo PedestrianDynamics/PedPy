@@ -9,7 +9,7 @@ import pandas as pd
 from report.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
 
 
-def parse_trajectory(trajectory_file: pathlib.Path) -> TrajectoryData:
+def parse_trajectory(trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None) -> TrajectoryData:
     """Parses the given file for the relevant data.
 
     Args:
@@ -19,12 +19,12 @@ def parse_trajectory(trajectory_file: pathlib.Path) -> TrajectoryData:
         TrajectoryData containing the data from all trajectory files.
     """
 
-    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(trajectory_file)
+    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(trajectory_file, frame_rate, default_unit)
 
     return TrajectoryData(traj_dataframe, traj_frame_rate, traj_type, trajectory_file)
 
 
-def parse_trajectory_file(trajectory_file: pathlib.Path) -> (pd.DataFrame, float, TrajectoryType):
+def parse_trajectory_file(trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None) -> (pd.DataFrame, float, TrajectoryType):
     """Parse the trajectory file for the relevant data: trajectory data, frame rate, and type of
     trajectory.
 
@@ -34,14 +34,14 @@ def parse_trajectory_file(trajectory_file: pathlib.Path) -> (pd.DataFrame, float
     Returns:
         Tuple containing: trajectory data, frame rate, and type of trajectory.
     """
-    traj_dataframe = parse_trajectory_data(trajectory_file)
-    traj_frame_rate = parse_frame_rate(trajectory_file)
+    traj_dataframe = parse_trajectory_data(trajectory_file, default_unit)
+    traj_frame_rate = parse_frame_rate(trajectory_file, frame_rate)
     traj_type = parse_trajectory_type(trajectory_file)
 
     return traj_dataframe, traj_frame_rate, traj_type
 
 
-def parse_trajectory_data(trajectory_file: pathlib.Path) -> pd.DataFrame:
+def parse_trajectory_data(trajectory_file: pathlib.Path, default_unit: TrajectoryUnit = None) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
@@ -50,7 +50,7 @@ def parse_trajectory_data(trajectory_file: pathlib.Path) -> pd.DataFrame:
     Returns:
         The trajectory data as data frame, the coordinates are converted to meter (m).
     """
-    unit = parse_unit_of_coordinates(trajectory_file)
+    unit = parse_unit_of_coordinates(trajectory_file, default_unit)
 
     try:
         data = pd.read_csv(
@@ -86,7 +86,7 @@ def parse_trajectory_data(trajectory_file: pathlib.Path) -> pd.DataFrame:
         )
 
 
-def parse_frame_rate(trajectory_file: pathlib.Path) -> float:
+def parse_frame_rate(trajectory_file: pathlib.Path, default_frame_rate: float = None) -> float:
     """Parse the trajectory file for the used framerate.
 
     Searches for the first line starting with '#' and containing the word 'framerate' and at
@@ -98,7 +98,7 @@ def parse_frame_rate(trajectory_file: pathlib.Path) -> float:
     Returns:
         the frame rate used in the trajectory file
     """
-    frame_rate = None
+    frame_rate = default_frame_rate
     with open(trajectory_file, "r") as file_content:
         for line in file_content:
             if not line.startswith("#"):
@@ -147,7 +147,7 @@ def parse_trajectory_type(trajectory_file: pathlib.Path) -> TrajectoryType:
     return trajectory_type
 
 
-def parse_unit_of_coordinates(trajectory_file: pathlib.Path) -> TrajectoryUnit:
+def parse_unit_of_coordinates(trajectory_file: pathlib.Path, default_unit: TrajectoryUnit = None) -> TrajectoryUnit:
     """Parse the trajectory file for the used units of the coordinates.
 
     Note:
@@ -159,7 +159,7 @@ def parse_unit_of_coordinates(trajectory_file: pathlib.Path) -> TrajectoryUnit:
     Returns:
         The unit used in the trajectory file for the coordinates. If no explicit unit is given, METER is returned.
     """
-    unit = TrajectoryUnit.METER
+    unit = TrajectoryUnit.METER if default_unit is None else default_unit
     with open(trajectory_file, "r") as file_content:
         for line in file_content:
             if not line.startswith("#"):
