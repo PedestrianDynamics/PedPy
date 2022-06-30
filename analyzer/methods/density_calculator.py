@@ -127,10 +127,13 @@ def _compute_individual_voronoi_polygons(
         vor = Voronoi(points.to_numpy())
         vornoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
         voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame", "points")]
+
+        # Compute the intersecting area with the walkable area
         voronoi_in_frame["individual voronoi"] = pygeos.intersection(
             vornoi_polygons, geometry.walkable_area
         )
 
+        # Only consider the parts of a multipolygon which contain the position of the pedestrian
         voronoi_in_frame.loc[
             pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, "individual voronoi"
         ] = voronoi_in_frame.loc[
@@ -151,7 +154,7 @@ def _compute_individual_voronoi_polygons(
 
         dfs.append(voronoi_in_frame)
 
-    return pd.concat(dfs)[["ID", 'frame', 'individual voronoi']]
+    return pd.concat(dfs)[["ID", "frame", "individual voronoi"]]
 
 
 def _compute_intersecting_polygons(
