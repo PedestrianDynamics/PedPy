@@ -1,3 +1,4 @@
+import csv
 import pathlib
 from typing import Dict
 
@@ -30,53 +31,42 @@ def write_method_ccm_results(
         with open(
             method_ccm_output_directory / f"rho_v_{traj_file_name}_id_{line_id}.dat", "w"
         ) as mean_output_file:
-            mean_output_file.write(
-                (f"#framerate:	{frame_rate}\n" "\n" "#Frame	Density 	Velocity\n")
-            )
+            mean_output_file.write(f"#framerate:	{frame_rate}\n\n")
             result.df_mean.to_csv(
                 mean_output_file,
+                mode="a",
                 sep="\t",
-                header=False,
+                header=True,
                 index_label=False,
-                index=True,
-                float_format="%.5f",
+                index=False,
+                quoting=csv.QUOTE_NONNUMERIC,
             )
+
         with open(
             method_ccm_output_directory / f"rho_v_{traj_file_name}_direction_id_{line_id}.dat", "w"
         ) as mean_output_file:
-            mean_output_file.write(
-                (
-                    f"#framerate:	{frame_rate}\n"
-                    "\n"
-                    "#Frame\tMainMovementDirection\tDensity\tVelocity\n"
-                )
-            )
+            mean_output_file.write(f"#framerate:	{frame_rate}\n\n")
             result.df_direction.to_csv(
                 mean_output_file,
+                mode="a",
                 sep="\t",
-                header=False,
+                header=True,
                 index_label=False,
                 index=False,
-                float_format="%.5f",
+                quoting=csv.QUOTE_NONNUMERIC,
             )
 
         with open(
             method_ccm_output_directory / f"ICCM_{traj_file_name}_id_{line_id}.dat", "w"
         ) as individual_output_file:
-            individual_output_file.write(
-                (
-                    f"#framerate:	{frame_rate}\n"
-                    "\n"
-                    "#Frame\tPersID\tx/m\ty/m\tz/m\tIndividual density(m^(-2))\tIndividual velocity\t"
-                    "Voronoi Polygon\tIntersection Polygon\n"
-                )
-            )
+            individual_output_file.write(f"#framerate:	{frame_rate}\n\n")
+
             result.df_individual.to_csv(
                 individual_output_file,
-                sep="\t",
-                header=False,
                 mode="a",
+                sep="\t",
+                header=True,
                 index_label=False,
                 index=False,
-                float_format="%.5f",
+                quoting=csv.QUOTE_NONNUMERIC,
             )
