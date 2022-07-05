@@ -210,7 +210,7 @@ def compute_individual_speed_main_movement(
         (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
     )
 
-    return movement_data[["ID", "frame", "speed", 'main movement direction']]
+    return movement_data[["ID", "frame", "speed", "main movement direction"]]
 
 
 def _compute_main_movement_direction(traj_data: pd.DataFrame, measurement_line: pygeos.Geometry):

@@ -9,7 +9,9 @@ import pandas as pd
 from report.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
 
 
-def parse_trajectory(trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None) -> TrajectoryData:
+def parse_trajectory(
+    trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None
+) -> TrajectoryData:
     """Parses the given file for the relevant data.
 
     Args:
@@ -19,12 +21,16 @@ def parse_trajectory(trajectory_file: pathlib.Path, frame_rate: float = None, de
         TrajectoryData containing the data from all trajectory files.
     """
 
-    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(trajectory_file, frame_rate, default_unit)
+    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(
+        trajectory_file, frame_rate, default_unit
+    )
 
     return TrajectoryData(traj_dataframe, traj_frame_rate, traj_type, trajectory_file)
 
 
-def parse_trajectory_file(trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None) -> (pd.DataFrame, float, TrajectoryType):
+def parse_trajectory_file(
+    trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None
+) -> (pd.DataFrame, float, TrajectoryType):
     """Parse the trajectory file for the relevant data: trajectory data, frame rate, and type of
     trajectory.
 
@@ -41,7 +47,9 @@ def parse_trajectory_file(trajectory_file: pathlib.Path, frame_rate: float = Non
     return traj_dataframe, traj_frame_rate, traj_type
 
 
-def parse_trajectory_data(trajectory_file: pathlib.Path, default_unit: TrajectoryUnit = None) -> pd.DataFrame:
+def parse_trajectory_data(
+    trajectory_file: pathlib.Path, default_unit: TrajectoryUnit = None
+) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
@@ -147,7 +155,9 @@ def parse_trajectory_type(trajectory_file: pathlib.Path) -> TrajectoryType:
     return trajectory_type
 
 
-def parse_unit_of_coordinates(trajectory_file: pathlib.Path, default_unit: TrajectoryUnit = None) -> TrajectoryUnit:
+def parse_unit_of_coordinates(
+    trajectory_file: pathlib.Path, default_unit: TrajectoryUnit = None
+) -> TrajectoryUnit:
     """Parse the trajectory file for the used units of the coordinates.
 
     Note:

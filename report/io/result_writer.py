@@ -47,7 +47,7 @@ def write_method_ccm_results(
             mean_output_file.write(
                 (
                     f"#framerate:	{frame_rate}\n"
-                    "\n" 
+                    "\n"
                     "#Frame\tMainMovementDirection\tDensity\tVelocity\n"
                 )
             )

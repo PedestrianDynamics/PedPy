@@ -100,17 +100,22 @@ def _run_method_ccm(
         else pygeos.area(measurement_line)
     )
 
-    speed_per_direction = combined.groupby(["frame", 'main movement direction'])['speed'].mean()
-    density_per_direction = combined.groupby(["frame", 'main movement direction'])['density'].sum()
+    speed_per_direction = combined.groupby(["frame", "main movement direction"])["speed"].mean()
+    density_per_direction = combined.groupby(["frame", "main movement direction"])["density"].sum()
 
-    v_rho_direction = pd.merge(speed_per_direction, density_per_direction,
-                               on=['frame', 'main movement direction'])
+    v_rho_direction = pd.merge(
+        speed_per_direction, density_per_direction, on=["frame", "main movement direction"]
+    )
     v_rho_direction.reset_index(inplace=True)
     v_rho_direction["density"] = v_rho_direction["density"] / scaling_factor
+    v_rho_direction["flow"] = v_rho_direction["density"] * v_rho_direction["speed"]
+    v_rho_direction["vJ"] = v_rho_direction["speed"] * v_rho_direction["flow"]
 
-    mean_rho_v = v_rho_direction.groupby("frame")[["frame", "density", "speed"]].agg(
-        {"density": "sum", "speed": "mean"}
+    mean_rho_v = v_rho_direction.groupby("frame").agg(
+        density=("density", "sum"), speed=("vJ", "sum"), flow=("flow", "sum")
     )
+    mean_rho_v["speed"] /= mean_rho_v["flow"]
+
     return (
         mean_rho_v,
         v_rho_direction,
