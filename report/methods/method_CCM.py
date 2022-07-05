@@ -111,7 +111,7 @@ def _run_method_ccm(
     v_rho_direction["flow"] = v_rho_direction["density"] * v_rho_direction["speed"]
     v_rho_direction["vJ"] = v_rho_direction["speed"] * v_rho_direction["flow"]
 
-    mean_rho_v = v_rho_direction.groupby("frame").agg(
+    mean_rho_v = v_rho_direction.groupby("frame", as_index=False).agg(
         density=("density", "sum"), speed=("vJ", "sum"), flow=("flow", "sum")
     )
     mean_rho_v["speed"] /= mean_rho_v["flow"]
