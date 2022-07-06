@@ -62,6 +62,16 @@ jobs:
           path: ${{github.workspace}}/dist/${{ env.wheel }}
           name: ${{ env.wheel }}
 
+      - name: Upload usage notebook and demo files as artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: demos_usage
+          path: |
+            usage.ipynb
+            demos/
+            
+
     outputs:
       wheel: ${{ steps.build-wheel.outputs.wheel }}
 
@@ -75,6 +85,11 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Download usage notebook and demo files as artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: demos_usage
+
       - name: Download wheel
         uses: actions/download-artifact@v3
         with:
@@ -83,10 +98,14 @@ jobs:
       - name: Install wheel
         shell: bash
         run: |
-          python3 -m pip install --upgrade pip
+          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib descartes
           python3 -m pip install ${{ needs.build.outputs.wheel }}
           
       - name: Test if install was successful
         run: |
           pita --version
           python3 -c "import analyzer"
+
+      - name: Run usage notebook
+        run: |
+          jupyter nbconvert --to notebook --execute usage.ipynb
