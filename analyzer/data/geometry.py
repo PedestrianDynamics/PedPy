@@ -22,10 +22,12 @@ class Geometry:
     obstacles: List[pygeos.Geometry]
 
     def __init__(self, walkable_area: pygeos.Geometry, obstacles: pygeos.Geometry = None):
+        self.obstacles = []
+        self.walkable_area = walkable_area
+
         if obstacles is None:
             obstacles = []
 
-        self.walkable_area = walkable_area
         for obstacle in obstacles:
             self.add_obstacle(obstacle)
 
