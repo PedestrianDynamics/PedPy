@@ -47,6 +47,40 @@ def get_peds_in_frame_range(
     return traj_data
 
 
+def compute_frame_range_in_area(traj: pd.DataFrame, measurement_area: pygeos.Geometry):
+    """Compute the frame ranges for each pedestrian inside the measurement area.
+
+    Note:
+        It is assumed that the pedestrians cross the measurement area ones, hence the frame range
+        inside the area is the first frame they enter the area to the last frame they are inside.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        measurement_area (pygeos.Geometry): rectangular area
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end', 'start' (first position
+        inside the area), 'end' (last position inside the area)
+    """
+    assert pygeos.equals(
+        measurement_area, pygeos.oriented_envelope(measurement_area)
+    ), f"The measurement area needs to be a rectangle, please check your input {measurement_area}"
+
+    inside = traj[pygeos.within(traj.points, measurement_area)]
+    frames_in_area = (
+        inside.groupby("ID")
+        .agg(
+            ID=("ID", "first"),
+            frame_start=("frame", "first"),
+            frame_end=("frame", "last"),
+            start=("points", "first"),
+            end=("points", "last"),
+        )
+        .reset_index(drop=True)
+    )
+    return frames_in_area
+
+
 def _compute_individual_movement(
     traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
 ) -> pd.DataFrame:
@@ -73,13 +107,15 @@ def _compute_individual_movement(
         df_movement["start"] = (
             df_movement.groupby("ID")["points"].shift(frame_step).fillna(df_movement["points"])
         )
+        df_movement["start_frame"] = (
+            df_movement.groupby("ID")["frame"].shift(frame_step).fillna(df_movement["frame"])
+        )
     else:
         df_movement["start"] = df_movement["points"]
+        df_movement["start_frame"] = df_movement["frame"]
+
     df_movement["end"] = (
         df_movement.groupby("ID")["points"].shift(-frame_step).fillna(df_movement["points"])
-    )
-    df_movement["start_frame"] = (
-        df_movement.groupby("ID")["frame"].shift(frame_step).fillna(df_movement["frame"])
     )
     df_movement["end_frame"] = (
         df_movement.groupby("ID")["frame"].shift(-frame_step).fillna(df_movement["frame"])

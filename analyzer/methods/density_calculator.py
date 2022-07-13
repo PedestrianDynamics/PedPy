@@ -82,6 +82,31 @@ def compute_voronoi_density(
     return df_voronoi_density, df_individual
 
 
+def compute_passing_density(density_per_frame: pd.DataFrame, frames: pd.DataFrame):
+    """Compute the individual density of the pedestrian who pass the area.
+
+    Args:
+        density_per_frame (pd.DataFrame): density per frame, DataFrame containing the columns:
+                'frame' (as index) and 'density')
+        frames (pd.DataFrame): information for each pedestrian in the area, need to contain
+                the following columns: 'ID','frame_start', 'frame_end'
+
+    Returns:
+
+    """
+    density = pd.DataFrame(frames["ID"], columns=["ID", "density"])
+
+    densities = []
+    for _, row in frames.iterrows():
+        densities.append(
+            density_per_frame[
+                density_per_frame.index.isin(range(int(row.frame_start), int(row.frame_end)))
+            ].mean()
+        )
+    density["density"] = np.array(densities)
+    return density
+
+
 def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
     """Returns the number of pedestrians in each frame as DataFrame
 
@@ -92,10 +117,9 @@ def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
         DataFrame containing the columns: 'frame' (as index) and 'num_peds'.
 
     """
-    num_peds_per_frame = traj_data.groupby("frame").size()
-    num_peds_per_frame = num_peds_per_frame.rename("num_peds")
+    num_peds_per_frame = traj_data.groupby("frame").agg(num_peds=("ID", "count"))
 
-    return num_peds_per_frame.to_frame()
+    return num_peds_per_frame
 
 
 def _compute_individual_voronoi_polygons(
