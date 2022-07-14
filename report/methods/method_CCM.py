@@ -74,9 +74,9 @@ def _run_method_ccm(
     intersection_voronoi = _compute_intersecting_polygons(individual_voronoi, measurement_line)
 
     combined = (
-        individual_voronoi.merge(intersection_voronoi, on=["ID", "frame"])
-        .merge(individual_speed, on=["ID", "frame"])
-        .merge(trajectory.data, on=["ID", "frame"])
+        trajectory.data.merge(individual_voronoi, on=["ID", "frame"], how="left")
+        .merge(individual_speed, on=["ID", "frame"], how="left")
+        .merge(intersection_voronoi, on=["ID", "frame"], how="left")
     )
 
     if pygeos.area(measurement_line) > 0:
@@ -100,7 +100,11 @@ def _run_method_ccm(
         else pygeos.area(measurement_line)
     )
 
-    speed_per_direction = combined.groupby(["frame", "main movement direction"])["speed"].mean()
+    speed_per_direction = (
+        combined[~pygeos.is_empty(combined["intersection voronoi"])]
+        .groupby(["frame", "main movement direction"])["speed"]
+        .mean()
+    )
     density_per_direction = combined.groupby(["frame", "main movement direction"])["density"].sum()
 
     v_rho_direction = pd.merge(

@@ -8,6 +8,7 @@ from report.io.ini_parser import parse_ini_file
 from report.io.result_writer import write_results
 from report.io.trajectory_parser import parse_trajectory
 from report.methods.method_CCM import run_method_ccm
+from report.methods.method_utils import get_peds_in_area
 from report.util.loghelper import *
 from report.version import __version__
 
@@ -87,6 +88,7 @@ class Application:
             log_info(f"Start Analysis for the file: {trajectory_file.name}")
 
             trajectory_data = parse_trajectory(trajectory_file)
+            trajectory_data.data = get_peds_in_area(trajectory_data.data, geometry.walkable_area)
 
             results_method_ccm = run_method_ccm(
                 configuration.config_method_ccm,

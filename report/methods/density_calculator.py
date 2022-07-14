@@ -106,38 +106,63 @@ def _compute_individual_voronoi_polygons(
     dfs = []
 
     bounds = pygeos.bounds(geometry.walkable_area)
-    clipping_diameter = 2 * max(abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1]))
-
-    blind_points = np.array([])
+    x_diff = abs(bounds[2] - bounds[0])
+    y_diff = abs(bounds[3] - bounds[1])
+    clipping_diameter = 2 * max(x_diff, y_diff)
 
     if use_blind_points:
         blind_points = np.array(
             [
-                [100 * bounds[0], 100 * bounds[1]],
-                [100 * bounds[2], 100 * bounds[1]],
-                [100 * bounds[0], 100 * bounds[3]],
-                [100 * bounds[2], 100 * bounds[3]],
+                [100 * (bounds[0] - x_diff), 100 * (bounds[1] - y_diff)],
+                [100 * (bounds[2] + x_diff), 100 * (bounds[1] - y_diff)],
+                [100 * (bounds[0] - x_diff), 100 * (bounds[3] + y_diff)],
+                [100 * (bounds[2] + x_diff), 100 * (bounds[3] + y_diff)],
             ]
         )
 
     for _, peds_in_frame in traj_data.groupby(traj_data.frame):
-        points = peds_in_frame.sort_values(by="ID")[["X", "Y"]].to_numpy()
+        points = peds_in_frame.sort_values(by="ID")[["X", "Y"]]
+
         if use_blind_points:
             points = np.concatenate([points, blind_points])
+
         if len(points) < 4:
             continue
+
         vor = Voronoi(points)
         voronoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
         if use_blind_points:
             voronoi_polygons = voronoi_polygons[:-4]
-        voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame")]
+
+        voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame", "points")]
+
+        # Compute the intersecting area with the walkable area
         voronoi_in_frame["individual voronoi"] = pygeos.intersection(
             voronoi_polygons, geometry.walkable_area
         )
 
+        # Only consider the parts of a multipolygon which contain the position of the pedestrian
+        voronoi_in_frame.loc[
+            pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, "individual voronoi"
+        ] = voronoi_in_frame.loc[
+            pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, :
+        ].apply(
+            lambda x: pygeos.get_parts(x["individual voronoi"])[
+                pygeos.within(x["points"], pygeos.get_parts(x["individual voronoi"]))
+            ][0],
+            axis=1,
+        )
+
+        # if cut_off is not None:
+        #     quad_edges = int(num_edges / 4)
+        #     voronoi_in_frame["individual voronoi"] = pygeos.intersection(
+        #         voronoi_in_frame["individual voronoi"],
+        #         pygeos.buffer(peds_in_frame["points"], cut_off, quadsegs=quad_edges),
+        #     )
+
         dfs.append(voronoi_in_frame)
 
-    return pd.concat(dfs)
+    return pd.concat(dfs)[["ID", "frame", "individual voronoi"]]
 
 
 def _compute_intersecting_polygons(
