@@ -100,10 +100,17 @@ def _run_method_ccm(
         else pygeos.area(measurement_line)
     )
 
+    scaling_factor_speed = (
+        (pygeos.area(combined["intersection voronoi"]) / pygeos.area(measurement_line))
+        if pygeos.area(measurement_line) > 0
+        else pygeos.length(combined["intersection voronoi"]) / pygeos.length(measurement_line)
+    )
+
+    combined["speed"] = combined["speed"] * scaling_factor_speed
     speed_per_direction = (
         combined[~pygeos.is_empty(combined["intersection voronoi"])]
         .groupby(["frame", "main movement direction"])["speed"]
-        .mean()
+        .sum()
     )
     density_per_direction = combined.groupby(["frame", "main movement direction"])["density"].sum()
 

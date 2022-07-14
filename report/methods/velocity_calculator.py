@@ -195,7 +195,7 @@ def compute_individual_speed_main_movement(
     )
     movement_data = _compute_individual_movement(traj_data, frame_step)
 
-    movement_data = pd.merge(movement_data, movement_direction, on="ID")
+    movement_data = pd.merge(movement_data, movement_direction, on=["ID", "frame"])
 
     movement_data["distance"] = movement_data["main movement direction"] * (
         np.dot(
@@ -226,32 +226,21 @@ def _compute_main_movement_direction(traj_data: pd.DataFrame, measurement_line: 
         measurement_line (pygeos.Geometry): line at which the main movement direction is computed
 
     Returns:
-        DataFrame containing the columns: 'ID', 'main movement direction' (which is either +1 or -1)
+        DataFrame containing the columns: 'ID', 'frame', 'main movement direction' (which is either +1 or -1)
         normalized normal vector of the measurement line
     """
-    line_width = 0.5
-    buffered = pygeos.buffer(measurement_line, line_width, cap_style="flat")
-
-    inside = traj_data[pygeos.within(traj_data["points"], buffered)]
-
-    first_frame = inside.loc[inside.groupby("ID")["frame"].idxmin()][["ID", "points"]]
-    last_frame = inside.loc[inside.groupby("ID")["frame"].idxmax()][["ID", "points"]]
-
-    movement_direction = pd.merge(first_frame, last_frame, on="ID")
-
-    # Compute normal vector of measurement_line
+    movement = _compute_individual_movement(traj_data, 10)
     coordinates = pygeos.get_coordinates(measurement_line)
     normal_vector = np.array(
         [-1 * (coordinates[1, 1] - coordinates[0, 1]), coordinates[1, 0] - coordinates[0, 0]]
     )
     normal_vector /= np.linalg.norm(normal_vector)
 
-    movement_direction["main movement direction"] = np.sign(
+    movement["main movement direction"] = np.sign(
         np.dot(
-            pygeos.get_coordinates(movement_direction["points_y"])
-            - pygeos.get_coordinates(movement_direction["points_x"]),
+            pygeos.get_coordinates(movement["end"]) - pygeos.get_coordinates(movement["start"]),
             normal_vector,
         )
     )
 
-    return movement_direction, normal_vector
+    return movement[["ID", "frame", "main movement direction"]], normal_vector
