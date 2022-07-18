@@ -87,12 +87,12 @@ def compute_passing_density(density_per_frame: pd.DataFrame, frames: pd.DataFram
 
     Args:
         density_per_frame (pd.DataFrame): density per frame, DataFrame containing the columns:
-                'frame' (as index) and 'density')
+                'frame' (as index) and 'density'
         frames (pd.DataFrame): information for each pedestrian in the area, need to contain
                 the following columns: 'ID','frame_start', 'frame_end'
 
     Returns:
-
+          DataFrame containing the columns: 'ID' and 'density' in 1/m
     """
     density = pd.DataFrame(frames["ID"], columns=["ID", "density"])
 
