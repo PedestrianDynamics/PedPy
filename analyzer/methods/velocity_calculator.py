@@ -137,4 +137,23 @@ def _compute_individual_speed(
         (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
     )
 
-    return movement_data[["ID", "frame", "speed"]]
+    return movement_data
+
+
+def compute_passing_speed(frames_in_area: pd.DataFrame, frame_rate: float) -> pd.DataFrame:
+    """Compute the individual speed of the pedestrian who pass the area.
+
+    Args:
+        frames_in_area (pd.DataFrame): information for each pedestrian in the area, need to contain
+                the following columns: 'ID', 'start', 'end', 'frame_start', 'frame_end'
+        frame_rate (float): frame rate of the trajectory
+
+    Returns:
+        DataFrame containing the columns: 'ID", 'speed' which is the speed in m/s
+
+    """
+    speed = pd.DataFrame(frames_in_area["ID"], columns=["ID", "speed"])
+    speed["speed"] = pygeos.distance(frames_in_area.start, frames_in_area.end) / (
+        np.abs(frames_in_area.frame_end - frames_in_area.frame_start) / frame_rate
+    )
+    return speed
