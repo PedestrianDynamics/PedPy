@@ -9,33 +9,38 @@ import pandas as pd
 from analyzer.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
 
 
-def parse_trajectory(trajectory_file: pathlib.Path) -> TrajectoryData:
+def parse_trajectory(trajectory_file: pathlib.Path, frame_rate: float = None) -> TrajectoryData:
     """Parses the given file for the relevant data.
 
     Args:
         trajectory_file (pathlib.Path): files containing the trajectory data
+        frame_rate (float): frame rate of the file, None if frame rate from file is used
+                (default: None)
 
     Returns:
         TrajectoryData containing the data from all trajectory files.
     """
 
-    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(trajectory_file)
+    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(trajectory_file, frame_rate)
 
     return TrajectoryData(traj_dataframe, traj_frame_rate, traj_type, trajectory_file)
 
 
-def parse_trajectory_file(trajectory_file: pathlib.Path) -> (pd.DataFrame, float, TrajectoryType):
+def parse_trajectory_file(
+    trajectory_file: pathlib.Path, frame_rate: float = None
+) -> (pd.DataFrame, float, TrajectoryType):
     """Parse the trajectory file for the relevant data: trajectory data, frame rate, and type of
     trajectory.
 
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
+        frame_rate (float): frame rate of the file, None if frame rate from file is used
 
     Returns:
         Tuple containing: trajectory data, frame rate, and type of trajectory.
     """
     traj_dataframe = parse_trajectory_data(trajectory_file)
-    traj_frame_rate = parse_frame_rate(trajectory_file)
+    traj_frame_rate = parse_frame_rate(trajectory_file, frame_rate)
     traj_type = parse_trajectory_type(trajectory_file)
 
     return traj_dataframe, traj_frame_rate, traj_type
@@ -86,7 +91,7 @@ def parse_trajectory_data(trajectory_file: pathlib.Path) -> pd.DataFrame:
         )
 
 
-def parse_frame_rate(trajectory_file: pathlib.Path) -> float:
+def parse_frame_rate(trajectory_file: pathlib.Path, default_frame_rate: float = None) -> float:
     """Parse the trajectory file for the used framerate.
 
     Searches for the first line starting with '#' and containing the word 'framerate' and at
@@ -94,11 +99,12 @@ def parse_frame_rate(trajectory_file: pathlib.Path) -> float:
 
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
+        default_frame_rate (float): frame rate of the file, None if frame rate from file is used
 
     Returns:
         the frame rate used in the trajectory file
     """
-    frame_rate = None
+    parsed_frame_rate = None
     with open(trajectory_file, "r") as file_content:
         for line in file_content:
             if not line.startswith("#"):
@@ -107,24 +113,37 @@ def parse_frame_rate(trajectory_file: pathlib.Path) -> float:
             if "framerate" in line:
                 for substring in line.split():
                     try:
-                        frame_rate = float(substring)
+                        parsed_frame_rate = float(substring)
                         break
                     except:
                         continue
 
-    if frame_rate is None:
+    if parsed_frame_rate is None and default_frame_rate is not None:
+        if default_frame_rate <= 0:
+            raise ValueError(f"Default frame needs to be positive but is {default_frame_rate}")
+
+        return default_frame_rate
+
+    if parsed_frame_rate is None and default_frame_rate is None:
         raise ValueError(
             f"Frame rate is needed, but none could be found in the trajectory files. "
             f"Please check your trajectory file: {trajectory_file}."
         )
 
-    if frame_rate <= 0:
-        raise ValueError(
-            f"Frame rate needs to be a positive value, but is {frame_rate}. "
-            f"Please check your trajectory file: {trajectory_file}."
-        )
+    if parsed_frame_rate is not None and default_frame_rate is None:
+        if parsed_frame_rate <= 0:
+            raise ValueError(
+                f"Frame rate needs to be a positive value, but is {parsed_frame_rate}. "
+                f"Please check your trajectory file: {trajectory_file}."
+            )
+    if parsed_frame_rate is not None and default_frame_rate is not None:
+        if parsed_frame_rate != default_frame_rate:
+            raise ValueError(
+                "The given default frame rate seems to differ from the frame rate given in the "
+                f"trajectory file: {default_frame_rate} != {parsed_frame_rate}"
+            )
 
-    return frame_rate
+    return parsed_frame_rate
 
 
 def parse_trajectory_type(trajectory_file: pathlib.Path) -> TrajectoryType:
