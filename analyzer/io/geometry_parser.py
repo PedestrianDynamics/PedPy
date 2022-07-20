@@ -6,9 +6,9 @@ Note:
 
 import pathlib
 import xml.etree.ElementTree as ET
-from typing import List
 
-from shapely.geometry import LineString, Point
+import numpy as np
+import pygeos
 
 from analyzer.data.geometry import Geometry
 
@@ -24,12 +24,12 @@ def parse_geometry(geometry_file: pathlib.Path) -> Geometry:
 
     """
     root = ET.parse(geometry_file).getroot()
-    walls = parse_geometry_walls(root)
+    walls = _parse_geometry_walls(root)
 
-    return Geometry(walls)
+    return Geometry(pygeos.polygonize(walls))
 
 
-def parse_geometry_walls(xml_root: ET.Element) -> List[LineString]:
+def _parse_geometry_walls(xml_root: ET.Element) -> np.ndarray:
     """Parses the walls from the given xml node.
 
     Args:
@@ -45,7 +45,6 @@ def parse_geometry_walls(xml_root: ET.Element) -> List[LineString]:
             for vertex in polygon.iter("vertex"):
                 x = float(vertex.attrib["px"])
                 y = float(vertex.attrib["py"])
-                point = Point(x, y)
-                wall.append(point)
-            walls.append(LineString(wall))
-    return walls
+                wall.append([x, y])
+            walls.append(pygeos.linestrings(np.array(wall)))
+    return np.array(walls)
