@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
+import numpy as np
 import pygeos
 
 log = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ class Geometry:
     walkable_area: pygeos.Geometry
     obstacles: List[pygeos.Geometry]
 
-    def __init__(self, walkable_area: pygeos.Geometry, obstacles: pygeos.Geometry = None):
+    def __init__(self, walkable_area: pygeos.Geometry, obstacles: np.ndarray = None):
         self.obstacles = []
         self.walkable_area = walkable_area
 
