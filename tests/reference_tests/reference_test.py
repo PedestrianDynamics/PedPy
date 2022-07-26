@@ -5,8 +5,9 @@ import pandas as pd
 import pygeos
 import pytest
 
+from analyzer.data.geometry import Geometry
 from analyzer.io.trajectory_parser import parse_trajectory
-from analyzer.methods.density_calculator import compute_classic_density
+from analyzer.methods.density_calculator import compute_classic_density, compute_voronoi_density
 from analyzer.methods.velocity_calculator import compute_mean_velocity_per_frame
 
 tolerance = 1e-2
@@ -17,7 +18,8 @@ tolerance = 1e-2
     [
         (
             pygeos.from_wkt(
-                "POLYGON((40.000 62.500,40.000 5.300,24.000 5.300,24.000 -5.300,40.000 -5.300,40.000 -80.000,-22.500 -80.000,-22.500 -5.300,-6.000 -5.300,-6.000 5.300,-22.500 5.300,-22.500 62.500,40 62.5))"
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
+                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             pygeos.from_wkt("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
             pathlib.Path("data/bottleneck"),
@@ -26,7 +28,7 @@ tolerance = 1e-2
 )
 def test_classic_density(geometry, measurement_area, folder):
     reference_result = pd.read_csv(
-        next(folder.glob("results/Fundamental_Diagram/Classical_Voronoi/rho*")),
+        next(folder.glob("results/Fundamental_Diagram/Classical_Voronoi/rho_v_Classic*")),
         sep="\t",
         comment="#",
         names=["frame", "classic density", "classic velocity"],
@@ -49,7 +51,8 @@ def test_classic_density(geometry, measurement_area, folder):
     [
         (
             pygeos.from_wkt(
-                "POLYGON((40.000 62.500,40.000 5.300,24.000 5.300,24.000 -5.300,40.000 -5.300,40.000 -80.000,-22.500 -80.000,-22.500 -5.300,-6.000 -5.300,-6.000 5.300,-22.500 5.300,-22.500 62.500,40 62.5))"
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
+                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             pygeos.from_wkt("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
             pathlib.Path("data/bottleneck"),
@@ -59,7 +62,7 @@ def test_classic_density(geometry, measurement_area, folder):
 )
 def test_arithmetic_velocity(geometry, measurement_area, folder, velocity_frame):
     reference_result = pd.read_csv(
-        next(folder.glob("results/Fundamental_Diagram/Classical_Voronoi/rho*")),
+        next(folder.glob("results/Fundamental_Diagram/Classical_Voronoi/rho_v_Classic*")),
         sep="\t",
         comment="#",
         names=["frame", "classic density", "speed"],
@@ -76,3 +79,41 @@ def test_arithmetic_velocity(geometry, measurement_area, folder, velocity_frame)
 
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(result["speed"], reference_result["speed"], atol=tolerance).all()
+
+
+@pytest.mark.parametrize(
+    "geometry_polygon, measurement_area, folder",
+    [
+        (
+            pygeos.from_wkt(
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
+                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
+            ),
+            pygeos.from_wkt("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
+            pathlib.Path("data/bottleneck"),
+        )
+    ],
+)
+def test_voronoi_density(geometry_polygon, measurement_area, folder):
+    reference_result = pd.read_csv(
+        next(folder.glob("results/Fundamental_Diagram/Classical_Voronoi/rho_v_Voronoi*")),
+        sep="\t",
+        comment="#",
+        names=["frame", "voronoi density", "speed"],
+        index_col=0,
+        usecols=["frame", "voronoi density"],
+    )
+
+    trajectory = parse_trajectory(folder / "traj.txt")
+    geometry = Geometry(geometry_polygon)
+    result, _ = compute_voronoi_density(trajectory.data, measurement_area, geometry)
+
+    # in jpsreport not all frames are written to the result (e.g., when not enough peds inside ma),
+    # hence only compare these who are in reference frame and check if the rest is zero
+    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isclose(
+        result.iloc[reference_result.index]["voronoi density"],
+        reference_result["voronoi density"],
+        atol=tolerance,
+    ).all()
+    assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
