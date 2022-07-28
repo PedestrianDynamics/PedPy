@@ -13,6 +13,7 @@ from analyzer.methods.density_calculator import (
     compute_classic_density,
     compute_voronoi_density,
 )
+from analyzer.methods.flow_calculator import compute_n_t
 from analyzer.methods.velocity_calculator import (
     compute_mean_velocity_per_frame,
     compute_voronoi_velocity,
@@ -175,3 +176,29 @@ def test_voronoi_velocity(geometry_polygon, measurement_area, folder, velocity_f
         atol=tolerance,
     ).all()
     assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
+
+
+@pytest.mark.parametrize(
+    "line, folder",
+    [
+        (
+            pygeos.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
+            pathlib.Path("data/bottleneck"),
+        )
+    ],
+)
+def test_nt(line, folder):
+    reference_result = pd.read_csv(
+        next(folder.glob("results/Fundamental_Diagram/FlowVelocity/Flow_NT*")),
+        sep="\t",
+        comment="#",
+        names=["frame", "Time [s]", "Cumulative pedestrians"],
+        index_col=0,
+    )
+
+    trajectory = parse_trajectory(folder / "traj.txt")
+
+    result, _ = compute_n_t(trajectory.data, line, trajectory.frame_rate)
+    assert (reference_result.index.values == result.index.values).all()
+    assert np.isclose(result["Time [s]"], reference_result["Time [s]"], atol=tolerance).all()
+    assert (result["Cumulative pedestrians"] == reference_result["Cumulative pedestrians"]).all()
