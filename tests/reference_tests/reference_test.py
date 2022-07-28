@@ -13,8 +13,9 @@ from analyzer.methods.density_calculator import (
     compute_classic_density,
     compute_voronoi_density,
 )
-from analyzer.methods.flow_calculator import compute_n_t
+from analyzer.methods.flow_calculator import compute_flow, compute_n_t
 from analyzer.methods.velocity_calculator import (
+    compute_individual_velocity,
     compute_mean_velocity_per_frame,
     compute_voronoi_velocity,
 )
@@ -204,3 +205,41 @@ def test_nt(line, folder):
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(result["Time [s]"], reference_result["Time [s]"], atol=TOLERANCE).all()
     assert (result["Cumulative pedestrians"] == reference_result["Cumulative pedestrians"]).all()
+
+
+@pytest.mark.parametrize(
+    "line, folder, flow_frame, velocity_frame",
+    [
+        (
+            pygeos.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
+            150,
+            5,
+        )
+    ],
+)
+def test_flow(line, folder, flow_frame, velocity_frame):
+    reference_result = pd.read_csv(
+        next(folder.glob("results/Fundamental_Diagram/FlowVelocity/FDFlowVelocity*")),
+        sep="\t",
+        comment="#",
+        names=["Flow rate(1/s)", "Mean velocity(m/s)"],
+    )
+
+    trajectory = parse_trajectory(folder / "traj.txt")
+
+    individual_speed = compute_individual_velocity(
+        trajectory.data, trajectory.frame_rate, velocity_frame
+    )
+    nt, crossing = compute_n_t(trajectory.data, line, trajectory.frame_rate)
+    result = compute_flow(nt, crossing, individual_speed, flow_frame, trajectory.frame_rate)
+
+    assert np.isclose(
+        result["Mean velocity(m/s)"], reference_result["Mean velocity(m/s)"], atol=TOLERANCE
+    ).all()
+
+    # ignore the first flow value as there is a bug in jpsreport, the first x passing will be
+    # not included in the flow, hence it is underestimated
+    assert np.isclose(
+        result["Flow rate(1/s)"][1:], reference_result["Flow rate(1/s)"][1:], atol=TOLERANCE
+    ).all()
