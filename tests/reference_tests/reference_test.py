@@ -19,7 +19,9 @@ from analyzer.methods.velocity_calculator import (
     compute_voronoi_velocity,
 )
 
-tolerance = 1e-2
+TOLERANCE = 1e-2
+
+ROOT_DIR = pathlib.Path(__file__).parent.resolve()
 
 
 @pytest.mark.parametrize(
@@ -31,7 +33,7 @@ tolerance = 1e-2
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             pygeos.from_wkt("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
-            pathlib.Path("data/bottleneck"),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
     ],
 )
@@ -51,7 +53,7 @@ def test_classic_density(geometry, measurement_area, folder):
 
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
-        result["classic density"], reference_result["classic density"], atol=tolerance
+        result["classic density"], reference_result["classic density"], atol=TOLERANCE
     ).all()
 
 
@@ -64,7 +66,7 @@ def test_classic_density(geometry, measurement_area, folder):
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             pygeos.from_wkt("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
-            pathlib.Path("data/bottleneck"),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
             5,
         )
     ],
@@ -87,7 +89,7 @@ def test_arithmetic_velocity(geometry, measurement_area, folder, velocity_frame)
     result = result.to_frame()
 
     assert (reference_result.index.values == result.index.values).all()
-    assert np.isclose(result["speed"], reference_result["speed"], atol=tolerance).all()
+    assert np.isclose(result["speed"], reference_result["speed"], atol=TOLERANCE).all()
 
 
 @pytest.mark.parametrize(
@@ -99,7 +101,7 @@ def test_arithmetic_velocity(geometry, measurement_area, folder, velocity_frame)
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             pygeos.from_wkt("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
-            pathlib.Path("data/bottleneck"),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
     ],
 )
@@ -123,7 +125,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     assert np.isclose(
         result.iloc[reference_result.index]["voronoi density"],
         reference_result["voronoi density"],
-        atol=tolerance,
+        atol=TOLERANCE,
     ).all()
     assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
 
@@ -137,7 +139,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             pygeos.from_wkt("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
-            pathlib.Path("data/bottleneck"),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
             5,
         )
     ],
@@ -173,7 +175,7 @@ def test_voronoi_velocity(geometry_polygon, measurement_area, folder, velocity_f
     assert np.isclose(
         result.iloc[reference_result.index]["voronoi speed"],
         reference_result["voronoi speed"],
-        atol=tolerance,
+        atol=TOLERANCE,
     ).all()
     assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
 
@@ -183,7 +185,7 @@ def test_voronoi_velocity(geometry_polygon, measurement_area, folder, velocity_f
     [
         (
             pygeos.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
-            pathlib.Path("data/bottleneck"),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
     ],
 )
@@ -200,5 +202,5 @@ def test_nt(line, folder):
 
     result, _ = compute_n_t(trajectory.data, line, trajectory.frame_rate)
     assert (reference_result.index.values == result.index.values).all()
-    assert np.isclose(result["Time [s]"], reference_result["Time [s]"], atol=tolerance).all()
+    assert np.isclose(result["Time [s]"], reference_result["Time [s]"], atol=TOLERANCE).all()
     assert (result["Cumulative pedestrians"] == reference_result["Cumulative pedestrians"]).all()
