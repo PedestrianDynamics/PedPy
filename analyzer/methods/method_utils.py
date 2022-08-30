@@ -67,8 +67,7 @@ def compute_frame_range_in_area(
         width (float): distance to the second measurement line
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end', 'start' (first position
-        inside the area), 'end' (last position inside the area)
+        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
     """
     assert (
         len(pygeos.get_coordinates(measurement_line)) == 2
@@ -112,23 +111,7 @@ def compute_frame_range_in_area(
         | (frame_range_between_lines.start_crossed_2 & frame_range_between_lines.end_crossed_1)
     ]
 
-    # Add the start and end points to the result
-    frame_range_between_lines = frame_range_between_lines.merge(
-        traj_data[["ID", "frame", "points"]],
-        left_on=["ID", "frame_start"],
-        right_on=["ID", "frame"],
-    ).rename(columns={"points": "start"})
-    frame_range_between_lines = (
-        frame_range_between_lines.merge(
-            traj_data[["ID", "frame", "points"]],
-            left_on=["ID", "frame_end"],
-            right_on=["ID", "frame"],
-        )
-        .rename(columns={"points": "end"})
-        .reset_index()
-    )
-
-    return frame_range_between_lines.loc[:, ("ID", "frame_start", "frame_end", "start", "end")]
+    return frame_range_between_lines.loc[:, ("ID", "frame_start", "frame_end")], measurement_area
 
 
 def _compute_individual_movement(

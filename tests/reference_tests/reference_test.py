@@ -11,12 +11,15 @@ from analyzer.methods.density_calculator import (
     _compute_individual_voronoi_polygons,
     _compute_intersecting_polygons,
     compute_classic_density,
+    compute_passing_density,
     compute_voronoi_density,
 )
 from analyzer.methods.flow_calculator import compute_flow, compute_n_t
+from analyzer.methods.method_utils import compute_frame_range_in_area
 from analyzer.methods.velocity_calculator import (
     compute_individual_velocity,
     compute_mean_velocity_per_frame,
+    compute_passing_speed,
     compute_voronoi_velocity,
 )
 
@@ -243,3 +246,76 @@ def test_flow(line, folder, flow_frame, velocity_frame):
     assert np.isclose(
         result["Flow rate(1/s)"][1:], reference_result["Flow rate(1/s)"][1:], atol=TOLERANCE
     ).all()
+
+
+@pytest.mark.parametrize(
+    "measurement_line, width, folder",
+    [
+        (
+            pygeos.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
+            1.06,
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
+        )
+    ],
+)
+def test_passing_density(measurement_line, width, folder):
+    reference_result = (
+        pd.read_csv(
+            next(folder.glob("results/Fundamental_Diagram/TinTout/FDTinTout*")),
+            sep="\t",
+            comment="#",
+            names=["ID", "density", "speed"],
+            usecols=["ID", "density"],
+        )
+        .sort_values(by="ID")
+        .reset_index(drop=True)
+    )
+
+    trajectory = parse_trajectory(folder / "traj.txt")
+
+    frames_in_area, measurement_area = compute_frame_range_in_area(
+        trajectory.data, measurement_line, width
+    )
+
+    density = compute_classic_density(trajectory.data, measurement_area)
+    result = (
+        compute_passing_density(density, frames_in_area).sort_values(by="ID").reset_index(drop=True)
+    )
+
+    assert reference_result["ID"].equals(result["ID"])
+    assert np.isclose(result["density"], reference_result["density"], atol=TOLERANCE).all()
+
+
+@pytest.mark.parametrize(
+    "measurement_line, width, folder",
+    [
+        (
+            pygeos.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
+            1.06,
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
+        )
+    ],
+)
+def test_passing_velocity(measurement_line, width, folder):
+    reference_result = (
+        pd.read_csv(
+            next(folder.glob("results/Fundamental_Diagram/TinTout/FDTinTout*")),
+            sep="\t",
+            comment="#",
+            names=["ID", "density", "speed"],
+            usecols=["ID", "speed"],
+        )
+        .sort_values(by="ID")
+        .reset_index(drop=True)
+    )
+
+    trajectory = parse_trajectory(folder / "traj.txt")
+
+    frames_in_area, _ = compute_frame_range_in_area(trajectory.data, measurement_line, width)
+
+    result = compute_passing_speed(frames_in_area, trajectory.frame_rate, width).reset_index(
+        drop=True
+    )
+
+    assert reference_result["ID"].equals(result["ID"])
+    assert np.isclose(result["speed"], reference_result["speed"], atol=TOLERANCE).all()
