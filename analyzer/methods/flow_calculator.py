@@ -37,6 +37,7 @@ def compute_n_t(
     )
 
     nt = nt.to_frame()
+    nt["Cumulative pedestrians"] = nt["Cumulative pedestrians"].astype(int)
 
     # frame number is the index
     nt["Time [s]"] = nt.index / frame_rate

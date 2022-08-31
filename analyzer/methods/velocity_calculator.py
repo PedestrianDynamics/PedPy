@@ -36,6 +36,7 @@ def compute_individual_velocity(
 
 def compute_mean_velocity_per_frame(
     traj_data: pd.DataFrame,
+    measurement_area: pygeos.Geometry,
     frame_rate: float,
     frame_step: int,
     movement_direction: np.ndarray = None,
@@ -46,6 +47,7 @@ def compute_mean_velocity_per_frame(
 
     Args:
         traj_data (TrajectoryData): trajectory data
+        measurement_area (pygeos.Geometry): measurement area for which the velocity is computed
         frame_rate (float): frame rate of the trajectory
         frame_step (int): gives the size of time interval for calculating the velocity
         movement_direction (np.ndarray): main movement direction on which the actual movement is
@@ -56,7 +58,12 @@ def compute_mean_velocity_per_frame(
         DataFrame containing the columns 'ID', 'frame', and 'speed'
     """
     df_speed = compute_individual_velocity(traj_data, frame_rate, frame_step, movement_direction)
-    df_mean = df_speed.groupby("frame")["speed"].mean()
+    combined = traj_data.merge(df_speed, on=["ID", "frame"])
+    df_mean = (
+        combined[pygeos.within(combined["points"], measurement_area)]
+        .groupby("frame")["speed"]
+        .mean()
+    )
     df_mean = df_mean.reindex(
         list(range(traj_data.frame.min(), traj_data.frame.max() + 1)),
         fill_value=0.0,
@@ -140,20 +147,22 @@ def _compute_individual_speed(
     return movement_data
 
 
-def compute_passing_speed(frames_in_area: pd.DataFrame, frame_rate: float) -> pd.DataFrame:
+def compute_passing_speed(
+    frames_in_area: pd.DataFrame, frame_rate: float, distance: float
+) -> pd.DataFrame:
     """Compute the individual speed of the pedestrian who pass the area.
 
     Args:
         frames_in_area (pd.DataFrame): information for each pedestrian in the area, need to contain
                 the following columns: 'ID', 'start', 'end', 'frame_start', 'frame_end'
         frame_rate (float): frame rate of the trajectory
-
+        distance (float): distance between the two measurement lines
     Returns:
         DataFrame containing the columns: 'ID", 'speed' which is the speed in m/s
 
     """
     speed = pd.DataFrame(frames_in_area["ID"], columns=["ID", "speed"])
-    speed["speed"] = pygeos.distance(frames_in_area.start, frames_in_area.end) / (
-        np.abs(frames_in_area.frame_end - frames_in_area.frame_start) / frame_rate
+    speed["speed"] = (
+        frame_rate * distance / (np.abs(frames_in_area.frame_end - frames_in_area.frame_start))
     )
     return speed
