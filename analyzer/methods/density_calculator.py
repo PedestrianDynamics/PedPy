@@ -58,7 +58,7 @@ def compute_voronoi_density(
 
     Returns:
           DataFrame containing the columns: 'frame' and 'voronoi density',
-          DataFrame containing the columns: 'ID', 'frame', 'individual voronoi'
+          DataFrame containing the columns: 'ID', 'frame', 'individual voronoi', 'intersecting voronoi'
     """
     df_individual = _compute_individual_voronoi_polygons(traj_data, geometry, cuf_off, num_edges)
     df_intersecting = _compute_intersecting_polygons(df_individual, measurement_area)
@@ -79,7 +79,7 @@ def compute_voronoi_density(
         fill_value=0.0,
     )
 
-    return df_voronoi_density, df_individual
+    return df_voronoi_density, df_combined.loc[:, df_combined.columns != "relation"]
 
 
 def compute_passing_density(density_per_frame: pd.DataFrame, frames: pd.DataFrame):
