@@ -1,9 +1,9 @@
-from typing import List
-
 import numpy as np
+import pandas as pd
 import pytest
 from numpy import dtype
 
+from analyzer.data.trajectory_data import *
 from analyzer.io.trajectory_parser import *
 
 
@@ -134,7 +134,7 @@ def test_parse_trajectory_files_success(
     )
 
     expected_data = prepare_data_frame(expected_data)
-    traj_data_from_file = parse_trajectory(trajectory_txt)
+    traj_data_from_file = parse_trajectory(trajectory_file=trajectory_txt)
 
     assert (
         traj_data_from_file.data[["ID", "frame", "X", "Y", "Z"]].to_numpy()
@@ -205,7 +205,9 @@ def test_parse_trajectory_file(
         data=written_data,
     )
 
-    data_from_file, frame_rate_from_file, type_from_file = parse_trajectory_file(trajectory_txt)
+    data_from_file, frame_rate_from_file, type_from_file = parse_trajectory_file(
+        trajectory_file=trajectory_txt
+    )
     expected_data = prepare_data_frame(expected_data)
 
     assert (
@@ -265,7 +267,7 @@ def test_parse_trajectory_data_success(
 
     expected_data = prepare_data_frame(expected_data)
 
-    data_from_file = parse_trajectory_data(trajectory_txt)
+    data_from_file = parse_trajectory_data(trajectory_file=trajectory_txt)
     print(list(data_from_file.dtypes.values))
     assert list(data_from_file.dtypes.values) == [
         dtype("int64"),
@@ -309,7 +311,7 @@ def test_parse_trajectory_data_failure(tmp_path, data: np.array, expected_messag
     )
 
     with pytest.raises(ValueError) as error_info:
-        parse_trajectory_data(trajectory_txt)
+        parse_trajectory_data(trajectory_file=trajectory_txt)
 
     assert expected_message in str(error_info.value)
 
@@ -343,67 +345,112 @@ def test_parse_frame_rate_success(tmp_path, file_content: str, expected_frame_ra
 
 
 @pytest.mark.parametrize(
-    "file_content, expected_exception, expected_message",
+    "file_content, expected_exception, expected_message, default_frame_rate",
     [
         (
             "",
             ValueError,
             "Frame rate is needed, but none could be found in the trajectory files.",
+            None,
         ),
         (
             "framerate: -8.00",
             ValueError,
             "Frame rate is needed, but none could be found in the trajectory files.",
+            None,
         ),
         (
             "#framerate:",
             ValueError,
             "Frame rate is needed, but none could be found in the trajectory files.",
+            None,
         ),
         (
             "#framerate: asdasd",
             ValueError,
             "Frame rate is needed, but none could be found in the trajectory files.",
+            None,
         ),
         (
             "framerate: 25 fps",
             ValueError,
             "Frame rate is needed, but none could be found in the trajectory files.",
+            None,
         ),
         (
             "#framerate: fps",
             ValueError,
             "Frame rate is needed, but none could be found in the trajectory files.",
+            None,
         ),
         (
             "#framerate: asdasd fps",
             ValueError,
             "Frame rate is needed, but none could be found in the trajectory files.",
+            None,
         ),
         (
             "#framerate: 0",
             ValueError,
             "Frame rate needs to be a positive value,",
+            None,
         ),
         (
             "#framerate: -25.",
             ValueError,
             "Frame rate needs to be a positive value,",
+            None,
         ),
         (
             "#framerate: 0.00 fps",
             ValueError,
             "Frame rate needs to be a positive value,",
+            None,
         ),
         (
             "#framerate: -10.00 fps",
             ValueError,
             "Frame rate needs to be a positive value,",
+            None,
+        ),
+        (
+            "#framerate: 25.00 fps",
+            ValueError,
+            "The given default frame rate seems to differ from the frame rate given in",
+            30.0,
+        ),
+        (
+            "#framerate: asdasd fps",
+            ValueError,
+            "Default frame needs to be positive but is",
+            0,
+        ),
+        (
+            "#framerate: asdasd fps",
+            ValueError,
+            "Default frame needs to be positive but is",
+            -12,
+        ),
+        (
+            "#framerate: asdasd fps",
+            ValueError,
+            "Default frame needs to be positive but is",
+            0.0,
+        ),
+        (
+            "#framerate: asdasd fps",
+            ValueError,
+            "Default frame needs to be positive but is",
+            -12.0,
         ),
     ],
 )
 def test_parse_frame_rate_failure(
-    tmp_path, file_content: str, expected_exception, expected_message: str
+    tmp_path,
+    file_content: str,
+    expected_exception,
+    expected_message: str,
+    default_frame_rate: float,
 ):
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
@@ -411,7 +458,11 @@ def test_parse_frame_rate_failure(
         f.write(file_content)
 
     with pytest.raises(expected_exception) as error_info:
-        parse_frame_rate(trajectory_txt)
+        if default_frame_rate is None:
+            parse_frame_rate(trajectory_txt)
+        else:
+            parse_frame_rate(trajectory_txt, default_frame_rate)
+
     assert expected_message in str(error_info.value)
 
 
