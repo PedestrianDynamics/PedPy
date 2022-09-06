@@ -134,7 +134,7 @@ def test_parse_trajectory_files_success(
     )
 
     expected_data = prepare_data_frame(expected_data)
-    traj_data_from_file = parse_trajectory(trajectory_txt)
+    traj_data_from_file = parse_trajectory(trajectory_file=trajectory_txt)
 
     assert (
         traj_data_from_file.data[["ID", "frame", "X", "Y", "Z"]].to_numpy()
@@ -205,7 +205,9 @@ def test_parse_trajectory_file(
         data=written_data,
     )
 
-    data_from_file, frame_rate_from_file, type_from_file = parse_trajectory_file(trajectory_txt)
+    data_from_file, frame_rate_from_file, type_from_file = parse_trajectory_file(
+        trajectory_file=trajectory_txt
+    )
     expected_data = prepare_data_frame(expected_data)
 
     assert (
@@ -265,7 +267,7 @@ def test_parse_trajectory_data_success(
 
     expected_data = prepare_data_frame(expected_data)
 
-    data_from_file = parse_trajectory_data(trajectory_txt)
+    data_from_file = parse_trajectory_data(trajectory_file=trajectory_txt)
     print(list(data_from_file.dtypes.values))
     assert list(data_from_file.dtypes.values) == [
         dtype("int64"),
@@ -309,7 +311,7 @@ def test_parse_trajectory_data_failure(tmp_path, data: np.array, expected_messag
     )
 
     with pytest.raises(ValueError) as error_info:
-        parse_trajectory_data(trajectory_txt)
+        parse_trajectory_data(trajectory_file=trajectory_txt)
 
     assert expected_message in str(error_info.value)
 

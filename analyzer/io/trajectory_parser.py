@@ -9,25 +9,31 @@ import pandas as pd
 from analyzer.data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
 
 
-def parse_trajectory(trajectory_file: pathlib.Path, frame_rate: float = None) -> TrajectoryData:
+def parse_trajectory(
+    *, trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None
+) -> TrajectoryData:
     """Parses the given file for the relevant data.
 
     Args:
         trajectory_file (pathlib.Path): files containing the trajectory data
         frame_rate (float): frame rate of the file, None if frame rate from file is used
                 (default: None)
+        default_unit (TrajectoryUnit): unit in which the coordinates are stored in the file,
+                None if unit should be parsed from the file (default: None)
 
     Returns:
         TrajectoryData containing the data from all trajectory files.
     """
 
-    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(trajectory_file, frame_rate)
+    traj_dataframe, traj_frame_rate, traj_type = parse_trajectory_file(
+        trajectory_file=trajectory_file, frame_rate=frame_rate, default_unit=default_unit
+    )
 
     return TrajectoryData(traj_dataframe, traj_frame_rate, traj_type, trajectory_file)
 
 
 def parse_trajectory_file(
-    trajectory_file: pathlib.Path, frame_rate: float = None
+    *, trajectory_file: pathlib.Path, frame_rate: float = None, default_unit: TrajectoryUnit = None
 ) -> (pd.DataFrame, float, TrajectoryType):
     """Parse the trajectory file for the relevant data: trajectory data, frame rate, and type of
     trajectory.
@@ -35,27 +41,33 @@ def parse_trajectory_file(
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
         frame_rate (float): frame rate of the file, None if frame rate from file is used
+        default_unit (TrajectoryUnit): unit in which the coordinates are stored in the file,
+                None if unit should be parsed from the file
 
     Returns:
         Tuple containing: trajectory data, frame rate, and type of trajectory.
     """
-    traj_dataframe = parse_trajectory_data(trajectory_file)
+    traj_dataframe = parse_trajectory_data(trajectory_file, default_unit)
     traj_frame_rate = parse_frame_rate(trajectory_file, frame_rate)
     traj_type = parse_trajectory_type(trajectory_file)
 
     return traj_dataframe, traj_frame_rate, traj_type
 
 
-def parse_trajectory_data(trajectory_file: pathlib.Path) -> pd.DataFrame:
+def parse_trajectory_data(
+    trajectory_file: pathlib.Path, default_unit: TrajectoryUnit = None
+) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
+        default_unit (TrajectoryUnit): unit in which the coordinates are stored in the file,
+                None if unit should be parsed from the file
 
     Returns:
         The trajectory data as data frame, the coordinates are converted to meter (m).
     """
-    unit = parse_unit_of_coordinates(trajectory_file)
+    unit = parse_unit_of_coordinates(trajectory_file) if default_unit is None else default_unit
 
     try:
         data = pd.read_csv(
@@ -176,7 +188,8 @@ def parse_unit_of_coordinates(trajectory_file: pathlib.Path) -> TrajectoryUnit:
         trajectory_file (pathlib.Path): file containing the trajectory
 
     Returns:
-        The unit used in the trajectory file for the coordinates. If no explicit unit is given, METER is returned.
+        The unit used in the trajectory file for the coordinates. If no explicit unit is given,
+        METER is returned.
     """
     unit = TrajectoryUnit.METER
     with open(trajectory_file, "r") as file_content:
