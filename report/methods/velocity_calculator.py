@@ -8,10 +8,10 @@ import pygeos
 
 
 def compute_individual_velocity(
-    traj_data: pd.DataFrame,
-    frame_rate: float,
-    frame_step: int,
-    movement_direction: np.ndarray = None,
+        traj_data: pd.DataFrame,
+        frame_rate: float,
+        frame_step: int,
+        movement_direction: np.ndarray = None,
 ) -> pd.DataFrame:
     """Compute the individual velocity for each pedestrian
 
@@ -33,10 +33,10 @@ def compute_individual_velocity(
 
 
 def compute_mean_velocity_per_frame(
-    traj_data: pd.DataFrame,
-    frame_rate: float,
-    frame_step: int,
-    movement_direction: np.ndarray = None,
+        traj_data: pd.DataFrame,
+        frame_rate: float,
+        frame_step: int,
+        movement_direction: np.ndarray = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute mean velocity per frame
 
@@ -63,12 +63,12 @@ def compute_mean_velocity_per_frame(
 
 
 def compute_voronoi_velocity(
-    traj_data: pd.DataFrame,
-    individual_voronoi_intersection: pd.DataFrame,
-    frame_rate: float,
-    frame_step: int,
-    measurement_area: pygeos.Geometry,
-    movement_direction: np.ndarray = None,
+        traj_data: pd.DataFrame,
+        individual_voronoi_intersection: pd.DataFrame,
+        frame_rate: float,
+        frame_step: int,
+        measurement_area: pygeos.Geometry,
+        movement_direction: np.ndarray = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi velocity per frame
 
@@ -91,9 +91,9 @@ def compute_voronoi_velocity(
     df_speed = compute_individual_velocity(traj_data, frame_rate, frame_step, movement_direction)
     df_voronoi = pd.merge(individual_voronoi_intersection, df_speed, on=["ID", "frame"])
     df_voronoi["voronoi speed"] = (
-        pygeos.area(df_voronoi["intersection voronoi"])
-        * df_voronoi["speed"]
-        / pygeos.area(measurement_area)
+            pygeos.area(df_voronoi["intersection voronoi"])
+            * df_voronoi["speed"]
+            / pygeos.area(measurement_area)
     )
     df_voronoi_speed = df_voronoi.groupby("frame")["voronoi speed"].sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
@@ -138,7 +138,7 @@ def _compute_individual_movement(traj_data: pd.DataFrame, frame_step: int) -> pd
 
 
 def _compute_individual_speed(
-    movement_data: pd.DataFrame, frame_rate: float, movement_direction=None
+        movement_data: pd.DataFrame, frame_rate: float, movement_direction=None
 ) -> pd.DataFrame:
     """Compute the instantaneous velocity of each pedestrian.
 
@@ -157,26 +157,26 @@ def _compute_individual_speed(
         # get the length of the projection of the movement in the frame range onto the
         # movement_direction
         movement_data["distance"] = (
-            np.dot(
-                pygeos.get_coordinates(movement_data["end"])
-                - pygeos.get_coordinates(movement_data["start"]),
-                movement_direction,
-            )
-            / np.linalg.norm(movement_direction)
+                np.dot(
+                    pygeos.get_coordinates(movement_data["end"])
+                    - pygeos.get_coordinates(movement_data["start"]),
+                    movement_direction,
+                )
+                / np.linalg.norm(movement_direction)
         )
 
     movement_data["speed"] = movement_data["distance"] / (
-        (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
+            (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
     )
 
     return movement_data[["ID", "frame", "speed"]]
 
 
 def compute_individual_speed_main_movement(
-    traj_data: pd.DataFrame,
-    measurement_line: pygeos.Geometry,
-    frame_rate: float,
-    frame_step: int,
+        traj_data: pd.DataFrame,
+        measurement_line: pygeos.Geometry,
+        frame_rate: float,
+        frame_step: int,
 ):
     """Compute the individual velocity in direction of the main movement direction for each
     pedestrian.
@@ -198,16 +198,16 @@ def compute_individual_speed_main_movement(
     movement_data = pd.merge(movement_data, movement_direction, on=["ID", "frame"])
 
     movement_data["distance"] = movement_data["main movement direction"] * (
-        np.dot(
-            pygeos.get_coordinates(movement_data["end"])
-            - pygeos.get_coordinates(movement_data["start"]),
-            normal_vector,
-        )
-        / np.linalg.norm(normal_vector)
+            np.dot(
+                pygeos.get_coordinates(movement_data["end"])
+                - pygeos.get_coordinates(movement_data["start"]),
+                normal_vector,
+            )
+            / np.linalg.norm(normal_vector)
     )
 
     movement_data["speed"] = movement_data["distance"] / (
-        (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
+            (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
     )
 
     return movement_data[["ID", "frame", "speed", "main movement direction"]]
@@ -229,7 +229,15 @@ def _compute_main_movement_direction(traj_data: pd.DataFrame, measurement_line: 
         DataFrame containing the columns: 'ID', 'frame', 'main movement direction' (which is either +1 or -1)
         normalized normal vector of the measurement line
     """
-    movement = _compute_individual_movement(traj_data, 10)
+    # movement = _compute_individual_movement(traj_data, 10)
+    movement = traj_data.groupby("ID")['points'].agg('first', 'last'])
+
+    movement['movement'] = pygeos.linestrings([[tuple(start), tuple(end)] for start, end in
+                                               zip(pygeos.get_coordinates(movement['first']),
+                                                   pygeos.get_coordinates(movement['last']))])
+    movement['main movement direction'] = 0
+
+
     coordinates = pygeos.get_coordinates(measurement_line)
     normal_vector = np.array(
         [-1 * (coordinates[1, 1] - coordinates[0, 1]), coordinates[1, 0] - coordinates[0, 0]]
@@ -242,5 +250,8 @@ def _compute_main_movement_direction(traj_data: pd.DataFrame, measurement_line: 
             normal_vector,
         )
     )
+
+    movement[pygeos.intersects(movement["movement"], measurement_line)].merge(traj_data, on="ID")[
+        ["ID", "frame", "X", "Y", "Z", 'points', 'movement']]
 
     return movement[["ID", "frame", "main movement direction"]], normal_vector
