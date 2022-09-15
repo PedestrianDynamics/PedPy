@@ -107,6 +107,11 @@ def _run_method_ccm(
     )
 
     combined["speed"] = combined["speed"] * scaling_factor_speed
+    combined["length/area on measurement"] = (
+        pygeos.area(combined["intersection voronoi"])
+        if pygeos.area(measurement_line) > 0
+        else pygeos.length(combined["intersection voronoi"])
+    )
     speed_per_direction = (
         combined[~pygeos.is_empty(combined["intersection voronoi"])]
         .groupby(["frame", "main movement direction"])["speed"]
@@ -130,7 +135,7 @@ def _run_method_ccm(
     return (
         mean_rho_v,
         v_rho_direction,
-        combined[
+        combined[~pygeos.is_empty(combined["intersection voronoi"])][
             [
                 "ID",
                 "frame",
@@ -142,6 +147,7 @@ def _run_method_ccm(
                 "main movement direction",
                 "individual voronoi",
                 "intersection voronoi",
+                "length/area on measurement",
             ]
         ],
     )

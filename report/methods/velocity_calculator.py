@@ -8,10 +8,10 @@ import pygeos
 
 
 def compute_individual_velocity(
-        traj_data: pd.DataFrame,
-        frame_rate: float,
-        frame_step: int,
-        movement_direction: np.ndarray = None,
+    traj_data: pd.DataFrame,
+    frame_rate: float,
+    frame_step: int,
+    movement_direction: np.ndarray = None,
 ) -> pd.DataFrame:
     """Compute the individual velocity for each pedestrian
 
@@ -33,10 +33,10 @@ def compute_individual_velocity(
 
 
 def compute_mean_velocity_per_frame(
-        traj_data: pd.DataFrame,
-        frame_rate: float,
-        frame_step: int,
-        movement_direction: np.ndarray = None,
+    traj_data: pd.DataFrame,
+    frame_rate: float,
+    frame_step: int,
+    movement_direction: np.ndarray = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute mean velocity per frame
 
@@ -63,12 +63,12 @@ def compute_mean_velocity_per_frame(
 
 
 def compute_voronoi_velocity(
-        traj_data: pd.DataFrame,
-        individual_voronoi_intersection: pd.DataFrame,
-        frame_rate: float,
-        frame_step: int,
-        measurement_area: pygeos.Geometry,
-        movement_direction: np.ndarray = None,
+    traj_data: pd.DataFrame,
+    individual_voronoi_intersection: pd.DataFrame,
+    frame_rate: float,
+    frame_step: int,
+    measurement_area: pygeos.Geometry,
+    movement_direction: np.ndarray = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi velocity per frame
 
@@ -91,9 +91,9 @@ def compute_voronoi_velocity(
     df_speed = compute_individual_velocity(traj_data, frame_rate, frame_step, movement_direction)
     df_voronoi = pd.merge(individual_voronoi_intersection, df_speed, on=["ID", "frame"])
     df_voronoi["voronoi speed"] = (
-            pygeos.area(df_voronoi["intersection voronoi"])
-            * df_voronoi["speed"]
-            / pygeos.area(measurement_area)
+        pygeos.area(df_voronoi["intersection voronoi"])
+        * df_voronoi["speed"]
+        / pygeos.area(measurement_area)
     )
     df_voronoi_speed = df_voronoi.groupby("frame")["voronoi speed"].sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
@@ -138,7 +138,7 @@ def _compute_individual_movement(traj_data: pd.DataFrame, frame_step: int) -> pd
 
 
 def _compute_individual_speed(
-        movement_data: pd.DataFrame, frame_rate: float, movement_direction=None
+    movement_data: pd.DataFrame, frame_rate: float, movement_direction=None
 ) -> pd.DataFrame:
     """Compute the instantaneous velocity of each pedestrian.
 
@@ -156,27 +156,27 @@ def _compute_individual_speed(
     else:
         # get the length of the projection of the movement in the frame range onto the
         # movement_direction
-        movement_data["distance"] = (
-                np.dot(
-                    pygeos.get_coordinates(movement_data["end"])
-                    - pygeos.get_coordinates(movement_data["start"]),
-                    movement_direction,
-                )
-                / np.linalg.norm(movement_direction)
+        movement_data["distance"] = np.sign(movement_data["main movement direction"])(
+            np.dot(
+                pygeos.get_coordinates(movement_data["end"])
+                - pygeos.get_coordinates(movement_data["start"]),
+                movement_direction,
+            )
+            / np.linalg.norm(movement_direction)
         )
 
     movement_data["speed"] = movement_data["distance"] / (
-            (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
+        (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
     )
 
     return movement_data[["ID", "frame", "speed"]]
 
 
 def compute_individual_speed_main_movement(
-        traj_data: pd.DataFrame,
-        measurement_line: pygeos.Geometry,
-        frame_rate: float,
-        frame_step: int,
+    traj_data: pd.DataFrame,
+    measurement_line: pygeos.Geometry,
+    frame_rate: float,
+    frame_step: int,
 ):
     """Compute the individual velocity in direction of the main movement direction for each
     pedestrian.
@@ -195,19 +195,19 @@ def compute_individual_speed_main_movement(
     )
     movement_data = _compute_individual_movement(traj_data, frame_step)
 
-    movement_data = pd.merge(movement_data, movement_direction, on=["ID", "frame"])
+    movement_data = pd.merge(movement_data, movement_direction, on=["ID"])
 
-    movement_data["distance"] = movement_data["main movement direction"] * (
-            np.dot(
-                pygeos.get_coordinates(movement_data["end"])
-                - pygeos.get_coordinates(movement_data["start"]),
-                normal_vector,
-            )
-            / np.linalg.norm(normal_vector)
+    movement_data["distance"] = np.sign(movement_data["main movement direction"]) * (
+        np.dot(
+            pygeos.get_coordinates(movement_data["end"])
+            - pygeos.get_coordinates(movement_data["start"]),
+            normal_vector,
+        )
+        / np.linalg.norm(normal_vector)
     )
 
     movement_data["speed"] = movement_data["distance"] / (
-            (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
+        (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
     )
 
     return movement_data[["ID", "frame", "speed", "main movement direction"]]
@@ -216,27 +216,24 @@ def compute_individual_speed_main_movement(
 def _compute_main_movement_direction(traj_data: pd.DataFrame, measurement_line: pygeos.Geometry):
     """Detect the main movement direction of each pedestrian
 
-    The main movement direction is always orthogonal to the given measurement line. For detection
-    a rectangle with width of 1m is created with the measurement line in the middle. Then the first
-    and last point inside the area is detected, from which the main movement direction can be
-    computed.
-
     Args:
         traj_data (TrajectoryData): trajectory data
         measurement_line (pygeos.Geometry): line at which the main movement direction is computed
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame', 'main movement direction' (which is either +1 or -1)
+        DataFrame containing the columns: 'ID', 'main movement direction'
+        (which is either +1,-1, or 0),
         normalized normal vector of the measurement line
     """
-    # movement = _compute_individual_movement(traj_data, 10)
-    movement = traj_data.groupby("ID")['points'].agg('first', 'last'])
-
-    movement['movement'] = pygeos.linestrings([[tuple(start), tuple(end)] for start, end in
-                                               zip(pygeos.get_coordinates(movement['first']),
-                                                   pygeos.get_coordinates(movement['last']))])
-    movement['main movement direction'] = 0
-
+    movement = traj_data.groupby("ID")["points"].agg(["first", "last"])
+    movement["movement"] = pygeos.linestrings(
+        [
+            [tuple(start), tuple(end)]
+            for start, end in zip(
+                pygeos.get_coordinates(movement["first"]), pygeos.get_coordinates(movement["last"])
+            )
+        ]
+    )
 
     coordinates = pygeos.get_coordinates(measurement_line)
     normal_vector = np.array(
@@ -246,12 +243,13 @@ def _compute_main_movement_direction(traj_data: pd.DataFrame, measurement_line: 
 
     movement["main movement direction"] = np.sign(
         np.dot(
-            pygeos.get_coordinates(movement["end"]) - pygeos.get_coordinates(movement["start"]),
+            pygeos.get_coordinates(movement["last"]) - pygeos.get_coordinates(movement["first"]),
             normal_vector,
         )
     )
 
-    movement[pygeos.intersects(movement["movement"], measurement_line)].merge(traj_data, on="ID")[
-        ["ID", "frame", "X", "Y", "Z", 'points', 'movement']]
+    movement.loc[
+        ~pygeos.intersects(movement["movement"], measurement_line), "main movement direction"
+    ] = 0
 
-    return movement[["ID", "frame", "main movement direction"]], normal_vector
+    return movement.reset_index()[["ID", "main movement direction"]], normal_vector
