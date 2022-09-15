@@ -82,31 +82,31 @@ def _run_method_ccm(
     if pygeos.area(measurement_line) > 0:
         combined["density"] = np.where(
             pygeos.area(combined["intersection voronoi"]) > 0,
-            pygeos.area(combined["intersection voronoi"])
-            / pygeos.area(combined["individual voronoi"]),
+            1 / pygeos.area(combined["individual voronoi"]),
             0,
         )
     else:
         combined["density"] = np.where(
             pygeos.length(combined["intersection voronoi"]) > 0,
-            pygeos.length(combined["intersection voronoi"])
-            / pygeos.area(combined["individual voronoi"]),
+            1 / pygeos.area(combined["individual voronoi"]),
             0,
         )
 
-    scaling_factor = (
-        pygeos.length(measurement_line)
-        if pygeos.area(measurement_line) == 0
-        else pygeos.area(measurement_line)
-    )
+    # scaling_factor = (
+    #     pygeos.length(measurement_line)
+    #     if pygeos.area(measurement_line) == 0
+    #     else pygeos.area(measurement_line)
+    # )
 
-    scaling_factor_speed = (
+    scaling_factor = (
         (pygeos.area(combined["intersection voronoi"]) / pygeos.area(measurement_line))
         if pygeos.area(measurement_line) > 0
         else pygeos.length(combined["intersection voronoi"]) / pygeos.length(measurement_line)
     )
 
-    combined["speed"] = combined["speed"] * scaling_factor_speed
+    combined["speed"] = combined["speed"] * scaling_factor
+    combined["density"] = combined["density"] * scaling_factor
+
     combined["length/area on measurement"] = (
         pygeos.area(combined["intersection voronoi"])
         if pygeos.area(measurement_line) > 0
@@ -123,7 +123,7 @@ def _run_method_ccm(
         speed_per_direction, density_per_direction, on=["frame", "main movement direction"]
     )
     v_rho_direction.reset_index(inplace=True)
-    v_rho_direction["density"] = v_rho_direction["density"] / scaling_factor
+    v_rho_direction["density"] = v_rho_direction["density"]
     v_rho_direction["flow"] = v_rho_direction["density"] * v_rho_direction["speed"]
     v_rho_direction["vJ"] = v_rho_direction["speed"] * v_rho_direction["flow"]
 
