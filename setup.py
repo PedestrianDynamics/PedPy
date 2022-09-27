@@ -27,7 +27,6 @@ setuptools.setup(
         "Shapely >= 1.8.1",
         "pygeos==0.12.0",
         "scipy==1.8.0",
-        "versioneer==0.26",
     ],
     entry_points={"console_scripts": ["pita=analyzer.application:main"]},
 )
