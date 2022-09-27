@@ -1,20 +1,16 @@
-from distutils.util import convert_path
-
 import setuptools
+
+import versioneer
 
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-main_ns = {}
-ver_path = convert_path("analyzer/version.py")
-with open(ver_path) as ver_file:
-    exec(ver_file.read(), main_ns)
-
 setuptools.setup(
     name="pita",
-    version=main_ns["__version__"],
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     author="T. Schroedter",
-    description="PiTA is a pythone library to analyze trajectories of pedestrians.",
+    description="PiTA is a python library to analyze trajectories of pedestrians.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
