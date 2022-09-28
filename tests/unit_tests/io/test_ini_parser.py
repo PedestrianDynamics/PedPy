@@ -13,13 +13,12 @@ from analyzer.io.ini_parser import (
     parse_trajectory_files,
     parse_velocity_configuration,
 )
-from analyzer.version import __version__
 
 
 def get_ini_file_as_string(content: str):
     return (
         f'<?xml version="1.0" encoding="UTF-8"?>\n'
-        f'<JPSreport project="JPS-Project" version="{__version__}">\n'
+        f'<JPSreport project="JPS-Project" version="0.0.0">\n'
         f"{content}\n"
         f"</JPSreport>\n"
     )

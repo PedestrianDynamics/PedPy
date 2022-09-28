@@ -24,7 +24,6 @@ setuptools.setup(
         "aenum >= 3.1.5",
         "numpy >= 1.21.4",
         "pandas >= 1.3.4",
-        "Shapely >= 1.8.1",
         "pygeos==0.12.0",
         "scipy==1.8.0",
     ],

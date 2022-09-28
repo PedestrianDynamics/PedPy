@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
@@ -34,7 +36,7 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -VV
           python3 -m site
-          python3 -m pip install --upgrade pip setuptools wheel
+          python3 -m pip install --upgrade pip setuptools wheel build
           python3 -m pip install -r requirements.txt
 
       - name: Check format
@@ -51,16 +53,13 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           python3 -m build
-          cd dist
-          echo "wheel=$(ls *.whl)" >> $GITHUB_ENV
-          echo "::set-output name=wheel::$(ls *.whl)"
 
       - name: Upload wheel as artifact
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
-          path: ${{github.workspace}}/dist/${{ env.wheel }}
-          name: ${{ env.wheel }}
+          name: dist
+          path: dist/
 
       - name: Upload usage notebook and demo files as artifacts
         if: matrix.os == 'ubuntu-latest'
@@ -70,10 +69,6 @@ jobs:
           path: |
             usage.ipynb
             demos/
-            
-
-    outputs:
-      wheel: ${{ steps.build-wheel.outputs.wheel }}
 
   test:
     needs: build
@@ -93,18 +88,18 @@ jobs:
       - name: Download wheel
         uses: actions/download-artifact@v3
         with:
-          name: ${{ needs.build.outputs.wheel }}
+          name: dist
+          path: dist/
 
       - name: Install wheel
         shell: bash
         run: |
-          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib descartes
-          python3 -m pip install ${{ needs.build.outputs.wheel }}
-          
+          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib descartes shapely
+          python3 -m pip install dist/*whl
+
       - name: Test if install was successful
         run: |
-          pita --version
-          python3 -c "import analyzer"
+          python3 -c "import analyzer; print(analyzer.__version__)"
 
       - name: Run usage notebook
         run: |
