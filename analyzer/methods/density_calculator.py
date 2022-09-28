@@ -43,8 +43,7 @@ def compute_voronoi_density(
     traj_data: pd.DataFrame,
     measurement_area: pygeos.Geometry,
     geometry: Geometry,
-    cuf_off: float = None,
-    num_edges: int = 40,
+    cut_off: Tuple[float, int] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi density of the trajectory per frame inside the given measurement area
 
@@ -52,15 +51,15 @@ def compute_voronoi_density(
         traj_data (pd.DataFrame): trajectory data to analyze
         measurement_area (pygeos.Geometry): area for which the density is computed
         geometry (Geometry): bounding area, where pedestrian are supposed to be
-        cuf_off (float): radius of max extended voronoi cell (in m)
-        num_edges (int): number of linear segments in the approximation of circular arcs, needs to
-                         be divisible by 4! (default: 40)
+        cut_off (Tuple[float, int): radius of max extended voronoi cell (in m),
+                number of linear segments in the approximation of circular arcs, needs to be
+                divisible by 4!
 
     Returns:
           DataFrame containing the columns: 'frame' and 'voronoi density',
           DataFrame containing the columns: 'ID', 'frame', 'individual voronoi', 'intersecting voronoi'
     """
-    df_individual = _compute_individual_voronoi_polygons(traj_data, geometry, cuf_off, num_edges)
+    df_individual = _compute_individual_voronoi_polygons(traj_data, geometry, cut_off)
     df_intersecting = _compute_intersecting_polygons(df_individual, measurement_area)
 
     df_combined = pd.merge(df_individual, df_intersecting, on=["ID", "frame"], how="outer")
@@ -125,19 +124,16 @@ def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def _compute_individual_voronoi_polygons(
-    traj_data: pd.DataFrame,
-    geometry: Geometry,
-    cut_off: float = None,
-    num_edges: int = 40,
+    traj_data: pd.DataFrame, geometry: Geometry, cut_off: Tuple[float, int] = None
 ) -> pd.DataFrame:
     """Compute the individual voronoi cells for each person and frame
 
     Args:
         traj_data (pd.DataFrame): trajectory data
         geometry (Geometry): bounding area, where pedestrian are supposed to be
-        cut_off (float): radius of max extended voronoi cell (in m)
-        num_edges (int): number of linear segments in the approximation of circular arcs, needs to
-                         be divisible by 4! (default: 40)
+        cut_off (Tuple[float, int): radius of max extended voronoi cell (in m),
+                number of linear segments in the approximation of circular arcs, needs to be
+                divisible by 4!
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and 'individual voronoi'.
     """
@@ -172,10 +168,12 @@ def _compute_individual_voronoi_polygons(
         )
 
         if cut_off is not None:
+            num_edges = cut_off[1]
+            radius = cut_off[0]
             quad_edges = int(num_edges / 4)
             voronoi_in_frame["individual voronoi"] = pygeos.intersection(
                 voronoi_in_frame["individual voronoi"],
-                pygeos.buffer(peds_in_frame["points"], cut_off, quadsegs=quad_edges),
+                pygeos.buffer(peds_in_frame["points"], radius, quadsegs=quad_edges),
             )
 
         dfs.append(voronoi_in_frame)
