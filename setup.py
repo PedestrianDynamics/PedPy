@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pita",
+    name="pitapy",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     author="T. Schroedter",
