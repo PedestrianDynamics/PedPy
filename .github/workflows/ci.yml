@@ -104,3 +104,26 @@ jobs:
       - name: Run usage notebook
         run: |
           jupyter nbconvert --to notebook --execute usage.ipynb
+
+  publish:
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    needs: [build, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.8' ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Download wheel
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+      - name: publish wheel to test PyPi
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
