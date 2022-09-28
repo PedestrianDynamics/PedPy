@@ -1,1 +1,1 @@
-analyzer/util/_version.py export-subst
+analyzer/_version.py export-subst

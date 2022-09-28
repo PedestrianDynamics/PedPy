@@ -6,7 +6,6 @@ from analyzer.io.geometry_parser import parse_geometry
 from analyzer.io.ini_parser import parse_ini_file
 from analyzer.io.trajectory_parser import parse_trajectory
 from analyzer.util.loghelper import *
-from analyzer.version import __version__
 
 
 def main():
@@ -60,9 +59,6 @@ class Application:
             default="ini-file.xml",
             help="ini-file containing the configuration of the analysis to run",
             type=argparse.FileType("r", encoding="UTF-8"),
-        )
-        self.parser.add_argument(
-            "--version", action="version", version="%(prog)s {version}".format(version=__version__)
         )
 
     def parse_arguments(self):
