@@ -27,5 +27,4 @@ setuptools.setup(
         "pygeos==0.12.0",
         "scipy==1.8.0",
     ],
-    entry_points={"console_scripts": ["pita=analyzer.application:main"]},
 )

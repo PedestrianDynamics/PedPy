@@ -1,7 +1,6 @@
 # Pedestrian-Trajectory-Analyzer (PiTA)
 
 `PiTA` is a python library to analyze pedestrian trajectories. 
-It will also provide a command line interface to run different analyzes defined in a ini-file. 
 
 This repo is a port from the original `JPSreport` to a Python implementation, and will provide the same functionalities.
 
