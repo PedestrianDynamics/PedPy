@@ -70,12 +70,12 @@ def _get_grid_cells(geometry: pygeos.Geometry, grid_size: float):
     max_y = bounds[3]
 
     xs = np.arange(min_x, max_x + grid_size, grid_size)
-    ys = np.arange(min_y, max_y + grid_size, grid_size)
+    ys = np.arange(max_y, min_y - grid_size, -grid_size)
 
     grid_cells = []
-    for i in range(len(xs) - 1):
-        for j in range(len(ys) - 1):
+    for j in range(len(ys) - 1):
+        for i in range(len(xs) - 1):
             grid_cell = pygeos.box(xs[i], ys[j], xs[i + 1], ys[j + 1])
             grid_cells.append(grid_cell)
 
-    return np.array(grid_cells), len(xs) - 1, len(ys) - 1
+    return np.array(grid_cells), len(ys) - 1, len(xs) - 1
