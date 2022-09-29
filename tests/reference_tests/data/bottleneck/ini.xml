@@ -40,4 +40,13 @@
         <measurement_area id="1"/>
     </method_C>
 
+    <method_D enabled="true">
+        <one_dimensional enabled="false"/>
+        <cut_by_circle enabled="true" radius="0.8" edges="12"/>
+        <profiles enabled="true" grid_size_x="0.20" grid_size_y="0.20" start_frame="100"
+                  stop_frame="120"/>
+        <use_blind_points enabled="true"/>
+        <vel_calculation type="Arithmetic"/>
+    </method_D>
+
 </JPSreport>
