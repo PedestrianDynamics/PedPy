@@ -31,7 +31,8 @@ def compute_profiles(
     for _, frame_data in individual_voronoi_velocity_data.groupby("frame"):
         grid_intersections_area = pygeos.area(
             pygeos.intersection(
-                grid_cells[:, np.newaxis], frame_data["individual voronoi"][np.newaxis, :]
+                np.array(grid_cells)[:, np.newaxis],
+                np.array(frame_data["individual voronoi"])[np.newaxis, :],
             )
         )
 
