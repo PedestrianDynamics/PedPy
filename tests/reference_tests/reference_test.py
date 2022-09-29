@@ -321,6 +321,7 @@ def test_passing_velocity(measurement_line, width, folder):
     assert reference_result["ID"].equals(result["ID"])
     assert np.isclose(result["speed"], reference_result["speed"], atol=TOLERANCE).all()
 
+
 @pytest.mark.parametrize(
     "geometry, grid_size, cut_off_radius, num_edges, blind_points, min_frame, max_frame, folder",
     [
@@ -334,24 +335,42 @@ def test_passing_velocity(measurement_line, width, folder):
             12,
             False,
             110,
-            120,
+            110,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
     ],
 )
-def test_profiles(geometry, grid_size, cut_off_radius, num_edges, blind_points, min_frame, max_frame, folder):
+def test_profiles(
+    geometry, grid_size, cut_off_radius, num_edges, blind_points, min_frame, max_frame, folder
+):
+    print()
     density_result_folder = folder / "results/Fundamental_Diagram/Classical_Voronoi/field/density"
+    velocity_result_folder = folder / "results/Fundamental_Diagram/Classical_Voronoi/field/velocity"
 
     trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
-    trajectory.data = trajectory.data[trajectory.data.frame.between(min_frame, max_frame, inclusive='both')]
+    trajectory.data = trajectory.data[
+        trajectory.data.frame.between(min_frame - 10, max_frame + 10, inclusive="both")
+    ]
 
-    individual_voronoi = _compute_individual_voronoi_polygons(trajectory.data, Geometry(geometry), (cut_off_radius, num_edges))
+    individual_voronoi = _compute_individual_voronoi_polygons(
+        trajectory.data, Geometry(geometry), (cut_off_radius, num_edges)
+    )
     individual_speed = compute_individual_velocity(trajectory.data, trajectory.frame_rate, 5)
     combined = pd.merge(individual_voronoi, individual_speed, on=["ID", "frame"])
 
-    individuaL_voronoi_velocity_data = combined[combined.frame.between(min_frame, max_frame, inclusive='both')]
-    density_profiles, velocity_profiles = compute_profiles(individuaL_voronoi_velocity_data, geometry, grid_size)
-
-    for frame in range(min_frame, max_frame+1):
+    individual_voronoi_velocity_data = combined[
+        combined.frame.between(min_frame, max_frame, inclusive="both")
+    ]
+    density_profiles, velocity_profiles = compute_profiles(
+        individual_voronoi_velocity_data, geometry, grid_size
+    )
+    for frame in range(min_frame, max_frame + 1):
         reference_density = np.loadtxt(next(density_result_folder.glob(f"*{frame}*")))
-        assert np.isclose(density_profiles[frame-min_frame], reference_density, atol=TOLERANCE).all()
+        assert np.isclose(
+            density_profiles[frame - min_frame], reference_density, atol=TOLERANCE
+        ).all()
+
+        reference_velocity = np.loadtxt(next(velocity_result_folder.glob(f"*{frame}*")))
+        assert np.isclose(
+            velocity_profiles[frame - min_frame], reference_velocity, atol=TOLERANCE
+        ).all()

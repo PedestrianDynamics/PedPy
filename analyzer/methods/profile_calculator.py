@@ -6,7 +6,7 @@ import pygeos
 
 
 def compute_profiles(
-    individuaL_voronoi_velocity_data: pd.DataFrame, geometry: pygeos.Geometry, grid_size: float
+    individual_voronoi_velocity_data: pd.DataFrame, geometry: pygeos.Geometry, grid_size: float
 ):
     """Computes the density and velocity profiles of the given trajectory within the geometry
 
@@ -14,7 +14,7 @@ def compute_profiles(
         the important areas.
 
     Args:
-        individuaL_voronoi_velocity_data (pd.DataFrame): individual voronoi and velocity data,
+        individual_voronoi_velocity_data (pd.DataFrame): individual voronoi and velocity data,
             needs to contain a column 'individual voronoi' which holds pygeos.Polygon information
             and a column 'speed' which holds a floating point value
         geometry (pygeos.Geometry): geometry for which the profiles are computed
@@ -28,7 +28,7 @@ def compute_profiles(
     density_profiles = []
     velocity_profiles = []
 
-    for _, frame_data in individuaL_voronoi_velocity_data.groupby("frame"):
+    for _, frame_data in individual_voronoi_velocity_data.groupby("frame"):
         grid_intersections_area = pygeos.area(
             pygeos.intersection(
                 grid_cells[:, np.newaxis], frame_data["individual voronoi"][np.newaxis, :]
@@ -43,9 +43,17 @@ def compute_profiles(
             )
             / pygeos.area(grid_cells[0])
         )
-        velocity = np.sum(
-            grid_intersections_area * frame_data["speed"].values, axis=1
-        ) / pygeos.area(grid_cells[0])
+
+        grid_intersections_area[grid_intersections_area > 0] = 1
+        accumulated_velocity = np.sum(grid_intersections_area * frame_data["speed"].values, axis=1)
+        num_peds = np.count_nonzero(grid_intersections_area, axis=1)
+
+        velocity = np.divide(
+            accumulated_velocity,
+            num_peds,
+            out=np.zeros_like(accumulated_velocity),
+            where=num_peds != 0,
+        )
 
         density_profiles.append(density.reshape(rows, cols))
         velocity_profiles.append(velocity.reshape(rows, cols))
@@ -69,13 +77,13 @@ def _get_grid_cells(geometry: pygeos.Geometry, grid_size: float):
     max_x = bounds[2]
     max_y = bounds[3]
 
-    xs = np.arange(min_x, max_x + grid_size, grid_size)
-    ys = np.arange(max_y, min_y - grid_size, -grid_size)
+    x = np.arange(min_x, max_x + grid_size, grid_size)
+    y = np.arange(max_y, min_y - grid_size, -grid_size)
 
     grid_cells = []
-    for j in range(len(ys) - 1):
-        for i in range(len(xs) - 1):
-            grid_cell = pygeos.box(xs[i], ys[j], xs[i + 1], ys[j + 1])
+    for j in range(len(y) - 1):
+        for i in range(len(x) - 1):
+            grid_cell = pygeos.box(x[i], y[j], x[i + 1], y[j + 1])
             grid_cells.append(grid_cell)
 
-    return np.array(grid_cells), len(ys) - 1, len(xs) - 1
+    return np.array(grid_cells), len(y) - 1, len(x) - 1
