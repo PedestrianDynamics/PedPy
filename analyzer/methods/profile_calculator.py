@@ -6,19 +6,25 @@ import pygeos
 
 
 def compute_profiles(
-    individual_voronoi_velocity_data: pd.DataFrame, geometry: pygeos.Geometry, grid_size: float
+    individual_voronoi_velocity_data: pd.DataFrame,
+    geometry: pygeos.Geometry,
+    grid_size: float,
 ):
-    """Computes the density and velocity profiles of the given trajectory within the geometry
+    """Computes the density and velocity profiles of the given trajectory
+    within the geometry
 
-    Note: As this is a quite compute heavy operation, it is suggested to reduce the geometry to
-        the important areas.
+    Note: As this is a quite compute heavy operation, it is suggested to
+    reduce the geometry to the important areas.
 
     Args:
-        individual_voronoi_velocity_data (pd.DataFrame): individual voronoi and velocity data,
-            needs to contain a column 'individual voronoi' which holds pygeos.Polygon information
-            and a column 'speed' which holds a floating point value
-        geometry (pygeos.Geometry): geometry for which the profiles are computed
-        grid_size (float): resolution of the grid used for computing the profiles
+        individual_voronoi_velocity_data (pd.DataFrame): individual voronoi
+            and velocity data, needs to contain a column 'individual voronoi'
+            which holds pygeos.Polygon information and a column 'speed'
+            which holds a floating point value
+        geometry (pygeos.Geometry): geometry for which the profiles are
+            computed
+        grid_size (float): resolution of the grid used for computing the
+            profiles
 
     Returns:
         (List of density profiles, List of velocity profiles)
@@ -46,7 +52,9 @@ def compute_profiles(
         )
 
         grid_intersections_area[grid_intersections_area > 0] = 1
-        accumulated_velocity = np.sum(grid_intersections_area * frame_data["speed"].values, axis=1)
+        accumulated_velocity = np.sum(
+            grid_intersections_area * frame_data["speed"].values, axis=1
+        )
         num_peds = np.count_nonzero(grid_intersections_area, axis=1)
 
         velocity = np.divide(
@@ -63,11 +71,14 @@ def compute_profiles(
 
 
 def _get_grid_cells(geometry: pygeos.Geometry, grid_size: float):
-    """Creates a list of square grid cells which cover the space used by geometry.
+    """Creates a list of square grid cells which cover the space used by
+    geometry.
 
     Args:
-        geometry (pygeos.Geometry): geometry for which the profiles are computed
-        grid_size (float): resolution of the grid used for computing the profiles
+        geometry (pygeos.Geometry): geometry for which the profiles are
+            computed.
+        grid_size (float): resolution of the grid used for computing the
+            profiles.
 
     Returns:
         (List of grid cells, number of grid rows, number of grid columns)

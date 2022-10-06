@@ -107,7 +107,12 @@ def write_trajectory_file(
             TrajectoryUnit.CENTIMETER,
         ),
         (
-            np.array([[0, 0, 5, 1, 10, "should be ignore"], [1, 0, -5, -1, -10, "this too"]]),
+            np.array(
+                [
+                    [0, 0, 5, 1, 10, "should be ignore"],
+                    [1, 0, -5, -1, -10, "this too"],
+                ]
+            ),
             50.0,
             TrajectoryType.PETRACK,
             TrajectoryUnit.CENTIMETER,
@@ -179,7 +184,12 @@ def test_parse_trajectory_files_success(
             TrajectoryUnit.CENTIMETER,
         ),
         (
-            np.array([(0, 0, 5, 1, 10, "should be ignored"), (1, 0, -5, -1, -10, "this too")]),
+            np.array(
+                [
+                    (0, 0, 5, 1, 10, "should be ignored"),
+                    (1, 0, -5, -1, -10, "this too"),
+                ]
+            ),
             50.0,
             TrajectoryType.PETRACK,
             TrajectoryUnit.CENTIMETER,
@@ -206,13 +216,16 @@ def test_parse_trajectory_file(
         data=written_data,
     )
 
-    data_from_file, frame_rate_from_file, type_from_file = parse_trajectory_file(
-        trajectory_file=trajectory_txt
-    )
+    (
+        data_from_file,
+        frame_rate_from_file,
+        type_from_file,
+    ) = parse_trajectory_file(trajectory_file=trajectory_txt)
     expected_data = prepare_data_frame(expected_data)
 
     assert (
-        data_from_file[["ID", "frame", "X", "Y", "Z"]].to_numpy() == expected_data.to_numpy()
+        data_from_file[["ID", "frame", "X", "Y", "Z"]].to_numpy()
+        == expected_data.to_numpy()
     ).all()
     assert frame_rate_from_file == expected_frame_rate
     assert type_from_file == expected_type
@@ -244,7 +257,10 @@ def test_parse_trajectory_file(
         ),
         (
             np.array(
-                [(0, 0, 5, 1, 10, "test"), (1, 0, -5, -1, -10, "will be ignored")],
+                [
+                    (0, 0, 5, 1, 10, "test"),
+                    (1, 0, -5, -1, -10, "will be ignored"),
+                ],
             ),
             " ",
             TrajectoryUnit.CENTIMETER,
@@ -278,7 +294,8 @@ def test_parse_trajectory_data_success(
         dtype("float64"),
     ]
     assert (
-        data_from_file[["ID", "frame", "X", "Y", "Z"]].to_numpy() == expected_data.to_numpy()
+        data_from_file[["ID", "frame", "X", "Y", "Z"]].to_numpy()
+        == expected_data.to_numpy()
     ).all()
 
 
@@ -302,7 +319,9 @@ def test_parse_trajectory_data_success(
         ),
     ],
 )
-def test_parse_trajectory_data_failure(tmp_path, data: np.array, expected_message: str):
+def test_parse_trajectory_data_failure(
+    tmp_path, data: np.array, expected_message: str
+):
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
     written_data = pd.DataFrame(data=data)
 
@@ -335,7 +354,9 @@ def test_parse_trajectory_data_failure(tmp_path, data: np.array, expected_messag
         ("# framerate: \n# framerate: 25 fps", 25.0),
     ],
 )
-def test_parse_frame_rate_success(tmp_path, file_content: str, expected_frame_rate: float):
+def test_parse_frame_rate_success(
+    tmp_path, file_content: str, expected_frame_rate: float
+):
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
     with trajectory_txt.open("w") as f:
@@ -471,12 +492,17 @@ def test_parse_frame_rate_failure(
     "file_content, expected_type",
     [
         ("", TrajectoryType.FALLBACK),
-        ("# line does not contain petrack nor jupedsim, result Fallback", TrajectoryType.FALLBACK),
+        (
+            "# line does not contain petrack nor jupedsim, result Fallback",
+            TrajectoryType.FALLBACK,
+        ),
         ("# PeTrack project: project.pet", TrajectoryType.PETRACK),
         ("#description: jpscore (0.8.4)", TrajectoryType.JUPEDSIM),
     ],
 )
-def test_parse_trajectory_type(tmp_path, file_content: str, expected_type: TrajectoryType):
+def test_parse_trajectory_type(
+    tmp_path, file_content: str, expected_type: TrajectoryType
+):
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
     with trajectory_txt.open("w") as f:
@@ -490,7 +516,10 @@ def test_parse_trajectory_type(tmp_path, file_content: str, expected_type: Traje
     "file_content, expected_unit",
     [
         ("", TrajectoryUnit.METER),
-        ("here is no unit given, so default meter should be returned", TrajectoryUnit.METER),
+        (
+            "here is no unit given, so default meter should be returned",
+            TrajectoryUnit.METER,
+        ),
         ("#ID	FR	X	Y	Z	A	B	ANGLE	COLOR	", TrajectoryUnit.METER),
         ("# id frame x/cm y/cm z/cm", TrajectoryUnit.CENTIMETER),
         ("# id frame x/cm y/cm z/cm".upper(), TrajectoryUnit.CENTIMETER),
@@ -498,7 +527,9 @@ def test_parse_trajectory_type(tmp_path, file_content: str, expected_type: Traje
         ("# id frame x/m y/m z/m".upper(), TrajectoryUnit.METER),
     ],
 )
-def test_parse_unit_of_coordinates(tmp_path, file_content: str, expected_unit: TrajectoryUnit):
+def test_parse_unit_of_coordinates(
+    tmp_path, file_content: str, expected_unit: TrajectoryUnit
+):
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
     with trajectory_txt.open("w") as f:

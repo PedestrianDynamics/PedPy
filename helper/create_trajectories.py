@@ -24,11 +24,22 @@ def required_length(nmin: int, nmax: int):
 def setup_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-o", "--output", help="file where the trajectory is written", type=pathlib.Path
+        "-o",
+        "--output",
+        help="file where the trajectory is written",
+        type=pathlib.Path,
     )
-    parser.add_argument("--fps", default=25, help="fps of the created trajectory (1/s)", type=float)
     parser.add_argument(
-        "--sim_time", default=80, help="length of the created trajectory (s)", type=float
+        "--fps",
+        default=25,
+        help="fps of the created trajectory (1/s)",
+        type=float,
+    )
+    parser.add_argument(
+        "--sim_time",
+        default=80,
+        help="length of the created trajectory (s)",
+        type=float,
     )
     parser.add_argument(
         "--geometry",
@@ -67,17 +78,30 @@ def setup_arg_parser():
         action=required_length(2, 2),
     )
     parser.add_argument(
-        "--velocity", type=float, help="velocity of the pedestrians (m/s)", default=1.0
+        "--velocity",
+        type=float,
+        help="velocity of the pedestrians (m/s)",
+        default=1.0,
     )
 
-    sub_parsers = parser.add_subparsers(help="sub-command help", required=True, dest="cmd")
+    sub_parsers = parser.add_subparsers(
+        help="sub-command help", required=True, dest="cmd"
+    )
 
     grid_parser = sub_parsers.add_parser("grid")
     grid_parser.add_argument(
-        "--shape", nargs="+", type=int, default=[1, 1], action=required_length(2, 2)
+        "--shape",
+        nargs="+",
+        type=int,
+        default=[1, 1],
+        action=required_length(2, 2),
     )
     grid_parser.add_argument(
-        "--start_position", nargs="+", type=float, default=[-10, -4.0], action=required_length(2, 2)
+        "--start_position",
+        nargs="+",
+        type=float,
+        default=[-10, -4.0],
+        action=required_length(2, 2),
     )
 
     grid_parser.add_argument("--ped_distance", type=float, default=1.0)
@@ -86,14 +110,20 @@ def setup_arg_parser():
 
 
 def write_trajectory(
-    out_file: pathlib.Path, fps: int, geometry: str, num_pedestrians: int, traj: pd.DataFrame
+    out_file: pathlib.Path,
+    fps: int,
+    geometry: str,
+    num_pedestrians: int,
+    traj: pd.DataFrame,
 ):
     with open(out_file, "w") as trajectory_file:
         write_header(trajectory_file, fps, geometry, num_pedestrians)
         write_trajectory_data(trajectory_file, traj)
 
 
-def write_header(trajectory_file: TextIO, fps: int, geometry_file: str, num_pedestrians: int):
+def write_header(
+    trajectory_file: TextIO, fps: int, geometry_file: str, num_pedestrians: int
+):
 
     version = "0.0.1"
 
@@ -115,7 +145,9 @@ def write_header(trajectory_file: TextIO, fps: int, geometry_file: str, num_pede
     trajectory_file.write(header)
 
 
-def write_trajectory_data(trajectory_file: TextIO, trajectory_data: pd.DataFrame):
+def write_trajectory_data(
+    trajectory_file: TextIO, trajectory_data: pd.DataFrame
+):
     trajectory_data["Z"] = 0.0
     trajectory_data["A"] = 0.5
     trajectory_data["B"] = 0.5
@@ -123,7 +155,9 @@ def write_trajectory_data(trajectory_file: TextIO, trajectory_data: pd.DataFrame
     trajectory_data["COLOR"] = 220
 
     trajectory_data.sort_values(["FR", "ID"], inplace=True, ascending=True)
-    trajectory_file.write(trajectory_data.to_csv(sep="\t", header=False, index=False))
+    trajectory_file.write(
+        trajectory_data.to_csv(sep="\t", header=False, index=False)
+    )
 
 
 def get_grid_trajectory(
@@ -172,7 +206,9 @@ def get_grid_trajectory(
     return pd.DataFrame(traj, columns=["ID", "FR", "X", "Y"])
 
 
-def filter_pedestrians(traj: pd.DataFrame, x_range: List[float], y_range: List[float]):
+def filter_pedestrians(
+    traj: pd.DataFrame, x_range: List[float], y_range: List[float]
+):
     """Filters the given trajectory, such that all the pedestrians are within the given range
 
     Args:
@@ -185,10 +221,14 @@ def filter_pedestrians(traj: pd.DataFrame, x_range: List[float], y_range: List[f
     """
     filtered = traj
     if x_range is not None:
-        filtered = filtered.loc[(x_range[0] <= filtered.X) & (filtered.X <= x_range[1])]
+        filtered = filtered.loc[
+            (x_range[0] <= filtered.X) & (filtered.X <= x_range[1])
+        ]
 
     if y_range is not None:
-        filtered = filtered.loc[(y_range[0] <= filtered.Y) & (filtered.Y <= y_range[1])]
+        filtered = filtered.loc[
+            (y_range[0] <= filtered.Y) & (filtered.Y <= y_range[1])
+        ]
 
     return filtered
 
@@ -217,7 +257,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     num_frames = args.sim_time * args.fps
-    movement = get_movement_per_frame(np.asarray(args.movement_direction), args.velocity, args.fps)
+    movement = get_movement_per_frame(
+        np.asarray(args.movement_direction), args.velocity, args.fps
+    )
 
     if args.cmd == "grid":
         num_peds = args.shape[0] * args.shape[1]

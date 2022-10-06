@@ -15,11 +15,13 @@ def compute_classic_density(
     traj_data: pd.DataFrame,
     measurement_area: pygeos.Geometry,
 ) -> pd.DataFrame:
-    """Compute the classic density of the trajectory per frame inside the given measurement area
+    """Compute the classic density of the trajectory per frame inside the given
+     measurement area.
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
-        measurement_area (pygeos.Geometry): area for which the density is computed
+        measurement_area (pygeos.Geometry): area for which the density is
+            computed
 
     Returns:
         DataFrame containing the columns: 'frame' and 'classic density'
@@ -45,30 +47,40 @@ def compute_voronoi_density(
     geometry: Geometry,
     cut_off: Tuple[float, int] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute the voronoi density of the trajectory per frame inside the given measurement area
+    """Compute the voronoi density of the trajectory per frame inside the given
+    measurement area.
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
-        measurement_area (pygeos.Geometry): area for which the density is computed
+        measurement_area (pygeos.Geometry): area for which the density is
+            computed
         geometry (Geometry): bounding area, where pedestrian are supposed to be
         cut_off (Tuple[float, int): radius of max extended voronoi cell (in m),
-                number of linear segments in the approximation of circular arcs, needs to be
-                divisible by 4!
+                number of linear segments in the approximation of circular
+                arcs, needs to be divisible by 4!
 
     Returns:
           DataFrame containing the columns: 'frame' and 'voronoi density',
-          DataFrame containing the columns: 'ID', 'frame', 'individual voronoi', 'intersecting voronoi'
+          DataFrame containing the columns: 'ID', 'frame', 'individual voronoi',
+                'intersecting voronoi'
     """
-    df_individual = _compute_individual_voronoi_polygons(traj_data, geometry, cut_off)
-    df_intersecting = _compute_intersecting_polygons(df_individual, measurement_area)
-
-    df_combined = pd.merge(df_individual, df_intersecting, on=["ID", "frame"], how="outer")
-    df_combined["relation"] = pygeos.area(df_combined["intersection voronoi"]) / pygeos.area(
-        df_combined["individual voronoi"]
+    df_individual = _compute_individual_voronoi_polygons(
+        traj_data, geometry, cut_off
+    )
+    df_intersecting = _compute_intersecting_polygons(
+        df_individual, measurement_area
     )
 
+    df_combined = pd.merge(
+        df_individual, df_intersecting, on=["ID", "frame"], how="outer"
+    )
+    df_combined["relation"] = pygeos.area(
+        df_combined["intersection voronoi"]
+    ) / pygeos.area(df_combined["individual voronoi"])
+
     df_voronoi_density = (
-        df_combined.groupby("frame")["relation"].sum() / pygeos.area(measurement_area)
+        df_combined.groupby("frame")["relation"].sum()
+        / pygeos.area(measurement_area)
     ).to_frame()
 
     # Rename column and add missing zero values
@@ -78,17 +90,23 @@ def compute_voronoi_density(
         fill_value=0.0,
     )
 
-    return df_voronoi_density, df_combined.loc[:, df_combined.columns != "relation"]
+    return (
+        df_voronoi_density,
+        df_combined.loc[:, df_combined.columns != "relation"],
+    )
 
 
-def compute_passing_density(density_per_frame: pd.DataFrame, frames: pd.DataFrame):
+def compute_passing_density(
+    density_per_frame: pd.DataFrame, frames: pd.DataFrame
+):
     """Compute the individual density of the pedestrian who pass the area.
 
     Args:
-        density_per_frame (pd.DataFrame): density per frame, DataFrame containing the columns:
-                'frame' (as index) and 'density'
-        frames (pd.DataFrame): information for each pedestrian in the area, need to contain
-                the following columns: 'ID','frame_start', 'frame_end'
+        density_per_frame (pd.DataFrame): density per frame, DataFrame
+                containing the columns: 'frame' (as index) and 'density'
+        frames (pd.DataFrame): information for each pedestrian in the area,
+                need to contain the following columns: 'ID','frame_start',
+                'frame_end'
 
     Returns:
           DataFrame containing the columns: 'ID' and 'density' in 1/m
@@ -118,29 +136,35 @@ def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
         DataFrame containing the columns: 'frame' (as index) and 'num_peds'.
 
     """
-    num_peds_per_frame = traj_data.groupby("frame").agg(num_peds=("ID", "count"))
+    num_peds_per_frame = traj_data.groupby("frame").agg(
+        num_peds=("ID", "count")
+    )
 
     return num_peds_per_frame
 
 
 def _compute_individual_voronoi_polygons(
-    traj_data: pd.DataFrame, geometry: Geometry, cut_off: Tuple[float, int] = None
+    traj_data: pd.DataFrame,
+    geometry: Geometry,
+    cut_off: Tuple[float, int] = None,
 ) -> pd.DataFrame:
     """Compute the individual voronoi cells for each person and frame
 
     Args:
         traj_data (pd.DataFrame): trajectory data
         geometry (Geometry): bounding area, where pedestrian are supposed to be
-        cut_off (Tuple[float, int): radius of max extended voronoi cell (in m),
-                number of linear segments in the approximation of circular arcs, needs to be
-                divisible by 4!
+        cut_off (Tuple[float, int]): radius of max extended voronoi cell (in m),
+                number of linear segments in the approximation of circular arcs,
+                needs to be divisible by 4!
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and 'individual voronoi'.
     """
     dfs = []
 
     bounds = pygeos.bounds(geometry.walkable_area)
-    clipping_diameter = 2 * max(abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1]))
+    clipping_diameter = 2 * max(
+        abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1])
+    )
 
     for _, peds_in_frame in traj_data.groupby(traj_data.frame):
         points = peds_in_frame.sort_values(by="ID")[["X", "Y"]]
@@ -155,14 +179,18 @@ def _compute_individual_voronoi_polygons(
             vornoi_polygons, geometry.walkable_area
         )
 
-        # Only consider the parts of a multipolygon which contain the position of the pedestrian
+        # Only consider the parts of a multipolygon which contain the position
+        # of the pedestrian
         voronoi_in_frame.loc[
-            pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, "individual voronoi"
+            pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3,
+            "individual voronoi",
         ] = voronoi_in_frame.loc[
             pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, :
         ].apply(
             lambda x: pygeos.get_parts(x["individual voronoi"])[
-                pygeos.within(x["points"], pygeos.get_parts(x["individual voronoi"]))
+                pygeos.within(
+                    x["points"], pygeos.get_parts(x["individual voronoi"])
+                )
             ][0],
             axis=1,
         )
@@ -173,7 +201,9 @@ def _compute_individual_voronoi_polygons(
             quad_edges = int(num_edges / 4)
             voronoi_in_frame["individual voronoi"] = pygeos.intersection(
                 voronoi_in_frame["individual voronoi"],
-                pygeos.buffer(peds_in_frame["points"], radius, quadsegs=quad_edges),
+                pygeos.buffer(
+                    peds_in_frame["points"], radius, quadsegs=quad_edges
+                ),
             )
 
         dfs.append(voronoi_in_frame)
@@ -184,15 +214,18 @@ def _compute_individual_voronoi_polygons(
 def _compute_intersecting_polygons(
     individual_voronoi_data: pd.DataFrame, measurement_area: pygeos.Geometry
 ) -> pd.DataFrame:
-    """Compute the intersection of each of the individual voronoi cells with the measurement area
+    """Compute the intersection of each of the individual voronoi cells with
+    the measurement area.
 
     Args:
-        individual_voronoi_data (pd.DataFrame): individual voronoi data, needs to contain a column
-                'individual voronoi' which holds pygeos.Polygon information
+        individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
+                to contain a column 'individual voronoi' which holds
+                pygeos.Polygon information
         measurement_area (pygeos.Geometry):
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame' and 'intersection voronoi'.
+        DataFrame containing the columns: 'ID', 'frame' and
+        'intersection voronoi'.
     """
     df_intersection = individual_voronoi_data[["ID", "frame"]].copy()
     df_intersection["intersection voronoi"] = pygeos.intersection(
@@ -253,7 +286,12 @@ def _clip_voronoi_polygons(voronoi, diameter):
 
         # Polygon consists of finite part plus an extra edge.
         finite_part = voronoi.vertices[region[inf + 1 :] + region[:inf]]
-        extra_edge = [voronoi.vertices[j] + dir_j * length, voronoi.vertices[k] + dir_k * length]
+        extra_edge = [
+            voronoi.vertices[j] + dir_j * length,
+            voronoi.vertices[k] + dir_k * length,
+        ]
 
-        polygons.append(pygeos.polygons(np.concatenate((finite_part, extra_edge))))
+        polygons.append(
+            pygeos.polygons(np.concatenate((finite_part, extra_edge)))
+        )
     return polygons
