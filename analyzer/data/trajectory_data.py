@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 import pygeos
-from aenum import Enum, auto
+from aenum import Enum
 
 
 class TrajectoryUnit(Enum):
@@ -14,16 +14,6 @@ class TrajectoryUnit(Enum):
     _init_ = "value __doc__"
     METER = 1, "meter (m)"
     CENTIMETER = 100, "centimeter (cm)"
-
-
-class TrajectoryType(Enum):
-    """Identifier for the type of trajectory"""
-
-    _init_ = "value __doc__"
-
-    PETRACK = auto(), "PeTrack trajectory"
-    JUPEDSIM = auto(), "JuPedSim trajectory"
-    FALLBACK = auto(), "trajectory of unknown type"
 
 
 @dataclass
@@ -49,18 +39,15 @@ class TrajectoryData:
 
     data: pd.DataFrame
     frame_rate: float
-    trajectory_type: TrajectoryType
     file: pathlib.Path
 
     def __init__(
         self,
         data: pd.DataFrame,
         frame_rate: float,
-        trajectory_type: TrajectoryType,
         file: pathlib.Path,
     ):
         self.frame_rate = frame_rate
-        self.trajectory_type = trajectory_type
         self.file = file
 
         self.data = data

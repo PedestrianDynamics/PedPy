@@ -1,8 +1,8 @@
 from . import _version
 from .data.geometry import Geometry
-from .data.trajectory_data import TrajectoryData, TrajectoryType, TrajectoryUnit
+from .data.trajectory_data import TrajectoryData, TrajectoryUnit
 from .io.geometry_parser import parse_geometry
-from .io.trajectory_parser import parse_trajectory
+from .io.trajectory_parser import load_trajectory
 from .methods.density_calculator import (
     compute_classic_density,
     compute_passing_density,
