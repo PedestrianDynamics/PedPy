@@ -1,9 +1,10 @@
+from typing import List
+
 import numpy as np
 import pandas as pd
 import pytest
 from numpy import dtype
 
-from analyzer.data.trajectory_data import *
 from analyzer.io.trajectory_parser import *
 
 
