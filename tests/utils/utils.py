@@ -2,7 +2,7 @@ import pathlib
 
 import pygeos
 
-from analyzer.data.trajectory_data import TrajectoryData, TrajectoryType
+from analyzer.data.trajectory_data import TrajectoryData
 from helper.create_trajectories import get_grid_trajectory
 
 
@@ -40,6 +40,4 @@ def get_trajectory_data(
         number_frames=number_frames,
     )
     grid = grid.rename(columns={"FR": "frame"})
-    return TrajectoryData(
-        grid, fps, TrajectoryType.FALLBACK, pathlib.Path("not_relevant")
-    )
+    return TrajectoryData(grid, fps, pathlib.Path("not_relevant"))

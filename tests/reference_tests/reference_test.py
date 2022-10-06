@@ -6,7 +6,7 @@ import pygeos
 import pytest
 
 from analyzer.data.geometry import Geometry
-from analyzer.io.trajectory_parser import parse_trajectory
+from analyzer.io.trajectory_parser import load_trajectory
 from analyzer.methods.density_calculator import (
     _compute_individual_voronoi_polygons,
     _compute_intersecting_polygons,
@@ -58,7 +58,7 @@ def test_classic_density(geometry, measurement_area, folder):
         usecols=["frame", "classic density"],
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
 
     result = compute_classic_density(trajectory.data, measurement_area)
 
@@ -102,7 +102,7 @@ def test_arithmetic_velocity(
         usecols=["frame", "speed"],
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
 
     result, _ = compute_mean_velocity_per_frame(
         trajectory.data, measurement_area, trajectory.frame_rate, velocity_frame
@@ -144,7 +144,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
         usecols=["frame", "voronoi density"],
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
     geometry = Geometry(geometry_polygon)
     result, _ = compute_voronoi_density(
         trajectory.data, measurement_area, geometry
@@ -195,7 +195,7 @@ def test_voronoi_velocity(
         usecols=["frame", "voronoi speed"],
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
     geometry = Geometry(geometry_polygon)
 
     individual_voronoi = _compute_individual_voronoi_polygons(
@@ -245,7 +245,7 @@ def test_nt(line, folder):
         index_col=0,
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
 
     result, _ = compute_n_t(trajectory.data, line, trajectory.frame_rate)
     assert (reference_result.index.values == result.index.values).all()
@@ -281,7 +281,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
         names=["Flow rate(1/s)", "Mean velocity(m/s)"],
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
 
     individual_speed = compute_individual_velocity(
         trajectory.data, trajectory.frame_rate, velocity_frame
@@ -329,7 +329,7 @@ def test_passing_density(measurement_line, width, folder):
         .reset_index(drop=True)
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
 
     frames_in_area, measurement_area = compute_frame_range_in_area(
         trajectory.data, measurement_line, width
@@ -371,7 +371,7 @@ def test_passing_velocity(measurement_line, width, folder):
         .reset_index(drop=True)
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
 
     frames_in_area, _ = compute_frame_range_in_area(
         trajectory.data, measurement_line, width
@@ -423,7 +423,7 @@ def test_profiles(
         folder / "results/Fundamental_Diagram/Classical_Voronoi/field/velocity"
     )
 
-    trajectory = parse_trajectory(trajectory_file=folder / "traj.txt")
+    trajectory = load_trajectory(trajectory_file=folder / "traj.txt")
     trajectory.data = trajectory.data[
         trajectory.data.frame.between(
             min_frame - 10, max_frame + 10, inclusive="both"
