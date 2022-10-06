@@ -18,7 +18,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    packages=setuptools.find_packages(),
+    packages=["analyzer", "analyzer.data", "analyzer.io", "analyzer.methods"],
     python_requires=">=3.8",
     install_requires=[
         "aenum >= 3.1.5",
