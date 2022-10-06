@@ -12,16 +12,18 @@ class Geometry:
     """Class holding the geometry information of the analysis
 
     Attributes:
-        walkable_area (pygeos.Geometry): area in which the pedestrian walk, they are only
-                considered for the analysis when inside this area.
-        obstacles (List[pygeos.Geometry]): areas which are excluded from the analysis, pedestrians
-                inside these areas will be ignored.
+        walkable_area (pygeos.Geometry): area in which the pedestrian walk,
+        they are only considered for the analysis when inside this area.
+        obstacles (List[pygeos.Geometry]): areas which are excluded from the
+        analysis, pedestrians inside these areas will be ignored.
     """
 
     walkable_area: pygeos.Geometry
     obstacles: List[pygeos.Geometry]
 
-    def __init__(self, walkable_area: pygeos.Geometry, obstacles: pygeos.Geometry = None):
+    def __init__(
+        self, walkable_area: pygeos.Geometry, obstacles: pygeos.Geometry = None
+    ):
         self.obstacles = []
         self.walkable_area = walkable_area
 
@@ -37,7 +39,8 @@ class Geometry:
         """Adds an obstacle to the geometry
 
         Args:
-            obstacle (pygeos.Geometry): area which will be excluded from the analysis
+            obstacle (pygeos.Geometry): area which will be excluded from the
+            analysis.
         """
         if pygeos.covered_by(obstacle, self.walkable_area):
             self.walkable_area = pygeos.difference(self.walkable_area, obstacle)
@@ -45,6 +48,6 @@ class Geometry:
             pygeos.prepare(self.walkable_area)
         else:
             log.warning(
-                f"The obstacle {obstacle} is not inside the walkable area of the geometry and thus "
-                f"will be ignored!"
+                f"The obstacle {obstacle} is not inside the walkable area of "
+                f"the geometry and thus will be ignored!"
             )

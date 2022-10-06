@@ -4,7 +4,10 @@ import pygeos
 import pytest
 from shapely.geometry import Point
 
-from analyzer.methods.density_calculator import _get_num_peds_per_frame, compute_classic_density
+from analyzer.methods.density_calculator import (
+    _get_num_peds_per_frame,
+    compute_classic_density,
+)
 from tests.utils.utils import get_trajectory, get_trajectory_data
 
 
@@ -13,14 +16,18 @@ from tests.utils.utils import get_trajectory, get_trajectory_data
     [
         (pygeos.polygons([(-5, -5), (-5, 5), (5, 5), (5, -5)]), 1.0, 5, 5),
         (
-            pygeos.polygons([(0.1, -0.1), (-0.1, 0.1), (0.1, 0.1), (0.1, -0.1)]),
+            pygeos.polygons(
+                [(0.1, -0.1), (-0.1, 0.1), (0.1, 0.1), (0.1, -0.1)]
+            ),
             0.5,
             5,
             5,
         ),
     ],
 )
-def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, num_ped_row):
+def test_compute_classic_density(
+    measurement_area, ped_distance, num_ped_col, num_ped_row
+):
     velocity = 1
     movement_direction = np.array([velocity, 0])
     num_frames = 50
@@ -34,7 +41,9 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
         fps=25,
     )
 
-    computed_density = compute_classic_density(trajectory_data.data, measurement_area)
+    computed_density = compute_classic_density(
+        trajectory_data.data, measurement_area
+    )
 
     num_peds_in_area_per_frame = {frame: 0 for frame in range(0, num_frames)}
 
