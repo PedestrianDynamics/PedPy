@@ -7,13 +7,14 @@ import pathlib
 import pandas as pd
 
 from pedpy.data.trajectory_data import TrajectoryData, TrajectoryUnit
+from typing import Optional, Any
 
 
 def load_trajectory(
     *,
     trajectory_file: pathlib.Path,
-    default_frame_rate: float = None,
-    default_unit: TrajectoryUnit = None,
+    default_frame_rate: Optional[float] = None,
+    default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
     """L the trajectory file for the relevant data: trajectory data, frame
     rate, and type of trajectory.
@@ -44,7 +45,9 @@ def load_trajectory(
         trajectory_file=trajectory_file, unit=traj_unit
     )
 
-    return TrajectoryData(traj_dataframe, traj_frame_rate, trajectory_file)
+    return TrajectoryData(
+        data=traj_dataframe, frame_rate=traj_frame_rate, file=trajectory_file
+    )
 
 
 def _load_trajectory_data(
@@ -80,10 +83,10 @@ def _load_trajectory_data(
 
         if data.empty:
             raise ValueError(
-                f"The given trajectory file seem to be empty. It should "
-                f"contain at least 5 columns: ID, frame, X, Y, Z. The values "
-                f"should be separated by any white space. Comment line may "
-                f"start with a '#' and will be ignored. "
+                "The given trajectory file seem to be empty. It should "
+                "contain at least 5 columns: ID, frame, X, Y, Z. The values "
+                "should be separated by any white space. Comment line may "
+                "start with a '#' and will be ignored. "
                 f"Please check your trajectory file: {trajectory_file}."
             )
 
@@ -95,10 +98,10 @@ def _load_trajectory_data(
         return data
     except pd.errors.ParserError:
         raise ValueError(
-            f"The given trajectory file could not be parsed. It should "
-            f"contain at least 5 columns: ID, frame, X, Y, Z. The values "
-            f"should be separated by any white space. Comment line may start "
-            f"with a '#' and will be ignored. "
+            "The given trajectory file could not be parsed. It should "
+            "contain at least 5 columns: ID, frame, X, Y, Z. The values "
+            "should be separated by any white space. Comment line may start "
+            "with a '#' and will be ignored. "
             f"Please check your trajectory file: {trajectory_file}."
         )
 
@@ -106,11 +109,11 @@ def _load_trajectory_data(
 def _load_trajectory_meta_data(
     *,
     trajectory_file: pathlib.Path,
-    default_frame_rate: float,
-    default_unit: TrajectoryUnit,
-):
-    parsed_frame_rate = None
-    parsed_unit = None
+    default_frame_rate: Optional[float],
+    default_unit: Optional[TrajectoryUnit],
+) -> tuple[float, TrajectoryUnit]:
+    parsed_frame_rate: Any = None
+    parsed_unit: Any = None
 
     with open(trajectory_file, "r") as file_content:
         for line in file_content:
@@ -127,6 +130,7 @@ def _load_trajectory_meta_data(
 
             if "x/cm" in line.lower() or "in cm" in line.lower():
                 parsed_unit = TrajectoryUnit.CENTIMETER
+
             if "x/m" in line.lower() or "in m" in line.lower():
                 parsed_unit = TrajectoryUnit.METER
 
@@ -142,25 +146,25 @@ def _load_trajectory_meta_data(
 
     if parsed_frame_rate is None and default_frame_rate is None:
         raise ValueError(
-            f"Frame rate is needed, but none could be found in the trajectory "
-            f"file. "
+            "Frame rate is needed, but none could be found in the trajectory "
+            "file. "
             f"Please check your trajectory file: {trajectory_file} or provide "
-            f"a default frame rate."
+            "a default frame rate."
         )
 
     if parsed_frame_rate is not None and default_frame_rate is None:
         if parsed_frame_rate <= 0:
             raise ValueError(
-                f"Frame rate needs to be a positive value, but is "
+                "Frame rate needs to be a positive value, but is "
                 f"{parsed_frame_rate}. "
-                f"Please check your trajectory file: {trajectory_file}."
+                "Please check your trajectory file: {trajectory_file}."
             )
     if parsed_frame_rate is not None and default_frame_rate is not None:
         if parsed_frame_rate != default_frame_rate:
             raise ValueError(
                 "The given default frame rate seems to differ from the frame "
                 "rate given in the trajectory file: "
-                "{default_frame_rate} != {parsed_frame_rate}"
+                f"{default_frame_rate} != {parsed_frame_rate}"
             )
 
     unit = parsed_unit
@@ -169,9 +173,9 @@ def _load_trajectory_meta_data(
 
     if parsed_unit is None and default_unit is None:
         raise ValueError(
-            f"Unit is needed, but none could be found in the trajectory file. "
+            "Unit is needed, but none could be found in the trajectory file. "
             f"Please check your trajectory file: {trajectory_file} or provide "
-            f"a default unit."
+            "a default unit."
         )
 
     if parsed_unit is not None and default_unit is not None:
@@ -179,7 +183,7 @@ def _load_trajectory_meta_data(
             raise ValueError(
                 "The given default unit seems to differ from the unit given in "
                 "the trajectory file: "
-                "{default_unit} != {parsed_unit}"
+                f"{default_unit} != {parsed_unit}"
             )
 
-    return frame_rate, unit
+    return (frame_rate, unit)
