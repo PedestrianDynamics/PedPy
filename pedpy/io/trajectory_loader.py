@@ -3,11 +3,11 @@ TrajectoryData format.
 """
 
 import pathlib
+from typing import Any, Optional
 
 import pandas as pd
 
 from pedpy.data.trajectory_data import TrajectoryData, TrajectoryUnit
-from typing import Optional, Any
 
 
 def load_trajectory(
