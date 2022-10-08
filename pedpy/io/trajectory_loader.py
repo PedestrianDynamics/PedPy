@@ -3,7 +3,7 @@ TrajectoryData format.
 """
 
 import pathlib
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 
@@ -111,7 +111,7 @@ def _load_trajectory_meta_data(
     trajectory_file: pathlib.Path,
     default_frame_rate: Optional[float],
     default_unit: Optional[TrajectoryUnit],
-) -> tuple[float, TrajectoryUnit]:
+) -> Tuple[float, TrajectoryUnit]:
     parsed_frame_rate: Any = None
     parsed_unit: Any = None
 
