@@ -1,6 +1,6 @@
 """Module containing functions to compute velocities"""
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ def compute_individual_velocity(
     traj_data: pd.DataFrame,
     frame_rate: float,
     frame_step: int,
-    movement_direction: np.ndarray = None,
+    movement_direction: Optional[np.ndarray] = None,
 ) -> pd.DataFrame:
     """Compute the individual velocity for each pedestrian
 
@@ -46,7 +46,7 @@ def compute_mean_velocity_per_frame(
     measurement_area: Polygon,
     frame_rate: float,
     frame_step: int,
-    movement_direction: np.ndarray = None,
+    movement_direction: Optional[np.ndarray] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute mean velocity per frame
 
@@ -93,8 +93,8 @@ def compute_voronoi_velocity(
     frame_rate: float,
     frame_step: int,
     measurement_area: Polygon,
-    movement_direction: np.ndarray = None,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    movement_direction: Optional[np.ndarray] = None,
+) -> Tuple[pd.Series, pd.DataFrame]:
     """Compute the voronoi velocity per frame
 
     Note: when using a movement direction the velocity may be negative!
@@ -135,7 +135,7 @@ def compute_voronoi_velocity(
         list(range(traj_data.frame.min(), traj_data.frame.max() + 1)),
         fill_value=0.0,
     )
-    return df_voronoi_speed, df_speed
+    return pd.Series(df_voronoi_speed), df_speed
 
 
 def _compute_individual_speed(
