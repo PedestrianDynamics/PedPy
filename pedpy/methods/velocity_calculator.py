@@ -3,6 +3,7 @@
 from typing import Tuple, Optional
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import shapely
 from shapely import Polygon
@@ -15,7 +16,7 @@ def compute_individual_velocity(
     traj_data: pd.DataFrame,
     frame_rate: float,
     frame_step: int,
-    movement_direction: Optional[np.ndarray] = None,
+    movement_direction: Optional[npt.NDArray[np.float64]] = None,
 ) -> pd.DataFrame:
     """Compute the individual velocity for each pedestrian
 
@@ -46,7 +47,7 @@ def compute_mean_velocity_per_frame(
     measurement_area: Polygon,
     frame_rate: float,
     frame_step: int,
-    movement_direction: Optional[np.ndarray] = None,
+    movement_direction: Optional[npt.NDArray[np.float64]] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute mean velocity per frame
 
@@ -93,7 +94,7 @@ def compute_voronoi_velocity(
     frame_rate: float,
     frame_step: int,
     measurement_area: Polygon,
-    movement_direction: Optional[np.ndarray] = None,
+    movement_direction: Optional[npt.NDArray[np.float64]] = None,
 ) -> Tuple[pd.Series, pd.DataFrame]:
     """Compute the voronoi velocity per frame
 
@@ -139,7 +140,9 @@ def compute_voronoi_velocity(
 
 
 def _compute_individual_speed(
-    movement_data: pd.DataFrame, frame_rate: float, movement_direction=None
+    movement_data: pd.DataFrame,
+    frame_rate: float,
+    movement_direction: Optional[npt.NDArray[np.float64]] = None,
 ) -> pd.DataFrame:
     """Compute the instantaneous velocity of each pedestrian.
 
