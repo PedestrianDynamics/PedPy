@@ -1,6 +1,6 @@
 """Module containing functions to compute velocities"""
 
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
