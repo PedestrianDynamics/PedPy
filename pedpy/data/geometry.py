@@ -36,7 +36,7 @@ class Geometry:
 
         shapely.prepare(self.walkable_area)
 
-    def add_obstacle(self, obstacle: Polygon):
+    def add_obstacle(self, obstacle: Polygon) -> None:
         """Adds an obstacle to the geometry
 
         Args:
@@ -52,5 +52,5 @@ class Geometry:
         else:
             log.warning(
                 f"The obstacle {obstacle} is not inside the walkable area of "
-                f"the geometry and thus will be ignored!"
+                "the geometry and thus will be ignored!"
             )
