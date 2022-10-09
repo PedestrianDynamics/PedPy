@@ -1,6 +1,6 @@
 """Module containing functions to compute densities"""
 from collections import defaultdict
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -49,7 +49,7 @@ def compute_voronoi_density(
     traj_data: pd.DataFrame,
     measurement_area: shapely.Polygon,
     geometry: Geometry,
-    cut_off: Tuple[float, int] = None,
+    cut_off: Optional[Tuple[float, int]] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi density of the trajectory per frame inside the given
     measurement area.
@@ -150,7 +150,7 @@ def compute_individual_voronoi_polygons(
     *,
     traj_data: pd.DataFrame,
     geometry: Geometry,
-    cut_off: Tuple[float, int] = None,
+    cut_off: Optional[Tuple[float, int]] = None,
 ) -> pd.DataFrame:
     """Compute the individual voronoi cells for each person and frame
 
@@ -290,11 +290,12 @@ def _clip_voronoi_polygons(voronoi, diameter):
 
         # Polygon consists of finite part plus an extra edge.
         finite_part = voronoi.vertices[region[inf + 1 :] + region[:inf]]
-        extra_edge = [
-            voronoi.vertices[j] + dir_j * length,
-            voronoi.vertices[k] + dir_k * length,
-        ]
-
+        extra_edge = np.array(
+            [
+                voronoi.vertices[j] + dir_j * length,
+                voronoi.vertices[k] + dir_k * length,
+            ]
+        )
         polygons.append(
             shapely.polygons(np.concatenate((finite_part, extra_edge)))
         )
