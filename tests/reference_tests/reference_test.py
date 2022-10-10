@@ -6,7 +6,7 @@ import pygeos
 import pytest
 
 from analyzer.data.geometry import Geometry
-from analyzer.io.trajectory_parser import load_trajectory
+from analyzer.io.trajectory_loader import load_trajectory
 from analyzer.methods.density_calculator import (
     _compute_individual_voronoi_polygons,
     _compute_intersecting_polygons,
