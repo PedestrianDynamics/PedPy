@@ -28,7 +28,7 @@ def get_peds_in_frame_range(
     one of them is given (not None) then the other is taken as filter.
 
     Note:
-        min_frame >= max_frame is assumed!
+        min_frame needs to be <= max_frame
 
     Args:
         traj_data (pd.DataFrame): trajectory data to filter
@@ -38,6 +38,12 @@ def get_peds_in_frame_range(
     Returns:
         Filtered data set, only containing data within the given frame range
     """
+    if min_frame is not None and max_frame is not None:
+        if not min_frame <= max_frame:
+            raise ValueError(
+                f"min_frame is not <= max_frame ({min_frame} <= {max_frame})."
+            )
+
     if min_frame is None and max_frame is not None:
         return traj_data[traj_data["frame"].le(max_frame)]
 
