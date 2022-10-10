@@ -142,6 +142,19 @@ def test_load_trajectory_success(
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
+def test_load_trajectory_non_existing_file():
+    with pytest.raises(IOError) as error_info:
+        load_trajectory(trajectory_file=pathlib.Path("non_existing_file"))
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_trajectory_non_file(tmp_path):
+    with pytest.raises(IOError) as error_info:
+        load_trajectory(trajectory_file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
+
+
 @pytest.mark.parametrize(
     "data, separator, expected_unit",
     [
@@ -198,7 +211,7 @@ def test_parse_trajectory_data_success(
     data_from_file = _load_trajectory_data(
         trajectory_file=trajectory_txt, unit=expected_unit
     )
-    print(list(data_from_file.dtypes.values))
+
     assert list(data_from_file.dtypes.values) == [
         dtype("int64"),
         dtype("int64"),
