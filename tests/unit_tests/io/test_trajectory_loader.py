@@ -1,5 +1,5 @@
 import pathlib
-from typing import List, Optional, Any
+from typing import Any, List, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -12,6 +12,7 @@ from pedpy.io.trajectory_loader import load_trajectory
 from pedpy.io.trajectory_loader import (
     _load_trajectory_data,
     _load_trajectory_meta_data,
+    load_trajectory,
 )
 
 
