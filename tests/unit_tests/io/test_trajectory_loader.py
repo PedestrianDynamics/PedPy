@@ -1,7 +1,9 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
+
 import pytest
 from numpy import dtype
 
@@ -54,8 +56,8 @@ def write_trajectory_file(
     *,
     data: pd.DataFrame,
     file: pathlib.Path,
-    frame_rate: float = None,
-    unit: TrajectoryUnit = None,
+    frame_rate: Optional[float] = None,
+    unit: Optional[TrajectoryUnit] = None,
 ):
     with file.open("w") as f:
         if frame_rate is not None:
@@ -112,7 +114,7 @@ def write_trajectory_file(
 )
 def test_load_trajectory_success(
     tmp_path,
-    data: List[np.array],
+    data: List[npt.NDArray[np.float64]],
     expected_frame_rate: float,
     expected_unit: TrajectoryUnit,
 ):
@@ -192,7 +194,10 @@ def test_load_trajectory_non_file(tmp_path):
     ],
 )
 def test_parse_trajectory_data_success(
-    tmp_path, data: np.array, separator: str, expected_unit: TrajectoryUnit
+    tmp_path,
+    data: npt.NDArray[np.float64],
+    separator: str,
+    expected_unit: TrajectoryUnit,
 ):
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
@@ -246,7 +251,7 @@ def test_parse_trajectory_data_success(
     ],
 )
 def test_parse_trajectory_data_failure(
-    tmp_path, data: np.array, expected_message: str
+    tmp_path, data: npt.NDArray[np.float64], expected_message: str
 ):
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
     written_data = pd.DataFrame(data=data)

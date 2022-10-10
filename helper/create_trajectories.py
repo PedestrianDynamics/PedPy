@@ -4,13 +4,14 @@ import argparse
 import pathlib
 import random
 import sys
-from typing import List, TextIO
+from typing import Any, List, TextIO
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 
-def required_length(nmin: int, nmax: int):
+def required_length(nmin: int, nmax: int) -> Any:
     class RequiredLength(argparse.Action):
         def __call__(self, parser, args, values, option_string=None):
             if not nmin <= len(values) <= nmax:
@@ -115,7 +116,7 @@ def write_trajectory(
     geometry: str,
     num_pedestrians: int,
     traj: pd.DataFrame,
-):
+) -> None:
     with open(out_file, "w") as trajectory_file:
         write_header(trajectory_file, fps, geometry, num_pedestrians)
         write_trajectory_data(trajectory_file, traj)
@@ -123,7 +124,7 @@ def write_trajectory(
 
 def write_header(
     trajectory_file: TextIO, fps: int, geometry_file: str, num_pedestrians: int
-):
+) -> None:
 
     version = "0.0.1"
 
@@ -147,7 +148,7 @@ def write_header(
 
 def write_trajectory_data(
     trajectory_file: TextIO, trajectory_data: pd.DataFrame
-):
+) -> None:
     trajectory_data["Z"] = 0.0
     trajectory_data["A"] = 0.5
     trajectory_data["B"] = 0.5
@@ -163,8 +164,8 @@ def write_trajectory_data(
 def get_grid_trajectory(
     *,
     shape: List[int],
-    start_position: np.ndarray,
-    movement_direction: np.ndarray,
+    start_position: npt.NDArray[np.float64],
+    movement_direction: npt.NDArray[np.float64],
     ped_distance: float,
     random_ids: bool,
     number_frames: int,
@@ -189,7 +190,7 @@ def get_grid_trajectory(
         ids = random.sample(range(500 * number_peds), number_peds)
         ids.sort()
     else:
-        ids = range(number_peds)
+        ids = list(range(number_peds))
 
     for i in range(shape[1]):
         for j in range(shape[0]):
@@ -208,7 +209,7 @@ def get_grid_trajectory(
 
 def filter_pedestrians(
     traj: pd.DataFrame, x_range: List[float], y_range: List[float]
-):
+) -> pd.DataFrame:
     """Filters the given trajectory, such that all the pedestrians are within the given range
 
     Args:
@@ -234,10 +235,10 @@ def filter_pedestrians(
 
 
 def get_movement_per_frame(
-    direction: np.ndarray,
+    direction: npt.NDArray[np.float64],
     speed: float,
     fps: float,
-):
+) -> npt.NDArray[np.float64]:
     """Compute the desired movement per frame
 
     Args:
