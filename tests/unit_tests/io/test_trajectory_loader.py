@@ -1,21 +1,21 @@
-from typing import List, Optional
+import pathlib
+from typing import List, Optional, Any
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-
 import pytest
 from numpy import dtype
 
 from pedpy.data.trajectory_data import TrajectoryUnit
-from pedpy.io.trajectory_loader import *
+from pedpy.io.trajectory_loader import load_trajectory
 from pedpy.io.trajectory_loader import (
     _load_trajectory_data,
     _load_trajectory_meta_data,
 )
 
 
-def prepare_data_frame(data_frame: pd.DataFrame):
+def prepare_data_frame(data_frame: pd.DataFrame) -> pd.DataFrame:
     """Prepare the data set for comparison with the result of the parsing.
 
     Trims the data frame to the first 5 columns and sets the column dtype to
@@ -34,7 +34,9 @@ def prepare_data_frame(data_frame: pd.DataFrame):
     return result
 
 
-def get_data_frame_to_write(data_frame: pd.DataFrame, unit: TrajectoryUnit):
+def get_data_frame_to_write(
+    data_frame: pd.DataFrame, unit: TrajectoryUnit
+) -> pd.DataFrame:
     """Get the data frame which should be written to file.
 
     Args:
@@ -58,7 +60,7 @@ def write_trajectory_file(
     file: pathlib.Path,
     frame_rate: Optional[float] = None,
     unit: Optional[TrajectoryUnit] = None,
-):
+) -> None:
     with file.open("w") as f:
         if frame_rate is not None:
             f.write(f"#framerate: {frame_rate}\n")
@@ -113,11 +115,11 @@ def write_trajectory_file(
     ],
 )
 def test_load_trajectory_success(
-    tmp_path,
+    tmp_path: pathlib.Path,
     data: List[npt.NDArray[np.float64]],
     expected_frame_rate: float,
     expected_unit: TrajectoryUnit,
-):
+) -> None:
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
     expected_data = pd.DataFrame(data=data)
@@ -194,11 +196,11 @@ def test_load_trajectory_non_file(tmp_path):
     ],
 )
 def test_parse_trajectory_data_success(
-    tmp_path,
+    tmp_path: pathlib.Path,
     data: npt.NDArray[np.float64],
     separator: str,
     expected_unit: TrajectoryUnit,
-):
+) -> None:
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
     expected_data = pd.DataFrame(data=data)
@@ -251,8 +253,8 @@ def test_parse_trajectory_data_success(
     ],
 )
 def test_parse_trajectory_data_failure(
-    tmp_path, data: npt.NDArray[np.float64], expected_message: str
-):
+    tmp_path: pathlib.Path, data: npt.NDArray[np.float64], expected_message: str
+) -> None:
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
     written_data = pd.DataFrame(data=data)
 
@@ -340,11 +342,11 @@ def test_parse_trajectory_data_failure(
     ],
 )
 def test_load_trajectory_meta_data_success(
-    tmp_path,
-    file_content,
-    expected_frame_rate,
-    expected_unit,
-):
+    tmp_path: pathlib.Path,
+    file_content: str,
+    expected_frame_rate: float,
+    expected_unit: TrajectoryUnit,
+) -> None:
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
     with trajectory_txt.open("w") as f:
@@ -526,13 +528,13 @@ def test_load_trajectory_meta_data_success(
     ],
 )
 def test_load_trajectory_meta_data_failure(
-    tmp_path,
-    file_content,
-    default_frame_rate,
-    default_unit,
-    expected_exception,
-    expected_message,
-):
+    tmp_path: pathlib.Path,
+    file_content: str,
+    default_frame_rate: float,
+    default_unit: TrajectoryUnit,
+    expected_exception: Any,
+    expected_message: str,
+) -> None:
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
 
     with trajectory_txt.open("w") as f:
