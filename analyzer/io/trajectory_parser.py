@@ -28,6 +28,13 @@ def load_trajectory(
     Returns:
         Tuple containing: trajectory data, frame rate, and type of trajectory.
     """
+
+    if not trajectory_file.exists():
+        raise IOError(f"{trajectory_file} does not exist.")
+
+    if not trajectory_file.is_file():
+        raise IOError(f"{trajectory_file} is not a file.")
+
     traj_frame_rate, traj_unit = _load_trajectory_meta_data(
         trajectory_file=trajectory_file,
         default_frame_rate=default_frame_rate,
@@ -36,8 +43,6 @@ def load_trajectory(
     traj_dataframe = _load_trajectory_data(
         trajectory_file=trajectory_file, unit=traj_unit
     )
-    # traj_frame_rate = parse_frame_rate(trajectory_file, default_frame_rate)
-    # traj_type = parse_trajectory_type(trajectory_file)
 
     return TrajectoryData(traj_dataframe, traj_frame_rate, trajectory_file)
 
