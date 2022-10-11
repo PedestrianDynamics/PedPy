@@ -1,6 +1,6 @@
 import pathlib
 
-import pygeos
+import shapely
 
 from analyzer.data.trajectory_data import TrajectoryData
 from helper.create_trajectories import get_grid_trajectory
@@ -18,7 +18,7 @@ def get_trajectory(
         number_frames=number_frames,
     )
     grid = grid.rename(columns={"FR": "frame"})
-    grid["points"] = pygeos.points(grid["X"], grid["Y"])
+    grid["points"] = shapely.points(grid["X"], grid["Y"])
     return grid
 
 

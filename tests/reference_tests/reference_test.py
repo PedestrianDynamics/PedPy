@@ -2,8 +2,8 @@ import pathlib
 
 import numpy as np
 import pandas as pd
-import pygeos
 import pytest
+import shapely
 
 from analyzer.data.geometry import Geometry
 from analyzer.io.trajectory_loader import load_trajectory
@@ -33,11 +33,11 @@ ROOT_DIR = pathlib.Path(__file__).parent.resolve()
     "geometry, measurement_area, folder",
     [
         (
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
@@ -74,11 +74,11 @@ def test_classic_density(geometry, measurement_area, folder):
     "geometry, measurement_area, folder, velocity_frame",
     [
         (
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
@@ -119,11 +119,11 @@ def test_arithmetic_velocity(
     "geometry_polygon, measurement_area, folder",
     [
         (
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
@@ -167,11 +167,11 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     "geometry_polygon, measurement_area, folder, velocity_frame",
     [
         (
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
@@ -231,7 +231,7 @@ def test_voronoi_velocity(
     "line, folder",
     [
         (
-            pygeos.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
+            shapely.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
     ],
@@ -262,7 +262,7 @@ def test_nt(line, folder):
     "line, folder, flow_frame, velocity_frame",
     [
         (
-            pygeos.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
+            shapely.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
             150,
             5,
@@ -310,7 +310,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
     "measurement_line, width, folder",
     [
         (
-            pygeos.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
+            shapely.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
             1.06,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
@@ -352,7 +352,7 @@ def test_passing_density(measurement_line, width, folder):
     "measurement_line, width, folder",
     [
         (
-            pygeos.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
+            shapely.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
             1.06,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
@@ -391,7 +391,7 @@ def test_passing_velocity(measurement_line, width, folder):
     "geometry, grid_size, cut_off_radius, num_edges, blind_points, min_frame, max_frame, folder",
     [
         (
-            pygeos.from_wkt(
+            shapely.from_wkt(
                 "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
                 "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
             ),

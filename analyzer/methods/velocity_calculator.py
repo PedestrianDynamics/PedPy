@@ -4,7 +4,8 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-import pygeos
+import shapely
+from shapely import Polygon
 
 from analyzer.methods.method_utils import _compute_individual_movement
 
@@ -40,7 +41,7 @@ def compute_individual_velocity(
 
 def compute_mean_velocity_per_frame(
     traj_data: pd.DataFrame,
-    measurement_area: pygeos.Geometry,
+    measurement_area: Polygon,
     frame_rate: float,
     frame_step: int,
     movement_direction: np.ndarray = None,
@@ -51,7 +52,7 @@ def compute_mean_velocity_per_frame(
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        measurement_area (pygeos.Geometry): measurement area for which the
+        measurement_area (shapely.Polygon): measurement area for which the
             velocity is computed
         frame_rate (float): frame rate of the trajectory
         frame_step (int): gives the size of time interval for calculating the
@@ -69,7 +70,7 @@ def compute_mean_velocity_per_frame(
     )
     combined = traj_data.merge(df_speed, on=["ID", "frame"])
     df_mean = (
-        combined[pygeos.within(combined["points"], measurement_area)]
+        combined[shapely.within(combined["points"], measurement_area)]
         .groupby("frame")["speed"]
         .mean()
     )
@@ -85,7 +86,7 @@ def compute_voronoi_velocity(
     individual_voronoi_intersection: pd.DataFrame,
     frame_rate: float,
     frame_step: int,
-    measurement_area: pygeos.Geometry,
+    measurement_area: Polygon,
     movement_direction: np.ndarray = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi velocity per frame
@@ -99,7 +100,7 @@ def compute_voronoi_velocity(
         frame_rate (float): frame rate of the trajectory
         frame_step (int): gives the size of time interval for calculating the
             velocity
-        measurement_area (pygeos.Geometry): area in which the voronoi velocity
+        measurement_area (shapely.Polygon): area in which the voronoi velocity
             should be computed
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
@@ -116,9 +117,9 @@ def compute_voronoi_velocity(
         individual_voronoi_intersection, df_speed, on=["ID", "frame"]
     )
     df_voronoi["voronoi speed"] = (
-        pygeos.area(df_voronoi["intersection voronoi"])
+        shapely.area(df_voronoi["intersection voronoi"])
         * df_voronoi["speed"]
-        / pygeos.area(measurement_area)
+        / measurement_area.area
     )
     df_voronoi_speed = df_voronoi.groupby("frame")["voronoi speed"].sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
@@ -146,7 +147,7 @@ def _compute_individual_speed(
         speed in m/s
     """
     if movement_direction is None:
-        movement_data["distance"] = pygeos.distance(
+        movement_data["distance"] = shapely.distance(
             movement_data["start"], movement_data["end"]
         )
     else:
@@ -154,8 +155,8 @@ def _compute_individual_speed(
         # onto the movement_direction
         movement_data["distance"] = (
             np.dot(
-                pygeos.get_coordinates(movement_data["end"])
-                - pygeos.get_coordinates(movement_data["start"]),
+                shapely.get_coordinates(movement_data["end"])
+                - shapely.get_coordinates(movement_data["start"]),
                 movement_direction,
             )
             / np.linalg.norm(movement_direction)
