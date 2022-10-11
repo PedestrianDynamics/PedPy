@@ -6,7 +6,7 @@ import pygeos
 from analyzer import Geometry, TrajectoryData
 
 
-def validate_trajectory(traj: TrajectoryData, geometry: Geometry) -> bool:
+def is_trajectory_valid(traj: TrajectoryData, geometry: Geometry) -> bool:
     """Checks if all trajectory data points lie within the given geometry
 
     Args:

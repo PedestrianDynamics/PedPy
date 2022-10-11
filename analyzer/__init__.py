@@ -14,7 +14,7 @@ from .methods.method_utils import (
     get_invalid_trajectory,
     get_peds_in_area,
     get_peds_in_frame_range,
-    validate_trajectory,
+    is_trajectory_valid,
 )
 from .methods.profile_calculator import compute_profiles
 from .methods.velocity_calculator import (
