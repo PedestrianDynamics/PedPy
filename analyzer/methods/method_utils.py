@@ -3,6 +3,38 @@ import numpy as np
 import pandas as pd
 import pygeos
 
+from analyzer import Geometry, TrajectoryData
+
+
+def validate_trajectory(traj: TrajectoryData, geometry: Geometry) -> bool:
+    """Checks if all trajectory data points lie within the given geometry
+
+    Args:
+        traj (TrajectoryData): trajectory data
+        geometry (Geometry): geometry
+
+    Returns:
+        All points lie within geometry
+    """
+    return get_invalid_trajectory(traj, geometry).empty
+
+
+def get_invalid_trajectory(
+    traj: TrajectoryData, geometry: Geometry
+) -> pd.DataFrame:
+    """Returns all trajectory data points outside the given geometry
+
+    Args:
+        traj (TrajectoryData): trajectory data
+        geometry (Geometry): geometry
+
+    Returns:
+        DataFrame showing all data points outside the given geometry
+    """
+    return traj.data.loc[
+        ~pygeos.within(traj.data.points, geometry.walkable_area)
+    ]
+
 
 def get_peds_in_area(
     traj_data: pd.DataFrame, measurement_area: pygeos.Geometry
@@ -12,7 +44,7 @@ def get_peds_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data to filter
-        measurement_area (pygeos.Geometry):
+        measurement_area (pygeos.Geometry): geometry
 
     Returns:
          Filtered data set, only containing data of pedestrians inside the

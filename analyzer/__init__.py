@@ -11,8 +11,10 @@ from .methods.density_calculator import (
 from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
     compute_frame_range_in_area,
+    get_invalid_trajectory,
     get_peds_in_area,
     get_peds_in_frame_range,
+    validate_trajectory,
 )
 from .methods.profile_calculator import compute_profiles
 from .methods.velocity_calculator import (
