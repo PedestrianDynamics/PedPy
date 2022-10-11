@@ -1,8 +1,18 @@
 cff-version: 1.2.0
 
+title: "Pedestrian Trajectory Analyzer"
+
 message: "If you use this software, please cite it as below."
 authors:
 - family-names: "Schrödter"
   given-names: "Tobias"
   orcid: "https://orcid.org/0000-0002-1071-060X"
-title: "Pedestrian Trajectory Analyzer"
+- family-names: "Boltes"
+  given-names: "Maik"
+- family-names: "Chraibi"
+  given-names: "Mohcine"
+- family-names: "Kratz"
+  given-names: "Kai"
+- family-names: "Schumann"
+  given-names: "Jette"
+
