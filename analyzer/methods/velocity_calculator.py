@@ -119,7 +119,7 @@ def compute_voronoi_velocity(
     df_voronoi["voronoi speed"] = (
         shapely.area(df_voronoi["intersection voronoi"])
         * df_voronoi["speed"]
-        / shapely.area(measurement_area)
+        / measurement_area.area
     )
     df_voronoi_speed = df_voronoi.groupby("frame")["voronoi speed"].sum()
     df_voronoi_speed = df_voronoi_speed.reindex(

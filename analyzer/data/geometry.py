@@ -41,7 +41,7 @@ class Geometry:
             obstacle (Polygon): area which will be excluded from the
             analysis.
         """
-        if shapely.covered_by(obstacle, self.walkable_area):
+        if obstacle.within(self.walkable_area):
             self.walkable_area = shapely.difference(
                 self.walkable_area, obstacle
             )

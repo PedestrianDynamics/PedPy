@@ -49,7 +49,7 @@ def compute_profiles(
                 * (1 / shapely.area(frame_data["individual voronoi"].values)),
                 axis=1,
             )
-            / shapely.area(grid_cells[0])
+            / grid_cells[0].area
         )
 
         grid_intersections_area[grid_intersections_area > 0] = 1
@@ -84,7 +84,7 @@ def _get_grid_cells(walkable_area: Polygon, grid_size: float):
     Returns:
         (List of grid cells, number of grid rows, number of grid columns)
     """
-    bounds = shapely.bounds(walkable_area)
+    bounds = walkable_area.bounds
     min_x = bounds[0]
     min_y = bounds[1]
     max_x = bounds[2]

@@ -265,7 +265,6 @@ def _compute_crossing_frames(
     # resulting array looks as follows:
     # [[[x_0_start, y_0_start], [x_0_end, y_0_end]],
     #  [[x_1_start, y_1_start], [x_1_end, y_1_end]], ... ]
-    # TODO check if still needed
     df_movement = _compute_individual_movement(traj_data, 1, False)
     df_movement["movement"] = shapely.linestrings(
         np.stack(

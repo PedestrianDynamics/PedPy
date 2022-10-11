@@ -30,7 +30,7 @@ def compute_classic_density(
     peds_in_area = get_peds_in_area(traj_data, measurement_area)
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
 
-    density = peds_in_area_per_frame / shapely.area(measurement_area)
+    density = peds_in_area_per_frame / measurement_area.area
 
     # Rename column and add missing zero values
     density.columns = ["classic density"]
@@ -80,8 +80,7 @@ def compute_voronoi_density(
     ) / shapely.area(df_combined["individual voronoi"])
 
     df_voronoi_density = (
-        df_combined.groupby("frame")["relation"].sum()
-        / shapely.area(measurement_area)
+        df_combined.groupby("frame")["relation"].sum() / measurement_area.area
     ).to_frame()
 
     # Rename column and add missing zero values
@@ -162,7 +161,7 @@ def _compute_individual_voronoi_polygons(
     """
     dfs = []
 
-    bounds = shapely.bounds(geometry.walkable_area)
+    bounds = geometry.walkable_area.bounds
     clipping_diameter = 2 * max(
         abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1])
     )
