@@ -4,8 +4,9 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-import pygeos
+import shapely
 from scipy.spatial import Voronoi
+from shapely import Polygon
 
 from analyzer.data.geometry import Geometry
 from analyzer.methods.method_utils import get_peds_in_area
@@ -13,14 +14,14 @@ from analyzer.methods.method_utils import get_peds_in_area
 
 def compute_classic_density(
     traj_data: pd.DataFrame,
-    measurement_area: pygeos.Geometry,
+    measurement_area: Polygon,
 ) -> pd.DataFrame:
     """Compute the classic density of the trajectory per frame inside the given
      measurement area.
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
-        measurement_area (pygeos.Geometry): area for which the density is
+        measurement_area (shapely.Polygon): area for which the density is
             computed
 
     Returns:
@@ -29,7 +30,7 @@ def compute_classic_density(
     peds_in_area = get_peds_in_area(traj_data, measurement_area)
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
 
-    density = peds_in_area_per_frame / pygeos.area(measurement_area)
+    density = peds_in_area_per_frame / shapely.area(measurement_area)
 
     # Rename column and add missing zero values
     density.columns = ["classic density"]
@@ -43,7 +44,7 @@ def compute_classic_density(
 
 def compute_voronoi_density(
     traj_data: pd.DataFrame,
-    measurement_area: pygeos.Geometry,
+    measurement_area: shapely.Polygon,
     geometry: Geometry,
     cut_off: Tuple[float, int] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -52,7 +53,7 @@ def compute_voronoi_density(
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
-        measurement_area (pygeos.Geometry): area for which the density is
+        measurement_area (shapely.Polygon): area for which the density is
             computed
         geometry (Geometry): bounding area, where pedestrian are supposed to be
         cut_off (Tuple[float, int): radius of max extended voronoi cell (in m),
@@ -74,13 +75,13 @@ def compute_voronoi_density(
     df_combined = pd.merge(
         df_individual, df_intersecting, on=["ID", "frame"], how="outer"
     )
-    df_combined["relation"] = pygeos.area(
+    df_combined["relation"] = shapely.area(
         df_combined["intersection voronoi"]
-    ) / pygeos.area(df_combined["individual voronoi"])
+    ) / shapely.area(df_combined["individual voronoi"])
 
     df_voronoi_density = (
         df_combined.groupby("frame")["relation"].sum()
-        / pygeos.area(measurement_area)
+        / shapely.area(measurement_area)
     ).to_frame()
 
     # Rename column and add missing zero values
@@ -161,7 +162,7 @@ def _compute_individual_voronoi_polygons(
     """
     dfs = []
 
-    bounds = pygeos.bounds(geometry.walkable_area)
+    bounds = shapely.bounds(geometry.walkable_area)
     clipping_diameter = 2 * max(
         abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1])
     )
@@ -175,21 +176,21 @@ def _compute_individual_voronoi_polygons(
         voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame", "points")]
 
         # Compute the intersecting area with the walkable area
-        voronoi_in_frame["individual voronoi"] = pygeos.intersection(
+        voronoi_in_frame["individual voronoi"] = shapely.intersection(
             vornoi_polygons, geometry.walkable_area
         )
 
         # Only consider the parts of a multipolygon which contain the position
         # of the pedestrian
         voronoi_in_frame.loc[
-            pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3,
+            shapely.get_type_id(voronoi_in_frame["individual voronoi"]) != 3,
             "individual voronoi",
         ] = voronoi_in_frame.loc[
-            pygeos.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, :
+            shapely.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, :
         ].apply(
-            lambda x: pygeos.get_parts(x["individual voronoi"])[
-                pygeos.within(
-                    x["points"], pygeos.get_parts(x["individual voronoi"])
+            lambda x: shapely.get_parts(x["individual voronoi"])[
+                shapely.within(
+                    x["points"], shapely.get_parts(x["individual voronoi"])
                 )
             ][0],
             axis=1,
@@ -199,9 +200,9 @@ def _compute_individual_voronoi_polygons(
             num_edges = cut_off[1]
             radius = cut_off[0]
             quad_edges = int(num_edges / 4)
-            voronoi_in_frame["individual voronoi"] = pygeos.intersection(
+            voronoi_in_frame["individual voronoi"] = shapely.intersection(
                 voronoi_in_frame["individual voronoi"],
-                pygeos.buffer(
+                shapely.buffer(
                     peds_in_frame["points"], radius, quadsegs=quad_edges
                 ),
             )
@@ -212,7 +213,7 @@ def _compute_individual_voronoi_polygons(
 
 
 def _compute_intersecting_polygons(
-    individual_voronoi_data: pd.DataFrame, measurement_area: pygeos.Geometry
+    individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
 ) -> pd.DataFrame:
     """Compute the intersection of each of the individual voronoi cells with
     the measurement area.
@@ -220,15 +221,15 @@ def _compute_intersecting_polygons(
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
                 to contain a column 'individual voronoi' which holds
-                pygeos.Polygon information
-        measurement_area (pygeos.Geometry):
+                shapely.Polygon information
+        measurement_area (shapely.Polygon):
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and
         'intersection voronoi'.
     """
     df_intersection = individual_voronoi_data[["ID", "frame"]].copy()
-    df_intersection["intersection voronoi"] = pygeos.intersection(
+    df_intersection["intersection voronoi"] = shapely.intersection(
         individual_voronoi_data["individual voronoi"], measurement_area
     )
     return df_intersection
@@ -266,7 +267,7 @@ def _clip_voronoi_polygons(voronoi, diameter):
         region = voronoi.regions[r]
         if -1 not in region:
             # Finite region.
-            polygons.append(pygeos.polygons(voronoi.vertices[region]))
+            polygons.append(shapely.polygons(voronoi.vertices[region]))
             continue
         # Infinite region.
         inf = region.index(-1)  # Index of vertex at infinity.
@@ -292,6 +293,6 @@ def _clip_voronoi_polygons(voronoi, diameter):
         ]
 
         polygons.append(
-            pygeos.polygons(np.concatenate((finite_part, extra_edge)))
+            shapely.polygons(np.concatenate((finite_part, extra_edge)))
         )
     return polygons

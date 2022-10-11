@@ -2,7 +2,8 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-import pygeos
+import shapely
+from shapely import Polygon
 
 log = logging.getLogger(__name__)
 
@@ -12,18 +13,16 @@ class Geometry:
     """Class holding the geometry information of the analysis
 
     Attributes:
-        walkable_area (pygeos.Geometry): area in which the pedestrian walk,
+        walkable_area (shapely.Polygon): area in which the pedestrian walk,
         they are only considered for the analysis when inside this area.
-        obstacles (List[pygeos.Geometry]): areas which are excluded from the
+        obstacles (List[shapely.Polygon]): areas which are excluded from the
         analysis, pedestrians inside these areas will be ignored.
     """
 
-    walkable_area: pygeos.Geometry
-    obstacles: List[pygeos.Geometry]
+    walkable_area: Polygon
+    obstacles: List[Polygon]
 
-    def __init__(
-        self, walkable_area: pygeos.Geometry, obstacles: pygeos.Geometry = None
-    ):
+    def __init__(self, walkable_area: Polygon, obstacles: List[Polygon] = None):
         self.obstacles = []
         self.walkable_area = walkable_area
 
@@ -33,19 +32,21 @@ class Geometry:
         for obstacle in obstacles:
             self.add_obstacle(obstacle)
 
-        pygeos.prepare(self.walkable_area)
+        shapely.prepare(self.walkable_area)
 
-    def add_obstacle(self, obstacle: pygeos.Geometry):
+    def add_obstacle(self, obstacle: Polygon):
         """Adds an obstacle to the geometry
 
         Args:
-            obstacle (pygeos.Geometry): area which will be excluded from the
+            obstacle (Polygon): area which will be excluded from the
             analysis.
         """
-        if pygeos.covered_by(obstacle, self.walkable_area):
-            self.walkable_area = pygeos.difference(self.walkable_area, obstacle)
+        if shapely.covered_by(obstacle, self.walkable_area):
+            self.walkable_area = shapely.difference(
+                self.walkable_area, obstacle
+            )
             self.obstacles.append(obstacle)
-            pygeos.prepare(self.walkable_area)
+            shapely.prepare(self.walkable_area)
         else:
             log.warning(
                 f"The obstacle {obstacle} is not inside the walkable area of "

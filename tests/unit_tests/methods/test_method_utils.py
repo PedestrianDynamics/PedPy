@@ -1,6 +1,6 @@
 import numpy as np
-import pygeos
 import pytest
+import shapely
 
 from analyzer.methods.method_utils import (
     get_peds_in_area,
@@ -12,8 +12,8 @@ from tests.utils.utils import get_trajectory
 @pytest.mark.parametrize(
     "area",
     [
-        pygeos.polygons([[10, 10], [10, 10], [10, -10], [10, -10]]),
-        pygeos.polygons([[0, 0], [2.5, 2.5], [5, 0]]),
+        shapely.polygons([[10, 10], [10, 10], [10, -10], [10, -10]]),
+        shapely.polygons([[0, 0], [2.5, 2.5], [5, 0]]),
     ],
 )
 def test_get_peds_in_area(area):
@@ -25,7 +25,7 @@ def test_get_peds_in_area(area):
         ped_distance=1.0,
     )
     filtered_data = get_peds_in_area(traj_data, area)
-    assert pygeos.contains(area, filtered_data["points"]).all()
+    assert shapely.contains(area, filtered_data["points"]).all()
 
 
 @pytest.mark.parametrize(

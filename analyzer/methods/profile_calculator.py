@@ -2,12 +2,13 @@
 
 import numpy as np
 import pandas as pd
-import pygeos
+import shapely
+from shapely import Polygon
 
 
 def compute_profiles(
     individual_voronoi_velocity_data: pd.DataFrame,
-    geometry: pygeos.Geometry,
+    walkable_area: Polygon,
     grid_size: float,
 ):
     """Computes the density and velocity profiles of the given trajectory
@@ -19,9 +20,9 @@ def compute_profiles(
     Args:
         individual_voronoi_velocity_data (pd.DataFrame): individual voronoi
             and velocity data, needs to contain a column 'individual voronoi'
-            which holds pygeos.Polygon information and a column 'speed'
+            which holds shapely.Polygon information and a column 'speed'
             which holds a floating point value
-        geometry (pygeos.Geometry): geometry for which the profiles are
+        walkable_area (shapely.Polygon): geometry for which the profiles are
             computed
         grid_size (float): resolution of the grid used for computing the
             profiles
@@ -30,13 +31,13 @@ def compute_profiles(
         (List of density profiles, List of velocity profiles)
 
     """
-    grid_cells, rows, cols = _get_grid_cells(geometry, grid_size)
+    grid_cells, rows, cols = _get_grid_cells(walkable_area, grid_size)
     density_profiles = []
     velocity_profiles = []
 
     for _, frame_data in individual_voronoi_velocity_data.groupby("frame"):
-        grid_intersections_area = pygeos.area(
-            pygeos.intersection(
+        grid_intersections_area = shapely.area(
+            shapely.intersection(
                 np.array(grid_cells)[:, np.newaxis],
                 np.array(frame_data["individual voronoi"])[np.newaxis, :],
             )
@@ -45,10 +46,10 @@ def compute_profiles(
         density = (
             np.sum(
                 grid_intersections_area
-                * (1 / pygeos.area(frame_data["individual voronoi"].values)),
+                * (1 / shapely.area(frame_data["individual voronoi"].values)),
                 axis=1,
             )
-            / pygeos.area(grid_cells[0])
+            / shapely.area(grid_cells[0])
         )
 
         grid_intersections_area[grid_intersections_area > 0] = 1
@@ -70,12 +71,12 @@ def compute_profiles(
     return density_profiles, velocity_profiles
 
 
-def _get_grid_cells(geometry: pygeos.Geometry, grid_size: float):
+def _get_grid_cells(walkable_area: Polygon, grid_size: float):
     """Creates a list of square grid cells which cover the space used by
     geometry.
 
     Args:
-        geometry (pygeos.Geometry): geometry for which the profiles are
+        walkable_area (shapely.Polygon): geometry for which the profiles are
             computed.
         grid_size (float): resolution of the grid used for computing the
             profiles.
@@ -83,7 +84,7 @@ def _get_grid_cells(geometry: pygeos.Geometry, grid_size: float):
     Returns:
         (List of grid cells, number of grid rows, number of grid columns)
     """
-    bounds = pygeos.bounds(geometry)
+    bounds = shapely.bounds(walkable_area)
     min_x = bounds[0]
     min_y = bounds[1]
     max_x = bounds[2]
@@ -95,7 +96,7 @@ def _get_grid_cells(geometry: pygeos.Geometry, grid_size: float):
     grid_cells = []
     for j in range(len(y) - 1):
         for i in range(len(x) - 1):
-            grid_cell = pygeos.box(x[i], y[j], x[i + 1], y[j + 1])
+            grid_cell = shapely.box(x[i], y[j], x[i + 1], y[j + 1])
             grid_cells.append(grid_cell)
 
     return np.array(grid_cells), len(y) - 1, len(x) - 1

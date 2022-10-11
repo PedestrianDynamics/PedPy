@@ -4,7 +4,7 @@ import pathlib
 from dataclasses import dataclass
 
 import pandas as pd
-import pygeos
+import shapely
 from aenum import Enum
 
 
@@ -51,4 +51,4 @@ class TrajectoryData:
         self.file = file
 
         self.data = data
-        self.data["points"] = pygeos.points(self.data["X"], self.data["Y"])
+        self.data["points"] = shapely.points(self.data["X"], self.data["Y"])

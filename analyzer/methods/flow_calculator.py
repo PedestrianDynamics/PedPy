@@ -2,14 +2,14 @@
 from typing import Tuple
 
 import pandas as pd
-import pygeos
+from shapely import LineString
 
 from analyzer.methods.method_utils import _compute_crossing_frames
 
 
 def compute_n_t(
     traj_data: pd.DataFrame,
-    measurement_line: pygeos.Geometry,
+    measurement_line: LineString,
     frame_rate: float,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the cumulative number of pedestrians who passed the line for
@@ -18,7 +18,7 @@ def compute_n_t(
     Note: for each pedestrian only the first passing of the line is considered!
     Args:
         traj_data (TrajectoryData): trajectory data
-        measurement_line (pygeos.Geometry): line for which n-t is computed
+        measurement_line (shapely.LineString): line for which n-t is computed
         frame_rate (float): frame rate of the trajectory data
 
     Returns:

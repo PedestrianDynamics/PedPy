@@ -1,7 +1,8 @@
 """Helper functions for the analysis methods"""
 import numpy as np
 import pandas as pd
-import pygeos
+import shapely
+from shapely import LineString, Polygon
 
 from analyzer import Geometry, TrajectoryData
 
@@ -32,25 +33,25 @@ def get_invalid_trajectory(
         DataFrame showing all data points outside the given geometry
     """
     return traj.data.loc[
-        ~pygeos.within(traj.data.points, geometry.walkable_area)
+        ~shapely.within(traj.data.points, geometry.walkable_area)
     ]
 
 
 def get_peds_in_area(
-    traj_data: pd.DataFrame, measurement_area: pygeos.Geometry
+    traj_data: pd.DataFrame, measurement_area: Polygon
 ) -> pd.DataFrame:
     """Filters the trajectory date to pedestrians which are inside the given
     area.
 
     Args:
         traj_data (pd.DataFrame): trajectory data to filter
-        measurement_area (pygeos.Geometry): geometry
+        measurement_area (shapely.Polygon): geometry
 
     Returns:
          Filtered data set, only containing data of pedestrians inside the
          measurement_area
     """
-    return traj_data[pygeos.contains(measurement_area, traj_data["points"])]
+    return traj_data[shapely.contains(measurement_area, traj_data["points"])]
 
 
 def get_peds_in_frame_range(
@@ -91,7 +92,7 @@ def get_peds_in_frame_range(
 
 
 def compute_frame_range_in_area(
-    traj_data: pd.DataFrame, measurement_line: pygeos.Geometry, width: float
+    traj_data: pd.DataFrame, measurement_line: Polygon, width: float
 ):
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
@@ -108,27 +109,27 @@ def compute_frame_range_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (pygeos.Geometry):
+        measurement_line (shapely.Polygon):
         width (float): distance to the second measurement line
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
     """
-    assert len(pygeos.get_coordinates(measurement_line)) == 2, (
+    assert len(shapely.get_coordinates(measurement_line)) == 2, (
         f"The measurement line needs to be a straight line but has more  "
         f"coordinates (expected 2, got "
-        f"{len(pygeos.get_coordinates(measurement_line))})"
+        f"{len(shapely.get_coordinates(measurement_line))})"
     )
 
     # Create the second with the given offset
-    second_line = pygeos.offset_curve(measurement_line, distance=width)
+    second_line = shapely.offset_curve(measurement_line, distance=width)
 
     # Reverse the order of the coordinates for the second line string to
     # create a rectangular area between the lines
-    measurement_area = pygeos.polygons(
+    measurement_area = Polygon(
         [
-            *pygeos.get_coordinates(measurement_line),
-            *pygeos.get_coordinates(second_line)[::-1],
+            *measurement_line.coords,
+            *second_line.coords[::-1],
         ]
     )
 
@@ -238,7 +239,7 @@ def _compute_individual_movement(
 
 
 def _compute_crossing_frames(
-    traj_data: pd.DataFrame, measurement_line: pygeos.Geometry
+    traj_data: pd.DataFrame, measurement_line: LineString
 ):
     """Compute the frames at which a pedestrian crosses a specific
     measurement line.
@@ -253,7 +254,7 @@ def _compute_crossing_frames(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (pygeos.Geometry):
+        measurement_line (shapely.LineString):
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame', where 'frame' are
@@ -264,12 +265,13 @@ def _compute_crossing_frames(
     # resulting array looks as follows:
     # [[[x_0_start, y_0_start], [x_0_end, y_0_end]],
     #  [[x_1_start, y_1_start], [x_1_end, y_1_end]], ... ]
+    # TODO check if still needed
     df_movement = _compute_individual_movement(traj_data, 1, False)
-    df_movement["movement"] = pygeos.linestrings(
+    df_movement["movement"] = shapely.linestrings(
         np.stack(
             [
-                pygeos.get_coordinates(df_movement["start"]),
-                pygeos.get_coordinates(df_movement["end"]),
+                shapely.get_coordinates(df_movement["start"]),
+                shapely.get_coordinates(df_movement["end"]),
             ],
             axis=1,
         )
@@ -278,15 +280,15 @@ def _compute_crossing_frames(
     # crossing means, the current movement crosses the line and the end point
     # of the movement is not on the line. The result is sorted by frame number
     crossing_frames = df_movement.loc[
-        (pygeos.intersects(df_movement["movement"], measurement_line))
-        & (~pygeos.intersects(df_movement["end"], measurement_line))
+        (shapely.intersects(df_movement["movement"], measurement_line))
+        & (~shapely.intersects(df_movement["end"], measurement_line))
     ][["ID", "frame"]]
 
     return crossing_frames
 
 
 def _get_continuous_parts_in_area(
-    traj_data: pd.DataFrame, measurement_area: pygeos.Geometry
+    traj_data: pd.DataFrame, measurement_area: Polygon
 ):
     """Returns the time-continuous parts in which the pedestrians are inside
     the given measurement area. As leaving the first frame outside the area is
@@ -294,13 +296,13 @@ def _get_continuous_parts_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_area (pygeos.Geometry): area which is considered
+        measurement_area (shapely.Polygon): area which is considered
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
     """
     inside = traj_data.loc[
-        pygeos.within(traj_data.points, measurement_area), :
+        shapely.within(traj_data.points, measurement_area), :
     ].copy()
     inside.loc[:, "g"] = inside.groupby("ID")["frame"].apply(
         lambda x: x.diff().ge(2).cumsum()
