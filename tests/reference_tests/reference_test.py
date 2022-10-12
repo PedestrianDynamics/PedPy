@@ -16,7 +16,7 @@ from analyzer.methods.density_calculator import (
 )
 from analyzer.methods.flow_calculator import compute_flow, compute_n_t
 from analyzer.methods.method_utils import compute_frame_range_in_area
-from analyzer.methods.profile_calculator import compute_profiles
+from analyzer.methods.profile_calculator import VelocityMethod, compute_profiles
 from analyzer.methods.velocity_calculator import (
     compute_individual_velocity,
     compute_mean_velocity_per_frame,
@@ -443,8 +443,17 @@ def test_profiles(
     individual_voronoi_velocity_data = combined[
         combined.frame.between(min_frame, max_frame, inclusive="both")
     ]
-    density_profiles, velocity_profiles = compute_profiles(
-        individual_voronoi_velocity_data, geometry, grid_size
+    density_profiles, velocity_profiles_arithmetic = compute_profiles(
+        individual_voronoi_velocity_data,
+        geometry,
+        grid_size,
+        VelocityMethod.ARITHMETIC,
+    )
+    density_profiles, velocity_profiles_voronoi = compute_profiles(
+        individual_voronoi_velocity_data,
+        geometry,
+        grid_size,
+        VelocityMethod.VORONOI,
     )
     for frame in range(min_frame, max_frame + 1):
         reference_density = np.loadtxt(
@@ -456,11 +465,23 @@ def test_profiles(
             atol=TOLERANCE,
         ).all()
 
-        reference_velocity = np.loadtxt(
-            next(velocity_result_folder.glob(f"*{frame}*"))
+        reference_velocity_arithmetic = np.loadtxt(
+            next(velocity_result_folder.glob(f"*Arithmetic*{frame}*"))
         )
         assert np.isclose(
-            velocity_profiles[frame - min_frame],
-            reference_velocity,
+            velocity_profiles_arithmetic[frame - min_frame],
+            reference_velocity_arithmetic,
+            atol=TOLERANCE,
+        ).all()
+
+        reference_velocity_voronoi = np.loadtxt(
+            next(velocity_result_folder.glob(f"*Voronoi*{frame}*"))
+        )
+
+        print(reference_velocity_voronoi)
+        print(velocity_profiles_voronoi[frame - min_frame])
+        assert np.isclose(
+            velocity_profiles_voronoi[frame - min_frame],
+            reference_velocity_voronoi,
             atol=TOLERANCE,
         ).all()

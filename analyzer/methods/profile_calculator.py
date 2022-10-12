@@ -3,13 +3,23 @@
 import numpy as np
 import pandas as pd
 import shapely
+from aenum import Enum
 from shapely import Polygon
+
+
+class VelocityMethod(Enum):
+    """Identifier of the unit of the trajectory coordinates"""
+
+    _init_ = "value __doc__"
+    ARITHMETIC = 0, ""
+    VORONOI = 1, ""
 
 
 def compute_profiles(
     individual_voronoi_velocity_data: pd.DataFrame,
     walkable_area: Polygon,
     grid_size: float,
+    velocity_method=VelocityMethod,
 ):
     """Computes the density and velocity profiles of the given trajectory
     within the geometry
@@ -26,10 +36,10 @@ def compute_profiles(
             computed
         grid_size (float): resolution of the grid used for computing the
             profiles
-
+        velocity_method (VelocityMethod): velocity method used to compute the
+            velocity
     Returns:
         (List of density profiles, List of velocity profiles)
-
     """
     grid_cells, rows, cols = _get_grid_cells(walkable_area, grid_size)
     density_profiles = []
@@ -43,6 +53,7 @@ def compute_profiles(
             )
         )
 
+        # Compute density
         density = (
             np.sum(
                 grid_intersections_area
@@ -52,23 +63,56 @@ def compute_profiles(
             / grid_cells[0].area
         )
 
-        grid_intersections_area[grid_intersections_area > 0] = 1
-        accumulated_velocity = np.sum(
-            grid_intersections_area * frame_data["speed"].values, axis=1
-        )
-        num_peds = np.count_nonzero(grid_intersections_area, axis=1)
-
-        velocity = np.divide(
-            accumulated_velocity,
-            num_peds,
-            out=np.zeros_like(accumulated_velocity),
-            where=num_peds != 0,
-        )
+        # Compute velocity
+        if velocity_method == VelocityMethod.VORONOI:
+            velocity = _compute_voronoi_velocity(
+                frame_data, grid_intersections_area, grid_cells[0].area
+            )
+        elif velocity_method == VelocityMethod.ARITHMETIC:
+            velocity = _compute_arithmetic_velocity(
+                frame_data, grid_intersections_area
+            )
+        else:
+            raise ValueError("velocity method not accepted")
 
         density_profiles.append(density.reshape(rows, cols))
         velocity_profiles.append(velocity.reshape(rows, cols))
 
     return density_profiles, velocity_profiles
+
+
+def _compute_arithmetic_velocity(frame_data, grid_intersections_area):
+    grid_intersections_area[grid_intersections_area > 0] = 1
+    accumulated_velocity = np.sum(
+        grid_intersections_area * frame_data["speed"].values, axis=1
+    )
+    num_peds = np.count_nonzero(grid_intersections_area, axis=1)
+
+    velocity = np.divide(
+        accumulated_velocity,
+        num_peds,
+        out=np.zeros_like(accumulated_velocity),
+        where=num_peds != 0,
+    )
+    return velocity
+
+
+def _compute_voronoi_velocity(frame_data, grid_intersections_area, grid_area):
+    velocity = (
+        np.sum(grid_intersections_area * frame_data["speed"].values, axis=1)
+        / grid_area
+    )
+
+    density = (
+        np.sum(
+            grid_intersections_area
+            * (1 / shapely.area(frame_data["individual voronoi"].values)),
+            axis=1,
+        )
+        / grid_cells[0].area
+    )
+
+    return velocity
 
 
 def _get_grid_cells(walkable_area: Polygon, grid_size: float):
