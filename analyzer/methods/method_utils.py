@@ -280,7 +280,6 @@ def _compute_crossing_frames(
     # of the movement is not on the line. The result is sorted by frame number
     crossing_frames = df_movement.loc[
         shapely.intersects(df_movement["movement"], measurement_line)
-        # & (~pygeos.intersects(df_movement["end"], measurement_line))
     ][["ID", "frame"]]
 
     return crossing_frames
