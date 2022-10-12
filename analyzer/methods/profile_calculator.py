@@ -19,10 +19,10 @@ class VelocityMethod(Enum):
 
 
 def compute_profiles(
-        individual_voronoi_velocity_data: pd.DataFrame,
-        walkable_area: Polygon,
-        grid_size: float,
-        velocity_method: VelocityMethod,
+    individual_voronoi_velocity_data: pd.DataFrame,
+    walkable_area: Polygon,
+    grid_size: float,
+    velocity_method: VelocityMethod,
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Computes the density and velocity profiles of the given trajectory
     within the geometry
@@ -85,7 +85,7 @@ def compute_profiles(
 
 
 def _compute_arithmetic_velocity(
-        frame_data: np.ndarray, grid_intersections_area: np.ndarray
+    frame_data: np.ndarray, grid_intersections_area: np.ndarray
 ) -> np.ndarray:
     """Compute the arithmetic mean velocity per grid cell
 
@@ -112,9 +112,9 @@ def _compute_arithmetic_velocity(
 
 
 def _compute_voronoi_velocity(
-        frame_data: np.ndarray,
-        grid_intersections_area: np.ndarray,
-        grid_area: float,
+    frame_data: np.ndarray,
+    grid_intersections_area: np.ndarray,
+    grid_area: float,
 ) -> np.ndarray:
     """Compute the Voronoi velocity per grid cell
 
@@ -127,9 +127,8 @@ def _compute_voronoi_velocity(
         Voronoi velocity per grid cell
     """
     velocity = (
-                   np.sum(grid_intersections_area * frame_data["speed"].values,
-                          axis=1)
-               ) / grid_area
+        np.sum(grid_intersections_area * frame_data["speed"].values, axis=1)
+    ) / grid_area
 
     return velocity
 

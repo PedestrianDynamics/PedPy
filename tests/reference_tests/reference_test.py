@@ -166,7 +166,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
         atol=TOLERANCE,
     ).all()
     assert (
-            result.loc[~result.index.isin(reference_result.index)].values == 0
+        result.loc[~result.index.isin(reference_result.index)].values == 0
     ).all()
 
 
@@ -233,7 +233,7 @@ def test_voronoi_velocity(
         atol=TOLERANCE,
     ).all()
     assert (
-            result.loc[~result.index.isin(reference_result.index)].values == 0
+        result.loc[~result.index.isin(reference_result.index)].values == 0
     ).all()
 
 
@@ -402,18 +402,18 @@ def test_passing_velocity(measurement_line, width, folder):
     "max_frame, folder",
     [
         (
-                shapely.from_wkt(
-                    "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
-                    "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
-                    "-2.25 0.53, -2.25 6.25, 4 6.25))"
-                ),
-                0.2,
-                0.8,
-                12,
-                False,
-                110,
-                120,
-                ROOT_DIR / pathlib.Path("data/bottleneck"),
+            shapely.from_wkt(
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
+            ),
+            0.2,
+            0.8,
+            12,
+            False,
+            110,
+            120,
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
     ],
 )
