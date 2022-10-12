@@ -16,7 +16,7 @@ from analyzer.methods.density_calculator import (
 )
 from analyzer.methods.flow_calculator import compute_flow, compute_n_t
 from analyzer.methods.method_utils import compute_frame_range_in_area
-from analyzer.methods.profile_calculator import compute_profiles
+from analyzer.methods.profile_calculator import VelocityMethod, compute_profiles
 from analyzer.methods.velocity_calculator import (
     compute_individual_velocity,
     compute_mean_velocity_per_frame,
@@ -34,11 +34,13 @@ ROOT_DIR = pathlib.Path(__file__).parent.resolve()
     [
         (
             shapely.from_wkt(
-                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
-                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
@@ -75,11 +77,13 @@ def test_classic_density(geometry, measurement_area, folder):
     [
         (
             shapely.from_wkt(
-                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
-                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
             5,
@@ -120,11 +124,13 @@ def test_arithmetic_velocity(
     [
         (
             shapely.from_wkt(
-                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
-                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
@@ -150,8 +156,9 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
         trajectory.data, measurement_area, geometry
     )
 
-    # in jpsreport not all frames are written to the result (e.g., when not enough peds inside ma),
-    # hence only compare these who are in reference frame and check if the rest is zero
+    # in jpsreport not all frames are written to the result (e.g., when not
+    # enough peds inside ma), hence only compare these who are in reference
+    # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
         result.iloc[reference_result.index]["voronoi density"],
@@ -168,11 +175,13 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     [
         (
             shapely.from_wkt(
-                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
-                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
             5,
@@ -214,8 +223,9 @@ def test_voronoi_velocity(
     )
     result = result.to_frame()
 
-    # in jpsreport not all frames are written to the result (e.g., when not enough peds inside ma),
-    # hence only compare these who are in reference frame and check if the rest is zero
+    # in jpsreport not all frames are written to the result (e.g., when not
+    # enough peds inside ma), hence only compare these who are in reference
+    # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
         result.iloc[reference_result.index]["voronoi speed"],
@@ -297,8 +307,8 @@ def test_flow(line, folder, flow_frame, velocity_frame):
         atol=TOLERANCE,
     ).all()
 
-    # ignore the first flow value as there is a bug in jpsreport, the first x passing will be
-    # not included in the flow, hence it is underestimated
+    # ignore the first flow value as there is a bug in jpsreport, the first x
+    # passing will be not included in the flow, hence it is underestimated
     assert np.isclose(
         result["Flow rate(1/s)"][1:],
         reference_result["Flow rate(1/s)"][1:],
@@ -388,19 +398,21 @@ def test_passing_velocity(measurement_line, width, folder):
 
 
 @pytest.mark.parametrize(
-    "geometry, grid_size, cut_off_radius, num_edges, blind_points, min_frame, max_frame, folder",
+    "geometry, grid_size, cut_off_radius, num_edges, blind_points, min_frame, "
+    "max_frame, folder",
     [
         (
             shapely.from_wkt(
-                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, 4 -8, -2.25 -8, "
-                "-2.25 -0.53, -0.6 -0.53, -0.6 0.53, -2.25 0.53, -2.25 6.25, 4 6.25))"
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             0.2,
             0.8,
             12,
             False,
             110,
-            110,
+            120,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         )
     ],
@@ -415,7 +427,6 @@ def test_profiles(
     max_frame,
     folder,
 ):
-    print()
     density_result_folder = (
         folder / "results/Fundamental_Diagram/Classical_Voronoi/field/density"
     )
@@ -443,8 +454,17 @@ def test_profiles(
     individual_voronoi_velocity_data = combined[
         combined.frame.between(min_frame, max_frame, inclusive="both")
     ]
-    density_profiles, velocity_profiles = compute_profiles(
-        individual_voronoi_velocity_data, geometry, grid_size
+    density_profiles, velocity_profiles_arithmetic = compute_profiles(
+        individual_voronoi_velocity_data,
+        geometry,
+        grid_size,
+        VelocityMethod.ARITHMETIC,
+    )
+    density_profiles, velocity_profiles_voronoi = compute_profiles(
+        individual_voronoi_velocity_data,
+        geometry,
+        grid_size,
+        VelocityMethod.VORONOI,
     )
     for frame in range(min_frame, max_frame + 1):
         reference_density = np.loadtxt(
@@ -456,11 +476,21 @@ def test_profiles(
             atol=TOLERANCE,
         ).all()
 
-        reference_velocity = np.loadtxt(
-            next(velocity_result_folder.glob(f"*{frame}*"))
+        reference_velocity_arithmetic = np.loadtxt(
+            next(velocity_result_folder.glob(f"*Arithmetic*{frame}*"))
         )
         assert np.isclose(
-            velocity_profiles[frame - min_frame],
-            reference_velocity,
+            velocity_profiles_arithmetic[frame - min_frame],
+            reference_velocity_arithmetic,
+            atol=TOLERANCE,
+        ).all()
+
+        reference_velocity_voronoi = np.loadtxt(
+            next(velocity_result_folder.glob(f"*Voronoi*{frame}*"))
+        )
+
+        assert np.isclose(
+            velocity_profiles_voronoi[frame - min_frame],
+            reference_velocity_voronoi,
             atol=TOLERANCE,
         ).all()

@@ -1,16 +1,29 @@
 """Module containing functions to compute profiles"""
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
 import shapely
+from aenum import Enum
 from shapely import Polygon
+
+
+class VelocityMethod(Enum):
+    """Identifier of the method used to compute the mean velocity per grid
+    cell
+    """
+
+    _init_ = "value __doc__"
+    ARITHMETIC = 0, "arithmetic mean velocity"
+    VORONOI = 1, "voronoi velocity"
 
 
 def compute_profiles(
     individual_voronoi_velocity_data: pd.DataFrame,
     walkable_area: Polygon,
     grid_size: float,
-):
+    velocity_method: VelocityMethod,
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Computes the density and velocity profiles of the given trajectory
     within the geometry
 
@@ -26,10 +39,10 @@ def compute_profiles(
             computed
         grid_size (float): resolution of the grid used for computing the
             profiles
-
+        velocity_method (VelocityMethod): velocity method used to compute the
+            velocity
     Returns:
         (List of density profiles, List of velocity profiles)
-
     """
     grid_cells, rows, cols = _get_grid_cells(walkable_area, grid_size)
     density_profiles = []
@@ -43,6 +56,7 @@ def compute_profiles(
             )
         )
 
+        # Compute density
         density = (
             np.sum(
                 grid_intersections_area
@@ -52,23 +66,71 @@ def compute_profiles(
             / grid_cells[0].area
         )
 
-        grid_intersections_area[grid_intersections_area > 0] = 1
-        accumulated_velocity = np.sum(
-            grid_intersections_area * frame_data["speed"].values, axis=1
-        )
-        num_peds = np.count_nonzero(grid_intersections_area, axis=1)
-
-        velocity = np.divide(
-            accumulated_velocity,
-            num_peds,
-            out=np.zeros_like(accumulated_velocity),
-            where=num_peds != 0,
-        )
+        # Compute velocity
+        if velocity_method == VelocityMethod.VORONOI:
+            velocity = _compute_voronoi_velocity(
+                frame_data, grid_intersections_area, grid_cells[0].area
+            )
+        elif velocity_method == VelocityMethod.ARITHMETIC:
+            velocity = _compute_arithmetic_velocity(
+                frame_data, grid_intersections_area
+            )
+        else:
+            raise ValueError("velocity method not accepted")
 
         density_profiles.append(density.reshape(rows, cols))
         velocity_profiles.append(velocity.reshape(rows, cols))
 
     return density_profiles, velocity_profiles
+
+
+def _compute_arithmetic_velocity(
+    frame_data: np.ndarray, grid_intersections_area: np.ndarray
+) -> np.ndarray:
+    """Compute the arithmetic mean velocity per grid cell
+
+    Args:
+        frame_data (np.ndarray): all relevant data in a specific frame
+        grid_intersections_area (np.ndarray): intersection areas for each
+                pedestrian with each grid cells
+    Returns:
+        Arithmetic mean velocity per grid cell
+    """
+    grid_intersections_area[grid_intersections_area > 0] = 1
+    accumulated_velocity = np.sum(
+        grid_intersections_area * frame_data["speed"].values, axis=1
+    )
+    num_peds = np.count_nonzero(grid_intersections_area, axis=1)
+
+    velocity = np.divide(
+        accumulated_velocity,
+        num_peds,
+        out=np.zeros_like(accumulated_velocity),
+        where=num_peds != 0,
+    )
+    return velocity
+
+
+def _compute_voronoi_velocity(
+    frame_data: np.ndarray,
+    grid_intersections_area: np.ndarray,
+    grid_area: float,
+) -> np.ndarray:
+    """Compute the Voronoi velocity per grid cell
+
+    Args:
+        frame_data (np.ndarray): all relevant data in a specific frame
+        grid_intersections_area (np.ndarray): intersection areas for each
+                pedestrian with each grid cells
+        grid_area (float): area of one grid cell
+    Returns:
+        Voronoi velocity per grid cell
+    """
+    velocity = (
+        np.sum(grid_intersections_area * frame_data["speed"].values, axis=1)
+    ) / grid_area
+
+    return velocity
 
 
 def _get_grid_cells(walkable_area: Polygon, grid_size: float):
