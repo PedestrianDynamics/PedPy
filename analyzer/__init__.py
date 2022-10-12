@@ -16,7 +16,7 @@ from .methods.method_utils import (
     get_peds_in_frame_range,
     is_trajectory_valid,
 )
-from .methods.profile_calculator import compute_profiles
+from .methods.profile_calculator import VelocityMethod, compute_profiles
 from .methods.velocity_calculator import (
     compute_individual_velocity,
     compute_mean_velocity_per_frame,

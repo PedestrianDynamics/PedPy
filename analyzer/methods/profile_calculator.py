@@ -1,4 +1,5 @@
 """Module containing functions to compute profiles"""
+from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -16,11 +17,11 @@ class VelocityMethod(Enum):
 
 
 def compute_profiles(
-    individual_voronoi_velocity_data: pd.DataFrame,
-    walkable_area: Polygon,
-    grid_size: float,
-    velocity_method=VelocityMethod,
-):
+        individual_voronoi_velocity_data: pd.DataFrame,
+        walkable_area: Polygon,
+        grid_size: float,
+        velocity_method=VelocityMethod,
+) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Computes the density and velocity profiles of the given trajectory
     within the geometry
 
@@ -81,7 +82,18 @@ def compute_profiles(
     return density_profiles, velocity_profiles
 
 
-def _compute_arithmetic_velocity(frame_data, grid_intersections_area):
+def _compute_arithmetic_velocity(
+        frame_data: np.ndarray, grid_intersections_area: np.ndarray
+) -> np.ndarray:
+    """Compute the arithmetic mean velocity per grid cell
+
+    Args:
+        frame_data (np.ndarray): all relevant data in a specific frame
+        grid_intersections_area (np.ndarray): intersection areas for each
+                pedestrian with each grid cells
+    Returns:
+        Arithmetic mean velocity per grid cell
+    """
     grid_intersections_area[grid_intersections_area > 0] = 1
     accumulated_velocity = np.sum(
         grid_intersections_area * frame_data["speed"].values, axis=1
@@ -97,20 +109,25 @@ def _compute_arithmetic_velocity(frame_data, grid_intersections_area):
     return velocity
 
 
-def _compute_voronoi_velocity(frame_data, grid_intersections_area, grid_area):
-    velocity = (
-        np.sum(grid_intersections_area * frame_data["speed"].values, axis=1)
-        / grid_area
-    )
+def _compute_voronoi_velocity(
+        frame_data: np.ndarray,
+        grid_intersections_area: np.ndarray,
+        grid_area: float,
+) -> np.ndarray:
+    """Compute the Voronoi velocity per grid cell
 
-    density = (
-        np.sum(
-            grid_intersections_area
-            * (1 / shapely.area(frame_data["individual voronoi"].values)),
-            axis=1,
-        )
-        / grid_cells[0].area
-    )
+    Args:
+        frame_data (np.ndarray): all relevant data in a specific frame
+        grid_intersections_area (np.ndarray): intersection areas for each
+                pedestrian with each grid cells
+        grid_area (float): area of one grid cell
+    Returns:
+        Voronoi velocity per grid cell
+    """
+    velocity = (
+                   np.sum(grid_intersections_area * frame_data["speed"].values,
+                          axis=1)
+               ) / grid_area
 
     return velocity
 
