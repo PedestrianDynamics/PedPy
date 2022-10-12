@@ -9,18 +9,20 @@ from shapely import Polygon
 
 
 class VelocityMethod(Enum):
-    """Identifier of the unit of the trajectory coordinates"""
+    """Identifier of the method used to compute the mean velocity per grid
+    cell
+    """
 
     _init_ = "value __doc__"
-    ARITHMETIC = 0, ""
-    VORONOI = 1, ""
+    ARITHMETIC = 0, "arithmetic mean velocity"
+    VORONOI = 1, "voronoi velocity"
 
 
 def compute_profiles(
         individual_voronoi_velocity_data: pd.DataFrame,
         walkable_area: Polygon,
         grid_size: float,
-        velocity_method=VelocityMethod,
+        velocity_method: VelocityMethod,
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """Computes the density and velocity profiles of the given trajectory
     within the geometry
