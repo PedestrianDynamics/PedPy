@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JPSreport project="AO_300" version="0.8.5">
+
+    <geometry file="geo.xml"/>
+
+    <output location="results"/>
+
+    <trajectories format="txt" unit="m">
+        <file name="traj.txt"/>
+        <path location="./"/>
+    </trajectories>
+
+    <measurement_areas unit="m">
+        <area_B id="1" type="BoundingBox" zPos="None">
+            <vertex x="0" y="0"/>
+            <vertex x="-3" y="0"/>
+            <vertex x="-3" y="2"/>
+            <vertex x="0" y="2"/>
+            <length_in_movement_direction distance="2.0"/>
+        </area_B>
+        <area_L id="2" type="Line" zPos="None">
+            <start x="0" y="0"/>
+            <end x="-3" y="0.00"/>
+        </area_L>
+    </measurement_areas>
+
+    <velocity frame_step="10" set_movement_direction="None" ignore_backward_movement="false"/>
+
+<!--    <method_A enabled="true">-->
+<!--        <measurement_area id="2" frame_interval="100"/>-->
+<!--    </method_A>-->
+
+    <method_B enabled="false">
+        <measurement_area id="1"/>
+    </method_B>
+
+    <method_D enabled="true">
+        <one_dimensional enabled="false"/>
+        <cut_by_circle enabled="true" radius="0.8" edges="12"/>
+        <profiles enabled="true" grid_size_x="0.2" grid_size_y="0.2" start_frame="110"
+                  stop_frame="120"/>
+        <use_blind_points enabled="false"/>
+<!--        <vel_calculation type="foo"/>-->
+        <vel_calculation type="Arithmetic"/>
+    </method_D>
+
+<!--    <method_C enabled="true">-->
+<!--        <measurement_area id="1"/>-->
+<!--    </method_C>-->
+
+<!--    <method_D enabled="true">-->
+<!--        <measurement_area id="1" start_frame="None" stop_frame="None" local_IFD="false"/>-->
+<!--        <one_dimensional enabled="false"/>-->
+<!--&lt;!&ndash;        <cut_by_circle enabled="true" radius="0.8" edges="12"/>&ndash;&gt;-->
+<!--&lt;!&ndash;        <profiles enabled="true" grid_size_x="0.20" grid_size_y="0.20" start_frame="100"&ndash;&gt;-->
+<!--&lt;!&ndash;                  stop_frame="120"/>&ndash;&gt;-->
+<!--        <use_blind_points enabled="false"/>-->
+<!--&lt;!&ndash;        <vel_calculation type="Arithmetic"/>&ndash;&gt;-->
+<!--    </method_D>-->
+</JPSreport>

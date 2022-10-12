@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<geometry version="0.8" caption="second life" unit="m">
+    <rooms>
+        <room id="0" caption="hall">
+            <subroom id="0" closed="0" class="subroom">
+                <polygon caption="wall">
+                    <vertex px="-3" py="5"/>
+                    <vertex px="0" py="5"/>
+                    <vertex px="0" py="0"/>
+                    <vertex px="5" py="0"/>
+                    <vertex px="5" py="-3"/>
+                    <vertex px="-3" py="-3"/>
+                    <vertex px="-3" py="5"/>
+                </polygon>
+            </subroom>
+        </room>
+    </rooms>
+</geometry>
