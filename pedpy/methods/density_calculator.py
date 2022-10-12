@@ -1,6 +1,6 @@
 """Module containing functions to compute densities"""
 from collections import defaultdict
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -238,7 +238,9 @@ def _compute_intersecting_polygons(
     return df_intersection
 
 
-def _clip_voronoi_polygons(voronoi, diameter):
+def _clip_voronoi_polygons(
+    voronoi: Voronoi, diameter: float
+) -> List[pygeos.GeometryType]:
     """Generate shapely.geometry.Polygon objects corresponding to the
     regions of a scipy.spatial.Voronoi object, in the order of the
     input points. The polygons for the infinite regions are large

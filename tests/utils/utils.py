@@ -1,5 +1,9 @@
 import pathlib
+from typing import List
 
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
 import shapely
 
 from helper.create_trajectories import get_grid_trajectory
@@ -7,8 +11,13 @@ from pedpy.data.trajectory_data import TrajectoryData
 
 
 def get_trajectory(
-    *, shape, number_frames, start_position, movement_direction, ped_distance
-):
+    *,
+    shape: List[int],
+    number_frames: int,
+    start_position: npt.NDArray[np.float64],
+    movement_direction: npt.NDArray[np.float64],
+    ped_distance: float,
+) -> pd.DataFrame:
     grid = get_grid_trajectory(
         shape=shape,
         start_position=start_position,
@@ -24,13 +33,13 @@ def get_trajectory(
 
 def get_trajectory_data(
     *,
-    grid_shape,
-    number_frames,
-    start_position,
-    movement_direction,
-    ped_distance,
-    fps=10,
-):
+    grid_shape: List[int],
+    number_frames: int,
+    start_position: npt.NDArray[np.float64],
+    movement_direction: npt.NDArray[np.float64],
+    ped_distance: float,
+    fps: int = 10,
+) -> TrajectoryData:
     grid = get_grid_trajectory(
         shape=grid_shape,
         start_position=start_position,
