@@ -19,6 +19,7 @@ class VelocityMethod(Enum):
 
 
 def compute_profiles(
+    *,
     individual_voronoi_velocity_data: pd.DataFrame,
     walkable_area: Polygon,
     grid_size: float,

@@ -9,10 +9,10 @@ from scipy.spatial import Voronoi
 from shapely import Polygon
 
 from analyzer.data.geometry import Geometry
-from analyzer.methods.method_utils import get_peds_in_area
 
 
 def compute_classic_density(
+    *,
     traj_data: pd.DataFrame,
     measurement_area: Polygon,
 ) -> pd.DataFrame:
@@ -27,7 +27,9 @@ def compute_classic_density(
     Returns:
         DataFrame containing the columns: 'frame' and 'classic density'
     """
-    peds_in_area = get_peds_in_area(traj_data, measurement_area)
+    peds_in_area = traj_data[
+        shapely.contains(measurement_area, traj_data["points"])
+    ]
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
 
     density = peds_in_area_per_frame / measurement_area.area
@@ -43,6 +45,7 @@ def compute_classic_density(
 
 
 def compute_voronoi_density(
+    *,
     traj_data: pd.DataFrame,
     measurement_area: shapely.Polygon,
     geometry: Geometry,
@@ -65,8 +68,8 @@ def compute_voronoi_density(
           DataFrame containing the columns: 'ID', 'frame', 'individual voronoi',
                 'intersecting voronoi'
     """
-    df_individual = _compute_individual_voronoi_polygons(
-        traj_data, geometry, cut_off
+    df_individual = compute_individual_voronoi_polygons(
+        traj_data=traj_data, geometry=geometry, cut_off=cut_off
     )
     df_intersecting = _compute_intersecting_polygons(
         df_individual, measurement_area
@@ -97,7 +100,7 @@ def compute_voronoi_density(
 
 
 def compute_passing_density(
-    density_per_frame: pd.DataFrame, frames: pd.DataFrame
+    *, density_per_frame: pd.DataFrame, frames: pd.DataFrame
 ):
     """Compute the individual density of the pedestrian who pass the area.
 
@@ -143,7 +146,8 @@ def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
     return num_peds_per_frame
 
 
-def _compute_individual_voronoi_polygons(
+def compute_individual_voronoi_polygons(
+    *,
     traj_data: pd.DataFrame,
     geometry: Geometry,
     cut_off: Tuple[float, int] = None,
