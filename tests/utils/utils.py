@@ -2,8 +2,8 @@ import pathlib
 
 import shapely
 
-from analyzer.data.trajectory_data import TrajectoryData
 from helper.create_trajectories import get_grid_trajectory
+from pedpy.data.trajectory_data import TrajectoryData
 
 
 def get_trajectory(

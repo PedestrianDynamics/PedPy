@@ -8,7 +8,7 @@ import shapely
 from scipy.spatial import Voronoi
 from shapely import Polygon
 
-from analyzer.data.geometry import Geometry
+from pedpy.data.geometry import Geometry
 
 
 def compute_classic_density(

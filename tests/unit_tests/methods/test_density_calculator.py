@@ -4,7 +4,7 @@ import pytest
 import shapely
 from shapely.geometry import Point
 
-from analyzer.methods.density_calculator import (
+from pedpy.methods.density_calculator import (
     _get_num_peds_per_frame,
     compute_classic_density,
 )

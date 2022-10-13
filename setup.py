@@ -6,11 +6,11 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pitapy",
+    name="pedpy",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     author="T. Schroedter",
-    description="PiTA is a python library to analyze trajectories of pedestrians.",
+    description="pedpy is a python module for pedestrian movement analysis.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
@@ -18,7 +18,7 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    packages=["analyzer", "analyzer.data", "analyzer.io", "analyzer.methods"],
+    packages=["pedpy", "pedpy.data", "pedpy.io", "pedpy.methods"],
     python_requires=">=3.8",
     install_requires=[
         "aenum >= 3.1.5",

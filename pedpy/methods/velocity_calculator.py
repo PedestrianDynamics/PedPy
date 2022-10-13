@@ -7,7 +7,7 @@ import pandas as pd
 import shapely
 from shapely import Polygon
 
-from analyzer.methods.method_utils import _compute_individual_movement
+from pedpy.methods.method_utils import _compute_individual_movement
 
 
 def compute_individual_velocity(

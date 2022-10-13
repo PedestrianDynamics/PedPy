@@ -6,7 +6,7 @@ import pathlib
 
 import pandas as pd
 
-from analyzer.data.trajectory_data import TrajectoryData, TrajectoryUnit
+from pedpy.data.trajectory_data import TrajectoryData, TrajectoryUnit
 
 
 def load_trajectory(
