@@ -556,26 +556,28 @@ def test_passing_velocity(measurement_line, width, folder):
             120,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         ),
-        # (
-        #     shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-        #     0.2,
-        #     0.8,
-        #     12,
-        #     False,
-        #     110,
-        #     110,
-        #     ROOT_DIR / pathlib.Path("data/corridor"),
-        # ),
-        # (
-        #     shapely.from_wkt("POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"),
-        #     0.2,
-        #     0.8,
-        #     12,
-        #     False,
-        #     110,
-        #     110,
-        #     ROOT_DIR / pathlib.Path("data/corner"),
-        # ),
+        (
+            shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
+            0.2,
+            0.8,
+            12,
+            False,
+            110,
+            120,
+            ROOT_DIR / pathlib.Path("data/corridor"),
+        ),
+        (
+            shapely.from_wkt(
+                "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
+            ),
+            0.2,
+            0.8,
+            12,
+            False,
+            110,
+            120,
+            ROOT_DIR / pathlib.Path("data/corner"),
+        ),
     ],
 )
 def test_profiles(
@@ -600,12 +602,12 @@ def test_profiles(
     )
     trajectory.data = trajectory.data[
         trajectory.data.frame.between(
-            min_frame - 20, max_frame + 20, inclusive="both"
+            min_frame - 5, max_frame + 5, inclusive="both"
         )
     ]
-
+    geo = Geometry(geometry)
     individual_voronoi = _compute_individual_voronoi_polygons(
-        trajectory.data, Geometry(geometry), (cut_off_radius, num_edges)
+        trajectory.data, geo, (cut_off_radius, num_edges)
     )
     individual_speed = compute_individual_velocity(
         trajectory.data, trajectory.frame_rate, 5
@@ -619,13 +621,13 @@ def test_profiles(
     ]
     density_profiles, velocity_profiles_arithmetic = compute_profiles(
         individual_voronoi_velocity_data,
-        geometry,
+        geo.walkable_area,
         grid_size,
         VelocityMethod.ARITHMETIC,
     )
     density_profiles, velocity_profiles_voronoi = compute_profiles(
         individual_voronoi_velocity_data,
-        geometry,
+        geo.walkable_area,
         grid_size,
         VelocityMethod.VORONOI,
     )
@@ -640,21 +642,29 @@ def test_profiles(
             atol=TOLERANCE,
         ).all()
 
-        reference_velocity_arithmetic = np.loadtxt(
-            next(velocity_result_folder.glob(f"*Arithmetic*{frame}*"))
-        )
-        assert np.isclose(
-            velocity_profiles_arithmetic[frame - min_frame],
-            reference_velocity_arithmetic,
-            atol=TOLERANCE,
-        ).all()
-
         reference_velocity_voronoi = np.loadtxt(
             next(velocity_result_folder.glob(f"*Voronoi*{frame}*"))
         )
-
         assert np.isclose(
             velocity_profiles_voronoi[frame - min_frame],
             reference_velocity_voronoi,
+            atol=TOLERANCE,
+        ).all()
+
+        reference_velocity_arithmetic = np.loadtxt(
+            next(velocity_result_folder.glob(f"*Arithmetic*{frame}*"))
+        )
+
+        # There are artifacts of the polygons going outside the geometry in
+        # this test case. They appear to originate from handling the border of
+        # polygons differently in shapely and jpsreport (boost::geometry).
+        # These fields will be ignored.
+        if folder.name == "corner":
+            reference_velocity_arithmetic[:25, 15:] = 0
+            velocity_profiles_arithmetic[frame - min_frame][:25, 15:] = 0
+
+        assert np.isclose(
+            velocity_profiles_arithmetic[frame - min_frame],
+            reference_velocity_arithmetic,
             atol=TOLERANCE,
         ).all()
