@@ -1,6 +1,7 @@
 # pedpy
 
 `pedpy` is a python module for pedestrian movement analysis. 
+It implements different measurement methods for density, velocity and flow.
 
 This repo is a port from the original `JPSreport` to a Python implementation, and will provide the same functionalities.
 
@@ -9,17 +10,20 @@ This repo is a port from the original `JPSreport` to a Python implementation, an
 For setting up your Python Environment a Python version >= 3.8 is recommended (our code is tested with 3.8).
 To avoid conflicts with other libraries/applications the usage of virtual environments is recommended, see [Python Documentation](https://docs.python.org/3/library/venv.html) for more detail.
 
+### Installing pedpy
+To install the latest **stable** version of `pedpy` and its dependencies from PyPI:
+```bash
+python3 -m pip install pedpy
+```
 
-### Installing PiTA
-You can install the latest version of PiTA from the test-Python Package 
-index via
+If you want to install the current version in the repository which might be unstable, you can do so via:
 ```bash
 python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pedpy
 ```
-This will also install all the dependencies for using the library directly.
 
 ### Usage
-The usage of the current state of the porting process can be seen in [demo notebook](usage.ipynb).
+
+The usage of `pedpy` is demonstrated in the [demo notebook](usage.ipynb).
 You can either download the notebook and [demo files](demos/bottleneck/) 
 from the GitHub repository or clone the whole repository with:
 
@@ -43,3 +47,8 @@ jupyter notebook
 After navigating to the notebook, you can see how the library can be used 
 for different kinds of analysis.
 
+Some examples how the computed values can be visualized are also shown in the notebook, e.g., density/velocity profiles, fundamental diagrams, N-T-diagrams, etc.
+
+![voronoi](figs/voronoi_diagrams.png)
+
+![density](figs/density_comparison.png)
