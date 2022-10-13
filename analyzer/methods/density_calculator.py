@@ -101,7 +101,7 @@ def compute_voronoi_density(
 
 def compute_passing_density(
     *, density_per_frame: pd.DataFrame, frames: pd.DataFrame
-):
+) -> pd.DataFrame:
     """Compute the individual density of the pedestrian who pass the area.
 
     Args:

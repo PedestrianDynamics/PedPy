@@ -1,4 +1,6 @@
 """Helper functions for the analysis methods"""
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 import shapely
@@ -38,8 +40,8 @@ def get_invalid_trajectory(
 
 
 def compute_frame_range_in_area(
-    *, traj_data: pd.DataFrame, measurement_line: Polygon, width: float
-):
+    *, traj_data: pd.DataFrame, measurement_line: LineString, width: float
+) -> Tuple[pd.DataFrame, Polygon]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
     Note:
@@ -55,11 +57,12 @@ def compute_frame_range_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.Polygon):
+        measurement_line (shapely.LineString): measurement line
         width (float): distance to the second measurement line
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
+        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end' and
+        the created measurement area
     """
     assert len(shapely.get_coordinates(measurement_line)) == 2, (
         f"The measurement line needs to be a straight line but has more  "
@@ -186,7 +189,7 @@ def _compute_individual_movement(
 
 def _compute_crossing_frames(
     traj_data: pd.DataFrame, measurement_line: LineString
-):
+) -> pd.DataFrame:
     """Compute the frames at which a pedestrian crosses a specific
     measurement line.
 
@@ -233,7 +236,7 @@ def _compute_crossing_frames(
 
 def _get_continuous_parts_in_area(
     traj_data: pd.DataFrame, measurement_area: Polygon
-):
+) -> pd.DataFrame:
     """Returns the time-continuous parts in which the pedestrians are inside
     the given measurement area. As leaving the first frame outside the area is
     considered.
@@ -269,7 +272,7 @@ def _check_crossing_in_frame_range(
     crossing_frames: pd.DataFrame,
     check_column: str,
     column_name: str,
-):
+) -> pd.DataFrame:
     """Returns rows of inside_range which are also in crossing_frames.
 
     Args:
