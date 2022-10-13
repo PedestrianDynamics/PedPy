@@ -193,12 +193,13 @@ def compute_individual_voronoi_polygons(
 
     for _, peds_in_frame in traj_data.groupby(traj_data.frame):
         points = peds_in_frame[["X", "Y"]].values
-
         if use_blind_points:
             points = np.concatenate([points, blind_points])
 
+        # if blind points were added, len(points) will always be > 4
         if len(points) < 4:
             continue
+
         vor = Voronoi(points)
         voronoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
 

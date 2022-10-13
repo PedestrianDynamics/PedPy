@@ -169,7 +169,8 @@ def test_arithmetic_velocity(
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53,"
+                " 2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         ),
@@ -193,7 +194,8 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     reference_result = pd.read_csv(
         next(
             folder.glob(
-                "results/Fundamental_Diagram/Classical_Voronoi/rho_v_Voronoi*"
+                "results/Fundamental_Diagram/Classical_Voronoi/"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1.dat"
             )
         ),
         sep="\t",
@@ -211,6 +213,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
         traj_data=trajectory.data,
         measurement_area=measurement_area,
         geometry=geometry,
+        use_blind_points=False,
     )
 
     # in jpsreport not all frames are written to the result (e.g., when not
@@ -237,7 +240,8 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53,"
+                " 2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         ),
@@ -264,7 +268,7 @@ def test_voronoi_density_blind_points(
         next(
             folder.glob(
                 "results/Fundamental_Diagram/Classical_Voronoi/"
-                "rho_v_Voronoi*_blind_points*"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1_blind_points.dat"
             )
         ),
         sep="\t",
@@ -283,8 +287,13 @@ def test_voronoi_density_blind_points(
         measurement_area=measurement_area,
         geometry=geometry,
         use_blind_points=True,
-        cut_off=(0.8, 12),
     )
+
+    # as there is a bug in the blind point computation in jpsreport in the
+    # bottleneck test case ignore the last 20 frames.
+    if folder.name == "bottleneck":
+        result = result[result.index < 930]
+        reference_result = reference_result[reference_result.index < 930]
 
     # in jpsreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
@@ -338,7 +347,7 @@ def test_voronoi_density_blind_points_cutoff(
         next(
             folder.glob(
                 "results/Fundamental_Diagram/Classical_Voronoi/"
-                "rho_v_Voronoi*_blind_points_cut_off*"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1_blind_points_cut_off.dat"
             )
         ),
         sep="\t",
@@ -384,7 +393,8 @@ def test_voronoi_density_blind_points_cutoff(
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
             5,
@@ -413,7 +423,8 @@ def test_voronoi_velocity(
     reference_result = pd.read_csv(
         next(
             folder.glob(
-                "results/Fundamental_Diagram/Classical_Voronoi/rho_v_Voronoi_Voronoi*"
+                "results/Fundamental_Diagram/Classical_Voronoi/"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1.dat"
             )
         ),
         sep="\t",
@@ -429,7 +440,7 @@ def test_voronoi_velocity(
     geometry = Geometry(walkable_area=geometry_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory.data, geometry=geometry
+        traj_data=trajectory.data, geometry=geometry, use_blind_points=False
     )
     intersecting_voronoi = _compute_intersecting_polygons(
         individual_voronoi, measurement_area

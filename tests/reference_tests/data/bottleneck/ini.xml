@@ -36,9 +36,9 @@
 <!--        <measurement_area id="4" frame_interval="150"/>-->
 <!--    </method_A>-->
 
-<!--    <method_C enabled="true">-->
-<!--        <measurement_area id="1"/>-->
-<!--    </method_C>-->
+    <method_C enabled="true">
+        <measurement_area id="1"/>
+    </method_C>
 
 <!--    <method_D enabled="true">-->
 <!--        <one_dimensional enabled="false"/>-->
@@ -49,7 +49,7 @@
 <!--        <vel_calculation type="Arithmetic"/>-->
 <!--    </method_D>-->
     <method_D enabled="true">
-        <measurement_area id="1" start_frame="None" stop_frame="None" local_IFD="false" />
+        <measurement_area id="1" start_frame="None" stop_frame="None" local_IFD="true" />
         <one_dimensional enabled="false"/>
         <cut_by_circle enabled="false" radius="0.8" edges="12"/>
 <!--        <profiles enabled="true" grid_size_x="0.2" grid_size_y="0.2" start_frame="110" stop_frame="120"/>-->
