@@ -5,20 +5,20 @@ import pandas as pd
 import pytest
 import shapely
 
-from analyzer import TrajectoryUnit
-from analyzer.data.geometry import Geometry
-from analyzer.io.trajectory_loader import load_trajectory
-from analyzer.methods.density_calculator import (
+from pedpy import TrajectoryUnit
+from pedpy.data.geometry import Geometry
+from pedpy.io.trajectory_loader import load_trajectory
+from pedpy.methods.density_calculator import (
     _compute_intersecting_polygons,
     compute_classic_density,
     compute_individual_voronoi_polygons,
     compute_passing_density,
     compute_voronoi_density,
 )
-from analyzer.methods.flow_calculator import compute_flow, compute_n_t
-from analyzer.methods.method_utils import compute_frame_range_in_area
-from analyzer.methods.profile_calculator import VelocityMethod, compute_profiles
-from analyzer.methods.velocity_calculator import (
+from pedpy.methods.flow_calculator import compute_flow, compute_n_t
+from pedpy.methods.method_utils import compute_frame_range_in_area
+from pedpy.methods.profile_calculator import VelocityMethod, compute_profiles
+from pedpy.methods.velocity_calculator import (
     compute_individual_velocity,
     compute_mean_velocity_per_frame,
     compute_passing_speed,

@@ -4,7 +4,7 @@ from typing import Tuple
 import pandas as pd
 from shapely import LineString
 
-from analyzer.methods.method_utils import _compute_crossing_frames
+from pedpy.methods.method_utils import _compute_crossing_frames
 
 
 def compute_n_t(

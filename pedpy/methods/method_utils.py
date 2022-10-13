@@ -6,7 +6,7 @@ import pandas as pd
 import shapely
 from shapely import LineString, Polygon
 
-from analyzer import Geometry, TrajectoryData
+from pedpy import Geometry, TrajectoryData
 
 
 def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:

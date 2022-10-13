@@ -5,9 +5,9 @@ import pandas as pd
 import pytest
 from numpy import dtype
 
-from analyzer.data.trajectory_data import TrajectoryUnit
-from analyzer.io.trajectory_loader import *
-from analyzer.io.trajectory_loader import (
+from pedpy.data.trajectory_data import TrajectoryUnit
+from pedpy.io.trajectory_loader import *
+from pedpy.io.trajectory_loader import (
     _load_trajectory_data,
     _load_trajectory_meta_data,
 )

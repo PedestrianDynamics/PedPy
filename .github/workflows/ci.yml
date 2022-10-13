@@ -1,4 +1,4 @@
-name: pita-ci
+name: pedpy-ci
 
 on:
   schedule:
@@ -99,7 +99,7 @@ jobs:
 
       - name: Test if install was successful
         run: |
-          python3 -c "import analyzer; print(analyzer.__version__)"
+          python3 -c "import pedpy; print(pedpy.__version__)"
 
       - name: Run usage notebook
         run: |
