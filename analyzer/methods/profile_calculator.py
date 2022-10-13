@@ -96,17 +96,17 @@ def _compute_arithmetic_velocity(
     Returns:
         Arithmetic mean velocity per grid cell
     """
-    grid_intersections_area[grid_intersections_area > 0] = 1
-    accumulated_velocity = np.sum(
-        grid_intersections_area * frame_data["speed"].values, axis=1
-    )
-    num_peds = np.count_nonzero(grid_intersections_area, axis=1)
+    cells_with_peds = np.where(grid_intersections_area > 1e-16, 1, 0)
 
-    velocity = np.divide(
-        accumulated_velocity,
-        num_peds,
-        out=np.zeros_like(accumulated_velocity),
-        where=num_peds != 0,
+    accumulated_velocity = np.sum(
+        cells_with_peds * frame_data["speed"].values, axis=1
+    )
+    num_peds = np.count_nonzero(cells_with_peds, axis=1)
+
+    velocity = np.where(
+        num_peds > 0,
+        accumulated_velocity / num_peds,
+        0,
     )
     return velocity
 
