@@ -42,7 +42,7 @@ def test_compute_classic_density(
     )
 
     computed_density = compute_classic_density(
-        trajectory_data.data, measurement_area
+        traj_data=trajectory_data.data, measurement_area=measurement_area
     )
 
     num_peds_in_area_per_frame = {frame: 0 for frame in range(0, num_frames)}

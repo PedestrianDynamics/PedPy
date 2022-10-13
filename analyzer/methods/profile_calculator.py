@@ -19,6 +19,7 @@ class VelocityMethod(Enum):
 
 
 def compute_profiles(
+    *,
     individual_voronoi_velocity_data: pd.DataFrame,
     walkable_area: Polygon,
     grid_size: float,
@@ -133,7 +134,9 @@ def _compute_voronoi_velocity(
     return velocity
 
 
-def _get_grid_cells(walkable_area: Polygon, grid_size: float):
+def _get_grid_cells(
+    walkable_area: Polygon, grid_size: float
+) -> Tuple[np.ndarray, int, int]:
     """Creates a list of square grid cells which cover the space used by
     geometry.
 

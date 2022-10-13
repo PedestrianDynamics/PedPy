@@ -11,6 +11,7 @@ from analyzer.methods.method_utils import _compute_individual_movement
 
 
 def compute_individual_velocity(
+    *,
     traj_data: pd.DataFrame,
     frame_rate: float,
     frame_step: int,
@@ -40,6 +41,7 @@ def compute_individual_velocity(
 
 
 def compute_mean_velocity_per_frame(
+    *,
     traj_data: pd.DataFrame,
     measurement_area: Polygon,
     frame_rate: float,
@@ -66,7 +68,10 @@ def compute_mean_velocity_per_frame(
         DataFrame containing the columns 'ID', 'frame', and 'speed'
     """
     df_speed = compute_individual_velocity(
-        traj_data, frame_rate, frame_step, movement_direction
+        traj_data=traj_data,
+        frame_rate=frame_rate,
+        frame_step=frame_step,
+        movement_direction=movement_direction,
     )
     combined = traj_data.merge(df_speed, on=["ID", "frame"])
     df_mean = (
@@ -82,6 +87,7 @@ def compute_mean_velocity_per_frame(
 
 
 def compute_voronoi_velocity(
+    *,
     traj_data: pd.DataFrame,
     individual_voronoi_intersection: pd.DataFrame,
     frame_rate: float,
@@ -111,7 +117,10 @@ def compute_voronoi_velocity(
         DataFrame containing the columns 'ID', 'frame', and 'speed'
     """
     df_speed = compute_individual_velocity(
-        traj_data, frame_rate, frame_step, movement_direction
+        traj_data=traj_data,
+        frame_rate=frame_rate,
+        frame_step=frame_step,
+        movement_direction=movement_direction,
     )
     df_voronoi = pd.merge(
         individual_voronoi_intersection, df_speed, on=["ID", "frame"]
@@ -170,7 +179,7 @@ def _compute_individual_speed(
 
 
 def compute_passing_speed(
-    frames_in_area: pd.DataFrame, frame_rate: float, distance: float
+    *, frames_in_area: pd.DataFrame, frame_rate: float, distance: float
 ) -> pd.DataFrame:
     """Compute the individual speed of the pedestrian who pass the area.
 

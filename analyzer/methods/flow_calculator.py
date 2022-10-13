@@ -8,6 +8,7 @@ from analyzer.methods.method_utils import _compute_crossing_frames
 
 
 def compute_n_t(
+    *,
     traj_data: pd.DataFrame,
     measurement_line: LineString,
     frame_rate: float,
@@ -59,6 +60,7 @@ def compute_n_t(
 
 
 def compute_flow(
+    *,
     nt: pd.DataFrame,
     crossing_frames: pd.DataFrame,
     individual_speed: pd.DataFrame,

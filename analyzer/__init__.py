@@ -5,6 +5,7 @@ from .io.geometry_parser import parse_geometry
 from .io.trajectory_loader import load_trajectory
 from .methods.density_calculator import (
     compute_classic_density,
+    compute_individual_voronoi_polygons,
     compute_passing_density,
     compute_voronoi_density,
 )
@@ -12,8 +13,6 @@ from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
     compute_frame_range_in_area,
     get_invalid_trajectory,
-    get_peds_in_area,
-    get_peds_in_frame_range,
     is_trajectory_valid,
 )
 from .methods.profile_calculator import VelocityMethod, compute_profiles

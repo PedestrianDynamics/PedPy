@@ -9,9 +9,9 @@ from analyzer import TrajectoryUnit
 from analyzer.data.geometry import Geometry
 from analyzer.io.trajectory_loader import load_trajectory
 from analyzer.methods.density_calculator import (
-    _compute_individual_voronoi_polygons,
     _compute_intersecting_polygons,
     compute_classic_density,
+    compute_individual_voronoi_polygons,
     compute_passing_density,
     compute_voronoi_density,
 )
@@ -79,7 +79,9 @@ def test_classic_density(geometry, measurement_area, folder):
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
 
-    result = compute_classic_density(trajectory.data, measurement_area)
+    result = compute_classic_density(
+        traj_data=trajectory.data, measurement_area=measurement_area
+    )
 
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
@@ -144,7 +146,10 @@ def test_arithmetic_velocity(
     )
 
     result, _ = compute_mean_velocity_per_frame(
-        trajectory.data, measurement_area, trajectory.frame_rate, velocity_frame
+        traj_data=trajectory.data,
+        measurement_area=measurement_area,
+        frame_rate=trajectory.frame_rate,
+        frame_step=velocity_frame,
     )
     result = result.to_frame()
 
@@ -201,9 +206,11 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = Geometry(geometry_polygon)
+    geometry = Geometry(walkable_area=geometry_polygon)
     result, _ = compute_voronoi_density(
-        trajectory.data, measurement_area, geometry
+        traj_data=trajectory.data,
+        measurement_area=measurement_area,
+        geometry=geometry,
     )
 
     # in jpsreport not all frames are written to the result (e.g., when not
@@ -272,21 +279,21 @@ def test_voronoi_velocity(
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = Geometry(geometry_polygon)
+    geometry = Geometry(walkable_area=geometry_polygon)
 
-    individual_voronoi = _compute_individual_voronoi_polygons(
-        trajectory.data, geometry
+    individual_voronoi = compute_individual_voronoi_polygons(
+        traj_data=trajectory.data, geometry=geometry
     )
     intersecting_voronoi = _compute_intersecting_polygons(
         individual_voronoi, measurement_area
     )
 
     result, _ = compute_voronoi_velocity(
-        trajectory.data,
-        intersecting_voronoi,
-        trajectory.frame_rate,
-        velocity_frame,
-        measurement_area,
+        traj_data=trajectory.data,
+        individual_voronoi_intersection=intersecting_voronoi,
+        frame_rate=trajectory.frame_rate,
+        frame_step=velocity_frame,
+        measurement_area=measurement_area,
     )
     result = result.to_frame()
 
@@ -334,7 +341,11 @@ def test_nt(line, folder):
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
 
-    result, _ = compute_n_t(trajectory.data, line, trajectory.frame_rate)
+    result, _ = compute_n_t(
+        traj_data=trajectory.data,
+        measurement_line=line,
+        frame_rate=trajectory.frame_rate,
+    )
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
         result["Time [s]"], reference_result["Time [s]"], atol=TOLERANCE
@@ -385,11 +396,21 @@ def test_flow(line, folder, flow_frame, velocity_frame):
     )
 
     individual_speed = compute_individual_velocity(
-        trajectory.data, trajectory.frame_rate, velocity_frame
+        traj_data=trajectory.data,
+        frame_rate=trajectory.frame_rate,
+        frame_step=velocity_frame,
     )
-    nt, crossing = compute_n_t(trajectory.data, line, trajectory.frame_rate)
+    nt, crossing = compute_n_t(
+        traj_data=trajectory.data,
+        measurement_line=line,
+        frame_rate=trajectory.frame_rate,
+    )
     result = compute_flow(
-        nt, crossing, individual_speed, flow_frame, trajectory.frame_rate
+        nt=nt,
+        crossing_frames=crossing,
+        individual_speed=individual_speed,
+        delta_t=flow_frame,
+        frame_rate=trajectory.frame_rate,
     )
 
     # ignore the first flow value as there is a bug in jpsreport, the first x
@@ -444,11 +465,17 @@ def test_passing_density(measurement_line, width, folder):
     )
 
     frames_in_area, measurement_area = compute_frame_range_in_area(
-        trajectory.data, measurement_line, width
+        traj_data=trajectory.data,
+        measurement_line=measurement_line,
+        width=width,
     )
-    density = compute_classic_density(trajectory.data, measurement_area)
+    density = compute_classic_density(
+        traj_data=trajectory.data, measurement_area=measurement_area
+    )
     result = (
-        compute_passing_density(density, frames_in_area)
+        compute_passing_density(
+            density_per_frame=density, frames=frames_in_area
+        )
         .sort_values(by="ID")
         .reset_index(drop=True)
     )
@@ -511,11 +538,15 @@ def test_passing_velocity(measurement_line, width, folder):
     )
 
     frames_in_area, _ = compute_frame_range_in_area(
-        trajectory.data, measurement_line, width
+        traj_data=trajectory.data,
+        measurement_line=measurement_line,
+        width=width,
     )
 
     result = compute_passing_speed(
-        frames_in_area, trajectory.frame_rate, width
+        frames_in_area=frames_in_area,
+        frame_rate=trajectory.frame_rate,
+        distance=width,
     ).reset_index(drop=True)
 
     # there are some accuracy differences in jpsreport and pedpy, hence some
@@ -539,7 +570,7 @@ def test_passing_velocity(measurement_line, width, folder):
 
 
 @pytest.mark.parametrize(
-    "geometry, grid_size, cut_off_radius, num_edges, blind_points, min_frame, "
+    "geometry, grid_size, cut_off_radius, num_edges, min_frame, "
     "max_frame, folder",
     [
         (
@@ -551,7 +582,6 @@ def test_passing_velocity(measurement_line, width, folder):
             0.2,
             0.8,
             12,
-            False,
             110,
             120,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
@@ -561,7 +591,6 @@ def test_passing_velocity(measurement_line, width, folder):
             0.2,
             0.8,
             12,
-            False,
             110,
             120,
             ROOT_DIR / pathlib.Path("data/corridor"),
@@ -573,7 +602,6 @@ def test_passing_velocity(measurement_line, width, folder):
             0.2,
             0.8,
             12,
-            False,
             110,
             120,
             ROOT_DIR / pathlib.Path("data/corner"),
@@ -585,11 +613,12 @@ def test_profiles(
     grid_size,
     cut_off_radius,
     num_edges,
-    blind_points,
     min_frame,
     max_frame,
     folder,
 ):
+    frame_step = 5
+
     density_result_folder = (
         folder / "results/Fundamental_Diagram/Classical_Voronoi/field/density"
     )
@@ -602,15 +631,19 @@ def test_profiles(
     )
     trajectory.data = trajectory.data[
         trajectory.data.frame.between(
-            min_frame - 5, max_frame + 5, inclusive="both"
+            min_frame - frame_step, max_frame + frame_step, inclusive="both"
         )
     ]
-    geo = Geometry(geometry)
-    individual_voronoi = _compute_individual_voronoi_polygons(
-        trajectory.data, geo, (cut_off_radius, num_edges)
+    geo = Geometry(walkable_area=geometry)
+    individual_voronoi = compute_individual_voronoi_polygons(
+        traj_data=trajectory.data,
+        geometry=geo,
+        cut_off=(cut_off_radius, num_edges),
     )
     individual_speed = compute_individual_velocity(
-        trajectory.data, trajectory.frame_rate, 5
+        traj_data=trajectory.data,
+        frame_rate=trajectory.frame_rate,
+        frame_step=frame_step,
     )
     combined = pd.merge(
         individual_voronoi, individual_speed, on=["ID", "frame"]
@@ -620,16 +653,16 @@ def test_profiles(
         combined.frame.between(min_frame, max_frame, inclusive="both")
     ]
     density_profiles, velocity_profiles_arithmetic = compute_profiles(
-        individual_voronoi_velocity_data,
-        geo.walkable_area,
-        grid_size,
-        VelocityMethod.ARITHMETIC,
+        individual_voronoi_velocity_data=individual_voronoi_velocity_data,
+        walkable_area=geo.walkable_area,
+        grid_size=grid_size,
+        velocity_method=VelocityMethod.ARITHMETIC,
     )
     density_profiles, velocity_profiles_voronoi = compute_profiles(
-        individual_voronoi_velocity_data,
-        geo.walkable_area,
-        grid_size,
-        VelocityMethod.VORONOI,
+        individual_voronoi_velocity_data=individual_voronoi_velocity_data,
+        walkable_area=geo.walkable_area,
+        grid_size=grid_size,
+        velocity_method=VelocityMethod.VORONOI,
     )
     for frame in range(min_frame, max_frame + 1):
         print(frame)

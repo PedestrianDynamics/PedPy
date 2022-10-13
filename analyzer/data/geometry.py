@@ -22,7 +22,9 @@ class Geometry:
     walkable_area: Polygon
     obstacles: List[Polygon]
 
-    def __init__(self, walkable_area: Polygon, obstacles: List[Polygon] = None):
+    def __init__(
+        self, *, walkable_area: Polygon, obstacles: List[Polygon] = None
+    ):
         self.obstacles = []
         self.walkable_area = walkable_area
 

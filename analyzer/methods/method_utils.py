@@ -1,4 +1,6 @@
 """Helper functions for the analysis methods"""
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
 import shapely
@@ -7,7 +9,7 @@ from shapely import LineString, Polygon
 from analyzer import Geometry, TrajectoryData
 
 
-def is_trajectory_valid(traj: TrajectoryData, geometry: Geometry) -> bool:
+def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:
     """Checks if all trajectory data points lie within the given geometry
 
     Args:
@@ -17,11 +19,11 @@ def is_trajectory_valid(traj: TrajectoryData, geometry: Geometry) -> bool:
     Returns:
         All points lie within geometry
     """
-    return get_invalid_trajectory(traj, geometry).empty
+    return get_invalid_trajectory(traj=traj, geometry=geometry).empty
 
 
 def get_invalid_trajectory(
-    traj: TrajectoryData, geometry: Geometry
+    *, traj: TrajectoryData, geometry: Geometry
 ) -> pd.DataFrame:
     """Returns all trajectory data points outside the given geometry
 
@@ -37,63 +39,9 @@ def get_invalid_trajectory(
     ]
 
 
-def get_peds_in_area(
-    traj_data: pd.DataFrame, measurement_area: Polygon
-) -> pd.DataFrame:
-    """Filters the trajectory date to pedestrians which are inside the given
-    area.
-
-    Args:
-        traj_data (pd.DataFrame): trajectory data to filter
-        measurement_area (shapely.Polygon): geometry
-
-    Returns:
-         Filtered data set, only containing data of pedestrians inside the
-         measurement_area
-    """
-    return traj_data[shapely.contains(measurement_area, traj_data["points"])]
-
-
-def get_peds_in_frame_range(
-    traj_data: pd.DataFrame, min_frame: int = None, max_frame: int = None
-) -> pd.DataFrame:
-    """Filters the trajectory data by the given min and max frames. If only
-    one of them is given (not None) then the other is taken as filter.
-
-    Note:
-        min_frame needs to be <= max_frame
-
-    Args:
-        traj_data (pd.DataFrame): trajectory data to filter
-        min_frame (int): min frame number still in the filtered data set
-        max_frame (int): max frame number still in the filtered data set
-
-    Returns:
-        Filtered data set, only containing data within the given frame range
-    """
-    if min_frame is not None and max_frame is not None:
-        if not min_frame <= max_frame:
-            raise ValueError(
-                f"min_frame is not <= max_frame ({min_frame} <= {max_frame})."
-            )
-
-    if min_frame is None and max_frame is not None:
-        return traj_data[traj_data["frame"].le(max_frame)]
-
-    if max_frame is None and min_frame is not None:
-        return traj_data[traj_data["frame"].ge(min_frame)]
-
-    if min_frame is not None and max_frame is not None:
-        return traj_data[
-            traj_data["frame"].between(min_frame, max_frame, inclusive="both")
-        ]
-
-    return traj_data
-
-
 def compute_frame_range_in_area(
-    traj_data: pd.DataFrame, measurement_line: Polygon, width: float
-):
+    *, traj_data: pd.DataFrame, measurement_line: LineString, width: float
+) -> Tuple[pd.DataFrame, Polygon]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
     Note:
@@ -109,11 +57,12 @@ def compute_frame_range_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.Polygon):
+        measurement_line (shapely.LineString): measurement line
         width (float): distance to the second measurement line
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
+        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end' and
+        the created measurement area
     """
     assert len(shapely.get_coordinates(measurement_line)) == 2, (
         f"The measurement line needs to be a straight line but has more  "
@@ -240,7 +189,7 @@ def _compute_individual_movement(
 
 def _compute_crossing_frames(
     traj_data: pd.DataFrame, measurement_line: LineString
-):
+) -> pd.DataFrame:
     """Compute the frames at which a pedestrian crosses a specific
     measurement line.
 
@@ -287,7 +236,7 @@ def _compute_crossing_frames(
 
 def _get_continuous_parts_in_area(
     traj_data: pd.DataFrame, measurement_area: Polygon
-):
+) -> pd.DataFrame:
     """Returns the time-continuous parts in which the pedestrians are inside
     the given measurement area. As leaving the first frame outside the area is
     considered.
@@ -323,7 +272,7 @@ def _check_crossing_in_frame_range(
     crossing_frames: pd.DataFrame,
     check_column: str,
     column_name: str,
-):
+) -> pd.DataFrame:
     """Returns rows of inside_range which are also in crossing_frames.
 
     Args:
