@@ -50,6 +50,7 @@ def compute_voronoi_density(
     measurement_area: shapely.Polygon,
     geometry: Geometry,
     cut_off: Optional[Tuple[float, int]] = None,
+    use_blind_points: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi density of the trajectory per frame inside the given
     measurement area.
@@ -60,16 +61,21 @@ def compute_voronoi_density(
             computed
         geometry (Geometry): bounding area, where pedestrian are supposed to be
         cut_off (Tuple[float, int): radius of max extended voronoi cell (in m),
-                number of linear segments in the approximation of circular
-                arcs, needs to be divisible by 4!
-
+            number of linear segments in the approximation of circular arcs,
+            needs to be divisible by 4!
+        use_blind_points (bool): adds extra 4 points outside the geometry to
+            also compute voronoi cells when less than 4 peds are in the
+            geometry
     Returns:
           DataFrame containing the columns: 'frame' and 'voronoi density',
           DataFrame containing the columns: 'ID', 'frame', 'individual voronoi',
                 'intersecting voronoi'
     """
     df_individual = compute_individual_voronoi_polygons(
-        traj_data=traj_data, geometry=geometry, cut_off=cut_off
+        traj_data=traj_data,
+        geometry=geometry,
+        cut_off=cut_off,
+        use_blind_points=use_blind_points,
     )
     df_intersecting = _compute_intersecting_polygons(
         df_individual, measurement_area
@@ -151,6 +157,7 @@ def compute_individual_voronoi_polygons(
     traj_data: pd.DataFrame,
     geometry: Geometry,
     cut_off: Optional[Tuple[float, int]] = None,
+    use_blind_points: bool = False,
 ) -> pd.DataFrame:
     """Compute the individual voronoi cells for each person and frame
 
@@ -160,22 +167,43 @@ def compute_individual_voronoi_polygons(
         cut_off (Tuple[float, int]): radius of max extended voronoi cell (in m),
                 number of linear segments in the approximation of circular arcs,
                 needs to be divisible by 4!
+        use_blind_points (bool): adds extra 4 points outside the geometry to
+                also compute voronoi cells when less than 4 peds are in the
+                geometry
+
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and 'individual voronoi'.
     """
     dfs = []
 
     bounds = geometry.walkable_area.bounds
-    clipping_diameter = 2 * max(
-        abs(bounds[2] - bounds[0]), abs(bounds[3] - bounds[1])
-    )
+    x_diff = abs(bounds[2] - bounds[0])
+    y_diff = abs(bounds[3] - bounds[1])
+    clipping_diameter = 2 * max(x_diff, y_diff)
+
+    if use_blind_points:
+        blind_points = np.array(
+            [
+                [100 * (bounds[0] - x_diff), 100 * (bounds[1] - y_diff)],
+                [100 * (bounds[2] + x_diff), 100 * (bounds[1] - y_diff)],
+                [100 * (bounds[0] - x_diff), 100 * (bounds[3] + y_diff)],
+                [100 * (bounds[2] + x_diff), 100 * (bounds[3] + y_diff)],
+            ]
+        )
 
     for _, peds_in_frame in traj_data.groupby(traj_data.frame):
         points = peds_in_frame[["X", "Y"]].values
+
+        if use_blind_points:
+            points = np.concatenate([points, blind_points])
+
         if len(points) < 4:
             continue
         vor = Voronoi(points)
         voronoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
+
+        if use_blind_points:
+            voronoi_polygons = voronoi_polygons[:-4]
         voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame", "points")]
 
         # Compute the intersecting area with the walkable area

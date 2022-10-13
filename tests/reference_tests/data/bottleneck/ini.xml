@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <JPSreport project="AO_300" version="0.8.5">
 
-    <geometry file="geo_AO_300.xml"/>
+    <geometry file="geo.xml"/>
 
-    <output location="bottleneck_Output"/>
+    <output location="results"/>
 
     <trajectories format="txt" unit="m">
-        <file name="traj_AO_300.txt"/>
+        <file name="traj.txt"/>
         <path location="./"/>
     </trajectories>
 
@@ -31,22 +31,30 @@
     <velocity frame_step="10" set_movement_direction="None" ignore_backward_movement="false"/>
 
     <!-- Method A (Zhang2011a) Flow and Vel -->
-    <method_A enabled="true">
-        <measurement_area id="2" frame_interval="100"/>
-        <measurement_area id="4" frame_interval="150"/>
-    </method_A>
+<!--    <method_A enabled="true">-->
+<!--        <measurement_area id="2" frame_interval="100"/>-->
+<!--        <measurement_area id="4" frame_interval="150"/>-->
+<!--    </method_A>-->
 
-    <method_C enabled="true">
-        <measurement_area id="1"/>
-    </method_C>
+<!--    <method_C enabled="true">-->
+<!--        <measurement_area id="1"/>-->
+<!--    </method_C>-->
 
+<!--    <method_D enabled="true">-->
+<!--        <one_dimensional enabled="false"/>-->
+<!--        <cut_by_circle enabled="true" radius="0.8" edges="12"/>-->
+<!--        <profiles enabled="true" grid_size_x="0.20" grid_size_y="0.20" start_frame="100"-->
+<!--                  stop_frame="120"/>-->
+<!--        <use_blind_points enabled="true"/>-->
+<!--        <vel_calculation type="Arithmetic"/>-->
+<!--    </method_D>-->
     <method_D enabled="true">
+        <measurement_area id="1" start_frame="None" stop_frame="None" local_IFD="false" />
         <one_dimensional enabled="false"/>
-        <cut_by_circle enabled="true" radius="0.8" edges="12"/>
-        <profiles enabled="true" grid_size_x="0.20" grid_size_y="0.20" start_frame="100"
-                  stop_frame="120"/>
+        <cut_by_circle enabled="false" radius="0.8" edges="12"/>
+<!--        <profiles enabled="true" grid_size_x="0.2" grid_size_y="0.2" start_frame="110" stop_frame="120"/>-->
         <use_blind_points enabled="true"/>
-        <vel_calculation type="Arithmetic"/>
+<!--        <vel_calculation type="Arithmetic"/>-->
     </method_D>
 
 </JPSreport>
