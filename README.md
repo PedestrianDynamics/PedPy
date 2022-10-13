@@ -1,3 +1,5 @@
+![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
+
 # pedpy
 
 `pedpy` is a python module for pedestrian movement analysis. 
