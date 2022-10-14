@@ -13,7 +13,7 @@ import pandas as pd
 
 def required_length(nmin: int, nmax: int) -> Any:
     class RequiredLength(argparse.Action):
-        def __call__(self, parser, args, values, option_string=None): #type: ignore
+        def __call__(self, parser, args, values, option_string=None):  # type: ignore
             if not nmin <= len(values) <= nmax:
                 msg = f"argument {self.dest} requires between {nmin} and {nmax} arguments"
                 raise argparse.ArgumentTypeError(msg)

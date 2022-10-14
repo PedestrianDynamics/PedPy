@@ -1,12 +1,13 @@
 """Helper functions for the analysis methods"""
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import shapely
 from shapely import LineString, Polygon
 
-from pedpy import Geometry, TrajectoryData
+from pedpy.data.geometry import Geometry
+from pedpy.data.trajectory_data import TrajectoryData
 
 
 def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:

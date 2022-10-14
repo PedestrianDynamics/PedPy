@@ -240,7 +240,7 @@ def _compute_intersecting_polygons(
 
 def _clip_voronoi_polygons(
     voronoi: Voronoi, diameter: float
-) -> List[pygeos.GeometryType]:
+) -> List[shapely.Polygon]:
     """Generate shapely.geometry.Polygon objects corresponding to the
     regions of a scipy.spatial.Voronoi object, in the order of the
     input points. The polygons for the infinite regions are large
