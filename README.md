@@ -25,16 +25,15 @@ python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-i
 
 ### Usage
 
-The usage of `pedpy` is demonstrated in the [demo notebook](usage.ipynb).
-You can either download the notebook and [demo files](demos/bottleneck/) 
-from the GitHub repository or clone the whole repository with:
+The general usage of `pedpy` is demonstrated in the [usage notebook](usage.ipynb).
+The [JPSreport notebook](jpsreport.ipynb) shows how to use `pedpy` to compute the same results as in the different JPSreport methods.
 
+You can either download the notebooks and [demo files](demos/) from the GitHub repository or clone the whole repository with:
 ```bash 
 git clone https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer.git
 ```
 
-For using the notebook some additional libraries need to be installed, mainly 
-for plotting.
+For using the either of the notebook some additional libraries need to be installed, mainly for plotting.
 You can install the needed libraries with:
 
 ```bash
@@ -46,10 +45,9 @@ Afterwards you can start a jupyter server with:
 jupyter notebook
 ```
 
-After navigating to the notebook, you can see how the library can be used 
-for different kinds of analysis.
+After navigating to one of the notebooks, you can see how the library can be used for different kinds of analysis.
 
-Some examples how the computed values can be visualized are also shown in the notebook, e.g., density/velocity profiles, fundamental diagrams, N-T-diagrams, etc.
+Some examples how the computed values can be visualized are also shown in the notebooks, e.g., density/velocity profiles, fundamental diagrams, N-T-diagrams, etc.
 
 ![voronoi](figs/voronoi_diagrams.png)
 
