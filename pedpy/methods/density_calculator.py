@@ -183,6 +183,17 @@ def compute_individual_voronoi_polygons(
             vornoi_polygons, geometry.walkable_area
         )
 
+        if cut_off is not None:
+            num_edges = cut_off[1]
+            radius = cut_off[0]
+            quad_edges = int(num_edges / 4)
+            voronoi_in_frame["individual voronoi"] = shapely.intersection(
+                voronoi_in_frame["individual voronoi"],
+                shapely.buffer(
+                    peds_in_frame["points"], radius, quadsegs=quad_edges
+                ),
+            )
+
         # Only consider the parts of a multipolygon which contain the position
         # of the pedestrian
         voronoi_in_frame.loc[
@@ -198,17 +209,6 @@ def compute_individual_voronoi_polygons(
             ][0],
             axis=1,
         )
-
-        if cut_off is not None:
-            num_edges = cut_off[1]
-            radius = cut_off[0]
-            quad_edges = int(num_edges / 4)
-            voronoi_in_frame["individual voronoi"] = shapely.intersection(
-                voronoi_in_frame["individual voronoi"],
-                shapely.buffer(
-                    peds_in_frame["points"], radius, quadsegs=quad_edges
-                ),
-            )
 
         dfs.append(voronoi_in_frame)
 
