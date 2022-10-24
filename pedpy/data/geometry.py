@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import shapely
 from shapely import Polygon
@@ -23,7 +23,10 @@ class Geometry:
     obstacles: List[Polygon]
 
     def __init__(
-        self, *, walkable_area: Polygon, obstacles: List[Polygon] = None
+        self,
+        *,
+        walkable_area: Polygon,
+        obstacles: Optional[List[Polygon]] = None,
     ):
         self.obstacles = []
         self.walkable_area = walkable_area
@@ -36,7 +39,7 @@ class Geometry:
 
         shapely.prepare(self.walkable_area)
 
-    def add_obstacle(self, obstacle: Polygon):
+    def add_obstacle(self, obstacle: Polygon) -> None:
         """Adds an obstacle to the geometry
 
         Args:
@@ -52,5 +55,5 @@ class Geometry:
         else:
             log.warning(
                 f"The obstacle {obstacle} is not inside the walkable area of "
-                f"the geometry and thus will be ignored!"
+                "the geometry and thus will be ignored!"
             )

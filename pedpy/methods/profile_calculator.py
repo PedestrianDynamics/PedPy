@@ -2,6 +2,7 @@
 from typing import List, Tuple
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import shapely
 from aenum import Enum
@@ -24,7 +25,7 @@ def compute_profiles(
     walkable_area: Polygon,
     grid_size: float,
     velocity_method: VelocityMethod,
-) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
     """Computes the density and velocity profiles of the given trajectory
     within the geometry
 
@@ -86,13 +87,14 @@ def compute_profiles(
 
 
 def _compute_arithmetic_velocity(
-    frame_data: np.ndarray, grid_intersections_area: np.ndarray
-) -> np.ndarray:
+    frame_data: npt.NDArray[np.float64],
+    grid_intersections_area: npt.NDArray[np.float64],
+) -> npt.NDArray[np.float64]:
     """Compute the arithmetic mean velocity per grid cell
 
     Args:
-        frame_data (np.ndarray): all relevant data in a specific frame
-        grid_intersections_area (np.ndarray): intersection areas for each
+        frame_data (npt.NDArray[np.float64]): all relevant data in a specific frame
+        grid_intersections_area (npt.NDArray[np.float64]): intersection areas for each
                 pedestrian with each grid cells
     Returns:
         Arithmetic mean velocity per grid cell
@@ -113,15 +115,15 @@ def _compute_arithmetic_velocity(
 
 
 def _compute_voronoi_velocity(
-    frame_data: np.ndarray,
-    grid_intersections_area: np.ndarray,
+    frame_data: npt.NDArray[np.float64],
+    grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
-) -> np.ndarray:
+) -> npt.NDArray[np.float64]:
     """Compute the Voronoi velocity per grid cell
 
     Args:
-        frame_data (np.ndarray): all relevant data in a specific frame
-        grid_intersections_area (np.ndarray): intersection areas for each
+        frame_data (npt.NDArray[np.float64]): all relevant data in a specific frame
+        grid_intersections_area (npt.NDArray[np.float64]): intersection areas for each
                 pedestrian with each grid cells
         grid_area (float): area of one grid cell
     Returns:
@@ -136,7 +138,7 @@ def _compute_voronoi_velocity(
 
 def _get_grid_cells(
     walkable_area: Polygon, grid_size: float
-) -> Tuple[np.ndarray, int, int]:
+) -> Tuple[npt.NDArray[np.float64], int, int]:
     """Creates a list of square grid cells which cover the space used by
     geometry.
 

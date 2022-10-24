@@ -26,12 +26,10 @@ class TrajectoryData:
         The coordinate data is stored in meter ('m')!
 
     Attributes:
-        _data (pd.DataFrame): data frame containing the actual data in the form:
+        data (pd.DataFrame): data frame containing the actual data in the form:
             "ID", "frame", "X", "Y", "Z"
 
         frame_rate (float): frame rate of the trajectory file
-
-        trajectory_type (TrajectoryType): type of the trajectory used
 
         file (pothlib.Path): file from which is trajectories was read
 

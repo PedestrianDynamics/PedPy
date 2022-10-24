@@ -36,7 +36,7 @@ def test_compute_classic_density(
         grid_shape=[num_ped_col, num_ped_row],
         number_frames=num_frames,
         movement_direction=movement_direction,
-        start_position=[-10, 2 * ped_distance],
+        start_position=np.array([-10, 2 * ped_distance]),
         ped_distance=ped_distance,
         fps=25,
     )

@@ -46,6 +46,11 @@ jobs:
         run: |
           ${{github.workspace}}/scripts/check-format.sh
 
+      - name: Check typing with mypy
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          python3 -m mypy --config-file mypy.ini pedpy/
+
       - name: Run pytests
         run: |
           python3 -m pytest -vv -s tests
