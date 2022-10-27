@@ -171,16 +171,16 @@ def compute_individual_voronoi_polygons(
     )
 
     for _, peds_in_frame in traj_data.groupby(traj_data.frame):
-        points = peds_in_frame.sort_values(by="ID")[["X", "Y"]]
+        points = peds_in_frame[["X", "Y"]].values
         if len(points) < 4:
             continue
-        vor = Voronoi(points.to_numpy())
-        vornoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
+        vor = Voronoi(points)
+        voronoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
         voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame", "points")]
 
         # Compute the intersecting area with the walkable area
         voronoi_in_frame["individual voronoi"] = shapely.intersection(
-            vornoi_polygons, geometry.walkable_area
+            voronoi_polygons, geometry.walkable_area
         )
 
         if cut_off is not None:
