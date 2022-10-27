@@ -38,7 +38,7 @@ def compute_individual_velocity(
         df_movement, frame_rate, movement_direction
     )
 
-    return df_speed
+    return df_speed[["ID", "frame", "speed"]]
 
 
 def compute_mean_velocity_per_frame(
