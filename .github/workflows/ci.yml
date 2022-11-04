@@ -88,6 +88,11 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
       - name: Download usage notebook and demo files as artifacts
         uses: actions/download-artifact@v3
         with:

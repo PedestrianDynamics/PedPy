@@ -190,7 +190,7 @@ def compute_individual_voronoi_polygons(
             voronoi_in_frame["individual voronoi"] = shapely.intersection(
                 voronoi_in_frame["individual voronoi"],
                 shapely.buffer(
-                    peds_in_frame["points"], radius, quadsegs=quad_edges
+                    peds_in_frame["points"], radius, quad_segs=quad_edges
                 ),
             )
 

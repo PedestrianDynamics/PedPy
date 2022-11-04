@@ -22,10 +22,10 @@ setuptools.setup(
     packages=["pedpy", "pedpy.data", "pedpy.io", "pedpy.methods"],
     python_requires=">=3.8",
     install_requires=[
-        "aenum >= 3.1.5",
-        "numpy >= 1.21.4",
-        "pandas >= 1.3.4",
-        "Shapely==2.0a1",
-        "scipy==1.8.0",
+        "aenum == 3.1.5",
+        "numpy == 1.22.0",
+        "pandas == 1.3.4",
+        "Shapely == 2.0b2",
+        "scipy == 1.9.3",
     ],
 )
