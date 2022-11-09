@@ -24,7 +24,7 @@ setuptools.setup(
     install_requires=[
         "aenum == 3.1.5",
         "numpy == 1.22.0",
-        "pandas == 1.3.4",
+        "pandas == 1.5.1",
         "Shapely == 2.0b2",
         "scipy == 1.9.3",
     ],
