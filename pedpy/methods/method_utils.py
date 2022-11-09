@@ -1,5 +1,5 @@
 """Helper functions for the analysis methods"""
-from typing import Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -252,7 +252,7 @@ def _get_continuous_parts_in_area(
     inside = traj_data.loc[
         shapely.within(traj_data.points, measurement_area), :
     ].copy()
-    inside.loc[:, "g"] = inside.groupby("ID")["frame"].apply(
+    inside.loc[:, "g"] = inside.groupby("ID", group_keys=False)["frame"].apply(
         lambda x: x.diff().ge(2).cumsum()
     )
     inside_range = (
