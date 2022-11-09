@@ -1,22 +1,12 @@
 cff-version: 1.2.0
 
-title: "Pedestrian Trajectory Analyzer"
+title: "pedpy"
 
 message: "If you use this software, please cite it as below."
+type: software
 authors:
 - family-names: "Schrödter"
   given-names: "Tobias"
   orcid: "https://orcid.org/0000-0002-1071-060X"
-- family-names: "Boltes"
-  given-names: "Maik"
-  orcid: "https://orcid.org/0000-0001-7240-896X"
-- family-names: "Chraibi"
-  given-names: "Mohcine"
-  orcid: "https://orcid.org/0000-0002-0999-6807"
-- family-names: "Kratz"
-  given-names: "Kai"
-- family-names: "Schumann"
-  given-names: "Jette"
-  orcid: "https://orcid.org/0000-0003-3668-999X"
-
+- name: "the pedpy Development Team"
 
