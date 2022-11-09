@@ -92,7 +92,7 @@ def compute_flow(
     num_passed_before = 0
     passed_frame_before = nt[nt["Cumulative pedestrians"] > 0].index.min()
 
-    flow = pd.DataFrame(columns=["Flow rate(1/s)", "Mean velocity(m/s)"])
+    rows = []
 
     for frame in range(passed_frame_before + delta_t, nt.index.max(), delta_t):
         passed_num_peds = nt.loc[frame]["Cumulative pedestrians"]
@@ -114,9 +114,8 @@ def compute_flow(
             num_passed_before = passed_num_peds
             passed_frame_before = passed_frame
 
-            flow = flow.append(
+            rows.append(
                 {"Flow rate(1/s)": flow_rate, "Mean velocity(m/s)": v},
-                ignore_index=True,
             )
 
-    return flow
+    return pd.DataFrame(rows)
