@@ -9,4 +9,7 @@ authors:
   given-names: "Tobias"
   orcid: "https://orcid.org/0000-0002-1071-060X"
 - name: "the pedpy Development Team"
-
+repository-code: "https://github.com/PedestrianDynamics/pedpy"
+keywords:
+  - "pedestrian dynamics"
+  - "pedestrian analysis"
