@@ -169,7 +169,8 @@ def test_arithmetic_velocity(
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53,"
+                " 2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         ),
@@ -193,7 +194,8 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     reference_result = pd.read_csv(
         next(
             folder.glob(
-                "results/Fundamental_Diagram/Classical_Voronoi/rho_v_Voronoi*"
+                "results/Fundamental_Diagram/Classical_Voronoi/"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1.dat"
             )
         ),
         sep="\t",
@@ -211,6 +213,160 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
         traj_data=trajectory.data,
         measurement_area=measurement_area,
         geometry=geometry,
+        use_blind_points=False,
+    )
+
+    # in jpsreport not all frames are written to the result (e.g., when not
+    # enough peds inside ma), hence only compare these who are in reference
+    # frame and check if the rest is zero
+    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isclose(
+        result[result.index.isin(reference_result.index)]["voronoi density"],
+        reference_result["voronoi density"],
+        atol=TOLERANCE,
+    ).all()
+    assert (
+        result.loc[~result.index.isin(reference_result.index)].values == 0
+    ).all()
+
+
+@pytest.mark.parametrize(
+    "geometry_polygon, measurement_area, folder",
+    [
+        (
+            shapely.from_wkt(
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
+            ),
+            shapely.from_wkt(
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53,"
+                " 2.4 0.53))"
+            ),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
+        ),
+        (
+            shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
+            shapely.from_wkt(
+                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
+            ),
+            ROOT_DIR / pathlib.Path("data/corridor"),
+        ),
+        (
+            shapely.from_wkt(
+                "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
+            ),
+            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            ROOT_DIR / pathlib.Path("data/corner"),
+        ),
+    ],
+)
+def test_voronoi_density_blind_points(
+    geometry_polygon, measurement_area, folder
+):
+    reference_result = pd.read_csv(
+        next(
+            folder.glob(
+                "results/Fundamental_Diagram/Classical_Voronoi/"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1_blind_points.dat"
+            )
+        ),
+        sep="\t",
+        comment="#",
+        names=["frame", "voronoi density", "speed"],
+        index_col=0,
+        usecols=["frame", "voronoi density"],
+    )
+
+    trajectory = load_trajectory(
+        trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
+    )
+    geometry = Geometry(walkable_area=geometry_polygon)
+    result, _ = compute_voronoi_density(
+        traj_data=trajectory.data,
+        measurement_area=measurement_area,
+        geometry=geometry,
+        use_blind_points=True,
+    )
+
+    # as there is a bug in the blind point computation in jpsreport in the
+    # bottleneck test case ignore the last 20 frames.
+    if folder.name == "bottleneck":
+        result = result[result.index < 930]
+        reference_result = reference_result[reference_result.index < 930]
+
+    # in jpsreport not all frames are written to the result (e.g., when not
+    # enough peds inside ma), hence only compare these who are in reference
+    # frame and check if the rest is zero
+    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isclose(
+        result[result.index.isin(reference_result.index)]["voronoi density"],
+        reference_result["voronoi density"],
+        atol=TOLERANCE,
+    ).all()
+    assert (
+        result.loc[~result.index.isin(reference_result.index)].values == 0
+    ).all()
+
+
+@pytest.mark.parametrize(
+    "geometry_polygon, measurement_area, folder",
+    [
+        (
+            shapely.from_wkt(
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
+            ),
+            shapely.from_wkt(
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "2.4 0.53))"
+            ),
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
+        ),
+        (
+            shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
+            shapely.from_wkt(
+                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
+            ),
+            ROOT_DIR / pathlib.Path("data/corridor"),
+        ),
+        (
+            shapely.from_wkt(
+                "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
+            ),
+            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            ROOT_DIR / pathlib.Path("data/corner"),
+        ),
+    ],
+)
+def test_voronoi_density_blind_points_cutoff(
+    geometry_polygon, measurement_area, folder
+):
+    reference_result = pd.read_csv(
+        next(
+            folder.glob(
+                "results/Fundamental_Diagram/Classical_Voronoi/"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1_blind_points_cut_off.dat"
+            )
+        ),
+        sep="\t",
+        comment="#",
+        names=["frame", "voronoi density", "speed"],
+        index_col=0,
+        usecols=["frame", "voronoi density"],
+    )
+
+    trajectory = load_trajectory(
+        trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
+    )
+    geometry = Geometry(walkable_area=geometry_polygon)
+    result, _ = compute_voronoi_density(
+        traj_data=trajectory.data,
+        measurement_area=measurement_area,
+        geometry=geometry,
+        use_blind_points=True,
+        cut_off=(0.8, 12),
     )
 
     # in jpsreport not all frames are written to the result (e.g., when not
@@ -237,7 +393,8 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
             shapely.from_wkt(
-                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"
+                "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "2.4 0.53))"
             ),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
             5,
@@ -266,7 +423,8 @@ def test_voronoi_velocity(
     reference_result = pd.read_csv(
         next(
             folder.glob(
-                "results/Fundamental_Diagram/Classical_Voronoi/rho_v_Voronoi_Voronoi*"
+                "results/Fundamental_Diagram/Classical_Voronoi/"
+                "rho_v_Voronoi_Voronoi_traj.txt_id_1.dat"
             )
         ),
         sep="\t",
@@ -282,7 +440,7 @@ def test_voronoi_velocity(
     geometry = Geometry(walkable_area=geometry_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory.data, geometry=geometry
+        traj_data=trajectory.data, geometry=geometry, use_blind_points=False
     )
     intersecting_voronoi = _compute_intersecting_polygons(
         individual_voronoi, measurement_area
@@ -665,7 +823,6 @@ def test_profiles(
         velocity_method=VelocityMethod.VORONOI,
     )
     for frame in range(min_frame, max_frame + 1):
-        print(frame)
         reference_density = np.loadtxt(
             next(density_result_folder.glob(f"*{frame}*"))
         )

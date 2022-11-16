@@ -56,10 +56,11 @@
 <!--        </method_D>-->
 
     <method_D enabled="true">
+        <measurement_area id="1" start_frame="None" stop_frame="None" local_IFD="false" />
         <one_dimensional enabled="false"/>
-        <cut_by_circle enabled="true" radius="0.8" edges="12"/>
-        <profiles enabled="true" grid_size_x="0.2" grid_size_y="0.2" start_frame="110" stop_frame="120"/>
-        <use_blind_points enabled="false"/>
+        <cut_by_circle enabled="false" radius="0.8" edges="12"/>
+<!--        <profiles enabled="true" grid_size_x="0.2" grid_size_y="0.2" start_frame="110" stop_frame="120"/>-->
+        <use_blind_points enabled="true"/>
 <!--        <vel_calculation type="Arithmetic"/>-->
     </method_D>
 
