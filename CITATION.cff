@@ -2,14 +2,16 @@ cff-version: 1.2.0
 
 title: "pedpy"
 
-message: "If you use this software, please cite it as below."
+message: "If you use pedpy in your work, please cite it as below."
 type: software
 authors:
 - family-names: "Schrödter"
   given-names: "Tobias"
   orcid: "https://orcid.org/0000-0002-1071-060X"
+  affiliation: Forschungszentrum Jülich GmbH, Germany
 - name: "the pedpy Development Team"
 repository-code: "https://github.com/PedestrianDynamics/pedpy"
 keywords:
   - "pedestrian dynamics"
   - "pedestrian analysis"
+  - "research software"
