@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use pedpy in your work, please cite it as below."
+message: "If you use PedPy in your work, please cite it as below."
 
 title: "PedPy - Pedestrian Trajectory Analyzer"
 abstract: "Analysis of pedestrian dynamics based on trajectory files."

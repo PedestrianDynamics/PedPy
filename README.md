@@ -1,8 +1,8 @@
 ![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
 
-# pedpy
+# PedPy
 
-`pedpy` is a python module for pedestrian movement analysis. 
+`PedPy` is a python module for pedestrian movement analysis. 
 It implements different measurement methods for density, velocity and flow.
 
 This repo is a port from the original `JPSreport` to a Python implementation, and will provide the same functionalities.
@@ -12,8 +12,8 @@ This repo is a port from the original `JPSreport` to a Python implementation, an
 For setting up your Python Environment a Python version >= 3.8 is recommended (our code is tested with 3.8 and 3.10).
 To avoid conflicts with other libraries/applications the usage of virtual environments is recommended, see [Python Documentation](https://docs.python.org/3/library/venv.html) for more detail.
 
-### Installing pedpy
-To install the latest **stable** version of `pedpy` and its dependencies from PyPI:
+### Installing PedPy
+To install the latest **stable** version of `PedPy` and its dependencies from PyPI:
 ```bash
 python3 -m pip install pedpy
 ```
@@ -25,8 +25,8 @@ python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-i
 
 ### Usage
 
-The general usage of `pedpy` is demonstrated in the [usage notebook](usage.ipynb).
-The [JPSreport notebook](jpsreport.ipynb) shows how to use `pedpy` to compute the same results as in the different JPSreport methods.
+The general usage of `PedPy` is demonstrated in the [usage notebook](usage.ipynb).
+The [JPSreport notebook](jpsreport.ipynb) shows how to use `PedPy` to compute the same results as in the different JPSreport methods.
 
 You can either download the notebooks and [demo files](demos/) from the GitHub repository or clone the whole repository with:
 ```bash 
