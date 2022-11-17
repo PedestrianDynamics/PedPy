@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use pedpy in your work, please cite it as below."
 
-title: "pedpy - pedestrian trajectory analyzer"
+title: "PedPy - Pedestrian Trajectory Analyzer"
 abstract: "Analysis of pedestrian dynamics based on trajectory files."
 type: software
 authors:
@@ -9,7 +9,7 @@ authors:
   given-names: "Tobias"
   orcid: "https://orcid.org/0000-0002-1071-060X"
   affiliation: Forschungszentrum Jülich GmbH, Germany
-- name: "the pedpy Development Team"
+- name: "The PedPy Development Team"
 repository-code: "https://github.com/PedestrianDynamics/pedpy"
 keywords:
   - "pedestrian dynamics"
