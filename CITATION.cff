@@ -1,8 +1,8 @@
 cff-version: 1.2.0
-
-title: "pedpy"
-
 message: "If you use pedpy in your work, please cite it as below."
+
+title: "pedpy - pedestrian trajectory analyzer"
+abstract: "Analysis of pedestrian dynamics based on trajectory files."
 type: software
 authors:
 - family-names: "Schrödter"
@@ -15,3 +15,4 @@ keywords:
   - "pedestrian dynamics"
   - "pedestrian analysis"
   - "research software"
+license: MIT
