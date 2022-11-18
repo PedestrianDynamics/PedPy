@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use PedPy in your work, please cite it as below."
+
+title: "PedPy - Pedestrian Trajectory Analyzer"
+abstract: "Analysis of pedestrian dynamics based on trajectory files."
+type: software
+authors:
+- family-names: "Schrödter"
+  given-names: "Tobias"
+  orcid: "https://orcid.org/0000-0002-1071-060X"
+  affiliation: Forschungszentrum Jülich GmbH, Germany
+- name: "The PedPy Development Team"
+repository-code: "https://github.com/PedestrianDynamics/pedpy"
+keywords:
+  - "pedestrian dynamics"
+  - "pedestrian analysis"
+  - "research software"
+license: MIT
