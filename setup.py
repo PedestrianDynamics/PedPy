@@ -27,5 +27,6 @@ setuptools.setup(
         "pandas == 1.5.1",
         "Shapely == 2.0b2",
         "scipy == 1.9.3",
+        "matplotlib==3.6.1",
     ],
 )
