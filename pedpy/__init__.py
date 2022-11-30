@@ -22,5 +22,11 @@ from .methods.velocity_calculator import (
     compute_passing_speed,
     compute_voronoi_velocity,
 )
+from .plotting.plotting import (
+    plot_geometry,
+    plot_measurement_setup,
+    plot_trajectories,
+    plot_voronoi_cells,
+)
 
 __version__ = _version.get_versions()["version"]
