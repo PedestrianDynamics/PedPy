@@ -26,6 +26,7 @@ from .plotting.plotting import (
     plot_geometry,
     plot_measurement_setup,
     plot_trajectories,
+    plot_voronoi_cells,
 )
 
 __version__ = _version.get_versions()["version"]

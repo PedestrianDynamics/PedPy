@@ -28,9 +28,6 @@ def plot_geometry(
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         line_color (optional): color of the borders
         line_width (optional): line width of the borders
-        walkable_area_color (optional): background color of walkable areas
-        walkable_area_alpha (optional): alpha of background color for walkable
-            areas
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
 
@@ -43,9 +40,6 @@ def plot_geometry(
     line_color = kwargs.get("line_color", "k")
     line_width = kwargs.get("line_width", 1.0)
 
-    walkable_area_color = kwargs.get("walkable_area_color", "w")
-    walkable_area_alpha = kwargs.get("walkable_area_alpha", 1.0)
-
     hole_color = kwargs.get("hole_color", "w")
     hole_alpha = kwargs.get("hole_alpha", 1.0)
 
@@ -54,17 +48,16 @@ def plot_geometry(
         color=line_color,
         linewidth=line_width,
     )
-    ax.fill(
-        *geometry.walkable_area.exterior.xy,
-        color=walkable_area_color,
-        alpha=walkable_area_alpha,
-    )
 
     for hole in geometry.walkable_area.interiors:
         ax.plot(*hole.xy, color=line_color, linewidth=line_width)
         # Paint all holes first white, then with the desired color
         ax.fill(*hole.xy, color="w", alpha=1)
         ax.fill(*hole.xy, color=hole_color, alpha=hole_alpha)
+
+    ax.set_xlabel(r"x/m")
+    ax.set_ylabel(r"y/m")
+
     return ax
 
 
@@ -91,9 +84,6 @@ def plot_trajectories(
         traj_end_marker (optional): marker to indicate the end of the trajectory
         line_color (optional): color of the borders
         line_width (optional): line width of the borders
-        walkable_area_color (optional): background color of walkable areas
-        walkable_area_alpha (optional): alpha of background color for walkable
-            areas
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
 
@@ -135,6 +125,9 @@ def plot_trajectories(
             marker=traj_end_marker,
         )
 
+    ax.set_xlabel(r"x/m")
+    ax.set_ylabel(r"y/m")
+
     return ax
 
 
@@ -174,9 +167,6 @@ def plot_measurement_setup(
         traj_end_marker (optional): marker to indicate the end of the trajectory
         line_color (optional): color of the borders
         line_width (optional): line width of the borders
-        walkable_area_color (optional): background color of walkable areas
-        walkable_area_alpha (optional): alpha of background color for walkable
-            areas
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
 
@@ -217,6 +207,9 @@ def plot_measurement_setup(
 
     if traj is not None:
         plot_trajectories(traj=traj, geometry=None, ax=ax, **kwargs)
+
+    ax.set_xlabel(r"x/m")
+    ax.set_ylabel(r"y/m")
 
     return ax
 
@@ -351,9 +344,7 @@ def plot_voronoi_cells(
         )
 
     if geometry is not None:
-        plot_geometry(
-            ax=ax, geometry=geometry, walkable_area_alpha=0.0, **kwargs
-        )
+        plot_geometry(ax=ax, geometry=geometry, **kwargs)
     ax.set_xlabel(r"x/m")
     ax.set_ylabel(r"y/m")
     return ax
