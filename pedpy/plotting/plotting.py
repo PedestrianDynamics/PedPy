@@ -1,9 +1,14 @@
 """Module containing plotting functionalities"""
+import logging
 from typing import Any, List, Optional
 
+import matplotlib as mpl
 import matplotlib.axes
 import matplotlib.pyplot as plt
+import pandas as pd
 import shapely
+
+log = logging.getLogger(__name__)
 
 from pedpy.data.geometry import Geometry
 from pedpy.data.trajectory_data import TrajectoryData
@@ -103,9 +108,10 @@ def plot_trajectories(
     traj_start_marker = kwargs.get("traj_start_marker", "")
     traj_end_marker = kwargs.get("traj_end_marker", "")
 
-    if geometry is None and ax is None:
+    if ax is None:
         ax = plt.gca()
-    elif geometry is not None:
+
+    if geometry is not None:
         ax = plot_geometry(geometry=geometry, ax=ax, **kwargs)
 
     for id, ped in traj.data.groupby("ID"):
@@ -139,8 +145,8 @@ def plot_measurement_setup(
     measurement_areas: Optional[List[shapely.Polygon]] = None,
     measurement_lines: Optional[List[shapely.LineString]] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
-    **kwargs,
-):
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
     """
     Plot the given measurement setup, including trajectories, geometry,
     measurement areas, and measurement lines in 2-D
@@ -189,20 +195,22 @@ def plot_measurement_setup(
     if ax is None:
         ax = plt.gca()
 
-    for measurement_area in measurement_areas:
-        ax.plot(
-            *measurement_area.exterior.xy,
-            color=ma_line_color,
-            linewidth=ma_line_width,
-        )
-        ax.fill(
-            *measurement_area.exterior.xy,
-            color=ma_color,
-            alpha=ma_alpha,
-        )
+    if measurement_areas is not None:
+        for measurement_area in measurement_areas:
+            ax.plot(
+                *measurement_area.exterior.xy,
+                color=ma_line_color,
+                linewidth=ma_line_width,
+            )
+            ax.fill(
+                *measurement_area.exterior.xy,
+                color=ma_color,
+                alpha=ma_alpha,
+            )
 
-    for measurement_line in measurement_lines:
-        ax.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
+    if measurement_lines is not None:
+        for measurement_line in measurement_lines:
+            ax.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
 
     if geometry is not None:
         plot_geometry(geometry=geometry, ax=ax, **kwargs)
@@ -210,4 +218,142 @@ def plot_measurement_setup(
     if traj is not None:
         plot_trajectories(traj=traj, geometry=None, ax=ax, **kwargs)
 
+    return ax
+
+
+def plot_voronoi_cells(
+    *,
+    data: pd.DataFrame,
+    geometry: Optional[Geometry] = None,
+    measurement_area: Optional[shapely.Polygon] = None,
+    ax: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """
+    Plot the Voronoi cells, geometry, and measurement area in 2D.
+
+    Parameters:
+        data (pd.DataFrame): Voronoi data to plot, should only contain data
+            from one frame!
+        geometry (Geometry, optional): Geometry object to plot
+        measurement_area (List[Polygon], optional): measurement area used to
+            compute the Voronoi cells
+        ax (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        show_ped_positions (optional): show the current positions of the
+            pedestrians, data needs to contain columns "X", and "Y"!
+        ped_color (optional): color used to display current ped positions
+        voronoi_border_color (optional): border color of Voronoi cells
+        voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell
+            inside the measurement area, data needs to contain column
+            "intersection voronoi"!
+        voronoi_outside_ma_alpha (optional): alpha of part of Voronoi cell
+            outside the measurement area
+        color_mode (optional): color mode to color the Voronoi cells, "density",
+            "velocity", and "id". For 'velocity' data needs to contain a
+            column 'speed'
+        vmin (optional): vmin of colormap, only used when color_mode != "id"
+        vmax (optional): vmax of colormap, only used when color_mode != "id"
+        show_colorbar (optional): colorbar is displayed, only used when
+            color_mode != "id"
+        cb_location (optional): location of the colorbar, only used when
+            color_mode != "id"
+        ma_line_color (optional): color of the measurement areas borders
+        ma_line_width (optional): line width of the measurement areas borders
+        ma_color (optional): fill color of the measurement areas
+        ma_alpha (optional): alpha of measurement area fill color
+        ml_color (optional): color of the measurement lines
+        ml_width (optional): line width of the measurement lines
+        line_color (optional): color of the borders
+        line_width (optional): line width of the borders
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
+
+    Returns:
+        matplotlib.axes.Axes instance where the geometry is plotted
+    """
+
+    show_ped_positions = kwargs.get("show_ped_positions", False)
+    ped_color = kwargs.get("ped_color", "w")
+    ped_size = kwargs.get("ped_size", 1)
+    voronoi_border_color = kwargs.get("voronoi_border_color", "w")
+    voronoi_inside_ma_alpha = kwargs.get("voronoi_inside_ma_alpha", 1)
+    voronoi_outside_ma_alpha = kwargs.get("voronoi_outside_ma_alpha", 1)
+
+    color_mode = kwargs.get("color_mode", "density")
+    color_mode = color_mode.lower()
+    if color_mode not in ("density", "velocity", "id"):
+        log.warning(
+            "'density', 'velocity', and 'id' are the only supported color modes. Use "
+            "default 'density'"
+        )
+        color_mode = "density"
+
+    vmin = kwargs.get("vmin", 0)
+    vmax = kwargs.get("vmax", 5 if color_mode == "velocity" else 10)
+    cb_location = kwargs.get("cb_location", "right")
+    show_colorbar = kwargs.get("show_colorbar", True)
+
+    if ax is None:
+        ax = plt.gca()
+
+    # Create color mapping for velocity/density to color
+    if color_mode != "id":
+        voronoi_colormap = plt.get_cmap("jet")
+        norm = mpl.colors.Normalize(vmin, vmax)
+        scalar_mappable = mpl.cm.ScalarMappable(
+            norm=norm, cmap=voronoi_colormap
+        )
+
+    else:
+        voronoi_colormap = plt.get_cmap("tab20c")
+
+    if measurement_area is not None:
+        plot_measurement_setup(
+            measurement_areas=[measurement_area], ax=ax, **kwargs
+        )
+
+    for _, row in data.iterrows():
+        poly = row["individual voronoi"]
+
+        if color_mode != "id":
+            color = (
+                scalar_mappable.to_rgba(row["speed"])
+                if color_mode == "velocity"
+                else scalar_mappable.to_rgba(1 / poly.area)
+            )
+        else:
+            color = voronoi_colormap(row["ID"] % 20)
+
+        ax.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
+        ax.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
+
+        if not shapely.is_empty(row["intersection voronoi"]):
+            intersection_poly = row["intersection voronoi"]
+            ax.fill(
+                *intersection_poly.exterior.xy,
+                fc=color,
+                alpha=voronoi_inside_ma_alpha,
+            )
+
+        if show_ped_positions:
+            ax.scatter(row["X"], row["Y"], color=ped_color, s=ped_size)
+
+    if show_colorbar and color_mode != "id":
+        plt.colorbar(
+            scalar_mappable,
+            ax=ax,
+            label=r"v / $\frac{m}{s}$"
+            if color_mode == "velocity"
+            else r" $\rho$ / $\frac{1}{m^2}$",
+            shrink=0.4,
+            location=cb_location,
+        )
+
+    if geometry is not None:
+        plot_geometry(
+            ax=ax, geometry=geometry, walkable_area_alpha=0.0, **kwargs
+        )
+    ax.set_xlabel(r"x/m")
+    ax.set_ylabel(r"y/m")
     return ax
