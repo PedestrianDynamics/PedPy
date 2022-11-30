@@ -10,7 +10,7 @@ setuptools.setup(
     name="PedPy",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    author="T. Schroedter",
+    author="T. Schrödter",
     description="PedPy is a python module for pedestrian movement analysis.",
     long_description=long_description,
     long_description_content_type="text/markdown",
