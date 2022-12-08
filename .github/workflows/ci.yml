@@ -14,7 +14,48 @@ on:
       - main
 
 jobs:
+  pre-build-checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.8' ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -VV
+          python3 -m site
+          python3 -m pip install --upgrade pip setuptools wheel build
+          python3 -m pip install -r requirements.txt
+
+      - name: Check format
+        run: |
+          ${{github.workspace}}/scripts/check-format.sh
+
+      - name: Check docstrign style
+        run: |
+          pydocstyle
+
+      - name: Check typing with mypy
+        run: |
+          python3 -m mypy --config-file mypy.ini pedpy/
+
   build:
+    needs: pre-build-checks
+
     strategy:
       fail-fast: false
       matrix:
@@ -40,16 +81,6 @@ jobs:
           python3 -m site
           python3 -m pip install --upgrade pip setuptools wheel build
           python3 -m pip install -r requirements.txt
-
-      - name: Check format
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          ${{github.workspace}}/scripts/check-format.sh
-
-      - name: Check typing with mypy
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          python3 -m mypy --config-file mypy.ini pedpy/
 
       - name: Run pytests
         run: |

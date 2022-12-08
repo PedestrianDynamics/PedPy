@@ -1,4 +1,4 @@
-"""Module containing plotting functionalities"""
+"""Module containing plotting functionalities."""
 import logging
 from typing import Any, List, Optional
 
@@ -20,10 +20,9 @@ def plot_geometry(
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """
-    Plot the given geometry in 2-D
+    """Plot the given geometry in 2-D.
 
-    Parameters:
+    Args:
         geometry (Geometry): Geometry object to plot
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         line_color (optional): color of the borders
@@ -68,10 +67,9 @@ def plot_trajectories(
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """
-    Plot the given trajectory and geometry in 2-D
+    """Plot the given trajectory and geometry in 2-D.
 
-    Parameters:
+    Args:
         traj (TrajectoryData): Trajectory object to plot
         geometry (Geometry, optional): Geometry object to plot
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
@@ -90,7 +88,6 @@ def plot_trajectories(
     Returns:
         matplotlib.axes.Axes instance where the geometry is plotted
     """
-
     traj_color = kwargs.get("traj_color", "r")
     traj_width = kwargs.get("traj_width", 1.0)
     traj_alpha = kwargs.get("traj_alpha", 1.0)
@@ -140,11 +137,9 @@ def plot_measurement_setup(
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """
-    Plot the given measurement setup, including trajectories, geometry,
-    measurement areas, and measurement lines in 2-D
+    """Plot the given measurement setup in 2D.
 
-    Parameters:
+    Args:
         traj (TrajectoryData, optional): Trajectory object to plot
         geometry (Geometry, optional): Geometry object to plot
         measurement_areas (List[Polygon], optional): List of measurement areas
@@ -173,7 +168,6 @@ def plot_measurement_setup(
     Returns:
         matplotlib.axes.Axes instance where the geometry is plotted
     """
-
     ma_line_color = kwargs.get("ma_line_color", "k")
     ma_line_width = kwargs.get("ma_line_width", 1.0)
     ma_color = kwargs.get("ma_color", "w")
@@ -222,10 +216,9 @@ def plot_voronoi_cells(
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """
-    Plot the Voronoi cells, geometry, and measurement area in 2D.
+    """Plot the Voronoi cells, geometry, and measurement area in 2D.
 
-    Parameters:
+    Args:
         data (pd.DataFrame): Voronoi data to plot, should only contain data
             from one frame!
         geometry (Geometry, optional): Geometry object to plot
@@ -265,7 +258,6 @@ def plot_voronoi_cells(
     Returns:
         matplotlib.axes.Axes instance where the geometry is plotted
     """
-
     show_ped_positions = kwargs.get("show_ped_positions", False)
     ped_color = kwargs.get("ped_color", "w")
     ped_size = kwargs.get("ped_size", 1)

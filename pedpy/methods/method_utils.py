@@ -1,4 +1,4 @@
-"""Helper functions for the analysis methods"""
+"""Helper functions for the analysis methods."""
 from typing import Tuple
 
 import numpy as np
@@ -11,7 +11,7 @@ from pedpy.data.trajectory_data import TrajectoryData
 
 
 def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:
-    """Checks if all trajectory data points lie within the given geometry
+    """Checks if all trajectory data points lie within the given geometry.
 
     Args:
         traj (TrajectoryData): trajectory data
@@ -26,7 +26,7 @@ def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:
 def get_invalid_trajectory(
     *, traj: TrajectoryData, geometry: Geometry
 ) -> pd.DataFrame:
-    """Returns all trajectory data points outside the given geometry
+    """Returns all trajectory data points outside the given geometry.
 
     Args:
         traj (TrajectoryData): trajectory data
@@ -135,7 +135,7 @@ def compute_frame_range_in_area(
 def _compute_individual_movement(
     traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
 ) -> pd.DataFrame:
-    """Compute the individual movement in the time interval frame_step
+    """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
     frame_step], if one of the boundaries is not contained in the trajectory
@@ -191,8 +191,7 @@ def _compute_individual_movement(
 def _compute_crossing_frames(
     traj_data: pd.DataFrame, measurement_line: LineString
 ) -> pd.DataFrame:
-    """Compute the frames at which a pedestrian crosses a specific
-    measurement line.
+    """Compute the frames at the pedestrians pass the measurement line.
 
     As crossing we define a movement that moves across the measurement line.
     When the movement ends on the line, the line is not crossed. When it
@@ -238,7 +237,9 @@ def _compute_crossing_frames(
 def _get_continuous_parts_in_area(
     traj_data: pd.DataFrame, measurement_area: Polygon
 ) -> pd.DataFrame:
-    """Returns the time-continuous parts in which the pedestrians are inside
+    """Compute the time-continuous parts of each pedestrian in the area.
+
+    Compute the time-continuous parts in which the pedestrians are inside
     the given measurement area. As leaving the first frame outside the area is
     considered.
 

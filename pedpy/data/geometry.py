@@ -1,3 +1,5 @@
+"""Module handling the geometrical environment of the analysis."""
+
 import logging
 from dataclasses import dataclass
 from typing import List, Optional
@@ -10,13 +12,13 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class Geometry:
-    """Class holding the geometry information of the analysis
+    """Class holding the geometry information of the analysis.
 
     Attributes:
         walkable_area (shapely.Polygon): area in which the pedestrian walk,
-        they are only considered for the analysis when inside this area.
+            they are only considered for the analysis when inside this area.
         obstacles (List[shapely.Polygon]): areas which are excluded from the
-        analysis, pedestrians inside these areas will be ignored.
+            analysis, pedestrians inside these areas will be ignored.
     """
 
     walkable_area: Polygon
@@ -28,6 +30,13 @@ class Geometry:
         walkable_area: Polygon,
         obstacles: Optional[List[Polygon]] = None,
     ):
+        """Create a geometry object.
+
+        Args:
+            walkable_area (Polygon): area in pedestrian can walk
+            obstacles (Optional[List[Polygon]]): list of obstacles, which will
+                be excluded from the walkable area
+        """
         self.obstacles = []
         self.walkable_area = walkable_area
 
@@ -40,7 +49,7 @@ class Geometry:
         shapely.prepare(self.walkable_area)
 
     def add_obstacle(self, obstacle: Polygon) -> None:
-        """Adds an obstacle to the geometry
+        """Adds an obstacle to the geometry.
 
         Args:
             obstacle (Polygon): area which will be excluded from the

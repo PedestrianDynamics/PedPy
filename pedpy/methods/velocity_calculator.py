@@ -1,4 +1,4 @@
-"""Module containing functions to compute velocities"""
+"""Module containing functions to compute velocities."""
 
 from typing import Optional, Tuple
 
@@ -18,7 +18,7 @@ def compute_individual_velocity(
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
 ) -> pd.DataFrame:
-    """Compute the individual velocity for each pedestrian
+    """Compute the individual velocity for each pedestrian.
 
     Note: when using a movement direction the velocity may be negative!
 
@@ -30,6 +30,7 @@ def compute_individual_velocity(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
+
     Returns:
         DataFrame containing the columns 'ID', 'frame', and 'speed'
     """
@@ -49,7 +50,7 @@ def compute_mean_velocity_per_frame(
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute mean velocity per frame
+    """Compute mean velocity per frame.
 
     Note: when using a movement direction the velocity may be negative!
 
@@ -96,7 +97,7 @@ def compute_voronoi_velocity(
     measurement_area: Polygon,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
 ) -> Tuple[pd.Series, pd.DataFrame]:
-    """Compute the voronoi velocity per frame
+    """Compute the voronoi velocity per frame.
 
     Note: when using a movement direction the velocity may be negative!
 

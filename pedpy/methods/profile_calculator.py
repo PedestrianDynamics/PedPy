@@ -1,4 +1,4 @@
-"""Module containing functions to compute profiles"""
+"""Module containing functions to compute profiles."""
 from typing import List, Tuple
 
 import numpy as np
@@ -10,9 +10,7 @@ from shapely import Polygon
 
 
 class VelocityMethod(Enum):
-    """Identifier of the method used to compute the mean velocity per grid
-    cell
-    """
+    """Identifier for the method used to compute the mean velocity."""
 
     _init_ = "value __doc__"
     ARITHMETIC = 0, "arithmetic mean velocity"
@@ -26,8 +24,7 @@ def compute_profiles(
     grid_size: float,
     velocity_method: VelocityMethod,
 ) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
-    """Computes the density and velocity profiles of the given trajectory
-    within the geometry
+    """Computes the density and velocity profiles.
 
     Note: As this is a quite compute heavy operation, it is suggested to
     reduce the geometry to the important areas.
@@ -90,7 +87,7 @@ def _compute_arithmetic_velocity(
     frame_data: npt.NDArray[np.float64],
     grid_intersections_area: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
-    """Compute the arithmetic mean velocity per grid cell
+    """Compute the arithmetic mean velocity per grid cell.
 
     Args:
         frame_data (npt.NDArray[np.float64]): all relevant data in a specific frame
@@ -119,7 +116,7 @@ def _compute_voronoi_velocity(
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
 ) -> npt.NDArray[np.float64]:
-    """Compute the Voronoi velocity per grid cell
+    """Compute the Voronoi velocity per grid cell.
 
     Args:
         frame_data (npt.NDArray[np.float64]): all relevant data in a specific frame
@@ -139,8 +136,7 @@ def _compute_voronoi_velocity(
 def _get_grid_cells(
     walkable_area: Polygon, grid_size: float
 ) -> Tuple[npt.NDArray[np.float64], int, int]:
-    """Creates a list of square grid cells which cover the space used by
-    geometry.
+    """Creates a list of square grid cells covering the geometry.
 
     Args:
         walkable_area (shapely.Polygon): geometry for which the profiles are

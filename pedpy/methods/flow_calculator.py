@@ -1,4 +1,4 @@
-"""Module containing functions to compute flows"""
+"""Module containing functions to compute flows."""
 from typing import Tuple
 
 import pandas as pd
@@ -13,8 +13,7 @@ def compute_n_t(
     measurement_line: LineString,
     frame_rate: float,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute the cumulative number of pedestrians who passed the line for
-    each frame.
+    """Compute the framewise cumulative number of pedestrians passing the line.
 
     Note: for each pedestrian only the first passing of the line is considered!
     Args:
