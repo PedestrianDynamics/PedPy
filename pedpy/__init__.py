@@ -1,5 +1,5 @@
-"""Top level imports, for easier usage."""
 # type: ignore
+"""Top level imports, for easier usage."""
 from . import _version
 from .data.geometry import Geometry
 from .data.trajectory_data import TrajectoryData, TrajectoryUnit
