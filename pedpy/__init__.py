@@ -1,3 +1,4 @@
+"""Top level imports, for easier usage."""
 # type: ignore
 from . import _version
 from .data.geometry import Geometry

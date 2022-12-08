@@ -1,3 +1,4 @@
+"""Properties for creating wheels to be distributed."""
 # type: ignore
 import setuptools
 

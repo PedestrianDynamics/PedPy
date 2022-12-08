@@ -1,6 +1,4 @@
-"""This module provides the functionalities to parse trajectory files to the internal
-TrajectoryData format.
-"""
+"""Load trajectories to the internal trajectory data format."""
 
 import pathlib
 from typing import Any, Optional, Tuple
@@ -16,20 +14,22 @@ def load_trajectory(
     default_frame_rate: Optional[float] = None,
     default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
-    """L the trajectory file for the relevant data: trajectory data, frame
-    rate, and type of trajectory.
+    """Loads the trajectory file in the internal trajectory data format.
+
+    Loads the relevant data: trajectory data, frame rate, and type of
+    trajectory from the given trajectory file. If the file does not contain
+    some data, defaults can be submitted.
 
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
-        default_frame_rate (float): frame rate of the file, None if frame rate from
-                file is used
+        default_frame_rate (float): frame rate of the file, None if frame rate
+            from file is used
         default_unit (TrajectoryUnit): unit in which the coordinates are stored
                 in the file, None if unit should be parsed from the file
 
     Returns:
         Tuple containing: trajectory data, frame rate, and type of trajectory.
     """
-
     if not trajectory_file.exists():
         raise IOError(f"{trajectory_file} does not exist.")
 
@@ -125,7 +125,7 @@ def _load_trajectory_meta_data(
                     try:
                         if parsed_frame_rate is None:
                             parsed_frame_rate = float(substring)
-                    except:
+                    except ValueError:
                         continue
 
             if "x/cm" in line.lower() or "in cm" in line.lower():
@@ -181,8 +181,8 @@ def _load_trajectory_meta_data(
     if parsed_unit is not None and default_unit is not None:
         if parsed_unit != default_unit:
             raise ValueError(
-                "The given default unit seems to differ from the unit given in "
-                "the trajectory file: "
+                "The given default unit seems to differ from the unit given "
+                "in the trajectory file: "
                 f"{default_unit} != {parsed_unit}"
             )
 

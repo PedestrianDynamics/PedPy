@@ -1,4 +1,4 @@
-"""Module containing functions to compute densities"""
+"""Module containing functions to compute densities."""
 from collections import defaultdict
 from typing import List, Optional, Tuple
 
@@ -16,8 +16,7 @@ def compute_classic_density(
     traj_data: pd.DataFrame,
     measurement_area: Polygon,
 ) -> pd.DataFrame:
-    """Compute the classic density of the trajectory per frame inside the given
-     measurement area.
+    """Compute the classic density per frame inside the given measurement area.
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
@@ -52,8 +51,7 @@ def compute_voronoi_density(
     cut_off: Optional[Tuple[float, int]] = None,
     use_blind_points: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute the voronoi density of the trajectory per frame inside the given
-    measurement area.
+    """Compute the voronoi density per frame inside the given measurement area.
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
@@ -68,8 +66,8 @@ def compute_voronoi_density(
             geometry
     Returns:
           DataFrame containing the columns: 'frame' and 'voronoi density',
-          DataFrame containing the columns: 'ID', 'frame', 'individual voronoi',
-                'intersecting voronoi'
+          DataFrame containing the columns: 'ID', 'frame', 'individual
+            voronoi', 'intersecting voronoi'
     """
     df_individual = compute_individual_voronoi_polygons(
         traj_data=traj_data,
@@ -136,7 +134,7 @@ def compute_passing_density(
 
 
 def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
-    """Returns the number of pedestrians in each frame as DataFrame
+    """Returns the number of pedestrians in each frame as DataFrame.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
@@ -159,20 +157,21 @@ def compute_individual_voronoi_polygons(
     cut_off: Optional[Tuple[float, int]] = None,
     use_blind_points: bool = False,
 ) -> pd.DataFrame:
-    """Compute the individual voronoi cells for each person and frame
+    """Compute the individual voronoi cells for each person and frame.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
         geometry (Geometry): bounding area, where pedestrian are supposed to be
-        cut_off (Tuple[float, int]): radius of max extended voronoi cell (in m),
-                number of linear segments in the approximation of circular arcs,
-                needs to be divisible by 4!
+        cut_off (Tuple[float, int]): radius of max extended voronoi cell (in
+                m), number of linear segments in the approximation of circular
+                arcs, needs to be divisible by 4!
         use_blind_points (bool): adds extra 4 points outside the geometry to
                 also compute voronoi cells when less than 4 peds are in the
                 geometry
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame' and 'individual voronoi'.
+        DataFrame containing the columns: 'ID', 'frame' and 'individual
+        voronoi'.
     """
     dfs = []
 
@@ -247,8 +246,7 @@ def compute_individual_voronoi_polygons(
 def _compute_intersecting_polygons(
     individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
 ) -> pd.DataFrame:
-    """Compute the intersection of each of the individual voronoi cells with
-    the measurement area.
+    """Compute the intersection of the voronoi cells with the measurement area.
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
@@ -270,12 +268,13 @@ def _compute_intersecting_polygons(
 def _clip_voronoi_polygons(
     voronoi: Voronoi, diameter: float
 ) -> List[shapely.Polygon]:
-    """Generate shapely.geometry.Polygon objects corresponding to the
+    """Generate Polygons from the Voronoi diagram.
+
+    Generate shapely.geometry.Polygon objects corresponding to the
     regions of a scipy.spatial.Voronoi object, in the order of the
     input points. The polygons for the infinite regions are large
     enough that all points within a distance 'diameter' of a Voronoi
     vertex are contained in one of the infinite polygons.
-
     from: https://stackoverflow.com/a/52727406/9601068
     """
     polygons = []
