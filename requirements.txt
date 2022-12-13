@@ -5,7 +5,7 @@ pandas==1.5.1
 pylint==2.11.1
 pytest==6.2.5
 pytest-mock==3.7.0
-Shapely==2.0b2
+Shapely==2.0.0
 click==8.0.2
 build==0.7.0
 scipy==1.9.3

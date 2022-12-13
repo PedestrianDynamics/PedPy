@@ -32,7 +32,7 @@ setuptools.setup(
         "aenum == 3.1.5",
         "numpy == 1.22.0",
         "pandas == 1.5.1",
-        "Shapely == 2.0b2",
+        "Shapely == 2.0.0",
         "scipy == 1.9.3",
         "matplotlib==3.6.1",
     ],
