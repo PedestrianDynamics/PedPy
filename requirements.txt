@@ -9,7 +9,7 @@ Shapely==2.0.0
 click==8.0.2
 build==0.7.0
 scipy==1.9.3
-setuptools~=57.0.0
+setuptools>=65.5.1
 versioneer==0.26
 mypy==0.982
 mypy-extensions==0.4.3
