@@ -4,5 +4,10 @@
 API reference
 =============
 
-This page gives an overview of all public *PedPy* objects, functions and
-methods. All classes and functions exposed in ``pedpy.*`` namespace are public.
+Currently under construction
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Contents:
+
+    modules

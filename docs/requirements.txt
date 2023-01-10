@@ -6,3 +6,4 @@ ipykernel
 pydata-sphinx-theme==0.11.0
 sphinx-copybutton==0.5.1
 sphinx_design==0.3.0
+sphinx-apidoc

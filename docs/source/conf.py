@@ -5,9 +5,9 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../../pedpy/methods"))
-sys.path.insert(0, os.path.abspath("../../pedpy/io"))
-sys.path.insert(0, os.path.abspath("../../pedpy/data"))
+# sys.path.insert(0, os.path.abspath("../../pedpy/methods"))
+# sys.path.insert(0, os.path.abspath("../../pedpy/io"))
+# sys.path.insert(0, os.path.abspath("../../pedpy/data"))
 sys.path.insert(0, os.path.abspath("../../"))
 
 # -- Project information -----------------------------------------------------
@@ -24,15 +24,25 @@ release = "1.0.0b1"
 extensions = [
     "sphinx.ext.duration",
     "sphinx.ext.doctest",
-    "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosectionlabel",
-    "sphinx.ext.napoleon",
     "sphinx_design",
     "sphinx_copybutton",
-    "sphinx.ext.viewcode",
+    'sphinx.ext.viewcode',
+    'autoapi.extension'
 ]
+
+autoapi_dirs = ['../../pedpy']
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "imported-members",
+]
+autoapi_keep_files = True
+autodoc_typehints = "both"
 
 # Napoleon settings
 napoleon_google_docstring = True
