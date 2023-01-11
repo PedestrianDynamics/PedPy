@@ -9,14 +9,16 @@ from pedpy import TrajectoryUnit
 from pedpy.data.geometry import Geometry
 from pedpy.io.trajectory_loader import load_trajectory
 from pedpy.methods.density_calculator import (
-    _compute_intersecting_polygons,
     compute_classic_density,
-    compute_individual_voronoi_polygons,
     compute_passing_density,
     compute_voronoi_density,
 )
 from pedpy.methods.flow_calculator import compute_flow, compute_n_t
-from pedpy.methods.method_utils import compute_frame_range_in_area
+from pedpy.methods.method_utils import (
+    compute_frame_range_in_area,
+    compute_individual_voronoi_polygons,
+    compute_intersecting_polygons,
+)
 from pedpy.methods.profile_calculator import VelocityMethod, compute_profiles
 from pedpy.methods.velocity_calculator import (
     compute_individual_velocity,
@@ -209,11 +211,13 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
     geometry = Geometry(walkable_area=geometry_polygon)
+
+    individual_voronoi = compute_individual_voronoi_polygons(
+        traj_data=trajectory.data, geometry=geometry
+    )
     result, _ = compute_voronoi_density(
-        traj_data=trajectory.data,
+        individual_voronoi_data=individual_voronoi,
         measurement_area=measurement_area,
-        geometry=geometry,
-        use_blind_points=False,
     )
 
     # in jpsreport not all frames are written to the result (e.g., when not
@@ -282,13 +286,14 @@ def test_voronoi_density_blind_points(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
     geometry = Geometry(walkable_area=geometry_polygon)
-    result, _ = compute_voronoi_density(
-        traj_data=trajectory.data,
-        measurement_area=measurement_area,
-        geometry=geometry,
-        use_blind_points=True,
-    )
 
+    individual_voronoi = compute_individual_voronoi_polygons(
+        traj_data=trajectory.data, geometry=geometry, use_blind_points=True
+    )
+    result, _ = compute_voronoi_density(
+        individual_voronoi_data=individual_voronoi,
+        measurement_area=measurement_area,
+    )
     # as there is a bug in the blind point computation in jpsreport in the
     # bottleneck test case ignore the last 20 frames.
     if folder.name == "bottleneck":
@@ -361,12 +366,15 @@ def test_voronoi_density_blind_points_cutoff(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
     geometry = Geometry(walkable_area=geometry_polygon)
-    result, _ = compute_voronoi_density(
+    individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data,
-        measurement_area=measurement_area,
         geometry=geometry,
         use_blind_points=True,
         cut_off=(0.8, 12),
+    )
+    result, _ = compute_voronoi_density(
+        individual_voronoi_data=individual_voronoi,
+        measurement_area=measurement_area,
     )
 
     # in jpsreport not all frames are written to the result (e.g., when not
@@ -442,7 +450,7 @@ def test_voronoi_velocity(
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data, geometry=geometry, use_blind_points=False
     )
-    intersecting_voronoi = _compute_intersecting_polygons(
+    intersecting_voronoi = compute_intersecting_polygons(
         individual_voronoi, measurement_area
     )
 

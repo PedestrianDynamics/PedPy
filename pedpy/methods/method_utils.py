@@ -281,6 +281,28 @@ def compute_individual_voronoi_polygons(
     return pd.concat(dfs)[["ID", "frame", "individual voronoi"]]
 
 
+def compute_intersecting_polygons(
+    individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
+) -> pd.DataFrame:
+    """Compute the intersection of the voronoi cells with the measurement area.
+
+    Args:
+        individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
+                to contain a column 'individual voronoi' which holds
+                shapely.Polygon information
+        measurement_area (shapely.Polygon):
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame' and
+        'intersection voronoi'.
+    """
+    df_intersection = individual_voronoi_data[["ID", "frame"]].copy()
+    df_intersection["intersection voronoi"] = shapely.intersection(
+        individual_voronoi_data["individual voronoi"], measurement_area
+    )
+    return df_intersection
+
+
 def _clip_voronoi_polygons(
     voronoi: Voronoi, diameter: float
 ) -> List[shapely.Polygon]:

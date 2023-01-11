@@ -1,13 +1,12 @@
 """Module containing functions to compute densities."""
-from typing import Optional, Tuple
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 import shapely
 from shapely import Polygon
 
-from pedpy.data.geometry import Geometry
-from pedpy.methods.method_utils import compute_individual_voronoi_polygons
+from pedpy.methods.method_utils import compute_intersecting_polygons
 
 
 def compute_classic_density(
@@ -44,42 +43,31 @@ def compute_classic_density(
 
 def compute_voronoi_density(
     *,
-    traj_data: pd.DataFrame,
+    individual_voronoi_data: pd.DataFrame,
     measurement_area: shapely.Polygon,
-    geometry: Geometry,
-    cut_off: Optional[Tuple[float, int]] = None,
-    use_blind_points: bool = False,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi density per frame inside the given measurement area.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data to analyze
+        individual_voronoi_data (pd.DataFrame): individual voronoi data per
+            frame needs to contain the columns: 'ID', 'frame', 'individual
+            voronoi', which holds a shapely.Polygon
         measurement_area (shapely.Polygon): area for which the density is
             computed
-        geometry (Geometry): bounding area, where pedestrian are supposed to be
-        cut_off (Tuple[float, int): radius of max extended voronoi cell (in m),
-            number of linear segments in the approximation of circular arcs,
-            needs to be divisible by 4!
-        use_blind_points (bool): adds extra 4 points outside the geometry to
-            also compute voronoi cells when less than 4 peds are in the
-            geometry
     Returns:
           DataFrame containing the columns: 'frame' and 'voronoi density',
           DataFrame containing the columns: 'ID', 'frame', 'individual
             voronoi', 'intersecting voronoi'
     """
-    df_individual = compute_individual_voronoi_polygons(
-        traj_data=traj_data,
-        geometry=geometry,
-        cut_off=cut_off,
-        use_blind_points=use_blind_points,
-    )
-    df_intersecting = _compute_intersecting_polygons(
-        df_individual, measurement_area
+    df_intersecting = compute_intersecting_polygons(
+        individual_voronoi_data, measurement_area
     )
 
     df_combined = pd.merge(
-        df_individual, df_intersecting, on=["ID", "frame"], how="outer"
+        individual_voronoi_data,
+        df_intersecting,
+        on=["ID", "frame"],
+        how="outer",
     )
     df_combined["relation"] = shapely.area(
         df_combined["intersection voronoi"]
@@ -92,7 +80,12 @@ def compute_voronoi_density(
     # Rename column and add missing zero values
     df_voronoi_density.columns = ["voronoi density"]
     df_voronoi_density = df_voronoi_density.reindex(
-        list(range(traj_data.frame.min(), traj_data.frame.max() + 1)),
+        list(
+            range(
+                individual_voronoi_data.frame.min(),
+                individual_voronoi_data.frame.max() + 1,
+            )
+        ),
         fill_value=0.0,
     )
 
@@ -147,25 +140,3 @@ def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
     )
 
     return num_peds_per_frame
-
-
-def _compute_intersecting_polygons(
-    individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
-) -> pd.DataFrame:
-    """Compute the intersection of the voronoi cells with the measurement area.
-
-    Args:
-        individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
-                to contain a column 'individual voronoi' which holds
-                shapely.Polygon information
-        measurement_area (shapely.Polygon):
-
-    Returns:
-        DataFrame containing the columns: 'ID', 'frame' and
-        'intersection voronoi'.
-    """
-    df_intersection = individual_voronoi_data[["ID", "frame"]].copy()
-    df_intersection["intersection voronoi"] = shapely.intersection(
-        individual_voronoi_data["individual voronoi"], measurement_area
-    )
-    return df_intersection
