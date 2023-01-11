@@ -6,13 +6,14 @@ from .data.trajectory_data import TrajectoryData, TrajectoryUnit
 from .io.trajectory_loader import load_trajectory
 from .methods.density_calculator import (
     compute_classic_density,
-    compute_individual_voronoi_polygons,
     compute_passing_density,
     compute_voronoi_density,
 )
 from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
     compute_frame_range_in_area,
+    compute_individual_voronoi_polygons,
+    compute_neighbors,
     compute_neighbors,
     get_invalid_trajectory,
     is_trajectory_valid,
