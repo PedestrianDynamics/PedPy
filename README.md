@@ -30,7 +30,7 @@ The [JPSreport notebook](jpsreport.ipynb) shows how to use `PedPy` to compute th
 
 You can either download the notebooks and [demo files](demos/) from the GitHub repository or clone the whole repository with:
 ```bash 
-git clone https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer.git
+git clone https://github.com/PedestrianDynamics/pedpy.git
 ```
 
 For using the either of the notebook some additional libraries need to be installed, mainly for plotting.
