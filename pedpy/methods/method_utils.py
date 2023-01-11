@@ -1,4 +1,5 @@
 """Helper functions for the analysis methods."""
+import itertools
 from typing import Tuple
 
 import numpy as np
@@ -130,6 +131,59 @@ def compute_frame_range_in_area(
         frame_range_between_lines.loc[:, ("ID", "frame_start", "frame_end")],
         measurement_area,
     )
+
+
+def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
+    """Compute the neighbors of each pedestrian based on the Voronoi cells.
+
+    Computation of the neighborhood of each pedestrian per frame. Every other
+    pedestrian is a neighbor if the Voronoi cells of both pedestrian intersect
+    and some point.
+
+    Args:
+        individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
+            to contain a column 'individual voronoi', which holds
+            shapely.Polygon information
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame' and 'neighbors', where
+        neighbors are a list of the neighbor's IDs
+    """
+    neighbor_df = []
+
+    for frame, frame_data in individual_voronoi_data.groupby("frame"):
+        touching = shapely.dwithin(
+            np.array(frame_data["individual voronoi"])[:, np.newaxis],
+            np.array(frame_data["individual voronoi"])[np.newaxis, :],
+            1e-9,  # Voronoi cells as close as 1 mm are touching
+        )
+
+        # the peds are not neighbors of themselves
+        for i in range(len(touching)):
+            touching[i, i] = False
+
+        # create matrix with ped IDs
+        ids = np.outer(
+            np.ones_like(frame_data["ID"].values),
+            frame_data["ID"].values.reshape(1, -1),
+        )
+
+        neighbors = np.where(touching, ids, np.nan)
+
+        neighbors_list = [
+            np.array(l)[~np.isnan(np.array(l))].astype(int).tolist()
+            for l in neighbors
+        ]
+
+        frame_df = pd.DataFrame(
+            zip(
+                frame_data["ID"].values, itertools.repeat(frame), neighbors_list
+            ),
+            columns=["ID", "frame", "neighbors"],
+        )
+        neighbor_df.append(frame_df)
+
+    return pd.concat(neighbor_df)
 
 
 def _compute_individual_movement(

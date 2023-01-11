@@ -13,6 +13,7 @@ from .methods.density_calculator import (
 from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
     compute_frame_range_in_area,
+    compute_neighbors,
     get_invalid_trajectory,
     is_trajectory_valid,
 )
