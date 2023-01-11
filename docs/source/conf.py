@@ -31,6 +31,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_design",
     "sphinx_copybutton",
+    "sphinx.ext.viewcode",
 ]
 
 # Napoleon settings
@@ -56,7 +57,11 @@ intersphinx_mapping = {
 intersphinx_disabled_domains = ["std"]
 
 templates_path = ["_templates"]
-exclude_patterns = []
+
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
+# This pattern also affects html_static_path and html_extra_path.
+exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
 nbsphinx_allow_errors = True
 
@@ -66,18 +71,21 @@ nbsphinx_allow_errors = True
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 
-html_logo = "_static/logo.png"
+html_logo = "_static/drawing_radial_blur.png"
 
-html_context = {
-   "default_mode": "light"
-}
+html_css_files = [
+    "css/custom.css",
+]
+html_context = {"default_mode": "light"}
+
+html_favicon = "_static/drawing_radial_blur.png"
 
 html_theme_options = {
     "show_nav_level": 5,
     "github_url": "https://github.com/PedestrianDynamics/pedpy",
     "header_links_before_dropdown": 5,
     "show_toc_level": 5,
-    "navbar_end": ["navbar-icon-links"]
+    "navbar_end": ["navbar-icon-links"],
 }
 
 # -- Options for EPUB output
