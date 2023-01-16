@@ -81,14 +81,14 @@ nbsphinx_allow_errors = True
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 
-html_logo = "_static/drawing_radial_blur.png"
+html_logo = "_static/logo.png"
 
 html_css_files = [
     "css/custom.css",
 ]
 html_context = {"default_mode": "light"}
 
-html_favicon = "_static/drawing_radial_blur.png"
+html_favicon = "_static/logo.png"
 
 html_theme_options = {
     "show_nav_level": 5,

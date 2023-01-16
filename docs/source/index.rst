@@ -23,7 +23,7 @@ It implements different measurement methods for density, velocity and flow.
 .. grid:: 1 2 3 4
 
     .. grid-item-card:: Getting started
-        :img-top: _static/index_getting_started.svg
+        :img-top: images/index_getting_started.svg
         :link: getting_started
         :link-type: ref
         :link-alt: To the getting started guides
@@ -32,8 +32,8 @@ It implements different measurement methods for density, velocity and flow.
         introduction to *PedPy*'s main concepts.
 
     .. grid-item-card:: User guide
-        :img-top: _static/index_user_guide.svg
-        :link: getting_started
+        :img-top: images/index_user_guide.svg
+        :link: user_guide
         :link-type: ref
         :link-alt: To the getting started guides
 
@@ -41,7 +41,7 @@ It implements different measurement methods for density, velocity and flow.
         key concepts of *PedPy* with useful background information and explanation.
 
     .. grid-item-card:: API reference
-        :img-top: _static/index_api.svg
+        :img-top: images/index_api.svg
         :link: api
         :link-type: ref
         :link-alt: To the reference guide
@@ -52,7 +52,7 @@ It implements different measurement methods for density, velocity and flow.
 
 
     .. grid-item-card:: Developer guide
-        :img-top: _static/index_contribute.svg
+        :img-top: images/index_contribute.svg
         :link: development
         :link-type: ref
         :link-alt: To the development guide
