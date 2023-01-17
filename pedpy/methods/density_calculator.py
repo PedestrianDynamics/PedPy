@@ -18,8 +18,8 @@ def compute_classic_density(
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
-        measurement_area (shapely.Polygon): area for which the density is
-            computed
+        measurement_area (shapely.Polygon): area for which the density is computed
+
 
     Returns:
         DataFrame containing the columns: 'frame' and 'classic density'

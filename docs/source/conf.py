@@ -29,11 +29,13 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "sphinx_design",
     "sphinx_copybutton",
-    'sphinx.ext.viewcode',
-    'autoapi.extension'
+    "sphinx.ext.viewcode",
+    # "autoapi.extension",
+    'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
 ]
 
-autoapi_dirs = ['../../pedpy']
+autoapi_dirs = ["../../pedpy"]
 autoapi_options = [
     "members",
     "undoc-members",
