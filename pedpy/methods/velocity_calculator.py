@@ -17,6 +17,7 @@ def compute_individual_velocity(
     frame_rate: float,
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
+    x_y_components: bool = True,
 ) -> pd.DataFrame:
     """Compute the individual velocity for each pedestrian.
 
@@ -30,16 +31,21 @@ def compute_individual_velocity(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-
+        x_y_components (bool): compute the x and y components of the speed
     Returns:
-        DataFrame containing the columns 'ID', 'frame', and 'speed'
+        DataFrame containing the columns 'ID', 'frame', and 'speed' in m/s,
+        'v_x' and 'v_y' with the speed components in x and y direction if
+        x_y_components is True
     """
     df_movement = _compute_individual_movement(traj_data, frame_step)
     df_speed = _compute_individual_speed(
-        df_movement, frame_rate, movement_direction
+        movement_data=df_movement,
+        frame_rate=frame_rate,
+        movement_direction=movement_direction,
+        x_y_components=x_y_components,
     )
 
-    return df_speed[["ID", "frame", "speed"]]
+    return df_speed
 
 
 def compute_mean_velocity_per_frame(
@@ -141,9 +147,11 @@ def compute_voronoi_velocity(
 
 
 def _compute_individual_speed(
+    *,
     movement_data: pd.DataFrame,
     frame_rate: float,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
+    x_y_components: bool = True,
 ) -> pd.DataFrame:
     """Compute the instantaneous velocity of each pedestrian.
 
@@ -154,32 +162,50 @@ def _compute_individual_speed(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
+        x_y_components (bool): compute the x and y components of the speed
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame', and 'speed' with the
-        speed in m/s
+        DataFrame containing the columns: 'ID', 'frame', 'speed' with the
+        speed in m/s, 'v_x' and 'v_y' with the speed components in x and y
+        direction if x_y_components is True
     """
-    if movement_direction is None:
-        movement_data["distance"] = shapely.distance(
-            movement_data["start"], movement_data["end"]
-        )
-    else:
-        # get the length of the projection of the movement in the frame range
-        # onto the movement_direction
-        movement_data["distance"] = (
-            np.dot(
-                shapely.get_coordinates(movement_data["end"])
-                - shapely.get_coordinates(movement_data["start"]),
-                movement_direction,
-            )
-            / np.linalg.norm(movement_direction)
-        )
+    columns = ["ID", "frame", "speed"]
+    time_interval = (
+        movement_data["end_frame"] - movement_data["start_frame"]
+    ) / frame_rate
 
-    movement_data["speed"] = movement_data["distance"] / (
-        (movement_data["end_frame"] - movement_data["start_frame"]) / frame_rate
+    # Compute displacements in x and y direction
+    movement_data[["d_x", "d_y"]] = shapely.get_coordinates(
+        movement_data["end"]
+    ) - shapely.get_coordinates(movement_data["start"])
+
+    movement_data["speed"] = (
+        np.linalg.norm(movement_data[["d_x", "d_y"]], axis=1) / time_interval
     )
 
-    return movement_data
+    if movement_direction is not None:
+        # Projection of the displacement onto the movement direction
+        norm_movement_direction = np.dot(movement_direction, movement_direction)
+        movement_data[["d_x", "d_y"]] = (
+            np.dot(movement_data[["d_x", "d_y"]].values, movement_direction)[
+                :, None
+            ]
+            * movement_direction
+            * norm_movement_direction
+        )
+        movement_data["speed"] = (
+            np.dot(movement_data[["d_x", "d_y"]].values, movement_direction)
+            / np.linalg.norm(movement_direction)
+            / time_interval
+        )
+
+    if x_y_components:
+        movement_data["v_x"] = movement_data["d_x"].values / time_interval
+        movement_data["v_y"] = movement_data["d_y"].values / time_interval
+        columns.append("v_x")
+        columns.append("v_y")
+
+    return movement_data[columns]
 
 
 def compute_passing_speed(
