@@ -147,11 +147,15 @@ def test_arithmetic_velocity(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
 
-    result, _ = compute_mean_velocity_per_frame(
+    individual_velocity = compute_individual_velocity(
         traj_data=trajectory.data,
-        measurement_area=measurement_area,
         frame_rate=trajectory.frame_rate,
         frame_step=velocity_frame,
+    )
+    result = compute_mean_velocity_per_frame(
+        traj_data=trajectory.data,
+        measurement_area=measurement_area,
+        individual_velocity=individual_velocity,
     )
     result = result.to_frame()
 
@@ -453,12 +457,16 @@ def test_voronoi_velocity(
     intersecting_voronoi = compute_intersecting_polygons(
         individual_voronoi, measurement_area
     )
-
-    result, _ = compute_voronoi_velocity(
+    individual_velocity = compute_individual_velocity(
         traj_data=trajectory.data,
-        individual_voronoi_intersection=intersecting_voronoi,
         frame_rate=trajectory.frame_rate,
         frame_step=velocity_frame,
+    )
+
+    result = compute_voronoi_velocity(
+        traj_data=trajectory.data,
+        individual_voronoi_intersection=intersecting_voronoi,
+        individual_velocity=individual_velocity,
         measurement_area=measurement_area,
     )
     result = result.to_frame()
