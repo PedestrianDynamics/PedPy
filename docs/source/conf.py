@@ -11,7 +11,9 @@ import sys
 # sys.path.insert(0, os.path.abspath("../../pedpy/plotting"))
 # sys.path.insert(0, os.path.abspath("../../pedpy"))
 # # sys.path.insert(0, os.path.abspath("../../"))
-basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'pedpy'))
+basedir = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "pedpy")
+)
 sys.path.insert(0, basedir)
 
 # -- Project information -----------------------------------------------------
@@ -36,11 +38,20 @@ extensions = [
     "sphinx_design",
     "sphinx_copybutton",
     "sphinx.ext.viewcode",
-    'sphinx.ext.todo',
-    'sphinx.ext.napoleon',
+    "sphinx.ext.todo",
+    "sphinx.ext.napoleon",
+    "sphinxcontrib.apidoc",
 ]
 
 autodoc_typehints = "both"
+
+apidoc_module_dir = "../../pedpy"
+apidoc_output_dir = "api"
+apidoc_excluded_paths = ["tests"]
+apidoc_separate_modules = True
+apidoc_toc_file = "index"
+apidoc_extra_args = ["--implicit-namespaces", "-d 10"]
+apidoc_module_first = True
 
 # Napoleon settings
 napoleon_google_docstring = True
@@ -80,7 +91,7 @@ html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 
 html_logo = "_static/logo_text.svg"
-html_favicon = '_static/logo.svg'
+html_favicon = "_static/logo.svg"
 
 html_css_files = [
     "css/custom.css",
