@@ -52,7 +52,7 @@ def compute_frame_range_in_area(
         Only pedestrians passing the complete measurement area will be
         considered. Meaning they need to cross measurement_line and the line
         with the given offset in one go. If leaving the area between two lines
-         through the same line will be ignored.
+        through the same line will be ignored.
 
         As passing we define the frame the pedestrians enter the area and
         then moves through the complete area without leaving it. Hence,

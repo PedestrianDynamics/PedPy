@@ -50,14 +50,15 @@ def compute_voronoi_density(
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data per
-            frame needs to contain the columns: 'ID', 'frame', 'individual
-            voronoi', which holds a shapely.Polygon
+            frame needs to contain the columns: 'ID', 'frame',
+            'individual voronoi', which holds a shapely.Polygon
         measurement_area (shapely.Polygon): area for which the density is
             computed
     Returns:
-          DataFrame containing the columns: 'frame' and 'voronoi density',
-          DataFrame containing the columns: 'ID', 'frame', 'individual
-            voronoi', 'intersecting voronoi'
+        DataFrame containing the columns: 'frame' and 'voronoi density',
+        DataFrame containing the columns: 'ID', 'frame', 'individual voronoi',
+        'intersecting voronoi'.
+
     """
     df_intersecting = compute_intersecting_polygons(
         individual_voronoi_data, measurement_area
@@ -105,10 +106,11 @@ def compute_passing_density(
                 containing the columns: 'frame' (as index) and 'density'
         frames (pd.DataFrame): information for each pedestrian in the area,
                 need to contain the following columns: 'ID','frame_start',
-                'frame_end'
+                'frame_end'.
 
     Returns:
           DataFrame containing the columns: 'ID' and 'density' in 1/m
+
     """
     density = pd.DataFrame(frames["ID"], columns=["ID", "density"])
 

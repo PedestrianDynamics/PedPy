@@ -15,7 +15,9 @@ def compute_n_t(
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the framewise cumulative number of pedestrians passing the line.
 
-    Note: for each pedestrian only the first passing of the line is considered!
+    Warnings:
+        For each pedestrian only the first passing of the line is considered!
+
     Args:
         traj_data (TrajectoryData): trajectory data
         measurement_line (shapely.LineString): line for which n-t is computed
@@ -23,8 +25,8 @@ def compute_n_t(
 
     Returns:
         DataFrame containing the columns 'frame', 'Cumulative pedestrians',
-        and 'Time [s]' and
-        DataFrame containing the columns 'ID', and 'frame'
+        and 'Time [s]' and DataFrame containing the columns 'ID', and 'frame'.
+
     """
     crossing_frames = _compute_crossing_frames(traj_data, measurement_line)
     crossing_frames = (
