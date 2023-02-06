@@ -144,6 +144,21 @@ The obstacles are again `Shapely Polygons <https://shapely.readthedocs.io/en/lat
 .. figure:: images/geo_bounding_box.png
     :alt: Plot of the geometry with bounding box and obstacles.
 
+.. warning::
+    If setting up a geometry where a wall/obstacles seperates multiple walkable
+    areas make sure that the wall/obstacle has a physical depth! Otherwise it
+    will be ignored in the analysis!
+
+.. warning::
+    Make sure that the trajectories to analyze are completely inside the
+    walkable area. This can be easily be checked with:
+
+    .. code:: python
+
+        from pedpy import is_trajectory_valid
+        is_trajectory_valid(traj.data)
+
+
 Measurement
 -----------
 
