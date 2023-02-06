@@ -1,4 +1,7 @@
 """Helper functions for the analysis methods."""
+import logging
+log = logging.getLogger(__name__)
+
 import itertools
 import logging
 from collections import defaultdict
@@ -428,6 +431,7 @@ def _compute_individual_movement(
         df_movement["end"] = df_movement["points"]
         df_movement["end_frame"] = df_movement["frame"]
 
+    log.error('FOO!')
     return df_movement[
         ["ID", "frame", "start", "end", "start_frame", "end_frame"]
     ]
