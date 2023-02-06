@@ -53,7 +53,7 @@ class Geometry:
 
         Args:
             obstacle (Polygon): area which will be excluded from the
-            analysis.
+                analysis.
         """
         if obstacle.within(self.walkable_area):
             self.walkable_area = shapely.difference(

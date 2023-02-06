@@ -1,12 +1,7 @@
-.. _api:
+PedPy
+=====
 
-****************
-API reference
-****************
+.. toctree::
+   :maxdepth: 10
 
-Currently under construction
-
-.. image:: ../images/under_construction.svg
-    :alt: Under construction sign
-    :width: 75
-    :align: center
+   pedpy

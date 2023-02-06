@@ -43,8 +43,8 @@ It implements different measurement methods for density, velocity and flow.
 
     .. grid-item-card:: API reference
         :img-top: _static/api_reference.svg
-        :link: api
-        :link-type: ref
+        :link: api/index
+        :link-type: doc
         :link-alt: To the reference guide
 
         The reference guide contains a detailed description of
