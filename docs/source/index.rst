@@ -20,10 +20,11 @@ PedPy's documentation!
 *PedPy* is an open source, MIT-licensed `Python <https://www.python.org/>`__ module for pedestrian movement analysis.
 It implements different measurement methods for density, velocity and flow.
 
-.. grid:: 1 2 3 4
+.. grid:: 4
+    :gutter: 2
 
     .. grid-item-card:: Getting started
-        :img-top: images/index_getting_started.svg
+        :img-top: _static/getting_started.svg
         :link: getting_started
         :link-type: ref
         :link-alt: To the getting started guides
@@ -32,7 +33,7 @@ It implements different measurement methods for density, velocity and flow.
         introduction to *PedPy*'s main concepts.
 
     .. grid-item-card:: User guide
-        :img-top: images/index_user_guide.svg
+        :img-top: _static/user_guide.svg
         :link: user_guide
         :link-type: ref
         :link-alt: To the getting started guides
@@ -41,7 +42,7 @@ It implements different measurement methods for density, velocity and flow.
         key concepts of *PedPy* with useful background information and explanation.
 
     .. grid-item-card:: API reference
-        :img-top: images/index_api.svg
+        :img-top: _static/api_reference.svg
         :link: api
         :link-type: ref
         :link-alt: To the reference guide
@@ -50,9 +51,8 @@ It implements different measurement methods for density, velocity and flow.
         the *PedPy* API. The reference describes how the methods work and which parameters can
         be used. It assumes that you have an understanding of the key concepts.
 
-
     .. grid-item-card:: Developer guide
-        :img-top: images/index_contribute.svg
+        :img-top: _static/developer_guide.svg
         :link: development
         :link-type: ref
         :link-alt: To the development guide
