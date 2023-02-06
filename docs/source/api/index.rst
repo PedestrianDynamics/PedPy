@@ -1,13 +1,12 @@
 .. _api:
 
-=============
+****************
 API reference
-=============
+****************
 
 Currently under construction
 
-.. toctree::
-    :maxdepth: 2
-    :caption: Contents:
-
-    modules
+.. image:: ../images/under_construction.svg
+    :alt: Under construction sign
+    :width: 75
+    :align: center
