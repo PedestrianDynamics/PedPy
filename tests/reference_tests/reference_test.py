@@ -217,7 +217,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     geometry = Geometry(walkable_area=geometry_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory.data, geometry=geometry
+        traj_data=trajectory.data, geometry=geometry, use_blind_points=False
     )
     result, _ = compute_voronoi_density(
         individual_voronoi_data=individual_voronoi,
@@ -813,6 +813,7 @@ def test_profiles(
         traj_data=trajectory.data,
         geometry=geo,
         cut_off=(cut_off_radius, num_edges),
+        use_blind_points=False,
     )
     individual_speed = compute_individual_velocity(
         traj_data=trajectory.data,
