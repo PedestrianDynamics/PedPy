@@ -1,5 +1,6 @@
 """Helper functions for the analysis methods."""
 import itertools
+import logging
 from collections import defaultdict
 from typing import List, Optional, Tuple
 
@@ -11,6 +12,8 @@ from shapely import LineString, Polygon
 
 from pedpy.data.geometry import Geometry
 from pedpy.data.trajectory_data import TrajectoryData
+
+log = logging.getLogger(__name__)
 
 
 def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:
@@ -193,7 +196,7 @@ def compute_individual_voronoi_polygons(
     traj_data: pd.DataFrame,
     geometry: Geometry,
     cut_off: Optional[Tuple[float, int]] = None,
-    use_blind_points: bool = False,
+    use_blind_points: bool = True,
 ) -> pd.DataFrame:
     """Compute the individual voronoi cells for each person and frame.
 
@@ -205,7 +208,7 @@ def compute_individual_voronoi_polygons(
                 arcs, needs to be divisible by 4!
         use_blind_points (bool): adds extra 4 points outside the geometry to
                 also compute voronoi cells when less than 4 peds are in the
-                geometry
+                geometry (default: on!)
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and 'individual
@@ -218,30 +221,34 @@ def compute_individual_voronoi_polygons(
     y_diff = abs(bounds[3] - bounds[1])
     clipping_diameter = 2 * max(x_diff, y_diff)
 
-    if use_blind_points:
-        blind_points = np.array(
-            [
-                [100 * (bounds[0] - x_diff), 100 * (bounds[1] - y_diff)],
-                [100 * (bounds[2] + x_diff), 100 * (bounds[1] - y_diff)],
-                [100 * (bounds[0] - x_diff), 100 * (bounds[3] + y_diff)],
-                [100 * (bounds[2] + x_diff), 100 * (bounds[3] + y_diff)],
-            ]
-        )
+    blind_points = np.array(
+        [
+            [100 * (bounds[0] - x_diff), 100 * (bounds[1] - y_diff)],
+            [100 * (bounds[2] + x_diff), 100 * (bounds[1] - y_diff)],
+            [100 * (bounds[0] - x_diff), 100 * (bounds[3] + y_diff)],
+            [100 * (bounds[2] + x_diff), 100 * (bounds[3] + y_diff)],
+        ]
+    )
 
-    for _, peds_in_frame in traj_data.groupby(traj_data.frame):
+    for frame, peds_in_frame in traj_data.groupby(traj_data.frame):
         points = peds_in_frame[["X", "Y"]].values
-        if use_blind_points:
-            points = np.concatenate([points, blind_points])
+        points = np.concatenate([points, blind_points])
 
-        # if blind points were added, len(points) will always be > 4
-        if len(points) < 4:
+        # only skip analysis if less than 4 peds are in the frame and blind
+        # points are turned off
+        if not use_blind_points and len(points) - len(blind_points) < 4:
+            log.warning(
+                f"Not enough pedestrians (N="
+                f"{len(points) -len(blind_points)}) available to "
+                f"calculate Voronoi cells for frame = {frame}. "
+                f"Consider enable use of blind points."
+            )
             continue
 
         vor = Voronoi(points)
         voronoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
 
-        if use_blind_points:
-            voronoi_polygons = voronoi_polygons[:-4]
+        voronoi_polygons = voronoi_polygons[:-4]
         voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame", "points")]
 
         # Compute the intersecting area with the walkable area
