@@ -9,7 +9,7 @@ from aenum import Enum
 from shapely import Polygon
 
 
-class VelocityMethod(Enum):
+class VelocityMethod(Enum):  # pylint: disable=too-few-public-methods
     """Identifier for the method used to compute the mean velocity."""
 
     _init_ = "value __doc__"
@@ -153,13 +153,15 @@ def _get_grid_cells(
     max_x = bounds[2]
     max_y = bounds[3]
 
-    x = np.arange(min_x, max_x + grid_size, grid_size)
-    y = np.arange(max_y, min_y - grid_size, -grid_size)
+    x_coords = np.arange(min_x, max_x + grid_size, grid_size)
+    y_coords = np.arange(max_y, min_y - grid_size, -grid_size)
 
     grid_cells = []
-    for j in range(len(y) - 1):
-        for i in range(len(x) - 1):
-            grid_cell = shapely.box(x[i], y[j], x[i + 1], y[j + 1])
+    for j in range(len(y_coords) - 1):
+        for i in range(len(x_coords) - 1):
+            grid_cell = shapely.box(
+                x_coords[i], y_coords[j], x_coords[i + 1], y_coords[j + 1]
+            )
             grid_cells.append(grid_cell)
 
-    return np.array(grid_cells), len(y) - 1, len(x) - 1
+    return np.array(grid_cells), len(y_coords) - 1, len(x_coords) - 1

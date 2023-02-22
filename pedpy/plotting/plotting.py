@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
 
-log = logging.getLogger(__name__)
-
 from pedpy.data.geometry import Geometry
 from pedpy.data.trajectory_data import TrajectoryData
+
+log = logging.getLogger(__name__)
 
 
 def plot_geometry(
@@ -101,8 +101,8 @@ def plot_trajectories(
     if geometry is not None:
         ax = plot_geometry(geometry=geometry, ax=ax, **kwargs)
 
-    for id, ped in traj.data.groupby("ID"):
-        p = ax.plot(
+    for _, ped in traj.data.groupby("ID"):
+        plot = ax.plot(
             ped["X"],
             ped["Y"],
             alpha=traj_alpha,
@@ -112,13 +112,13 @@ def plot_trajectories(
         ax.scatter(
             ped[ped.frame == ped.frame.min()]["X"],
             ped[ped.frame == ped.frame.min()]["Y"],
-            c=p[-1].get_color(),
+            c=plot[-1].get_color(),
             marker=traj_start_marker,
         )
         ax.scatter(
             ped[ped.frame == ped.frame.max()]["X"],
             ped[ped.frame == ped.frame.max()]["Y"],
-            c=p[-1].get_color(),
+            c=plot[-1].get_color(),
             marker=traj_end_marker,
         )
 
@@ -208,7 +208,7 @@ def plot_measurement_setup(
     return ax
 
 
-def plot_voronoi_cells(
+def plot_voronoi_cells(  # pylint: disable=too-many-locals
     *,
     data: pd.DataFrame,
     geometry: Optional[Geometry] = None,

@@ -13,7 +13,7 @@ def compute_n_t(
     measurement_line: LineString,
     frame_rate: float,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute the framewise cumulative number of pedestrians passing the line.
+    """Compute the frame-wise cumulative number of pedestrians passing the line.
 
     Warnings:
         For each pedestrian only the first passing of the line is considered!
@@ -33,7 +33,7 @@ def compute_n_t(
         crossing_frames.groupby("ID")["frame"].min().sort_values().reset_index()
     )
 
-    nt = (
+    n_t = (
         crossing_frames.groupby("frame")["frame"]
         .size()
         .cumsum()
@@ -44,20 +44,20 @@ def compute_n_t(
     # with the previous valid value (fillna('ffill')). When this is done only
     # the frame at the beginning where no one has passed the line yet area
     # missing (fillna(0)).
-    nt = (
-        nt.reindex(
+    n_t = (
+        n_t.reindex(
             list(range(traj_data.frame.min(), traj_data.frame.max() + 1))
         )
         .fillna(method="ffill")
         .fillna(0)
     )
 
-    nt = nt.to_frame()
-    nt["Cumulative pedestrians"] = nt["Cumulative pedestrians"].astype(int)
+    n_t = n_t.to_frame()
+    n_t["Cumulative pedestrians"] = n_t["Cumulative pedestrians"].astype(int)
 
     # frame number is the index
-    nt["Time [s]"] = nt.index / frame_rate
-    return nt, crossing_frames
+    n_t["Time [s]"] = n_t.index / frame_rate
+    return n_t, crossing_frames
 
 
 def compute_flow(
@@ -103,10 +103,10 @@ def compute_flow(
 
         if passed_num_peds != num_passed_before:
             num_passing_peds = passed_num_peds - num_passed_before
-            t = passed_frame - passed_frame_before
+            time_range = passed_frame - passed_frame_before
 
-            flow_rate = num_passing_peds / t * frame_rate
-            v = crossing_speeds[
+            flow_rate = num_passing_peds / time_range * frame_rate
+            velocity = crossing_speeds[
                 crossing_speeds.frame.between(
                     passed_frame_before, passed_frame, inclusive="both"
                 )
@@ -116,7 +116,7 @@ def compute_flow(
             passed_frame_before = passed_frame
 
             rows.append(
-                {"Flow rate(1/s)": flow_rate, "Mean velocity(m/s)": v},
+                {"Flow rate(1/s)": flow_rate, "Mean velocity(m/s)": velocity},
             )
 
     return pd.DataFrame(rows)

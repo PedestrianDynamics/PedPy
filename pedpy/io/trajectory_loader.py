@@ -57,7 +57,7 @@ def _load_trajectory_data(
 
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
-        default_unit (TrajectoryUnit): unit in which the coordinates are stored
+        unit (TrajectoryUnit): unit in which the coordinates are stored
             in the file, None if unit should be parsed from the file
 
     Returns:
@@ -96,17 +96,17 @@ def _load_trajectory_data(
             data["Z"] = data["Z"].div(100)
 
         return data
-    except pd.errors.ParserError:
+    except Exception as exc:
         raise ValueError(
             "The given trajectory file could not be parsed. It should "
             "contain at least 5 columns: ID, frame, X, Y, Z. The values "
             "should be separated by any white space. Comment line may start "
             "with a '#' and will be ignored. "
             f"Please check your trajectory file: {trajectory_file}."
-        )
+        ) from exc
 
 
-def _load_trajectory_meta_data(
+def _load_trajectory_meta_data(  # pylint: disable=too-many-branches
     *,
     trajectory_file: pathlib.Path,
     default_frame_rate: Optional[float],
@@ -115,7 +115,7 @@ def _load_trajectory_meta_data(
     parsed_frame_rate: Any = None
     parsed_unit: Any = None
 
-    with open(trajectory_file, "r") as file_content:
+    with open(trajectory_file, "r", encoding="utf-8") as file_content:
         for line in file_content:
             if not line.startswith("#"):
                 break
@@ -186,4 +186,4 @@ def _load_trajectory_meta_data(
                 f"{default_unit} != {parsed_unit}"
             )
 
-    return (frame_rate, unit)
+    return frame_rate, unit
