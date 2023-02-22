@@ -96,7 +96,7 @@ def _load_trajectory_data(
             data["Z"] = data["Z"].div(100)
 
         return data
-    except Exception as exc:
+    except pd.errors.ParserError as exc:
         raise ValueError(
             "The given trajectory file could not be parsed. It should "
             "contain at least 5 columns: ID, frame, X, Y, Z. The values "
