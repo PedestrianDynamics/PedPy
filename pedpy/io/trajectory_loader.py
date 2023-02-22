@@ -64,8 +64,6 @@ def _load_trajectory_data(
         The trajectory data as data frame, the coordinates are converted to
         meter (m).
     """
-    x = 0
-
     try:
         data = pd.read_csv(
             trajectory_file,
