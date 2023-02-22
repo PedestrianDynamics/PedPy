@@ -1,6 +1,20 @@
-![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
 
-<img src="docs/source/_static/logo_text.svg" height="100px" alt="PedPy Logo" style="float:right;">
+<div align="center">
+    <img src="docs/source/_static/logo_text.svg" height="100px" alt="PedPy Logo">
+</div>
+
+-----------------
+[![PyPI Latest Release](https://img.shields.io/pypi/v/pedpy.svg)](https://pypi.org/project/pedpy/)
+[![Nightly Release](https://img.shields.io/badge/nightly-install-9cf)](https://test.pypi.org/project/PedPy/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7386931.svg)](https://doi.org/10.5281/zenodo.7386931)
+[![License](https://img.shields.io/pypi/l/pedpy.svg)](https://github.com/PedestrianDynamics/pedpy/blob/main/LICENSE)
+![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+[![Documentation Status](https://readthedocs.org/projects/pedpy/badge/?version=latest)](http://pedpy.readthedocs.io/?badge=latest)
+[![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu)
+
+# PedPy: Analysis of pedestrian dynamics based on trajectory files.  
 
 `PedPy` is a python module for pedestrian movement analysis. 
 It implements different measurement methods for density, velocity and flow.
