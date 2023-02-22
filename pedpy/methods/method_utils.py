@@ -310,7 +310,7 @@ def compute_intersecting_polygons(
     return df_intersection
 
 
-def _clip_voronoi_polygons(
+def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
     voronoi: Voronoi, diameter: float
 ) -> List[shapely.Polygon]:
     """Generate Polygons from the Voronoi diagram.

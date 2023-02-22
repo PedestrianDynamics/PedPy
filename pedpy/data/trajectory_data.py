@@ -10,7 +10,7 @@ import shapely
 from aenum import Enum
 
 
-class TrajectoryUnit(Enum):
+class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
     """Identifier of the unit of the trajectory coordinates."""
 
     _init_ = "value __doc__"
@@ -33,7 +33,7 @@ class TrajectoryData:
 
         frame_rate (float): frame rate of the trajectory file
 
-        file (pothlib.Path): file from which is trajectories was read
+        file (pathlib.Path): file from which is trajectories was read
 
     """
 
