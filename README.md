@@ -6,6 +6,7 @@
 -----------------
 [![PyPI Latest Release](https://img.shields.io/pypi/v/pedpy.svg)](https://pypi.org/project/pedpy/)
 [![Nightly Release](https://img.shields.io/badge/nightly-install-9cf)](https://test.pypi.org/project/PedPy/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pedpy)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7386931.svg)](https://doi.org/10.5281/zenodo.7386931)
 [![License](https://img.shields.io/pypi/l/pedpy.svg)](https://github.com/PedestrianDynamics/pedpy/blob/main/LICENSE)
 ![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
