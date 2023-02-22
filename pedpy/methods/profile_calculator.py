@@ -84,7 +84,7 @@ def compute_profiles(
 
 
 def _compute_arithmetic_velocity(
-    frame_data: npt.NDArray[np.float64],
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
     """Compute the arithmetic mean velocity per grid cell.
@@ -112,7 +112,7 @@ def _compute_arithmetic_velocity(
 
 
 def _compute_voronoi_velocity(
-    frame_data: npt.NDArray[np.float64],
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
 ) -> npt.NDArray[np.float64]:
