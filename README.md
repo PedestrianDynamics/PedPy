@@ -1,6 +1,6 @@
 ![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
 
-# PedPy
+<img src="docs/source/_static/logo_text.svg" height="100px" alt="PedPy Logo" style="float:right;">
 
 `PedPy` is a python module for pedestrian movement analysis. 
 It implements different measurement methods for density, velocity and flow.
@@ -33,7 +33,7 @@ You can either download the notebooks and [demo files](demos/) from the GitHub r
 git clone https://github.com/PedestrianDynamics/pedpy.git
 ```
 
-For using the either of the notebook some additional libraries need to be installed, mainly for plotting.
+For using either of the notebook some additional libraries need to be installed, mainly for plotting.
 You can install the needed libraries with:
 
 ```bash
@@ -41,6 +41,7 @@ python3 -m pip install jupyter matplotlib
 ```
 
 Afterwards you can start a jupyter server with:
+
 ```bash
 jupyter notebook
 ```
