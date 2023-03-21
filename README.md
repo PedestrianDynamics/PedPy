@@ -24,6 +24,7 @@ It implements different measurement methods for density, velocity and flow.
 This repo is a port from the original `JPSreport` to a Python implementation, and will provide the same functionalities.
 
 ## Getting started
+
 ### Setup Python
 For setting up your Python Environment a Python version >= 3.8 is recommended (our code is tested with 3.8 and 3.10).
 To avoid conflicts with other libraries/applications the usage of virtual environments is recommended, see [Python Documentation](https://docs.python.org/3/library/venv.html) for more detail.
@@ -41,10 +42,23 @@ python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-i
 
 ### Usage
 
-The general usage of `PedPy` is demonstrated in the [usage notebook](usage.ipynb).
-The [JPSreport notebook](jpsreport.ipynb) shows how to use `PedPy` to compute the same results as in the different JPSreport methods.
+The general usage of `PedPy` is demonstrated in the [usage notebook](notebooks/usage.ipynb).
+The [JPSreport notebook](notebooks/jpsreport.ipynb) shows how to use `PedPy` to compute the same results as in the different JPSreport methods, e.g., computing the fundamental diagram.
 
-You can either download the notebooks and [demo files](demos/) from the GitHub repository or clone the whole repository with:
+#### Interactive online session
+
+If you want to try out `PedPy` for the first time, you can find an interactive online environments for both notebooks here:
+
+- Usage notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fusage.ipynb)
+- JPSreport notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fjpsreport.ipynb)
+
+**Note:** 
+The execution might be slower compared to a local usage, as only limited resources are available.
+It is possible to also upload different trajectory files and run the analysis completely online, but this might not be advisable for long computations.
+
+#### Local usage of the notebooks
+
+For local usage of the notebooks, you can either download the notebooks and [demo files](demos/) from the GitHub repository or clone the whole repository with:
 ```bash 
 git clone https://github.com/PedestrianDynamics/pedpy.git
 ```
