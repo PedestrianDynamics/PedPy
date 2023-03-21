@@ -1,11 +1,11 @@
-aenum==3.1.5
+aenum==3.1.11
 black==21.12b0
 numpy==1.23.0
 pandas==1.5.1
 pylint==2.16.2
 pytest==6.2.5
 pytest-mock==3.7.0
-Shapely==2.0.0
+Shapely==2.0.1
 click==8.0.2
 build==0.7.0
 scipy==1.9.3
