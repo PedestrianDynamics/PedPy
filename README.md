@@ -41,8 +41,8 @@ python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-i
 
 ### Usage
 
-The general usage of `PedPy` is demonstrated in the [usage notebook](usage.ipynb).
-The [JPSreport notebook](jpsreport.ipynb) shows how to use `PedPy` to compute the same results as in the different JPSreport methods.
+The general usage of `PedPy` is demonstrated in the [usage notebook](notebooks/usage.ipynb).
+The [JPSreport notebook](notebooks/jpsreport.ipynb) shows how to use `PedPy` to compute the same results as in the different JPSreport methods.
 
 You can either download the notebooks and [demo files](demos/) from the GitHub repository or clone the whole repository with:
 ```bash 
