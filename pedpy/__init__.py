@@ -3,6 +3,7 @@
 from . import _version
 from .data.geometry import Geometry
 from .data.trajectory_data import TrajectoryData, TrajectoryUnit
+from .defintitons import VelocityBorderMethod
 from .io.trajectory_loader import load_trajectory
 from .methods.density_calculator import (
     compute_classic_density,
