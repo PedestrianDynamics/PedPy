@@ -425,6 +425,13 @@ def _compute_individual_movement(
             bidirectional=bidirectional,
         )
 
+    if border_method == VelocityBorderMethod.ADAPTIVE:
+        return _compute_movement_adaptive(
+            traj_data=traj_data,
+            frame_step=frame_step,
+            bidirectional=bidirectional,
+        )
+
     raise NotImplementedError("Not implemented yet.")
 
 
@@ -506,6 +513,86 @@ def _compute_movement_exclude(
         df_movement["end_frame"] = df_movement["frame"]
 
     return df_movement[
+        ["ID", "frame", "start", "end", "start_frame", "end_frame"]
+    ].dropna()
+
+
+def _compute_movement_adaptive(
+    *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
+):
+    """
+    Compute the individual movement, with an adaptive windows at the borders.
+
+    The movement is computed for the interval [frame - frame_step: frame +
+    frame_step], if one of the boundaries is not contained in the trajectory
+    frame use the maximum available number of frames on this side and the same
+    number of frames also on the other side.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        frame_step (int): how many frames back and forwards are used to compute
+            the movement.
+        bidirectional (bool): if True also the prev. frame_step points will
+            be used to determine the movement
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame', 'start', 'end',
+        'start_frame, and 'end_frame'. Where 'start'/'end' are the points
+        where the movement start/ends, and 'start_frame'/'end_frame' are the
+        corresponding frames.
+    """
+    df_movement = traj_data.copy(deep=True)
+
+    frame_infos = df_movement.groupby(by="ID").agg(
+        frame_min=("frame", np.min), frame_max=("frame", np.max)
+    )
+    df_movement = df_movement.merge(frame_infos, on="ID")
+
+    df_movement["distance_min"] = np.abs(
+        df_movement.frame - df_movement["frame_min"]
+    )
+    df_movement["distance_max"] = np.abs(
+        df_movement.frame - df_movement["frame_max"]
+    )
+    df_movement["window_size"] = np.minimum(
+        frame_step,
+        np.minimum(
+            df_movement.distance_min.values, df_movement.distance_max.values
+        ),
+    )
+    df_movement["start_frame"] = df_movement.frame - df_movement.window_size
+    df_movement["end_frame"] = df_movement.frame + df_movement.window_size
+
+    start = (
+        pd.merge(
+            df_movement[["ID", "frame", "start_frame"]],
+            df_movement[["ID", "frame", "points"]],
+            left_on=["ID", "start_frame"],
+            right_on=["ID", "frame"],
+            suffixes=("", "_drop"),
+        )
+        .drop("frame_drop", axis=1)
+        .rename({"points": "start"}, axis=1)
+    )
+
+    if bidirectional:
+        end = (
+            pd.merge(
+                df_movement[["ID", "frame", "end_frame"]],
+                df_movement[["ID", "frame", "points"]],
+                left_on=["ID", "end_frame"],
+                right_on=["ID", "frame"],
+                suffixes=("", "_drop"),
+            )
+            .drop("frame_drop", axis=1)
+            .rename({"points": "end"}, axis=1)
+        )
+    else:
+        df_movement["end"] = df_movement["points"]
+        df_movement["end_frame"] = df_movement["frame"]
+        end = df_movement[["ID", "frame", "end", "end_frame"]].copy(deep=True)
+
+    return pd.merge(start, end, on=["ID", "frame"])[
         ["ID", "frame", "start", "end", "start_frame", "end_frame"]
     ].dropna()
 
