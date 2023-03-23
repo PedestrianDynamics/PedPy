@@ -478,7 +478,7 @@ def test_voronoi_velocity(
     assert np.isclose(
         result[result.index.isin(reference_result.index)]["voronoi speed"],
         reference_result["voronoi speed"],
-        atol=TOLERANCE * 10,
+        atol=TOLERANCE,
     ).all()
     assert (
         result.loc[~result.index.isin(reference_result.index)].values == 0
