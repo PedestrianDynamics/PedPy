@@ -75,7 +75,7 @@ def compute_profiles(
                 frame_data, grid_intersections_area
             )
         else:
-            raise ValueError("velocity method not accepted")
+            raise NotImplementedError("velocity method not accepted")
 
         density_profiles.append(density.reshape(rows, cols))
         velocity_profiles.append(velocity.reshape(rows, cols))

@@ -1,10 +1,4 @@
 """Helper functions for the analysis methods."""
-import logging
-
-from pedpy.defintitons import VelocityBorderMethod
-
-log = logging.getLogger(__name__)
-
 import itertools
 import logging
 from collections import defaultdict
@@ -18,6 +12,7 @@ from shapely import LineString, Polygon
 
 from pedpy.data.geometry import Geometry
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.defintitons import VelocityBorderMethod
 
 log = logging.getLogger(__name__)
 
@@ -98,9 +93,11 @@ def compute_frame_range_in_area(
     inside_range = _get_continuous_parts_in_area(traj_data, measurement_area)
 
     crossing_frames_first = _compute_crossing_frames(
-        traj_data, measurement_line
+        traj_data=traj_data, measurement_line=measurement_line
     )
-    crossing_frames_second = _compute_crossing_frames(traj_data, second_line)
+    crossing_frames_second = _compute_crossing_frames(
+        traj_data=traj_data, measurement_line=second_line
+    )
 
     start_crossed_1 = _check_crossing_in_frame_range(
         inside_range, crossing_frames_first, "frame_start", "start_crossed_1"
@@ -444,7 +441,27 @@ def _compute_individual_movement(
 
 def _compute_movement_single_sided(
     *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
-):
+) -> pd.DataFrame:
+    """Compute the individual movement when not enough frames use only one side.
+
+    The movement is computed for the interval [frame - frame_step: frame +
+    frame_step], if one of the boundaries is not contained in the trajectory
+    frame will be used as boundary. Hence, the intervals become [frame,
+    frame + frame_step], or [frame - frame_step, frame] respectively.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        frame_step (int): how many frames back and forwards are used to compute
+            the movement.
+        bidirectional (bool): if True also the prev. frame_step points will
+            be used to determine the movement
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame', 'start', 'end',
+        'start_frame, and 'end_frame'. Where 'start'/'end' are the points
+        where the movement start/ends, and 'start_frame'/'end_frame' are the
+        corresponding frames.
+    """
     df_movement = traj_data.copy(deep=True)
 
     df_movement["start"] = (
@@ -480,9 +497,8 @@ def _compute_movement_single_sided(
 
 def _compute_movement_exclude(
     *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
-):
-    """
-    Compute the individual movement, exclude parts where not enough frames.
+) -> pd.DataFrame:
+    """Compute the individual movement, exclude parts where not enough frames.
 
     The movement is computed for the interval [frame - frame_step: frame +
     frame_step], if one of the boundaries is not contained in the trajectory
@@ -526,9 +542,8 @@ def _compute_movement_exclude(
 
 def _compute_movement_adaptive(
     *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
-):
-    """
-    Compute the individual movement, with an adaptive windows at the borders.
+) -> pd.DataFrame:
+    """Compute the individual movement, with an adaptive windows at the borders.
 
     The movement is computed for the interval [frame - frame_step: frame +
     frame_step], if one of the boundaries is not contained in the trajectory
@@ -606,9 +621,8 @@ def _compute_movement_adaptive(
 
 def _compute_movement_max_range(
     *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
-):
-    """
-    Compute the individual movement, with the maximum frame range at borders.
+) -> pd.DataFrame:
+    """Compute the individual movement, with the maximum frame range at borders.
 
     The movement is computed for the interval [frame - frame_step: frame +
     frame_step], if one of the boundaries is not contained in the trajectory
@@ -628,7 +642,6 @@ def _compute_movement_max_range(
         where the movement start/ends, and 'start_frame'/'end_frame' are the
         corresponding frames.
     """
-
     df_movement = traj_data.copy(deep=True)
 
     frame_infos = df_movement.groupby(by="ID").agg(
@@ -678,7 +691,7 @@ def _compute_movement_max_range(
 
 
 def _compute_crossing_frames(
-    traj_data: pd.DataFrame, measurement_line: LineString
+    *, traj_data: pd.DataFrame, measurement_line: LineString
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
@@ -698,17 +711,18 @@ def _compute_crossing_frames(
         DataFrame containing the columns: 'ID', 'frame', where 'frame' are
         the frames where the measurement line is crossed.
     """
+    df_movement = _compute_individual_movement(
+        traj_data=traj_data,
+        frame_step=1,
+        border_method=VelocityBorderMethod["EXCLUDE"],
+        bidirectional=False,
+    )
+
     # stack is used to get the coordinates in the correct order, as pygeos
     # does not support creating linestring from points directly. The
     # resulting array looks as follows:
     # [[[x_0_start, y_0_start], [x_0_end, y_0_end]],
     #  [[x_1_start, y_1_start], [x_1_end, y_1_end]], ... ]
-    df_movement = _compute_individual_movement(
-        traj_data=traj_data,
-        frame_step=1,
-        border_method=VelocityBorderMethod.EXCLUDE,
-        bidirectional=False,
-    )
     df_movement["movement"] = shapely.linestrings(
         np.stack(
             [
