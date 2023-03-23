@@ -1,6 +1,8 @@
 """Helper functions for the analysis methods."""
 import logging
 
+from pedpy.defintitons import VelocityBorderMethod
+
 log = logging.getLogger(__name__)
 
 import itertools
@@ -382,7 +384,11 @@ def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
 
 
 def _compute_individual_movement(
-    traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
+    *,
+    traj_data: pd.DataFrame,
+    frame_step: int,
+    border_method: VelocityBorderMethod,
+    bidirectional: bool = True,
 ) -> pd.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
@@ -395,6 +401,8 @@ def _compute_individual_movement(
         traj_data (pd.DataFrame): trajectory data
         frame_step (int): how many frames back and forwards are used to compute
             the movement.
+        border_method (VelocityBorderMethod): how to deal with edge cases,
+            when not enough frames are on one side
         bidirectional (bool): if True also the prev. frame_step points will
             be used to determine the movement
 
@@ -404,6 +412,18 @@ def _compute_individual_movement(
         where the movement start/ends, and 'start_frame'/'end_frame' are the
         corresponding frames.
     """
+    if border_method == VelocityBorderMethod.SINGLE_SIDED:
+        return _compute_movement_single_sided(
+            traj_data=traj_data,
+            frame_step=frame_step,
+            bidirectional=bidirectional,
+        )
+    raise NotImplementedError("Not implemented yet.")
+
+
+def _compute_movement_single_sided(
+    traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
+):
     df_movement = traj_data.copy(deep=True)
 
     df_movement["start"] = (
@@ -463,7 +483,12 @@ def _compute_crossing_frames(
     # resulting array looks as follows:
     # [[[x_0_start, y_0_start], [x_0_end, y_0_end]],
     #  [[x_1_start, y_1_start], [x_1_end, y_1_end]], ... ]
-    df_movement = _compute_individual_movement(traj_data, 1, False)
+    df_movement = _compute_individual_movement(
+        traj_data=traj_data,
+        frame_step=1,
+        border_method=VelocityBorderMethod.EXCLUDE,
+        bidirectional=False,
+    )
     df_movement["movement"] = shapely.linestrings(
         np.stack(
             [

@@ -8,6 +8,7 @@ import pandas as pd
 import shapely
 from shapely import Polygon
 
+from pedpy.defintitons import VelocityBorderMethod
 from pedpy.methods.method_utils import _compute_individual_movement
 
 
@@ -16,10 +17,21 @@ def compute_individual_velocity(
     traj_data: pd.DataFrame,
     frame_rate: float,
     frame_step: int,
+    border_method: VelocityBorderMethod = VelocityBorderMethod.SINGLE_SIDED,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     x_y_components: bool = True,
 ) -> pd.DataFrame:
     """Compute the individual velocity for each pedestrian.
+
+    For computing the velocity at a certain a frame range is used to smooth the
+    results:
+                  frame
+        x--x--x--x--X--x--x-x--x---x
+           |________|_______|
+        frame_step    frame_step
+
+    When not enough frames on both sides are available, the given
+    border_method decides how it is dealt with.
 
     Note: when using a movement direction the velocity may be negative!
 
@@ -28,6 +40,8 @@ def compute_individual_velocity(
         frame_rate (float): frame rate of the trajectory
         frame_step (int): gives the size of time interval for calculating the
             velocity.
+        border_method (VelocityBorderMethod): how to deal with edge cases,
+            when not enough frames are on one side
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
@@ -37,7 +51,9 @@ def compute_individual_velocity(
         'v_x' and 'v_y' with the speed components in x and y direction if
         x_y_components is True
     """
-    df_movement = _compute_individual_movement(traj_data, frame_step)
+    df_movement = _compute_individual_movement(
+        traj_data=traj_data, frame_step=frame_step, border_method=border_method
+    )
     df_speed = _compute_individual_speed(
         movement_data=df_movement,
         frame_rate=frame_rate,
