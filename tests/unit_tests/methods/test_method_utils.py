@@ -29,7 +29,9 @@ def test_indidividual_movment_only_contains_data_from_ped(
         ped_distance=1.0,
     )
 
-    movement = _compute_individual_movement(traj_data=traj_data, frame_step=5, border_method=border_method)
+    movement = _compute_individual_movement(
+        traj_data=traj_data, frame_step=5, border_method=border_method
+    )
 
     for ped_id, ped_data in movement.groupby("ID"):
         ped_traj = traj_data.groupby("ID").get_group(ped_id)

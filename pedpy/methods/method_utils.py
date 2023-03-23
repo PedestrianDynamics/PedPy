@@ -393,9 +393,8 @@ def _compute_individual_movement(
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
-    frame_step], if one of the boundaries is not contained in the trajectory
-    frame will be used as boundary. Hence, the intervals become [frame,
-    frame + frame_step], or [frame - frame_step, frame] respectively.
+    frame_step], depending on the border_method the intervals may change, if
+    not enough frames are available on both sides.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
@@ -418,11 +417,19 @@ def _compute_individual_movement(
             frame_step=frame_step,
             bidirectional=bidirectional,
         )
+
+    if border_method == VelocityBorderMethod.EXCLUDE:
+        return _compute_movement_exclude(
+            traj_data=traj_data,
+            frame_step=frame_step,
+            bidirectional=bidirectional,
+        )
+
     raise NotImplementedError("Not implemented yet.")
 
 
 def _compute_movement_single_sided(
-    traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
+    *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
 ):
     df_movement = traj_data.copy(deep=True)
 
@@ -455,6 +462,52 @@ def _compute_movement_single_sided(
     return df_movement[
         ["ID", "frame", "start", "end", "start_frame", "end_frame"]
     ]
+
+
+def _compute_movement_exclude(
+    *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
+):
+    """
+    Compute the individual movement, exclude parts where not enough frames.
+
+    The movement is computed for the interval [frame - frame_step: frame +
+    frame_step], if one of the boundaries is not contained in the trajectory
+    frame these points will not be considered.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        frame_step (int): how many frames back and forwards are used to compute
+            the movement.
+        bidirectional (bool): if True also the prev. frame_step points will
+            be used to determine the movement
+
+    Returns:
+        DataFrame containing the columns: 'ID', 'frame', 'start', 'end',
+        'start_frame, and 'end_frame'. Where 'start'/'end' are the points
+        where the movement start/ends, and 'start_frame'/'end_frame' are the
+        corresponding frames.
+    """
+    df_movement = traj_data.copy(deep=True)
+
+    df_movement["start"] = df_movement.groupby("ID")["points"].shift(frame_step)
+    df_movement["start_frame"] = df_movement.groupby("ID")["frame"].shift(
+        frame_step
+    )
+
+    if bidirectional:
+        df_movement["end"] = df_movement.groupby("ID")["points"].shift(
+            -frame_step
+        )
+        df_movement["end_frame"] = df_movement.groupby("ID")["frame"].shift(
+            -frame_step
+        )
+    else:
+        df_movement["end"] = df_movement["points"]
+        df_movement["end_frame"] = df_movement["frame"]
+
+    return df_movement[
+        ["ID", "frame", "start", "end", "start_frame", "end_frame"]
+    ].dropna()
 
 
 def _compute_crossing_frames(
