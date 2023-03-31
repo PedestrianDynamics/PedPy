@@ -211,8 +211,8 @@ def compute_individual_voronoi_polygons(
                 geometry (default: on!)
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame' and 'individual
-        voronoi'.
+        DataFrame containing the columns: 'ID', 'frame','individual voronoi',
+        and 'individual density' in 1/m^2.
     """
     dfs = []
 
@@ -285,7 +285,12 @@ def compute_individual_voronoi_polygons(
 
         dfs.append(voronoi_in_frame)
 
-    return pd.concat(dfs)[["ID", "frame", "individual voronoi"]]
+    result = pd.concat(dfs)[["ID", "frame", "individual voronoi"]]
+    result["individual density"] = 1.0 / shapely.area(
+        result["individual voronoi"]
+    )
+
+    return result
 
 
 def compute_intersecting_polygons(
