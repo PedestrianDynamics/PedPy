@@ -89,32 +89,51 @@ Structure of the code
 Tests
 -----
 
-unit tests
+We use unit and reference tests in our continuous integration (CI) process to ensure that our code is of high quality and that it behaves as expected.
 
-reference tests with JPSreport
+Unit tests are used to test small, isolated parts of our code, such as individual functions or methods.
+By testing each part of the code in isolation, we can quickly identify any issues or bugs in that specific area of the codebase.
+This helps us catch issues early on, before they can propagate to other parts of the code and become more difficult to fix.
+Currently we do not cover everything with unit-tests, this will hopefully change at some point.
 
-notebooks
+Reference tests are used to test the behavior of our code against a known set of inputs and expected outputs.
+By comparing the actual output of our code against the expected output, we can quickly identify any issues or bugs that might have been introduced during development.
+As we see *PedPy* as successor of *JPSreport* we want to ensure, that we get the same results as with *JPSreport*.
+Hence, we use results from *JPSreport* in different scenarios as reference.
+
+As we do not only want to ensure that the results are correct, but also want to provide working examples for new user.
+Thus, we check whether all notebooks in our repository work with the latest changes.
+This ensures, that users can use these notebooks as reference when setting up their analyzes.
+
+We use *GitHub Actions* to automate our testing, every Pull Request will be automatically trigger the workflow which then runs the tests.
+Only Pull Request with succeeding pipelines will be allowed to be merged into the ``main`` branch.
 
 
 Formatting/Linting
 ------------------
 
+Except from the functional requirements (see :ref:`Tests`) for changes in the code base, we also have some non-functional requirements.
+These will also be checked in our CI process for each Pull Request.
 
-- name: Check format
-run: |
-  ${{github.workspace}}/scripts/check-format.sh
+1. **Code formatting:**
+To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``black``.
+We provide a helper script (``scripts/format.sh``) that will format every file in the correct manner.
+To test it locally you can use ``scripts/check-format.sh``.
 
-- name: Check docstring style
-run: |
-  pydocstyle
+2. **Docstring style:**
+Make sure to check whether every of your new functions has a docstring.
+We decided to use Google-docstring style to be used in our project.
+You can use `pydocstyle` to check if everything is correct locally.
 
-- name: Check typing with mypy
-run: |
-  python3 -m mypy --config-file mypy.ini pedpy/
+3. **Type Hints:**
+We decided that every function, parameter, return value, etc. should be annotated with type hints, as they make it clearer for users what to expect and what is needed.
+For ensuring that no type hint is forgotten we use ``MyPy``.
+This can be checked locally via ``python3 -m mypy --config-file mypy.ini pedpy/``
 
-- name: Linting with pylint
-run: |
-  python3 -m pylint --recursive=y --extension-pkg-whitelist=scipy pedpy pedpy/data pedpy/io pedpy/methods pedpy/plotting
+4. **Linting:**
+Linting in Python is an important process that helps ensure that our code is consistent and adheres to best practices.
+Linting tools like ``pylint`` analyze our code for potential errors, bad practices, and code smells.
+This helps us catch issues early on and prevents them from becoming bigger problems down the line.
 
 
 Update documentation
