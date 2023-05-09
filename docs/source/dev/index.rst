@@ -4,25 +4,25 @@
 Development
 ===========
 
-Whether you're a seasoned developer or new to Python, there are many ways you can contribute to PedPy.
+Whether you're a seasoned developer or new to Python, there are many ways you can contribute to *PedPy*.
 If you're interested in improving the library's functionality, we encourage you to get involved in the development process.
 Our code base is open source and available on GitHub, so you can easily contribute by submitting pull requests or reporting issues and bugs.
 We also welcome feedback on new features or enhancements that you think would be useful.
 
-If you're not comfortable contributing to the code base just yet, you can still help us by reporting any errors or bugs you encounter while using PedPy.
+If you're not comfortable contributing to the code base just yet, you can still help us by reporting any errors or bugs you encounter while using *PedPy*.
 Your feedback is incredibly valuable and helps us to improve the library for everyone.
 
 We're committed to creating a supportive and inclusive community that values collaboration and sharing knowledge.
-So don't hesitate to reach out with any questions or ideas you may have. We look forward to seeing what you can accomplish with PedPy!
+So don't hesitate to reach out with any questions or ideas you may have. We look forward to seeing what you can accomplish with *PedPy*!
 
 Reporting bugs
 ==============
-At PedPy, we value feedback from our users, and we encourage you to report any issues or bugs that you encounter while using the library.
+At *PedPy*, we value feedback from our users, and we encourage you to report any issues or bugs that you encounter while using the library.
 You can do this by visiting our `GitHub issues page <https://github.com/PedestrianDynamics/PedPy/issues>`_.
 From there, you can submit a new issue, provide a detailed description of the problem, and even include code snippets or screenshots to help us better understand the issue.
 
-By reporting bugs and issues, you're helping us to improve PedPy and make it more robust and reliable for everyone.
-So don't hesitate to speak up - we appreciate your input and look forward to working with you to make PedPy the best it can be!
+By reporting bugs and issues, you're helping us to improve *PedPy* and make it more robust and reliable for everyone.
+So don't hesitate to speak up - we appreciate your input and look forward to working with you to make *PedPy* the best it can be!
 
 Enhancement requests
 ====================
@@ -31,9 +31,9 @@ You can submit feature requests on our `GitHub issues page <https://github.com/P
 When submitting a feature request, please provide a clear and detailed description of the feature you would like to see added, along with any relevant use cases or examples.
 
 We can't promise to implement every feature request, but we do carefully consider all requests and prioritize them based on their potential impact on the community and feasibility.
-Your input is valuable to us and helps us to ensure that PedPy is meeting the needs of our users.
+Your input is valuable to us and helps us to ensure that *PedPy* is meeting the needs of our users.
 
-So if you have a great idea for a new feature or enhancement, don't hesitate to share it with us. We're excited to hear from you and look forward to continuing to improve PedPy together!
+So if you have a great idea for a new feature or enhancement, don't hesitate to share it with us. We're excited to hear from you and look forward to continuing to improve *PedPy* together!
 
 Contribute to the code
 ======================
@@ -46,6 +46,45 @@ Setting up development environment
 
 Structure of the code
 ---------------------
+
+*PedPy* is organizied in the following manner:
+
+::
+
+    PedPy
+    ├── docs
+    ├── notebooks
+    ├── pedpy
+    │   ├── data
+    │   ├── io
+    │   ├── methods
+    │   └── plotting
+    ├── scripts
+    └── tests
+
+
+* ``PedPy`` is the folder we get when we issue a ``git pull/clone`` command.
+
+* ``docs`` contains the everything related to our online documentation.
+
+* ``notebooks`` holds Jupyter notebooks show casing how *PedPy* can be used.
+
+* ``pedpy`` is the actual Python package directory, where our Python source files reside.
+
+  * ``data`` contains all files related to internally used data structures.
+
+  * ``io`` holds files responsible for reading and writing files into internal structures.
+
+  * ``methods`` the place where the actual analyzing methods reside.
+    The underlying Python files are structured in their compute domain, i.e., density, velocity, flow, or profiles.
+    Some function may be used in different situations, these should be placed in ``method_utils.py``.
+
+  * ``plotting`` contains everything which will help users to plot some of our results.
+
+* ``scripts`` the place for some handy scripts.
+
+* ``tests`` is the directory, where all our tests reside.
+
 
 Tests
 -----
