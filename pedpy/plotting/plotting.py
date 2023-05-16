@@ -26,7 +26,7 @@ def plot_geometry(
         geometry (Geometry): Geometry object to plot
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        line_color (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
 

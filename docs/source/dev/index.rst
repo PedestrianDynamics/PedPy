@@ -63,7 +63,7 @@ First navigate to our GitHub repository at https://github.com/PedestrianDynamics
 
 .. image:: ../images/github_fork_01.png
 
-Afterwards you specify where you to work, this is usually just your GitHub Account.
+Afterwards you specify the location of the fork, this is usually just your GitHub Account.
 
 .. image:: ../images/github_fork_02.png
 
