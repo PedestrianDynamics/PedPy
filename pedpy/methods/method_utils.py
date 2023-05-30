@@ -89,24 +89,40 @@ def compute_frame_range_in_area(
         ]
     )
 
-    inside_range = _get_continuous_parts_in_area(traj_data, measurement_area)
+    inside_range = _get_continuous_parts_in_area(
+        traj_data=traj_data, measurement_area=measurement_area
+    )
 
     crossing_frames_first = _compute_crossing_frames(
-        traj_data, measurement_line
+        traj_data=traj_data, measurement_line=measurement_line
     )
-    crossing_frames_second = _compute_crossing_frames(traj_data, second_line)
+    crossing_frames_second = _compute_crossing_frames(
+        traj_data=traj_data, measurement_line=second_line
+    )
 
     start_crossed_1 = _check_crossing_in_frame_range(
-        inside_range, crossing_frames_first, "frame_start", "start_crossed_1"
+        inside_range=inside_range,
+        crossing_frames=crossing_frames_first,
+        check_column="frame_start",
+        column_name="start_crossed_1",
     )
     end_crossed_1 = _check_crossing_in_frame_range(
-        inside_range, crossing_frames_first, "frame_end", "end_crossed_1"
+        inside_range=inside_range,
+        crossing_frames=crossing_frames_first,
+        check_column="frame_end",
+        column_name="end_crossed_1",
     )
     start_crossed_2 = _check_crossing_in_frame_range(
-        inside_range, crossing_frames_second, "frame_start", "start_crossed_2"
+        inside_range=inside_range,
+        crossing_frames=crossing_frames_second,
+        check_column="frame_start",
+        column_name="start_crossed_2",
     )
     end_crossed_2 = _check_crossing_in_frame_range(
-        inside_range, crossing_frames_second, "frame_end", "end_crossed_2"
+        inside_range=inside_range,
+        crossing_frames=crossing_frames_second,
+        check_column="frame_end",
+        column_name="end_crossed_2",
     )
 
     frame_range_between_lines = (
@@ -294,7 +310,7 @@ def compute_individual_voronoi_polygons(
 
 
 def compute_intersecting_polygons(
-    individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
+    *, individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
 ) -> pd.DataFrame:
     """Compute the intersection of the voronoi cells with the measurement area.
 
@@ -383,7 +399,7 @@ def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
 
 
 def _compute_individual_movement(
-    traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
+    *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
 ) -> pd.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
@@ -439,7 +455,7 @@ def _compute_individual_movement(
 
 
 def _compute_crossing_frames(
-    traj_data: pd.DataFrame, measurement_line: LineString
+    *, traj_data: pd.DataFrame, measurement_line: LineString
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
@@ -464,7 +480,9 @@ def _compute_crossing_frames(
     # resulting array looks as follows:
     # [[[x_0_start, y_0_start], [x_0_end, y_0_end]],
     #  [[x_1_start, y_1_start], [x_1_end, y_1_end]], ... ]
-    df_movement = _compute_individual_movement(traj_data, 1, False)
+    df_movement = _compute_individual_movement(
+        traj_data=traj_data, frame_step=1, bidirectional=False
+    )
     df_movement["movement"] = shapely.linestrings(
         np.stack(
             [
@@ -485,7 +503,7 @@ def _compute_crossing_frames(
 
 
 def _get_continuous_parts_in_area(
-    traj_data: pd.DataFrame, measurement_area: Polygon
+    *, traj_data: pd.DataFrame, measurement_area: Polygon
 ) -> pd.DataFrame:
     """Compute the time-continuous parts of each pedestrian in the area.
 
@@ -520,6 +538,7 @@ def _get_continuous_parts_in_area(
 
 
 def _check_crossing_in_frame_range(
+    *,
     inside_range: pd.DataFrame,
     crossing_frames: pd.DataFrame,
     check_column: str,

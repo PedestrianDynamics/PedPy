@@ -61,7 +61,8 @@ def compute_voronoi_density(
 
     """
     df_intersecting = compute_intersecting_polygons(
-        individual_voronoi_data, measurement_area
+        individual_voronoi_data=individual_voronoi_data,
+        measurement_area=measurement_area,
     )
 
     df_combined = pd.merge(

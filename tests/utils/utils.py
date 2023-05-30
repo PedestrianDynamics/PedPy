@@ -49,4 +49,6 @@ def get_trajectory_data(
         number_frames=number_frames,
     )
     grid = grid.rename(columns={"FR": "frame"})
-    return TrajectoryData(grid, fps, pathlib.Path("not_relevant"))
+    return TrajectoryData(
+        data=grid, frame_rate=fps, file=pathlib.Path("not_relevant")
+    )
