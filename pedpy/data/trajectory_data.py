@@ -43,6 +43,7 @@ class TrajectoryData:
 
     def __init__(
         self,
+        *,
         data: pd.DataFrame,
         frame_rate: float,
         file: pathlib.Path,

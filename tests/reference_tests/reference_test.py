@@ -455,7 +455,8 @@ def test_voronoi_velocity(
         traj_data=trajectory.data, geometry=geometry, use_blind_points=False
     )
     intersecting_voronoi = compute_intersecting_polygons(
-        individual_voronoi, measurement_area
+        individual_voronoi_data=individual_voronoi,
+        measurement_area=measurement_area,
     )
     individual_velocity = compute_individual_velocity(
         traj_data=trajectory.data,

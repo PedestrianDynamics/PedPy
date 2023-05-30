@@ -37,7 +37,9 @@ def compute_individual_velocity(
         'v_x' and 'v_y' with the speed components in x and y direction if
         x_y_components is True
     """
-    df_movement = _compute_individual_movement(traj_data, frame_step)
+    df_movement = _compute_individual_movement(
+        traj_data=traj_data, frame_step=frame_step
+    )
     df_speed = _compute_individual_speed(
         movement_data=df_movement,
         frame_rate=frame_rate,

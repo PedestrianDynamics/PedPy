@@ -43,7 +43,9 @@ def compute_profiles(
     Returns:
         (List of density profiles, List of velocity profiles)
     """
-    grid_cells, rows, cols = _get_grid_cells(walkable_area, grid_size)
+    grid_cells, rows, cols = _get_grid_cells(
+        walkable_area=walkable_area, grid_size=grid_size
+    )
     density_profiles = []
     velocity_profiles = []
 
@@ -68,11 +70,14 @@ def compute_profiles(
         # Compute velocity
         if velocity_method == VelocityMethod.VORONOI:
             velocity = _compute_voronoi_velocity(
-                frame_data, grid_intersections_area, grid_cells[0].area
+                frame_data=frame_data,
+                grid_intersections_area=grid_intersections_area,
+                grid_area=grid_cells[0].area,
             )
         elif velocity_method == VelocityMethod.ARITHMETIC:
             velocity = _compute_arithmetic_velocity(
-                frame_data, grid_intersections_area
+                frame_data=frame_data,
+                grid_intersections_area=grid_intersections_area,
             )
         else:
             raise ValueError("velocity method not accepted")
@@ -84,6 +89,7 @@ def compute_profiles(
 
 
 def _compute_arithmetic_velocity(
+    *,
     frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
@@ -112,6 +118,7 @@ def _compute_arithmetic_velocity(
 
 
 def _compute_voronoi_velocity(
+    *,
     frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
@@ -134,7 +141,7 @@ def _compute_voronoi_velocity(
 
 
 def _get_grid_cells(
-    walkable_area: Polygon, grid_size: float
+    *, walkable_area: Polygon, grid_size: float
 ) -> Tuple[npt.NDArray[np.float64], int, int]:
     """Creates a list of square grid cells covering the geometry.
 

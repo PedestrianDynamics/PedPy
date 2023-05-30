@@ -28,7 +28,9 @@ def compute_n_t(
         and 'Time [s]' and DataFrame containing the columns 'ID', and 'frame'.
 
     """
-    crossing_frames = _compute_crossing_frames(traj_data, measurement_line)
+    crossing_frames = _compute_crossing_frames(
+        traj_data=traj_data, measurement_line=measurement_line
+    )
     crossing_frames = (
         crossing_frames.groupby("ID")["frame"].min().sort_values().reset_index()
     )
