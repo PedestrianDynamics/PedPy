@@ -37,10 +37,10 @@ setuptools.setup(
     python_requires=">=3.8",
     install_requires=[
         "aenum == 3.1.11",
-        "numpy == 1.23.0",
-        "pandas == 1.5.1",
-        "Shapely == 2.0.1",
-        "scipy == 1.9.3",
-        "matplotlib==3.6.1",
+        "numpy ~= 1.23.0",
+        "pandas ~= 1.5.1",
+        "Shapely ~= 2.0.1",
+        "scipy ~= 1.9.3",
+        "matplotlib ~= 3.6.1",
     ],
 )
