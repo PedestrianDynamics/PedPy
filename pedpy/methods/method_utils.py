@@ -10,7 +10,7 @@ import shapely
 from scipy.spatial import Voronoi
 from shapely import LineString, Polygon
 
-from pedpy.data.geometry import Geometry
+from pedpy.data.geometry import Geometry, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ def get_invalid_trajectory(
 
 
 def compute_frame_range_in_area(
-    *, traj_data: pd.DataFrame, measurement_line: LineString, width: float
+    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine, width: float
 ) -> Tuple[pd.DataFrame, Polygon]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
@@ -64,7 +64,7 @@ def compute_frame_range_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.LineString): measurement line
+        measurement_line (MeasurementLine): measurement line
         width (float): distance to the second measurement line
 
     Returns:
@@ -494,7 +494,7 @@ def _compute_individual_movement(
 
 
 def compute_crossing_frames(
-    *, traj_data: pd.DataFrame, measurement_line: LineString
+    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
@@ -504,11 +504,11 @@ def compute_crossing_frames(
 
     Note:
         Due to oscillations it may happen that a pedestrian crosses the
-        measurement line multiple time in a small time interval.
+        measurement line multiple time in a small-time interval.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.LineString):
+        measurement_line (MeasurementLine):
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame', where 'frame' are

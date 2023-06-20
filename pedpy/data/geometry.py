@@ -25,10 +25,10 @@ class Geometry:
     obstacles: List[Polygon]
 
     def __init__(
-        self,
-        *,
-        walkable_area: Polygon,
-        obstacles: Optional[List[Polygon]] = None,
+            self,
+            *,
+            walkable_area: Polygon,
+            obstacles: Optional[List[Polygon]] = None,
     ):
         """Create a geometry object.
 
@@ -66,3 +66,46 @@ class Geometry:
                 f"The obstacle {obstacle} is not inside the walkable area of "
                 "the geometry and thus will be ignored!"
             )
+
+
+class MeasurementLine:
+    _line: shapely.LineString
+    _frozen = False
+
+    def __init__(self, coordinates):
+        try:
+            self._line = shapely.LineString(coordinates)
+        except:
+            raise ValueError("Could not create measurement line from the given coordinates, give 2 different points to create a measurement line.")
+        if len(self._line.coords) != 2:
+            raise ValueError(
+                f"measurement line may only consists of 2 points, but "
+                f"{len(self._line.coords)} points given."
+                )
+        if self._line.length == 0:
+            raise ValueError(
+                f"start and end point of measurement line need to be different."
+                )
+        self._frozen = True
+        # super(MeasurementLine, self).__init__(coordinates,)
+
+    def __setattr__(self, attr, value):
+        if getattr(self, "_frozen"):
+            raise AttributeError("Trying to set attribute on a frozen instance")
+        return super().__setattr__(attr, value)
+
+    @property
+    def coords(self):
+        return self._line.coords
+
+    @property
+    def length(self):
+        return self._line.length
+
+    @property
+    def xy(self):
+        return self._line.xy
+
+    @property
+    def line(self):
+        return self._line

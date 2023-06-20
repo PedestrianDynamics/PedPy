@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
 
-from pedpy.data.geometry import Geometry
+from pedpy.data.geometry import Geometry, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
@@ -133,7 +133,7 @@ def plot_measurement_setup(
     traj: Optional[TrajectoryData] = None,
     geometry: Optional[Geometry] = None,
     measurement_areas: Optional[List[shapely.Polygon]] = None,
-    measurement_lines: Optional[List[shapely.LineString]] = None,
+    measurement_lines: Optional[List[MeasurementLine]] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -144,7 +144,7 @@ def plot_measurement_setup(
         geometry (Geometry, optional): Geometry object to plot
         measurement_areas (List[Polygon], optional): List of measurement areas
             to plot
-        measurement_lines (List[LineString], optional): List of measurement
+        measurement_lines (List[MeasurementLine], optional): List of measurement
             lines to plot
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created

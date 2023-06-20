@@ -4,13 +4,14 @@ from typing import Tuple
 import pandas as pd
 from shapely import LineString
 
+from pedpy.data.geometry import MeasurementLine
 from pedpy.methods.method_utils import compute_crossing_frames
 
 
 def compute_n_t(
     *,
     traj_data: pd.DataFrame,
-    measurement_line: LineString,
+    measurement_line: MeasurementLine,
     frame_rate: float,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the frame-wise cumulative number of pedestrians passing the line.
@@ -20,7 +21,7 @@ def compute_n_t(
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        measurement_line (shapely.LineString): line for which n-t is computed
+        measurement_line (MeasurementLine): line for which n-t is computed
         frame_rate (float): frame rate of the trajectory data
 
     Returns:
