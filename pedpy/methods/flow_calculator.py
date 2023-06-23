@@ -4,7 +4,7 @@ from typing import Tuple
 import pandas as pd
 from shapely import LineString
 
-from pedpy.methods.method_utils import _compute_crossing_frames
+from pedpy.methods.method_utils import compute_crossing_frames
 
 
 def compute_n_t(
@@ -28,7 +28,7 @@ def compute_n_t(
         and 'Time [s]' and DataFrame containing the columns 'ID', and 'frame'.
 
     """
-    crossing_frames = _compute_crossing_frames(
+    crossing_frames = compute_crossing_frames(
         traj_data=traj_data, measurement_line=measurement_line
     )
     crossing_frames = (
