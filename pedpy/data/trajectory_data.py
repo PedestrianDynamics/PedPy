@@ -41,6 +41,8 @@ class TrajectoryData:
     frame_rate: float
     file: pathlib.Path
 
+    _frozen = False
+
     def __init__(
         self,
         *,
@@ -61,3 +63,25 @@ class TrajectoryData:
 
         self.data = data
         self.data["points"] = shapely.points(self.data["X"], self.data["Y"])
+
+        self._frozen = True
+
+    def __setattr__(self, attr, value):
+        if getattr(self, "_frozen"):
+            raise AttributeError(
+                "Trajectory data can not be changed after construction!"
+            )
+        return super().__setattr__(attr, value)
+
+    def __repr__(self):
+        message = f"""
+        TrajectoryData:
+        file: {self.file}
+        frame rate: {self.frame_rate}
+        frames: [{self.data.frame.min(), self.data.frame.max()}]
+        number pedestrians: {self.data.ID.unique().size}
+        bounding box: {shapely.MultiPoint(self.data.points).bounds}
+        data: 
+        {self.data.head(10)}
+        """
+        return message
