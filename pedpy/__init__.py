@@ -15,6 +15,7 @@ from .methods.method_utils import (
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
     compute_neighbors,
+    compute_time_distance_line,
     get_invalid_trajectory,
     is_trajectory_valid,
 )

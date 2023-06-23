@@ -93,10 +93,10 @@ def compute_frame_range_in_area(
         traj_data=traj_data, measurement_area=measurement_area
     )
 
-    crossing_frames_first = _compute_crossing_frames(
+    crossing_frames_first = compute_crossing_frames(
         traj_data=traj_data, measurement_line=measurement_line
     )
-    crossing_frames_second = _compute_crossing_frames(
+    crossing_frames_second = compute_crossing_frames(
         traj_data=traj_data, measurement_line=second_line
     )
 
@@ -205,6 +205,45 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
         neighbor_df.append(frame_df)
 
     return pd.concat(neighbor_df)
+
+
+def compute_time_distance_line(
+    *, traj_data: pd.DataFrame, measurement_line: shapely.LineString
+) -> pd.DataFrame:
+    """Compute the time and distance to the measurement line.
+
+    Compute the time (in frames) and distance to the first crossing of the
+    measurement line. For further information how the crossing frames are
+    computed see :obj:`~compute_crossing_frames`. All frames after a
+    pedestrian has crossed the line will be omitted in the results.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        measurement_line (shapely.LineString): line which is crossed
+
+    Returns: DataFrame containing 'ID', 'frame', 'time' (frames to crossing),
+        and 'distance' (to measurement line)
+    """
+    df_distance_time = traj_data[["ID", "frame", "points"]].copy(deep=True)
+
+    # Compute distance to measurement line
+    df_distance_time["distance"] = shapely.distance(
+        df_distance_time["points"], measurement_line
+    )
+
+    # Compute time to entrance
+    crossing_frame = compute_crossing_frames(
+        traj_data=traj_data, measurement_line=measurement_line
+    ).rename(columns={"frame": "crossing_frame"})
+    df_distance_time = df_distance_time.merge(crossing_frame, on="ID")
+    df_distance_time["time"] = (
+        df_distance_time["crossing_frame"] - df_distance_time["frame"]
+    )
+
+    # Delete all rows where the line has already been passed
+    df_distance_time = df_distance_time[df_distance_time.time >= 0]
+
+    return df_distance_time.loc[:, ["ID", "frame", "distance", "time"]]
 
 
 def compute_individual_voronoi_polygons(
@@ -454,7 +493,7 @@ def _compute_individual_movement(
     ]
 
 
-def _compute_crossing_frames(
+def compute_crossing_frames(
     *, traj_data: pd.DataFrame, measurement_line: LineString
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
