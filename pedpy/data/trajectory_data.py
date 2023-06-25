@@ -18,7 +18,7 @@ class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
     CENTIMETER = 100, "centimeter (cm)"
 
 
-@dataclass
+@dataclass(frozen=True)
 class TrajectoryData:
     """Trajectory Data.
 
@@ -27,53 +27,39 @@ class TrajectoryData:
     Note:
         The coordinate data is stored in meter ('m')!
 
-    Attributes:
-        data (pd.DataFrame): data frame containing the actual data in the form:
+    Args:
+        data (pd.DataFrame): data frame containing the data in the form:
             "ID", "frame", "X", "Y", "Z"
-
         frame_rate (float): frame rate of the trajectory file
-
         file (pathlib.Path): file from which is trajectories was read
 
+    Attributes:
+        data (pd.DataFrame): data frame containing the trajectory data with the
+            columns: "ID", "frame", "X", "Y", "Z", "points"
+        frame_rate (float): frame rate of the trajectory data
+        file (pathlib.Path): file from which is trajectories was read
     """
 
     data: pd.DataFrame
     frame_rate: float
     file: pathlib.Path
 
-    _frozen = False
+    def __post_init__(self):
+        """Adds a column with the position to :py:attr:`data`.
 
-    def __init__(
-        self,
-        *,
-        data: pd.DataFrame,
-        frame_rate: float,
-        file: pathlib.Path,
-    ):
-        """Create a trajectory.
-
-        Args:
-            data (pd.DataFrame): data frame containing the actual data in the
-                form: "ID", "frame", "X", "Y", "Z"
-            frame_rate (float): frame rate of the trajectory file
-            file (pathlib.Path): file from which is trajectories was read
+        The current position of the pedestrian in the row is added as a
+        shapely Point to the dataframe, allowing easier geometrical
+        computations directly.
         """
-        self.frame_rate = frame_rate
-        self.file = file
-
-        self.data = data
-        self.data["points"] = shapely.points(self.data["X"], self.data["Y"])
-
-        self._frozen = True
-
-    def __setattr__(self, attr, value):
-        if getattr(self, "_frozen"):
-            raise AttributeError(
-                "Trajectory data can not be changed after construction!"
-            )
-        return super().__setattr__(attr, value)
+        data = self.data
+        data["points"] = shapely.points(data["X"], data["Y"])
+        object.__setattr__(self, "data", data)
 
     def __repr__(self):
+        """String representation for TrajectoryData object.
+
+        Returns: string representation for TrajectoryData object
+        """
         message = f"""
         TrajectoryData:
         file: {self.file}

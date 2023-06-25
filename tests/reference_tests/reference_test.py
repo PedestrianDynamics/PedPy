@@ -7,6 +7,7 @@ import shapely
 
 from pedpy import TrajectoryUnit
 from pedpy.data.geometry import Geometry
+from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.io.trajectory_loader import load_trajectory
 from pedpy.methods.density_calculator import (
     compute_classic_density,
@@ -801,14 +802,20 @@ def test_profiles(
         folder / "results/Fundamental_Diagram/Classical_Voronoi/field/velocity"
     )
 
-    trajectory = load_trajectory(
+    trajectory_original = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    trajectory.data = trajectory.data[
-        trajectory.data.frame.between(
-            min_frame - frame_step, max_frame + frame_step, inclusive="both"
-        )
-    ]
+
+    trajectory = TrajectoryData(
+        data=trajectory_original.data[
+            trajectory_original.data.frame.between(
+                min_frame - frame_step, max_frame + frame_step, inclusive="both"
+            )
+        ],
+        frame_rate=trajectory_original.frame_rate,
+        file=trajectory_original.file,
+    )
+
     geo = Geometry(walkable_area=geometry)
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data,
