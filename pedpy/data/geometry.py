@@ -77,7 +77,9 @@ class MeasurementLine:
         try:
             if isinstance(coordinates, shapely.LineString):
                 # return original objects since geometries are immutable
-                _line = coordinates
+                self._line = coordinates
+            elif isinstance(coordinates, str):
+                self._line = shapely.from_wkt(coordinates)
             else:
                 if hasattr(coordinates, "__array__"):
                     coordinates = np.asarray(coordinates)
@@ -94,7 +96,7 @@ class MeasurementLine:
                             return [float(c) for c in o]
 
                 coordinates = [_coords(o) for o in coordinates]
-            self._line = shapely.LineString(coordinates)
+                self._line = shapely.LineString(coordinates)
         except:
             raise ValueError(
                 "Could not create measurement line from the given coordinates, give 2 different points to create a measurement line."

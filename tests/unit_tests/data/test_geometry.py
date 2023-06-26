@@ -44,10 +44,25 @@ def test_create_measurement_line_from_linestring(linestring):
         np.array([shapely.Point((20, 1)), shapely.Point((1, 0))]),
     ],
 )
-def test_create_measurement_line_from_linestring(points):
+def test_create_measurement_line_from_points(points):
     reference_line = shapely.LineString(points)
     measurement_line = MeasurementLine(points)
     assert measurement_line.coords[:] == reference_line.coords[:]
+    assert len(measurement_line.coords) == 2
+    assert measurement_line.length != 0
+
+
+@pytest.mark.parametrize(
+    "linestring",
+    [
+        shapely.LineString([(0.0, 3.0), (1.0, -10.0)]),
+        shapely.LineString([(20, 1), (1, 0)]),
+        shapely.LineString([(-1.0, -1.0), (-4.0, 4.0)]),
+    ],
+)
+def test_create_measurement_line_from_wkt(linestring):
+    measurement_line = MeasurementLine(shapely.to_wkt(linestring))
+    assert measurement_line.coords[:] == linestring.coords[:]
     assert len(measurement_line.coords) == 2
     assert measurement_line.length != 0
 
