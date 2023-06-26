@@ -51,17 +51,17 @@ class TrajectoryData:
         shapely Point to the dataframe, allowing easier geometrical
         computations directly.
         """
-        data = self.data
-        data["points"] = shapely.points(data["X"], data["Y"])
+        data = self.data.copy(deep=True)
+        data.loc[:, "points"] = shapely.points(data["X"], data["Y"])
         object.__setattr__(self, "data", data)
 
     def __repr__(self):
         """String representation for TrajectoryData object.
 
-        Returns: string representation for TrajectoryData object
+        Returns:
+            string representation for TrajectoryData object
         """
-        message = f"""
-        TrajectoryData:
+        message = f"""TrajectoryData:
         file: {self.file}
         frame rate: {self.frame_rate}
         frames: [{self.data.frame.min(), self.data.frame.max()}]
