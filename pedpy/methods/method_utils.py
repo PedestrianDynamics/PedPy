@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import shapely
 from scipy.spatial import Voronoi
-from shapely import LineString, Polygon
+from shapely import Polygon
 
 from pedpy.data.geometry import Geometry, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData

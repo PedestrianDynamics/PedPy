@@ -103,23 +103,23 @@ class MeasurementLine:
                     pass
                 else:
                     # check coordinates on points
-                    def _coords(o):
-                        if isinstance(o, shapely.Point):
-                            return o.coords[0]
-                        else:
-                            return [float(c) for c in o]
+                    def _coords(obj):
+                        if isinstance(obj, shapely.Point):
+                            return obj.coords[0]
+
+                        return [float(c) for c in obj]
 
                 coordinates = [_coords(o) for o in coordinates]
                 self._line = shapely.LineString(coordinates)
-        except:
+        except Exception as exc:
             raise ValueError(
                 "could not create measurement line from the given coordinates, "
                 "give 2 different points to create a measurement line."
-            )
+            ) from exc
 
         if not isinstance(self._line, shapely.LineString):
             raise ValueError(
-                "could not create a line string from the given " "input."
+                "could not create a line string from the given input."
             )
 
         if len(self._line.coords) != 2:
@@ -129,7 +129,7 @@ class MeasurementLine:
             )
         if self._line.length == 0:
             raise ValueError(
-                f"start and end point of measurement line need to be different."
+                "start and end point of measurement line need to be different."
             )
 
         self._frozen = True
@@ -166,7 +166,7 @@ class MeasurementLine:
         return self._line.length
 
     @property
-    def xy(self):
+    def xy(self):  # pylint: disable=invalid-name
         """Separate arrays of X and Y coordinate values.
 
         Returns:

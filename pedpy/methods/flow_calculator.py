@@ -2,7 +2,6 @@
 from typing import Tuple
 
 import pandas as pd
-from shapely import LineString
 
 from pedpy.data.geometry import MeasurementLine
 from pedpy.methods.method_utils import compute_crossing_frames
