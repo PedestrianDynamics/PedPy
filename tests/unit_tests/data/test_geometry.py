@@ -80,7 +80,7 @@ def test_create_measurement_line_from_wkt(linestring):
         ),
         (
             ([0, 1]),
-            "Could not create measurement line from the given coordinates",
+            "could not create measurement line from the given coordinates",
         ),
         (
             ([0, 1], [0, 1]),
@@ -96,7 +96,11 @@ def test_create_measurement_line_from_wkt(linestring):
         ),
         (
             np.array([shapely.Point((20, 1))]),
-            "Could not create measurement line from the given coordinates",
+            "could not create measurement line from the given coordinates",
+        ),
+        (
+            shapely.to_wkt(shapely.Point((20, 1))),
+            "could not create a line string from the given input",
         ),
     ],
 )
@@ -104,7 +108,6 @@ def test_create_measurement_line_from_coordinates_error(coordinates, message):
     with pytest.raises(ValueError, match=fr".*{message}.*"):
         measurement_line = MeasurementLine(coordinates)
         assert len(measurement_line.coords) == 2
-        assert measurement_line.length
 
 
 def test_changing_measurement_line_fails():

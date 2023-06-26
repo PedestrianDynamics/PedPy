@@ -70,13 +70,27 @@ class Geometry:
 
 
 class MeasurementLine:
+    """Line segments which are used to analyze pedestrian dynamics.
+
+    A measurement line is defined as line segment between two given points with
+    a non-zero distance.
+    """
+
     _line: shapely.LineString
     _frozen = False
 
     def __init__(self, coordinates):
+        """Create a measurement line from the given input.
+
+        The measurement line may only consist of two points with a non-zero
+        distance.
+
+        Args:
+            coordinates: Can be either be a shapely.LineString, numpy arrays
+            of shapely.Points/x,y tuples, or a wkt string representation
+        """
         try:
             if isinstance(coordinates, shapely.LineString):
-                # return original objects since geometries are immutable
                 self._line = coordinates
             elif isinstance(coordinates, str):
                 self._line = shapely.from_wkt(coordinates)
@@ -99,7 +113,13 @@ class MeasurementLine:
                 self._line = shapely.LineString(coordinates)
         except:
             raise ValueError(
-                "Could not create measurement line from the given coordinates, give 2 different points to create a measurement line."
+                "could not create measurement line from the given coordinates, "
+                "give 2 different points to create a measurement line."
+            )
+
+        if not isinstance(self._line, shapely.LineString):
+            raise ValueError(
+                "could not create a line string from the given " "input."
             )
 
         if len(self._line.coords) != 2:
@@ -111,9 +131,16 @@ class MeasurementLine:
             raise ValueError(
                 f"start and end point of measurement line need to be different."
             )
+
         self._frozen = True
 
     def __setattr__(self, attr, value):
+        """Overwritten to mimic the behavior const object.
+
+        Args:
+            attr: attribute to set
+            value: value to be set to attribute
+        """
         if getattr(self, "_frozen"):
             raise AttributeError(
                 "Measurement line can not be changed after construction!"
@@ -122,16 +149,36 @@ class MeasurementLine:
 
     @property
     def coords(self):
+        """Coordinates of the measurement line's points.
+
+        Returns:
+            Coordinates of the points on the measurement line
+        """
         return self._line.coords
 
     @property
     def length(self):
+        """Length of the measurement line.
+
+        Returns:
+            Length of the measurement line
+        """
         return self._line.length
 
     @property
     def xy(self):
+        """Separate arrays of X and Y coordinate values.
+
+        Returns:
+            Separate arrays of X and Y coordinate values
+        """
         return self._line.xy
 
     @property
     def line(self):
+        """Measurement line as shapely LineString.
+
+        Returns:
+            Measurement line as shapely LineString.
+        """
         return self._line
