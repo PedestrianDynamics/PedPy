@@ -2,7 +2,7 @@
 
 import logging
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Any, List, Optional
 
 import numpy as np
 import shapely
@@ -69,8 +69,100 @@ class Geometry:
             )
 
 
+class MeasurementArea:
+    """Areas to study pedestrian dynamics.
+
+    A measurement area is defined as an area, which is convex, simple, and
+    covers a non-zero area.
+    """
+
+    _polygon: shapely.Polygon
+    _frozen = False
+
+    def __init__(self, coordinates: Any):
+        """Create a measurement area from the given input.
+
+        The measurement area may be a convex, simple area which covers a
+        non-zero area.
+
+        Args:
+            coordinates: A sequence of (x, y [,z]) numeric coordinate pairs, or
+                an array-like with shape (N, 2). Also, can be a sequence of
+                shapely.Point objects. Passing a wkt representation of a polygon
+                is also allowed.
+        """
+        try:
+            if isinstance(coordinates, shapely.Polygon):
+                self._polygon = coordinates
+            elif isinstance(coordinates, str):
+                self._polygon = shapely.from_wkt(coordinates)
+            else:
+                self._polygon = shapely.polygons(
+                    shapely.LinearRing(coordinates)
+                )
+        except Exception as exc:
+            raise ValueError(
+                f"Could not create measurement area from the given coordinates: {exc}."
+            ) from exc
+
+        if not isinstance(self._polygon, shapely.Polygon):
+            raise ValueError("Could not create a polygon from the given input.")
+
+        if self._polygon.interiors:
+            raise ValueError(
+                "Measurement area can not be created from polygon with holes."
+            )
+
+        if not self._polygon.is_simple or self._polygon.area == 0:
+            raise ValueError(
+                "Only simple measurement areas with non-zero area are allowed, "
+                "self-intersections area only allowed at boundary points."
+            )
+
+        if (
+            not shapely.difference(
+                self._polygon.convex_hull, self._polygon
+            ).area
+            == 0
+        ):
+            raise ValueError("Measurement areas needs to be convex.")
+
+        self._frozen = True
+
+    def __setattr__(self, attr, value):
+        """Overwritten to mimic the behavior const object.
+
+        Args:
+            attr: attribute to set
+            value: value to be set to attribute
+        """
+        if getattr(self, "_frozen"):
+            raise AttributeError(
+                "Measurement area can not be changed after construction!"
+            )
+        return super().__setattr__(attr, value)
+
+    @property
+    def coords(self):
+        """Coordinates of the measurement area's points.
+
+        Returns:
+            Coordinates of the points on the measurement area
+        """
+        return self._polygon.exterior.coords
+
+    @property
+    def area(self):
+        """Area of the measurement area.
+
+        Returns:
+            Areas of the measurement area
+        """
+        return self._polygon.area
+
+
 class MeasurementLine:
-    """Line segments which are used to analyze pedestrian dynamics.
+    """Line segments, which are used to analyze pedestrian dynamics.
 
     A measurement line is defined as line segment between two given points with
     a non-zero distance.
@@ -79,15 +171,17 @@ class MeasurementLine:
     _line: shapely.LineString
     _frozen = False
 
-    def __init__(self, coordinates):
+    def __init__(self, coordinates: Any):
         """Create a measurement line from the given input.
 
         The measurement line may only consist of two points with a non-zero
         distance.
 
         Args:
-            coordinates: Can be either be a shapely.LineString, numpy arrays
-            of shapely.Points/x,y tuples, or a wkt string representation
+            coordinates: A sequence of (x, y [,z]) numeric coordinate pairs, or
+                an array-like with shape (N, 2). Also, can be a sequence of
+                shapely.Point objects. Passing a wkt representation of a polygon
+                is also allowed.
         """
         try:
             if isinstance(coordinates, shapely.LineString):
@@ -113,23 +207,22 @@ class MeasurementLine:
                 self._line = shapely.LineString(coordinates)
         except Exception as exc:
             raise ValueError(
-                "could not create measurement line from the given coordinates, "
-                "give 2 different points to create a measurement line."
+                f"Could not create measurement line from the given coordinates: {exc}."
             ) from exc
 
         if not isinstance(self._line, shapely.LineString):
             raise ValueError(
-                "could not create a line string from the given input."
+                "Could not create a line string from the given input."
             )
 
         if len(self._line.coords) != 2:
             raise ValueError(
-                f"measurement line may only consists of 2 points, but "
+                f"Measurement line may only consists of 2 points, but "
                 f"{len(self._line.coords)} points given."
             )
         if self._line.length == 0:
             raise ValueError(
-                "start and end point of measurement line need to be different."
+                "Start and end point of measurement line need to be different."
             )
 
         self._frozen = True
