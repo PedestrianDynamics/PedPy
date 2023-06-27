@@ -69,6 +69,9 @@ class Geometry:
             )
 
 
+###############################################################################
+# Measurement Area
+###############################################################################
 class MeasurementArea:
     """Areas to study pedestrian dynamics.
 
@@ -160,7 +163,19 @@ class MeasurementArea:
         """
         return self._polygon.area
 
+    @property
+    def polygon(self):
+        """Measurement area as shapely Polygon.
 
+        Returns:
+            Measurement area as shapely Polygon.
+        """
+        return self._polygon
+
+
+###############################################################################
+# Measurement Line
+###############################################################################
 class MeasurementLine:
     """Line segments, which are used to analyze pedestrian dynamics.
 

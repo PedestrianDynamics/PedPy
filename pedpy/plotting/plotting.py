@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
 
-from pedpy.data.geometry import Geometry, MeasurementLine
+from pedpy.data.geometry import Geometry, MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
@@ -132,7 +132,7 @@ def plot_measurement_setup(
     *,
     traj: Optional[TrajectoryData] = None,
     geometry: Optional[Geometry] = None,
-    measurement_areas: Optional[List[shapely.Polygon]] = None,
+    measurement_areas: Optional[List[MeasurementArea]] = None,
     measurement_lines: Optional[List[MeasurementLine]] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
@@ -142,7 +142,7 @@ def plot_measurement_setup(
     Args:
         traj (TrajectoryData, optional): Trajectory object to plot
         geometry (Geometry, optional): Geometry object to plot
-        measurement_areas (List[Polygon], optional): List of measurement areas
+        measurement_areas (List[MeasurementArea], optional): List of measurement areas
             to plot
         measurement_lines (List[MeasurementLine], optional): List of measurement
             lines to plot
@@ -182,12 +182,12 @@ def plot_measurement_setup(
     if measurement_areas is not None:
         for measurement_area in measurement_areas:
             ax.plot(
-                *measurement_area.exterior.xy,
+                *measurement_area.polygon.exterior.xy,
                 color=ma_line_color,
                 linewidth=ma_line_width,
             )
             ax.fill(
-                *measurement_area.exterior.xy,
+                *measurement_area.polygon.exterior.xy,
                 color=ma_color,
                 alpha=ma_alpha,
             )
@@ -212,7 +212,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
     *,
     data: pd.DataFrame,
     geometry: Optional[Geometry] = None,
-    measurement_area: Optional[shapely.Polygon] = None,
+    measurement_area: Optional[MeasurementArea] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -222,7 +222,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         data (pd.DataFrame): Voronoi data to plot, should only contain data
             from one frame!
         geometry (Geometry, optional): Geometry object to plot
-        measurement_area (List[Polygon], optional): measurement area used to
+        measurement_area (MeasurementArea, optional): measurement area used to
             compute the Voronoi cells
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created

@@ -1,7 +1,7 @@
 # type: ignore
 """Top level imports, for easier usage."""
 from . import _version
-from .data.geometry import Geometry, MeasurementLine
+from .data.geometry import Geometry, MeasurementArea, MeasurementLine
 from .data.trajectory_data import TrajectoryData, TrajectoryUnit
 from .io.trajectory_loader import load_trajectory
 from .methods.density_calculator import (

@@ -8,9 +8,8 @@ import numpy as np
 import pandas as pd
 import shapely
 from scipy.spatial import Voronoi
-from shapely import Polygon
 
-from pedpy.data.geometry import Geometry, MeasurementLine
+from pedpy.data.geometry import Geometry, MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
@@ -48,7 +47,7 @@ def get_invalid_trajectory(
 
 def compute_frame_range_in_area(
     *, traj_data: pd.DataFrame, measurement_line: MeasurementLine, width: float
-) -> Tuple[pd.DataFrame, Polygon]:
+) -> Tuple[pd.DataFrame, MeasurementArea]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
     Note:
@@ -57,8 +56,8 @@ def compute_frame_range_in_area(
         with the given offset in one go. If leaving the area between two lines
         through the same line will be ignored.
 
-        As passing we define the frame the pedestrians enter the area and
-        then moves through the complete area without leaving it. Hence,
+        As passing we define the frame, the pedestrians enter the area and
+        then move through the complete area without leaving it. Hence,
         doing a closed analysis of the movement area with several measuring
         ranges underestimates the actual movement time.
 
@@ -71,18 +70,14 @@ def compute_frame_range_in_area(
         DataFrame containing the columns: 'ID', 'frame_start', 'frame_end' and
         the created measurement area
     """
-    assert len(shapely.get_coordinates(measurement_line)) == 2, (
-        f"The measurement line needs to be a straight line but has more  "
-        f"coordinates (expected 2, got "
-        f"{len(shapely.get_coordinates(measurement_line))})"
-    )
-
     # Create the second with the given offset
-    second_line = shapely.offset_curve(measurement_line, distance=width)
+    second_line = MeasurementLine(
+        shapely.offset_curve(measurement_line.line, distance=width)
+    )
 
     # Reverse the order of the coordinates for the second line string to
     # create a rectangular area between the lines
-    measurement_area = Polygon(
+    measurement_area = MeasurementArea(
         [
             *measurement_line.coords,
             *second_line.coords[::-1],
@@ -208,7 +203,7 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_time_distance_line(
-    *, traj_data: pd.DataFrame, measurement_line: shapely.LineString
+    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
     """Compute the time and distance to the measurement line.
 
@@ -219,7 +214,7 @@ def compute_time_distance_line(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.LineString): line which is crossed
+        measurement_line (MeasurementLine): line which is crossed
 
     Returns: DataFrame containing 'ID', 'frame', 'time' (frames to crossing),
         and 'distance' (to measurement line)
@@ -228,7 +223,7 @@ def compute_time_distance_line(
 
     # Compute distance to measurement line
     df_distance_time["distance"] = shapely.distance(
-        df_distance_time["points"], measurement_line
+        df_distance_time["points"], measurement_line.line
     )
 
     # Compute time to entrance
@@ -349,7 +344,7 @@ def compute_individual_voronoi_polygons(
 
 
 def compute_intersecting_polygons(
-    *, individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
+    *, individual_voronoi_data: pd.DataFrame, measurement_area: MeasurementArea
 ) -> pd.DataFrame:
     """Compute the intersection of the voronoi cells with the measurement area.
 
@@ -357,7 +352,8 @@ def compute_intersecting_polygons(
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
                 to contain a column 'individual voronoi' which holds
                 shapely.Polygon information
-        measurement_area (shapely.Polygon):
+        measurement_area (MeasurementArea): measurement area for which the
+            intersection will be computed.
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and
@@ -365,7 +361,7 @@ def compute_intersecting_polygons(
     """
     df_intersection = individual_voronoi_data[["ID", "frame"]].copy()
     df_intersection["intersection voronoi"] = shapely.intersection(
-        individual_voronoi_data["individual voronoi"], measurement_area
+        individual_voronoi_data["individual voronoi"], measurement_area.polygon
     )
     return df_intersection
 
@@ -503,8 +499,8 @@ def compute_crossing_frames(
     starts on the line, it counts as crossed.
 
     Note:
-        Due to oscillations it may happen that a pedestrian crosses the
-        measurement line multiple time in a small-time interval.
+        Due to oscillations, it may happen that a pedestrian crosses the
+        measurement line multiple times in a small-time interval.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
@@ -535,14 +531,14 @@ def compute_crossing_frames(
     # crossing means, the current movement crosses the line and the end point
     # of the movement is not on the line. The result is sorted by frame number
     crossing_frames = df_movement.loc[
-        shapely.intersects(df_movement["movement"], measurement_line)
+        shapely.intersects(df_movement["movement"], measurement_line.line)
     ][["ID", "frame"]]
 
     return crossing_frames
 
 
 def _get_continuous_parts_in_area(
-    *, traj_data: pd.DataFrame, measurement_area: Polygon
+    *, traj_data: pd.DataFrame, measurement_area: MeasurementArea
 ) -> pd.DataFrame:
     """Compute the time-continuous parts of each pedestrian in the area.
 
@@ -552,13 +548,13 @@ def _get_continuous_parts_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_area (shapely.Polygon): area which is considered
+        measurement_area (MeasurementArea): area which is considered
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
     """
     inside = traj_data.loc[
-        shapely.within(traj_data.points, measurement_area), :
+        shapely.within(traj_data.points, measurement_area.polygon), :
     ].copy()
     inside.loc[:, "g"] = inside.groupby("ID", group_keys=False)["frame"].apply(
         lambda x: x.diff().ge(2).cumsum()
