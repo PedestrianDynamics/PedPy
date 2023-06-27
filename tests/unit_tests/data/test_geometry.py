@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 import shapely
-from numpy.testing import assert_equal
-from shapely import LineString, Point, Polygon
+from shapely import Point, Polygon
 
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 
@@ -153,7 +152,7 @@ def test_create_measurement_area_from_wkt(wkt):
 
 
 @pytest.mark.parametrize(
-    "input, message",
+    "area_input, message",
     [
         (
             [
@@ -239,9 +238,9 @@ def test_create_measurement_area_from_wkt(wkt):
         ),
     ],
 )
-def test_create_measurement_area_error(input, message):
+def test_create_measurement_area_error(area_input, message):
     with pytest.raises(ValueError, match=fr".*{message}.*"):
-        measurement_area = MeasurementArea(input)
+        measurement_area = MeasurementArea(area_input)
 
 
 def test_changing_measurement_area_fails():
@@ -319,45 +318,45 @@ def test_create_measurement_line_from_wkt(linestring):
 
 
 @pytest.mark.parametrize(
-    "coordinates, message",
+    "line_input, message",
     [
         (
             ([0, 1], [1, 0], [2, 0]),
-            "measurement line may only consists of 2 points",
+            "Measurement line may only consists of 2 points",
         ),
         (
             ([0, 1], [1, 0], [2, 0], [-2, 0]),
-            "measurement line may only consists of 2 points",
+            "Measurement line may only consists of 2 points",
         ),
         (
             ([0, 1]),
-            "could not create measurement line from the given coordinates",
+            "Could not create measurement line from the given coordinates",
         ),
         (
             ([0, 1], [0, 1]),
-            "start and end point of measurement line need to be different.",
+            "Start and end point of measurement line need to be different.",
         ),
         (
             shapely.LineString([[0, 1], [1, 0], [2, 0], [-2, 0]]),
-            "measurement line may only consists of 2 points",
+            "Measurement line may only consists of 2 points",
         ),
         (
             [shapely.Point((0.0, 3.0)), shapely.Point((0.0, 3.0))],
-            "start and end point of measurement line need to be different.",
+            "Start and end point of measurement line need to be different.",
         ),
         (
             np.array([shapely.Point((20, 1))]),
-            "could not create measurement line from the given coordinates",
+            "Could not create measurement line from the given coordinates",
         ),
         (
             shapely.to_wkt(shapely.Point((20, 1))),
-            "could not create a line string from the given input",
+            "Could not create a line string from the given input",
         ),
     ],
 )
-def test_create_measurement_line_error(coordinates, message):
+def test_create_measurement_line_error(line_input, message):
     with pytest.raises(ValueError, match=fr".*{message}.*"):
-        measurement_line = MeasurementLine(coordinates)
+        measurement_line = MeasurementLine(line_input)
 
 
 def test_changing_measurement_line_fails():

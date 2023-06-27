@@ -204,21 +204,6 @@ class MeasurementLine:
             elif isinstance(coordinates, str):
                 self._line = shapely.from_wkt(coordinates)
             else:
-                if hasattr(coordinates, "__array__"):
-                    coordinates = np.asarray(coordinates)
-                if isinstance(coordinates, np.ndarray) and np.issubdtype(
-                    coordinates.dtype, np.number
-                ):
-                    pass
-                else:
-                    # check coordinates on points
-                    def _coords(obj):
-                        if isinstance(obj, shapely.Point):
-                            return obj.coords[0]
-
-                        return [float(c) for c in obj]
-
-                coordinates = [_coords(o) for o in coordinates]
                 self._line = shapely.LineString(coordinates)
         except Exception as exc:
             raise ValueError(
