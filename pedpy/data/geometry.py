@@ -4,7 +4,6 @@ import logging
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-import numpy as np
 import shapely
 from shapely import Polygon
 
