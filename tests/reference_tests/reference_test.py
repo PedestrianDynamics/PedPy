@@ -6,7 +6,7 @@ import pytest
 import shapely
 
 from pedpy import TrajectoryUnit
-from pedpy.data.geometry import Geometry
+from pedpy.data.geometry import Geometry, MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.io.trajectory_loader import load_trajectory
 from pedpy.methods.density_calculator import (
@@ -42,7 +42,7 @@ ROOT_DIR = pathlib.Path(__file__).parent.resolve()
                 "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            shapely.from_wkt(
+            MeasurementArea(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "2.4 0.53))"
             ),
@@ -50,16 +50,14 @@ ROOT_DIR = pathlib.Path(__file__).parent.resolve()
         ),
         (
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            shapely.from_wkt(
-                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
-            ),
+            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
             ROOT_DIR / pathlib.Path("data/corridor"),
         ),
         (
             shapely.from_wkt(
                 "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
             ),
-            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
             ROOT_DIR / pathlib.Path("data/corner"),
         ),
     ],
@@ -103,7 +101,7 @@ def test_classic_density(geometry, measurement_area, folder):
                 "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            shapely.from_wkt(
+            MeasurementArea(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "2.4 0.53))"
             ),
@@ -112,9 +110,7 @@ def test_classic_density(geometry, measurement_area, folder):
         ),
         (
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            shapely.from_wkt(
-                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
-            ),
+            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
             ROOT_DIR / pathlib.Path("data/corridor"),
             5,
         ),
@@ -122,7 +118,7 @@ def test_classic_density(geometry, measurement_area, folder):
             shapely.from_wkt(
                 "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
             ),
-            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
             ROOT_DIR / pathlib.Path("data/corner"),
             5,
         ),
@@ -175,7 +171,7 @@ def test_arithmetic_velocity(
                 "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            shapely.from_wkt(
+            MeasurementArea(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53,"
                 " 2.4 0.53))"
             ),
@@ -183,16 +179,14 @@ def test_arithmetic_velocity(
         ),
         (
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            shapely.from_wkt(
-                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
-            ),
+            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
             ROOT_DIR / pathlib.Path("data/corridor"),
         ),
         (
             shapely.from_wkt(
                 "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
             ),
-            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
             ROOT_DIR / pathlib.Path("data/corner"),
         ),
     ],
@@ -248,7 +242,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
                 "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            shapely.from_wkt(
+            MeasurementArea(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53,"
                 " 2.4 0.53))"
             ),
@@ -256,16 +250,14 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
         ),
         (
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            shapely.from_wkt(
-                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
-            ),
+            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
             ROOT_DIR / pathlib.Path("data/corridor"),
         ),
         (
             shapely.from_wkt(
                 "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
             ),
-            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
             ROOT_DIR / pathlib.Path("data/corner"),
         ),
     ],
@@ -328,7 +320,7 @@ def test_voronoi_density_blind_points(
                 "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            shapely.from_wkt(
+            MeasurementArea(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "2.4 0.53))"
             ),
@@ -336,16 +328,14 @@ def test_voronoi_density_blind_points(
         ),
         (
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            shapely.from_wkt(
-                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
-            ),
+            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
             ROOT_DIR / pathlib.Path("data/corridor"),
         ),
         (
             shapely.from_wkt(
                 "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
             ),
-            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
             ROOT_DIR / pathlib.Path("data/corner"),
         ),
     ],
@@ -405,7 +395,7 @@ def test_voronoi_density_blind_points_cutoff(
                 "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
-            shapely.from_wkt(
+            MeasurementArea(
                 "POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "2.4 0.53))"
             ),
@@ -414,9 +404,7 @@ def test_voronoi_density_blind_points_cutoff(
         ),
         (
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            shapely.from_wkt(
-                "POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"
-            ),
+            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
             ROOT_DIR / pathlib.Path("data/corridor"),
             5,
         ),
@@ -424,7 +412,7 @@ def test_voronoi_density_blind_points_cutoff(
             shapely.from_wkt(
                 "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
             ),
-            shapely.from_wkt("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
+            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
             ROOT_DIR / pathlib.Path("data/corner"),
             5,
         ),
@@ -491,15 +479,15 @@ def test_voronoi_velocity(
     "line, folder",
     [
         (
-            shapely.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
+            MeasurementLine("LINESTRING (-2.25 0.5, 4 0.5)"),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         ),
         (
-            shapely.from_wkt("LINESTRING (0 0, 0 5)"),
+            MeasurementLine("LINESTRING (0 0, 0 5)"),
             ROOT_DIR / pathlib.Path("data/corridor"),
         ),
         (
-            shapely.from_wkt("LINESTRING (-3 0, 0 0)"),
+            MeasurementLine("LINESTRING (-3 0, 0 0)"),
             ROOT_DIR / pathlib.Path("data/corner"),
         ),
     ],
@@ -536,19 +524,19 @@ def test_nt(line, folder):
     "line, folder, flow_frame, velocity_frame",
     [
         (
-            shapely.from_wkt("LINESTRING (-2.25 0.5, 4 0.5)"),
+            MeasurementLine("LINESTRING (-2.25 0.5, 4 0.5)"),
             ROOT_DIR / pathlib.Path("data/bottleneck"),
             150,
             5,
         ),
         (
-            shapely.from_wkt("LINESTRING (0 0, 0 5)"),
+            MeasurementLine("LINESTRING (0 0, 0 5)"),
             ROOT_DIR / pathlib.Path("data/corridor"),
             100,
             5,
         ),
         (
-            shapely.from_wkt("LINESTRING (-3 0, 0 0)"),
+            MeasurementLine("LINESTRING (-3 0, 0 0)"),
             ROOT_DIR / pathlib.Path("data/corner"),
             100,
             5,
@@ -607,17 +595,17 @@ def test_flow(line, folder, flow_frame, velocity_frame):
     "measurement_line, width, folder",
     [
         (
-            shapely.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
+            MeasurementLine("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
             1.06,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         ),
         (
-            shapely.from_wkt("LINESTRING (0 0, 0 5)"),
+            MeasurementLine("LINESTRING (0 0, 0 5)"),
             1.0,
             ROOT_DIR / pathlib.Path("data/corridor"),
         ),
         (
-            shapely.from_wkt("LINESTRING (-3 0, 0 0)"),
+            MeasurementLine(shapely.from_wkt("LINESTRING (-3 0, 0 0)")),
             2.0,
             ROOT_DIR / pathlib.Path("data/corner"),
         ),
@@ -680,17 +668,17 @@ def test_passing_density(measurement_line, width, folder):
     "measurement_line, width, folder",
     [
         (
-            shapely.from_wkt("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
+            MeasurementLine("LINESTRING(-0.6 -0.53, 2.4 -0.53)"),
             1.06,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
         ),
         (
-            shapely.from_wkt("LINESTRING (0 0, 0 5)"),
+            MeasurementLine("LINESTRING (0 0, 0 5)"),
             1.0,
             ROOT_DIR / pathlib.Path("data/corridor"),
         ),
         (
-            shapely.from_wkt("LINESTRING (-3 0, 0 0)"),
+            MeasurementLine("LINESTRING (-3 0, 0 0)"),
             2,
             ROOT_DIR / pathlib.Path("data/corner"),
         ),

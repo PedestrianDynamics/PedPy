@@ -4,6 +4,7 @@ import pytest
 import shapely
 from shapely.geometry import Point
 
+from pedpy.data.geometry import MeasurementArea
 from pedpy.methods.density_calculator import (
     _get_num_peds_per_frame,
     compute_classic_density,
@@ -14,9 +15,9 @@ from tests.utils.utils import get_trajectory, get_trajectory_data
 @pytest.mark.parametrize(
     "measurement_area, ped_distance, num_ped_col, num_ped_row",
     [
-        (shapely.polygons([(-5, -5), (-5, 5), (5, 5), (5, -5)]), 1.0, 5, 5),
+        (MeasurementArea([(-5, -5), (-5, 5), (5, 5), (5, -5)]), 1.0, 5, 5),
         (
-            shapely.polygons(
+            MeasurementArea(
                 [(0.1, -0.1), (-0.1, 0.1), (0.1, 0.1), (0.1, -0.1)]
             ),
             0.5,
@@ -49,12 +50,12 @@ def test_compute_classic_density(
 
     for index, row in trajectory_data.data.iterrows():
         point = Point([row.X, row.Y])
-        if point.within(measurement_area):
+        if point.within(measurement_area.polygon):
             num_peds_in_area_per_frame[row.frame] += 1
 
     expected_density = pd.DataFrame.from_dict(
         {
-            frame: [num_peds / shapely.area(measurement_area)]
+            frame: [num_peds / measurement_area.area]
             for frame, num_peds in num_peds_in_area_per_frame.items()
         },
         orient="index",
