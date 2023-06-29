@@ -4,9 +4,7 @@
 PedPy User Guide
 ****************
 
-Currently under construction
+.. toctree::
+    :maxdepth: 4
 
-.. image:: ../images/under_construction.svg
-    :alt: Under construction sign
-    :width: 75
-    :align: center
+    usage.ipynb
