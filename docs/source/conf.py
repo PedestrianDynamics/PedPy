@@ -2,6 +2,7 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
+import datetime
 import os
 import sys
 
@@ -13,10 +14,12 @@ sys.path.insert(0, basedir)
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+current_year = datetime.datetime.today().year
+
 project = "PedPy"
-copyright = "2023, Forschungszentrum Jülich GmbH, IAS-7"
+copyright = f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7"
 author = "Tobias Schrödter"
-release = "1.0.0rc1"
+release = "1.0.0rc2"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
