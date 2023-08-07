@@ -125,7 +125,6 @@ def write_trajectory(
 def write_header(
     trajectory_file: TextIO, fps: int, geometry_file: str, num_pedestrians: int
 ) -> None:
-
     version = "0.0.1"
 
     header = f"""#description: jpscore ({version})
