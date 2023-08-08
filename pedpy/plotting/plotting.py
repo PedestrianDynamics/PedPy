@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
 
-from pedpy.data.geometry import Geometry, MeasurementArea, MeasurementLine
+from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
@@ -16,14 +16,14 @@ log = logging.getLogger(__name__)
 
 def plot_geometry(
     *,
-    geometry: Geometry,
+    geometry: WalkableArea,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the given geometry in 2-D.
 
     Args:
-        geometry (Geometry): Geometry object to plot
+        geometry (WalkableArea): Geometry object to plot
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         line_color (optional): color of the borders
         line_color (optional): line width of the borders
@@ -63,7 +63,7 @@ def plot_geometry(
 def plot_trajectories(
     *,
     traj: TrajectoryData,
-    geometry: Optional[Geometry] = None,
+    geometry: Optional[WalkableArea] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -131,7 +131,7 @@ def plot_trajectories(
 def plot_measurement_setup(
     *,
     traj: Optional[TrajectoryData] = None,
-    geometry: Optional[Geometry] = None,
+    geometry: Optional[WalkableArea] = None,
     measurement_areas: Optional[List[MeasurementArea]] = None,
     measurement_lines: Optional[List[MeasurementLine]] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
@@ -211,7 +211,7 @@ def plot_measurement_setup(
 def plot_voronoi_cells(  # pylint: disable=too-many-locals
     *,
     data: pd.DataFrame,
-    geometry: Optional[Geometry] = None,
+    geometry: Optional[WalkableArea] = None,
     measurement_area: Optional[MeasurementArea] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,

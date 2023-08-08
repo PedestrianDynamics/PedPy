@@ -1,9 +1,285 @@
 import numpy as np
 import pytest
 import shapely
-from shapely import Point, Polygon
 
-from pedpy.data.geometry import MeasurementArea, MeasurementLine
+from pedpy.data.geometry import (
+    GeometryError,
+    MeasurementArea,
+    MeasurementLine,
+    WalkableArea,
+    _create_polygon_from_input,
+)
+
+
+# ###############################################################################
+# # Walkable Area
+# ###############################################################################
+@pytest.mark.parametrize(
+    "point_input",
+    [
+        ([(0, 3.1), (1.2, 5.4), (4.1, 7.9), (7.1, 3.0), (0, 3.1)],),
+        (
+            [(-5.1, -3.2), (-3.1, 2.4), (-1.1, -2.5), (-5.1, -3.2)],
+            [[(-4.1, -2.3), (-2.1, -2.3), (-2.1, -1.1), (-4.1, -1.1)]],
+        ),
+        (
+            [
+                (2.4, -1.3),
+                (4.1, -5),
+                (3, -7.2),
+                (-1.3, -10.1),
+                (-2, -3.1),
+                (2.4, -1.3),
+            ],
+            [
+                [(3.1, -3.5), (1.7, -2.3), (0.9, -4.1)],
+                [(-1.2, -3.9), (-0.8, -6.1), (0.1, -5.9), (0.2, -4.3)],
+                [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
+            ],
+        ),
+        (
+            [
+                (-1.1, -2.1),
+                (-2.3, 3.1),
+                (2.5, 4.2),
+                (1.2, -3.4),
+                (0.1, 1.1),
+            ],
+        ),
+    ],
+)
+def test_create_walkable_area_from_coordinates(point_input):
+    reference_polygon = shapely.Polygon(*point_input)
+    walkable_area = WalkableArea(*point_input)
+
+    assert walkable_area.polygon.equals_exact(
+        reference_polygon, tolerance=1e-20
+    )
+    assert walkable_area.area != 0
+    assert walkable_area.polygon.is_simple
+    assert shapely.is_prepared(walkable_area.polygon)
+
+
+@pytest.mark.parametrize(
+    "point_input",
+    [
+        (
+            [
+                shapely.Point(0, 3.1),
+                shapely.Point(1.2, 5.4),
+                shapely.Point(4.1, 7.9),
+                shapely.Point(7.1, 3.0),
+                shapely.Point(0, 3.1),
+            ],
+        ),
+        (
+            [
+                shapely.Point(-5.1, -3.2),
+                shapely.Point(-3.1, 2.4),
+                shapely.Point(-1.1, -2.5),
+                shapely.Point(-5.1, -3.2),
+            ],
+            [
+                [
+                    shapely.Point(-4.1, -2.3),
+                    shapely.Point(-2.1, -2.3),
+                    shapely.Point(-2.1, -1.1),
+                    shapely.Point(-4.1, -1.1),
+                ]
+            ],
+        ),
+        (
+            [
+                shapely.Point(2.4, -1.3),
+                shapely.Point(4.1, -5),
+                shapely.Point(3, -7.2),
+                shapely.Point(-1.3, -10.1),
+                shapely.Point(-2, -3.1),
+                shapely.Point(2.4, -1.3),
+            ],
+            [
+                [
+                    shapely.Point(3.1, -3.5),
+                    shapely.Point(1.7, -2.3),
+                    shapely.Point(0.9, -4.1),
+                ],
+                [
+                    shapely.Point(-1.2, -3.9),
+                    shapely.Point(-0.8, -6.1),
+                    shapely.Point(0.1, -5.9),
+                    shapely.Point(0.2, -4.3),
+                ],
+                [
+                    shapely.Point(0.7, -7.5),
+                    shapely.Point(2.1, -6.5),
+                    shapely.Point(2.5, -4.7),
+                ],
+            ],
+        ),
+        (
+            [
+                shapely.Point(-1.1, -2.1),
+                shapely.Point(-2.3, 3.1),
+                shapely.Point(2.5, 4.2),
+                shapely.Point(1.2, -3.4),
+                shapely.Point(0.1, 1.1),
+            ],
+        ),
+    ],
+)
+def test_create_walkable_area_from_points(point_input):
+    reference_polygon = shapely.Polygon(*point_input)
+    walkable_area = WalkableArea(*point_input)
+
+    assert walkable_area.polygon.equals_exact(
+        reference_polygon, tolerance=1e-20
+    )
+    assert walkable_area.area != 0
+    assert walkable_area.polygon.is_simple
+    assert shapely.is_prepared(walkable_area.polygon)
+
+
+@pytest.mark.parametrize(
+    "reference_polygon",
+    [
+        shapely.Polygon(
+            [(0, 3.1), (1.2, 5.4), (4.1, 7.9), (7.1, 3.0), (0, 3.1)],
+        ),
+        shapely.Polygon(
+            [(-5.1, -3.2), (-3.1, 2.4), (-1.1, -2.5), (-5.1, -3.2)],
+            [[(-4.1, -2.3), (-2.1, -2.3), (-2.1, -1.1), (-4.1, -1.1)]],
+        ),
+        shapely.Polygon(
+            [
+                (2.4, -1.3),
+                (4.1, -5),
+                (3, -7.2),
+                (-1.3, -10.1),
+                (-2, -3.1),
+                (2.4, -1.3),
+            ],
+            [
+                [(3.1, -3.5), (1.7, -2.3), (0.9, -4.1)],
+                [(-1.2, -3.9), (-0.8, -6.1), (0.1, -5.9), (0.2, -4.3)],
+                [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
+            ],
+        ),
+        shapely.Polygon(
+            [(-1.1, -2.1), (-2.3, 3.1), (2.5, 4.2), (1.2, -3.4), (0.1, 1.1)]
+        ),
+    ],
+)
+def test_create_walkable_area_from_polygon(reference_polygon):
+    walkable_area = WalkableArea(reference_polygon)
+
+    assert walkable_area.polygon.equals_exact(
+        reference_polygon, tolerance=1e-20
+    )
+    assert walkable_area.area != 0
+    assert walkable_area.polygon.is_simple
+    assert shapely.is_prepared(walkable_area.polygon)
+
+
+@pytest.mark.parametrize(
+    "wkt",
+    [
+        shapely.to_wkt(
+            shapely.Polygon(
+                [(0, 3.1), (1.2, 5.4), (4.1, 7.9), (7.1, 3.0), (0, 3.1)],
+            )
+        ),
+        shapely.to_wkt(
+            shapely.Polygon(
+                [(-5.1, -3.2), (-3.1, 2.4), (-1.1, -2.5), (-5.1, -3.2)],
+                [[(-4.1, -2.3), (-2.1, -2.3), (-2.1, -1.1), (-4.1, -1.1)]],
+            )
+        ),
+        shapely.to_wkt(
+            shapely.Polygon(
+                [
+                    (2.4, -1.3),
+                    (4.1, -5),
+                    (3, -7.2),
+                    (-1.3, -10.1),
+                    (-2, -3.1),
+                    (2.4, -1.3),
+                ],
+                [
+                    [(3.1, -3.5), (1.7, -2.3), (0.9, -4.1)],
+                    [(-1.2, -3.9), (-0.8, -6.1), (0.1, -5.9), (0.2, -4.3)],
+                    [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
+                ],
+            )
+        ),
+        shapely.to_wkt(
+            shapely.Polygon(
+                [(-1.1, -2.1), (-2.3, 3.1), (2.5, 4.2), (1.2, -3.4), (0.1, 1.1)]
+            ),
+        ),
+    ],
+)
+def test_create_walkable_area_from_wkt(wkt):
+    reference_polygon = shapely.from_wkt(wkt)
+    walkable_area = WalkableArea(wkt)
+
+    assert walkable_area.polygon.equals_exact(
+        reference_polygon, tolerance=1e-20
+    )
+    assert walkable_area.area != 0
+    assert walkable_area.polygon.is_simple
+    assert shapely.is_prepared(walkable_area.polygon)
+
+
+@pytest.mark.parametrize(
+    "area_input, message",
+    [
+        (
+            shapely.Polygon(
+                [(-1, -1), (-1, 1), (1, 1), (1, -1)], [[(5, 5), (4, 5), (4, 4)]]
+            ),
+            "Holes need to be inside the walkable area",
+        ),
+        (
+            shapely.Polygon(
+                [
+                    shapely.Point(-2, 2),
+                    shapely.Point(2, 5),
+                    shapely.Point(2, 2),
+                    shapely.Point(-2, 5),
+                ]
+            ),
+            "Only simple polygons with non-zero area are allowed",
+        ),
+        (
+            shapely.Polygon(
+                [
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                ]
+            ),
+            "Only simple polygons with non-zero area are allowed",
+        ),
+    ],
+)
+def test_create_walkable_area_error(area_input, message):
+    with pytest.raises(GeometryError, match=rf".*{message}.*"):
+        walkable_area = WalkableArea(area_input)
+
+
+def test_changing_walkable_area_fails():
+    with pytest.raises(
+        AttributeError,
+        match=rf"Walkable area can not be changed after construction!",
+    ):
+        walkable_area = WalkableArea(
+            shapely.Polygon([(-1, -1), (-1, 1), (1, 1), (1, -1)])
+        )
+
+        walkable_area._polygon = shapely.LinearRing(
+            ((0, 0), (0, 1), (1, 1), (1, 0))
+        )
 
 
 ###############################################################################
@@ -35,64 +311,65 @@ def test_create_measurement_area_from_coordinates(coordinates):
     "points",
     [
         [
-            Point(0, 3.1),
-            Point(1.2, 5.4),
-            Point(4.1, 7.9),
-            Point(7.1, 3.0),
-            Point(0, 3.1),
+            shapely.Point(0, 3.1),
+            shapely.Point(1.2, 5.4),
+            shapely.Point(4.1, 7.9),
+            shapely.Point(7.1, 3.0),
+            shapely.Point(0, 3.1),
         ],
         [
-            Point(-5.1, -3.2),
-            Point(-3.1, 2.4),
-            Point(-1.1, -2.5),
-            Point(-5.1, -3.2),
+            shapely.Point(-5.1, -3.2),
+            shapely.Point(-3.1, 2.4),
+            shapely.Point(-1.1, -2.5),
+            shapely.Point(-5.1, -3.2),
         ],
         [
-            Point(2.4, -1.3),
-            Point(4.1, -5),
-            Point(3, -7.2),
-            Point(-1.3, -10.1),
-            Point(-2, -3.1),
-            Point(2.4, -1.3),
+            shapely.Point(2.4, -1.3),
+            shapely.Point(4.1, -5),
+            shapely.Point(3, -7.2),
+            shapely.Point(-1.3, -10.1),
+            shapely.Point(-2, -3.1),
+            shapely.Point(2.4, -1.3),
         ],
     ],
 )
 def test_create_measurement_area_from_points(points):
-    reference_polygon = Polygon(points)
+    reference_polygon = shapely.Polygon(points)
     measurement_area = MeasurementArea(points)
     assert measurement_area.coords[:] == reference_polygon.exterior.coords[:]
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
+    assert shapely.is_prepared(measurement_area.polygon)
 
 
 @pytest.mark.parametrize(
     "polygon",
     [
-        Polygon(
+        shapely.Polygon(
             [
-                Point(0, 3.1),
-                Point(1.2, 5.4),
-                Point(4.1, 7.9),
-                Point(7.1, 3.0),
-                Point(0, 3.1),
+                shapely.Point(0, 3.1),
+                shapely.Point(1.2, 5.4),
+                shapely.Point(4.1, 7.9),
+                shapely.Point(7.1, 3.0),
+                shapely.Point(0, 3.1),
             ]
         ),
-        Polygon(
+        shapely.Polygon(
             [
-                Point(-5.1, -3.2),
-                Point(-3.1, 2.4),
-                Point(-1.1, -2.5),
-                Point(-5.1, -3.2),
+                shapely.Point(-5.1, -3.2),
+                shapely.Point(-3.1, 2.4),
+                shapely.Point(-1.1, -2.5),
+                shapely.Point(-5.1, -3.2),
             ]
         ),
-        Polygon(
+        shapely.Polygon(
             [
-                Point(2.4, -1.3),
-                Point(4.1, -5),
-                Point(3, -7.2),
-                Point(-1.3, -10.1),
-                Point(-2, -3.1),
-                Point(2.4, -1.3),
+                shapely.Point(2.4, -1.3),
+                shapely.Point(4.1, -5),
+                shapely.Point(3, -7.2),
+                shapely.Point(-1.3, -10.1),
+                shapely.Point(-2, -3.1),
+                shapely.Point(2.4, -1.3),
             ]
         ),
     ],
@@ -102,41 +379,42 @@ def test_create_measurement_area_from_polygon(polygon):
     assert measurement_area.coords[:] == polygon.exterior.coords[:]
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
+    assert shapely.is_prepared(measurement_area.polygon)
 
 
 @pytest.mark.parametrize(
     "wkt",
     [
         shapely.to_wkt(
-            Polygon(
+            shapely.Polygon(
                 [
-                    Point(0, 3.1),
-                    Point(1.2, 5.4),
-                    Point(4.1, 7.9),
-                    Point(7.1, 3.0),
-                    Point(0, 3.1),
+                    shapely.Point(0, 3.1),
+                    shapely.Point(1.2, 5.4),
+                    shapely.Point(4.1, 7.9),
+                    shapely.Point(7.1, 3.0),
+                    shapely.Point(0, 3.1),
                 ]
             )
         ),
         shapely.to_wkt(
-            Polygon(
+            shapely.Polygon(
                 [
-                    Point(-5.1, -3.2),
-                    Point(-3.1, 2.4),
-                    Point(-1.1, -2.5),
-                    Point(-5.1, -3.2),
+                    shapely.Point(-5.1, -3.2),
+                    shapely.Point(-3.1, 2.4),
+                    shapely.Point(-1.1, -2.5),
+                    shapely.Point(-5.1, -3.2),
                 ]
             )
         ),
         shapely.to_wkt(
-            Polygon(
+            shapely.Polygon(
                 [
-                    Point(2.4, -1.3),
-                    Point(4.1, -5),
-                    Point(3, -7.2),
-                    Point(-1.3, -10.1),
-                    Point(-2, -3.1),
-                    Point(2.4, -1.3),
+                    shapely.Point(2.4, -1.3),
+                    shapely.Point(4.1, -5),
+                    shapely.Point(3, -7.2),
+                    shapely.Point(-1.3, -10.1),
+                    shapely.Point(-2, -3.1),
+                    shapely.Point(2.4, -1.3),
                 ]
             )
         ),
@@ -149,6 +427,7 @@ def test_create_measurement_area_from_wkt(wkt):
     assert measurement_area.coords[:] == reference_polygon.exterior.coords[:]
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
+    assert shapely.is_prepared(measurement_area.polygon)
 
 
 @pytest.mark.parametrize(
@@ -156,23 +435,23 @@ def test_create_measurement_area_from_wkt(wkt):
     [
         (
             [
-                Point(2.4, -1.3),
+                shapely.Point(2.4, -1.3),
             ],
             "Could not create measurement area from the given coordinates:",
         ),
         (
-            Polygon(
+            shapely.Polygon(
                 [
-                    Point(-5.1, -3.2),
-                    Point(-3.1, 2.4),
-                    Point(-1.1, -2.5),
-                    Point(-5.1, -3.2),
+                    shapely.Point(-5.1, -3.2),
+                    shapely.Point(-3.1, 2.4),
+                    shapely.Point(-1.1, -2.5),
+                    shapely.Point(-5.1, -3.2),
                 ],
                 [
                     [
-                        Point(-3, -1),
-                        Point(-2.5, -1.5),
-                        Point(-3, 2.5),
+                        shapely.Point(-3, -1),
+                        shapely.Point(-2.5, -1.5),
+                        shapely.Point(-3, 2.5),
                     ]
                 ],
             ),
@@ -180,18 +459,18 @@ def test_create_measurement_area_from_wkt(wkt):
         ),
         (
             shapely.to_wkt(
-                Polygon(
+                shapely.Polygon(
                     [
-                        Point(-5.1, -3.2),
-                        Point(-3.1, 2.4),
-                        Point(-1.1, -2.5),
-                        Point(-5.1, -3.2),
+                        shapely.Point(-5.1, -3.2),
+                        shapely.Point(-3.1, 2.4),
+                        shapely.Point(-1.1, -2.5),
+                        shapely.Point(-5.1, -3.2),
                     ],
                     [
                         [
-                            Point(-3, -1),
-                            Point(-2.5, -1.5),
-                            Point(-3, 2.5),
+                            shapely.Point(-3, -1),
+                            shapely.Point(-2.5, -1.5),
+                            shapely.Point(-3, 2.5),
                         ]
                     ],
                 )
@@ -199,54 +478,54 @@ def test_create_measurement_area_from_wkt(wkt):
             "Measurement area can not be created from polygon with holes",
         ),
         (
-            Polygon(
+            shapely.Polygon(
                 [
-                    Point(1, 2),
-                    Point(1, 4),
-                    Point(1, 10),
-                    Point(1, 2),
+                    shapely.Point(1, 2),
+                    shapely.Point(1, 4),
+                    shapely.Point(1, 10),
+                    shapely.Point(1, 2),
                 ]
             ),
-            "Only simple measurement areas with non-zero area are allowed",
+            "Only simple polygons with non-zero area are allowed",
         ),
         (
-            Polygon(
+            shapely.Polygon(
                 [
-                    Point(-2, 2),
-                    Point(2, 5),
-                    Point(2, 2),
-                    Point(-2, 5),
+                    shapely.Point(-2, 2),
+                    shapely.Point(2, 5),
+                    shapely.Point(2, 2),
+                    shapely.Point(-2, 5),
                 ]
             ),
-            "Only simple measurement areas with non-zero area are allowed",
+            "Only simple polygons with non-zero area are allowed",
         ),
         (
-            Polygon(
+            shapely.Polygon(
                 [
-                    Point(1, -3),
-                    Point(4, -1),
-                    Point(8, -5),
-                    Point(6, -7),
-                    Point(4, -3),
+                    shapely.Point(1, -3),
+                    shapely.Point(4, -1),
+                    shapely.Point(8, -5),
+                    shapely.Point(6, -7),
+                    shapely.Point(4, -3),
                 ]
             ),
             "Measurement areas needs to be convex",
         ),
         (
             shapely.to_wkt(shapely.LineString([(0.0, 3.0), (1.0, -10.0)])),
-            "Could not create a polygon from the given input",
+            "Could not create a polygon from the given WKT",
         ),
     ],
 )
 def test_create_measurement_area_error(area_input, message):
-    with pytest.raises(ValueError, match=fr".*{message}.*"):
+    with pytest.raises(GeometryError, match=rf".*{message}.*"):
         measurement_area = MeasurementArea(area_input)
 
 
 def test_changing_measurement_area_fails():
     with pytest.raises(
         AttributeError,
-        match=fr"Measurement area can not be changed after construction!",
+        match=rf"Measurement area can not be changed after construction!",
     ):
         measurement_area = MeasurementArea(((0, 0), (0, 1), (1, 1), (1, 0)))
         measurement_area._polygon = shapely.LinearRing(
@@ -290,7 +569,10 @@ def test_create_measurement_line_from_linestring(linestring):
 @pytest.mark.parametrize(
     "points",
     [
-        [shapely.Point((0.0, 3.0)), shapely.Point((1.0, -10.0))],
+        [
+            shapely.Point((0.0, 3.0)),
+            shapely.Point((1.0, -10.0)),
+        ],
         np.array([shapely.Point((20, 1)), shapely.Point((1, 0))]),
     ],
 )
@@ -341,7 +623,10 @@ def test_create_measurement_line_from_wkt(linestring):
             "Measurement line may only consists of 2 points",
         ),
         (
-            [shapely.Point((0.0, 3.0)), shapely.Point((0.0, 3.0))],
+            [
+                shapely.Point((0.0, 3.0)),
+                shapely.Point((0.0, 3.0)),
+            ],
             "Start and end point of measurement line need to be different.",
         ),
         (
@@ -355,18 +640,296 @@ def test_create_measurement_line_from_wkt(linestring):
     ],
 )
 def test_create_measurement_line_error(line_input, message):
-    with pytest.raises(ValueError, match=fr".*{message}.*"):
+    with pytest.raises(GeometryError, match=rf".*{message}.*"):
         measurement_line = MeasurementLine(line_input)
 
 
 def test_changing_measurement_line_fails():
     with pytest.raises(
         AttributeError,
-        match=fr"Measurement line can not be changed after construction!",
+        match=rf"Measurement line can not be changed after construction!",
     ):
         measurement_line = MeasurementLine(
-            [shapely.Point((0.0, 3.0)), shapely.Point((1.0, -10.0))]
+            [
+                shapely.Point((0.0, 3.0)),
+                shapely.Point((1.0, -10.0)),
+            ]
         )
         measurement_line._line = shapely.LineString(
-            [shapely.Point((0.0, 3.0)), shapely.Point((1.0, -10.0))]
+            [
+                shapely.Point((0.0, 3.0)),
+                shapely.Point((1.0, -10.0)),
+            ]
         )
+
+
+###############################################################################
+# Helper functions
+###############################################################################
+@pytest.mark.parametrize(
+    "coordinate_input",
+    [
+        ([(0, 3.1), (1.2, 5.4), (4.1, 7.9), (7.1, 3.0), (0, 3.1)],),
+        (
+            [(-5.1, -3.2), (-3.1, 2.4), (-1.1, -2.5), (-5.1, -3.2)],
+            [[(-4.1, -2.3), (-2.1, -2.3), (-2.1, -1.1), (-4.1, -1.1)]],
+        ),
+        (
+            [
+                (2.4, -1.3),
+                (4.1, -5),
+                (3, -7.2),
+                (-1.3, -10.1),
+                (-2, -3.1),
+                (2.4, -1.3),
+            ],
+            [
+                [(3.1, -3.5), (1.7, -2.3), (0.9, -4.1)],
+                [(-1.2, -3.9), (-0.8, -6.1), (0.1, -5.9), (0.2, -4.3)],
+                [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
+            ],
+        ),
+    ],
+)
+def test_create_polygon_from_coordinates(coordinate_input):
+    reference_polygon = shapely.Polygon(*coordinate_input)
+    polygon = _create_polygon_from_input(*coordinate_input)
+
+    assert isinstance(polygon, shapely.Polygon)
+    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.area != 0
+    assert polygon.is_simple
+
+
+@pytest.mark.parametrize(
+    "point_input",
+    [
+        (
+            [
+                shapely.Point(0, 3.1),
+                shapely.Point(1.2, 5.4),
+                shapely.Point(4.1, 7.9),
+                shapely.Point(7.1, 3.0),
+                shapely.Point(0, 3.1),
+            ],
+        ),
+        (
+            [
+                shapely.Point(-5.1, -3.2),
+                shapely.Point(-3.1, 2.4),
+                shapely.Point(-1.1, -2.5),
+                shapely.Point(-5.1, -3.2),
+            ],
+            [
+                [
+                    shapely.Point(-4.1, -2.3),
+                    shapely.Point(-2.1, -2.3),
+                    shapely.Point(-2.1, -1.1),
+                    shapely.Point(-4.1, -1.1),
+                ]
+            ],
+        ),
+        (
+            [
+                shapely.Point(2.4, -1.3),
+                shapely.Point(4.1, -5),
+                shapely.Point(3, -7.2),
+                shapely.Point(-1.3, -10.1),
+                shapely.Point(-2, -3.1),
+                shapely.Point(2.4, -1.3),
+            ],
+            [
+                [
+                    shapely.Point(3.1, -3.5),
+                    shapely.Point(1.7, -2.3),
+                    shapely.Point(0.9, -4.1),
+                ],
+                [
+                    shapely.Point(-1.2, -3.9),
+                    shapely.Point(-0.8, -6.1),
+                    shapely.Point(0.1, -5.9),
+                    shapely.Point(0.2, -4.3),
+                ],
+                [
+                    shapely.Point(0.7, -7.5),
+                    shapely.Point(2.1, -6.5),
+                    shapely.Point(2.5, -4.7),
+                ],
+            ],
+        ),
+    ],
+)
+def test_create_polygon_from_points(point_input):
+    reference_polygon = shapely.Polygon(*point_input)
+    polygon = _create_polygon_from_input(*point_input)
+
+    assert isinstance(polygon, shapely.Polygon)
+    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.area != 0
+    assert polygon.is_simple
+
+
+@pytest.mark.parametrize(
+    "reference_polygon",
+    [
+        shapely.Polygon(
+            [(0, 3.1), (1.2, 5.4), (4.1, 7.9), (7.1, 3.0), (0, 3.1)],
+        ),
+        shapely.Polygon(
+            [(-5.1, -3.2), (-3.1, 2.4), (-1.1, -2.5), (-5.1, -3.2)],
+            [[(-4.1, -2.3), (-2.1, -2.3), (-2.1, -1.1), (-4.1, -1.1)]],
+        ),
+        shapely.Polygon(
+            [
+                (2.4, -1.3),
+                (4.1, -5),
+                (3, -7.2),
+                (-1.3, -10.1),
+                (-2, -3.1),
+                (2.4, -1.3),
+            ],
+            [
+                [(3.1, -3.5), (1.7, -2.3), (0.9, -4.1)],
+                [(-1.2, -3.9), (-0.8, -6.1), (0.1, -5.9), (0.2, -4.3)],
+                [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
+            ],
+        ),
+    ],
+)
+def test_create_polygon_from_polygon(reference_polygon):
+    polygon = _create_polygon_from_input(reference_polygon)
+
+    assert isinstance(polygon, shapely.Polygon)
+    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.area != 0
+    assert polygon.is_simple
+
+
+@pytest.mark.parametrize(
+    "wkt",
+    [
+        shapely.to_wkt(
+            shapely.Polygon(
+                [(0, 3.1), (1.2, 5.4), (4.1, 7.9), (7.1, 3.0), (0, 3.1)],
+            )
+        ),
+        shapely.to_wkt(
+            shapely.Polygon(
+                [(-5.1, -3.2), (-3.1, 2.4), (-1.1, -2.5), (-5.1, -3.2)],
+                [[(-4.1, -2.3), (-2.1, -2.3), (-2.1, -1.1), (-4.1, -1.1)]],
+            )
+        ),
+        shapely.to_wkt(
+            shapely.Polygon(
+                [
+                    (2.4, -1.3),
+                    (4.1, -5),
+                    (3, -7.2),
+                    (-1.3, -10.1),
+                    (-2, -3.1),
+                    (2.4, -1.3),
+                ],
+                [
+                    [(3.1, -3.5), (1.7, -2.3), (0.9, -4.1)],
+                    [(-1.2, -3.9), (-0.8, -6.1), (0.1, -5.9), (0.2, -4.3)],
+                    [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
+                ],
+            )
+        ),
+    ],
+)
+def test_create_polygon_from_wkt(wkt):
+    reference_polygon = shapely.from_wkt(wkt)
+    polygon = _create_polygon_from_input(wkt)
+
+    assert isinstance(polygon, shapely.Polygon)
+    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.area != 0
+    assert polygon.is_simple
+
+
+@pytest.mark.parametrize(
+    "polygon_input, hole_input, message",
+    [
+        (
+            shapely.Point(0, 0),
+            None,
+            "Could not create polygon from the given input",
+        ),
+        (
+            shapely.LineString([(0, 0), (1, 1)]),
+            None,
+            "Could not create polygon from the given input",
+        ),
+        ("foo", None, "Could not create polygon from the given WKT"),
+        (
+            shapely.LineString([(0, 0), (1, 1)]).wkt,
+            None,
+            "Could not create a polygon from the given WKT",
+        ),
+        (
+            shapely.Polygon(
+                [
+                    shapely.Point(-2, 2),
+                    shapely.Point(2, 5),
+                    shapely.Point(2, 2),
+                    shapely.Point(-2, 5),
+                ]
+            ),
+            None,
+            "Only simple polygons with non-zero area are allowed",
+        ),
+        (
+            shapely.Polygon(
+                [
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                ]
+            ),
+            None,
+            "Only simple polygons with non-zero area are allowed",
+        ),
+        (
+            shapely.Polygon(
+                [
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                ]
+            ),
+            [
+                shapely.Point(-2, 2),
+                shapely.Point(-2, 2),
+                shapely.Point(-2, 2),
+                shapely.Point(-2, 2),
+            ],
+            "If polygon is of type shapely.Polygon additional holes are not allowed",
+        ),
+        (
+            shapely.Polygon(
+                [
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                    shapely.Point(-2, 2),
+                ]
+            ).wkt,
+            [
+                shapely.Point(-2, 2),
+                shapely.Point(-2, 2),
+                shapely.Point(-2, 2),
+                shapely.Point(-2, 2),
+            ],
+            "If polygon is of type WKT additional holes are not allowed",
+        ),
+    ],
+)
+def test_create_polygon_error(polygon_input, hole_input, message):
+    with pytest.raises(Exception, match=rf".*{message}.*"):
+        if hole_input is None:
+            polygon = _create_polygon_from_input(polygon_input)
+        else:
+            polygon = _create_polygon_from_input(polygon_input, hole_input)

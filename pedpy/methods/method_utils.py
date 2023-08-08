@@ -9,18 +9,20 @@ import pandas as pd
 import shapely
 from scipy.spatial import Voronoi
 
-from pedpy.data.geometry import Geometry, MeasurementArea, MeasurementLine
+from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
 
 
-def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:
+def is_trajectory_valid(
+    *, traj: TrajectoryData, geometry: WalkableArea
+) -> bool:
     """Checks if all trajectory data points lie within the given geometry.
 
     Args:
         traj (TrajectoryData): trajectory data
-        geometry (Geometry): geometry
+        geometry (WalkableArea): geometry
 
     Returns:
         All points lie within geometry
@@ -29,13 +31,13 @@ def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:
 
 
 def get_invalid_trajectory(
-    *, traj: TrajectoryData, geometry: Geometry
+    *, traj: TrajectoryData, geometry: WalkableArea
 ) -> pd.DataFrame:
     """Returns all trajectory data points outside the given geometry.
 
     Args:
         traj (TrajectoryData): trajectory data
-        geometry (Geometry): geometry
+        geometry (WalkableArea): geometry
 
     Returns:
         DataFrame showing all data points outside the given geometry
@@ -244,7 +246,7 @@ def compute_time_distance_line(
 def compute_individual_voronoi_polygons(
     *,
     traj_data: pd.DataFrame,
-    geometry: Geometry,
+    geometry: WalkableArea,
     cut_off: Optional[Tuple[float, int]] = None,
     use_blind_points: bool = True,
 ) -> pd.DataFrame:
@@ -252,7 +254,7 @@ def compute_individual_voronoi_polygons(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        geometry (Geometry): bounding area, where pedestrian are supposed to be
+        geometry (WalkableArea): bounding area, where pedestrian are supposed to be
         cut_off (Tuple[float, int]): radius of max extended voronoi cell (in
                 m), number of linear segments in the approximation of circular
                 arcs, needs to be divisible by 4!

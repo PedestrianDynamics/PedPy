@@ -6,7 +6,7 @@ import pytest
 import shapely
 
 from pedpy import TrajectoryUnit
-from pedpy.data.geometry import Geometry, MeasurementArea, MeasurementLine
+from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.io.trajectory_loader import load_trajectory
 from pedpy.methods.density_calculator import (
@@ -209,7 +209,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = Geometry(walkable_area=geometry_polygon)
+    geometry = WalkableArea(walkable_area=geometry_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data, geometry=geometry, use_blind_points=False
@@ -282,7 +282,7 @@ def test_voronoi_density_blind_points(
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = Geometry(walkable_area=geometry_polygon)
+    geometry = WalkableArea(walkable_area=geometry_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data, geometry=geometry, use_blind_points=True
@@ -360,7 +360,7 @@ def test_voronoi_density_blind_points_cutoff(
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = Geometry(walkable_area=geometry_polygon)
+    geometry = WalkableArea(walkable_area=geometry_polygon)
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data,
         geometry=geometry,
@@ -438,7 +438,7 @@ def test_voronoi_velocity(
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = Geometry(walkable_area=geometry_polygon)
+    geometry = WalkableArea(walkable_area=geometry_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data, geometry=geometry, use_blind_points=False
@@ -804,7 +804,7 @@ def test_profiles(
         file=trajectory_original.file,
     )
 
-    geo = Geometry(walkable_area=geometry)
+    geo = WalkableArea(walkable_area=geometry)
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data,
         geometry=geo,
