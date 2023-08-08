@@ -10,7 +10,14 @@ log = logging.getLogger(__name__)
 
 
 class GeometryError(Exception):
+    """Class reflecting errors when creating PedPy geometry objects."""
+
     def __init__(self, message):
+        """Create GeometryError with the given message.
+
+        Args:
+            message: Error message
+        """
         self.message = message
 
 
@@ -39,7 +46,7 @@ class WalkableArea:
         polygon: Any,
         obstacles: Optional[Any] = None,
     ):
-        """Create a measurement area
+        """Creates a measurement area.
 
         Args:
             polygon: A sequence of (x, y) numeric coordinate pairs, or
@@ -317,14 +324,22 @@ class MeasurementLine:
 def _create_polygon_from_input(
     polygon_input: Any, holes: Optional[List[Any]] = None
 ) -> shapely.Polygon:
-    """
+    """Convince function to create a shapely.Polygon from different input types.
+
+    Can create a shapely.Polygon from:
+        - list of coordinates
+        - list of shapely.Points
+        - shapely.Polygon
+        - WKT-string
 
     Args:
-        polygon_input:
-        holes:
+        polygon_input: input which can used to assemble a shapely.Polygon
+        holes (optional): List of objects which represent holes in the
+            shapely.Polygon. May not be used, when polygon_input is a
+            shapely.Polygon or WKT.
 
     Returns:
-
+        shapely.Polygon constructed by the input
     """
     return_poly = None
     if isinstance(polygon_input, shapely.Polygon):
@@ -342,7 +357,8 @@ def _create_polygon_from_input(
             wkt_type = shapely.from_wkt(polygon_input)
         except Exception as exc:
             raise GeometryError(
-                f"Could not create polygon from the given WKT: {polygon_input}. See following error message:\n{exc}"
+                f"Could not create polygon from the given WKT: {polygon_input}."
+                f" See following error message:\n{exc}"
             ) from exc
 
         if isinstance(wkt_type, shapely.Polygon):

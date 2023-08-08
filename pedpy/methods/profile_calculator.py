@@ -6,7 +6,6 @@ import numpy.typing as npt
 import pandas as pd
 import shapely
 from aenum import Enum
-from shapely import Polygon
 
 from pedpy.data.geometry import WalkableArea
 
