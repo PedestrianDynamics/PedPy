@@ -8,6 +8,8 @@ import shapely
 from aenum import Enum
 from shapely import Polygon
 
+from pedpy.data.geometry import WalkableArea
+
 
 class VelocityMethod(Enum):  # pylint: disable=too-few-public-methods
     """Identifier for the method used to compute the mean velocity."""
@@ -20,7 +22,7 @@ class VelocityMethod(Enum):  # pylint: disable=too-few-public-methods
 def compute_profiles(
     *,
     individual_voronoi_velocity_data: pd.DataFrame,
-    walkable_area: Polygon,
+    walkable_area: WalkableArea,
     grid_size: float,
     velocity_method: VelocityMethod,
 ) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
@@ -141,7 +143,7 @@ def _compute_voronoi_velocity(
 
 
 def _get_grid_cells(
-    *, walkable_area: Polygon, grid_size: float
+    *, walkable_area: WalkableArea, grid_size: float
 ) -> Tuple[npt.NDArray[np.float64], int, int]:
     """Creates a list of square grid cells covering the geometry.
 

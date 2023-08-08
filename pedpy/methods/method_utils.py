@@ -16,34 +16,36 @@ log = logging.getLogger(__name__)
 
 
 def is_trajectory_valid(
-    *, traj: TrajectoryData, geometry: WalkableArea
+    *, traj: TrajectoryData, walkable_area: WalkableArea
 ) -> bool:
-    """Checks if all trajectory data points lie within the given geometry.
+    """Checks if all trajectory data points lie within the given walkable area.
 
     Args:
         traj (TrajectoryData): trajectory data
-        geometry (WalkableArea): geometry
+        walkable_area (WalkableArea): walkable area in which the pedestrians
+            should be
 
     Returns:
-        All points lie within geometry
+        All points lie within walkable area
     """
-    return get_invalid_trajectory(traj=traj, geometry=geometry).empty
+    return get_invalid_trajectory(traj=traj, walkable_area=walkable_area).empty
 
 
 def get_invalid_trajectory(
-    *, traj: TrajectoryData, geometry: WalkableArea
+    *, traj: TrajectoryData, walkable_area: WalkableArea
 ) -> pd.DataFrame:
-    """Returns all trajectory data points outside the given geometry.
+    """Returns all trajectory data points outside the given walkable area.
 
     Args:
         traj (TrajectoryData): trajectory data
-        geometry (WalkableArea): geometry
+        walkable_area (WalkableArea): walkable area in which the pedestrians
+            should be
 
     Returns:
-        DataFrame showing all data points outside the given geometry
+        DataFrame showing all data points outside the given walkable area
     """
     return traj.data.loc[
-        ~shapely.within(traj.data.points, geometry.walkable_area)
+        ~shapely.within(traj.data.points, walkable_area.polygon)
     ]
 
 
@@ -246,7 +248,7 @@ def compute_time_distance_line(
 def compute_individual_voronoi_polygons(
     *,
     traj_data: pd.DataFrame,
-    geometry: WalkableArea,
+    walkable_area: WalkableArea,
     cut_off: Optional[Tuple[float, int]] = None,
     use_blind_points: bool = True,
 ) -> pd.DataFrame:
@@ -254,13 +256,13 @@ def compute_individual_voronoi_polygons(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        geometry (WalkableArea): bounding area, where pedestrian are supposed to be
+        walkable_area (WalkableArea): bounding area, where pedestrian are supposed to be
         cut_off (Tuple[float, int]): radius of max extended voronoi cell (in
                 m), number of linear segments in the approximation of circular
                 arcs, needs to be divisible by 4!
-        use_blind_points (bool): adds extra 4 points outside the geometry to
-                also compute voronoi cells when less than 4 peds are in the
-                geometry (default: on!)
+        use_blind_points (bool): adds extra 4 points outside the walkable area
+                to also compute voronoi cells when less than 4 peds are in the
+                walkable area (default: on!)
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame','individual voronoi',
@@ -268,7 +270,7 @@ def compute_individual_voronoi_polygons(
     """
     dfs = []
 
-    bounds = geometry.walkable_area.bounds
+    bounds = walkable_area.polygon.bounds
     x_diff = abs(bounds[2] - bounds[0])
     y_diff = abs(bounds[3] - bounds[1])
     clipping_diameter = 2 * max(x_diff, y_diff)
@@ -305,7 +307,7 @@ def compute_individual_voronoi_polygons(
 
         # Compute the intersecting area with the walkable area
         voronoi_in_frame["individual voronoi"] = shapely.intersection(
-            voronoi_polygons, geometry.walkable_area
+            voronoi_polygons, walkable_area.polygon
         )
 
         if cut_off is not None:
@@ -373,7 +375,7 @@ def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
 ) -> List[shapely.Polygon]:
     """Generate Polygons from the Voronoi diagram.
 
-    Generate shapely.geometry.Polygon objects corresponding to the
+    Generate shapely.Polygon objects corresponding to the
     regions of a scipy.spatial.Voronoi object, in the order of the
     input points. The polygons for the infinite regions are large
     enough that all points within a distance 'diameter' of a Voronoi

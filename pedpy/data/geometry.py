@@ -107,6 +107,15 @@ class WalkableArea:
         """
         return self._polygon
 
+    @property
+    def bounds(self):
+        """Walkable area as shapely Polygon.
+
+        Returns:
+            Walkable area as shapely Polygon.
+        """
+        return self._polygon.bounds
+
 
 ###############################################################################
 # Measurement Area

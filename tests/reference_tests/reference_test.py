@@ -34,7 +34,7 @@ ROOT_DIR = pathlib.Path(__file__).parent.resolve()
 
 
 @pytest.mark.parametrize(
-    "geometry, measurement_area, folder",
+    "walkable_area, measurement_area, folder",
     [
         (
             shapely.from_wkt(
@@ -62,7 +62,7 @@ ROOT_DIR = pathlib.Path(__file__).parent.resolve()
         ),
     ],
 )
-def test_classic_density(geometry, measurement_area, folder):
+def test_classic_density(walkable_area, measurement_area, folder):
     reference_result = pd.read_csv(
         next(
             folder.glob(
@@ -93,7 +93,7 @@ def test_classic_density(geometry, measurement_area, folder):
 
 
 @pytest.mark.parametrize(
-    "geometry, measurement_area, folder, velocity_frame",
+    "walkable_area, measurement_area, folder, velocity_frame",
     [
         (
             shapely.from_wkt(
@@ -125,7 +125,7 @@ def test_classic_density(geometry, measurement_area, folder):
     ],
 )
 def test_arithmetic_velocity(
-    geometry, measurement_area, folder, velocity_frame
+    walkable_area, measurement_area, folder, velocity_frame
 ):
     reference_result = pd.read_csv(
         next(
@@ -163,7 +163,7 @@ def test_arithmetic_velocity(
 
 
 @pytest.mark.parametrize(
-    "geometry_polygon, measurement_area, folder",
+    "walkable_area_polygon, measurement_area, folder",
     [
         (
             shapely.from_wkt(
@@ -191,7 +191,7 @@ def test_arithmetic_velocity(
         ),
     ],
 )
-def test_voronoi_density(geometry_polygon, measurement_area, folder):
+def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
     reference_result = pd.read_csv(
         next(
             folder.glob(
@@ -209,10 +209,12 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = WalkableArea(walkable_area=geometry_polygon)
+    walkable_area = WalkableArea(walkable_area_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory.data, geometry=geometry, use_blind_points=False
+        traj_data=trajectory.data,
+        walkable_area=walkable_area,
+        use_blind_points=False,
     )
     result, _ = compute_voronoi_density(
         individual_voronoi_data=individual_voronoi,
@@ -234,7 +236,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
 
 
 @pytest.mark.parametrize(
-    "geometry_polygon, measurement_area, folder",
+    "walkable_area_polygon, measurement_area, folder",
     [
         (
             shapely.from_wkt(
@@ -263,7 +265,7 @@ def test_voronoi_density(geometry_polygon, measurement_area, folder):
     ],
 )
 def test_voronoi_density_blind_points(
-    geometry_polygon, measurement_area, folder
+    walkable_area_polygon, measurement_area, folder
 ):
     reference_result = pd.read_csv(
         next(
@@ -282,16 +284,18 @@ def test_voronoi_density_blind_points(
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = WalkableArea(walkable_area=geometry_polygon)
+    walkable_area = WalkableArea(walkable_area_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory.data, geometry=geometry, use_blind_points=True
+        traj_data=trajectory.data,
+        walkable_area=walkable_area,
+        use_blind_points=True,
     )
     result, _ = compute_voronoi_density(
         individual_voronoi_data=individual_voronoi,
         measurement_area=measurement_area,
     )
-    # as there is a bug in the blind point computation in jpsreport in the
+    # as there is a bug in the blind point computation in JPSreport in the
     # bottleneck test case ignore the last 20 frames.
     if folder.name == "bottleneck":
         result = result[result.index < 930]
@@ -312,7 +316,7 @@ def test_voronoi_density_blind_points(
 
 
 @pytest.mark.parametrize(
-    "geometry_polygon, measurement_area, folder",
+    "walkable_area_polygon, measurement_area, folder",
     [
         (
             shapely.from_wkt(
@@ -341,7 +345,7 @@ def test_voronoi_density_blind_points(
     ],
 )
 def test_voronoi_density_blind_points_cutoff(
-    geometry_polygon, measurement_area, folder
+    walkable_area_polygon, measurement_area, folder
 ):
     reference_result = pd.read_csv(
         next(
@@ -360,10 +364,10 @@ def test_voronoi_density_blind_points_cutoff(
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = WalkableArea(walkable_area=geometry_polygon)
+    walkable_area = WalkableArea(walkable_area_polygon)
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data,
-        geometry=geometry,
+        walkable_area=walkable_area,
         use_blind_points=True,
         cut_off=(0.8, 12),
     )
@@ -387,7 +391,7 @@ def test_voronoi_density_blind_points_cutoff(
 
 
 @pytest.mark.parametrize(
-    "geometry_polygon, measurement_area, folder, velocity_frame",
+    "walkable_area_polygon, measurement_area, folder, velocity_frame",
     [
         (
             shapely.from_wkt(
@@ -419,7 +423,7 @@ def test_voronoi_density_blind_points_cutoff(
     ],
 )
 def test_voronoi_velocity(
-    geometry_polygon, measurement_area, folder, velocity_frame
+    walkable_area_polygon, measurement_area, folder, velocity_frame
 ):
     reference_result = pd.read_csv(
         next(
@@ -438,10 +442,12 @@ def test_voronoi_velocity(
     trajectory = load_trajectory(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
-    geometry = WalkableArea(walkable_area=geometry_polygon)
+    walkable_area = WalkableArea(walkable_area_polygon)
 
     individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory.data, geometry=geometry, use_blind_points=False
+        traj_data=trajectory.data,
+        walkable_area=walkable_area,
+        use_blind_points=False,
     )
     intersecting_voronoi = compute_intersecting_polygons(
         individual_voronoi_data=individual_voronoi,
@@ -734,7 +740,7 @@ def test_passing_velocity(measurement_line, width, folder):
 
 
 @pytest.mark.parametrize(
-    "geometry, grid_size, cut_off_radius, num_edges, min_frame, "
+    "walkable_area_polygon, grid_size, cut_off_radius, num_edges, min_frame, "
     "max_frame, folder",
     [
         (
@@ -773,7 +779,7 @@ def test_passing_velocity(measurement_line, width, folder):
     ],
 )
 def test_profiles(
-    geometry,
+    walkable_area_polygon,
     grid_size,
     cut_off_radius,
     num_edges,
@@ -804,10 +810,10 @@ def test_profiles(
         file=trajectory_original.file,
     )
 
-    geo = WalkableArea(walkable_area=geometry)
+    walkable_area = WalkableArea(walkable_area_polygon)
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory.data,
-        geometry=geo,
+        walkable_area=walkable_area,
         cut_off=(cut_off_radius, num_edges),
         use_blind_points=False,
     )
@@ -825,13 +831,13 @@ def test_profiles(
     ]
     density_profiles, velocity_profiles_arithmetic = compute_profiles(
         individual_voronoi_velocity_data=individual_voronoi_velocity_data,
-        walkable_area=geo.walkable_area,
+        walkable_area=walkable_area,
         grid_size=grid_size,
         velocity_method=VelocityMethod.ARITHMETIC,
     )
     density_profiles, velocity_profiles_voronoi = compute_profiles(
         individual_voronoi_velocity_data=individual_voronoi_velocity_data,
-        walkable_area=geo.walkable_area,
+        walkable_area=walkable_area,
         grid_size=grid_size,
         velocity_method=VelocityMethod.VORONOI,
     )
