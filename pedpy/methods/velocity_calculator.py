@@ -8,13 +8,13 @@ import pandas as pd
 import shapely
 
 from pedpy.data.geometry import MeasurementArea
+from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import _compute_individual_movement
 
 
 def compute_individual_velocity(
     *,
-    traj_data: pd.DataFrame,
-    frame_rate: float,
+    traj_data: TrajectoryData,
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     x_y_components: bool = True,
@@ -25,7 +25,6 @@ def compute_individual_velocity(
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        frame_rate (float): frame rate of the trajectory
         frame_step (int): gives the size of time interval for calculating the
             velocity.
         movement_direction (np.ndarray): main movement direction on which the
@@ -42,7 +41,7 @@ def compute_individual_velocity(
     )
     df_speed = _compute_individual_speed(
         movement_data=df_movement,
-        frame_rate=frame_rate,
+        frame_rate=traj_data.frame_rate,
         movement_direction=movement_direction,
         x_y_components=x_y_components,
     )
@@ -52,7 +51,7 @@ def compute_individual_velocity(
 
 def compute_mean_velocity_per_frame(
     *,
-    traj_data: pd.DataFrame,
+    traj_data: TrajectoryData,
     individual_velocity: pd.DataFrame,
     measurement_area: MeasurementArea,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -61,7 +60,7 @@ def compute_mean_velocity_per_frame(
     Note: when using a movement direction, the velocity may be negative!
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (TrajectoryData): trajectory data
         individual_velocity (pd.DataFrame): individual velocity data
         measurement_area (MeasurementArea): measurement area for which the
             velocity is computed
@@ -69,14 +68,14 @@ def compute_mean_velocity_per_frame(
     Returns:
         DataFrame containing the columns 'frame' and 'speed'
     """
-    combined = traj_data.merge(individual_velocity, on=["ID", "frame"])
+    combined = traj_data.data.merge(individual_velocity, on=["ID", "frame"])
     df_mean = (
         combined[shapely.within(combined["points"], measurement_area.polygon)]
         .groupby("frame")["speed"]
         .mean()
     )
     df_mean = df_mean.reindex(
-        list(range(traj_data.frame.min(), traj_data.frame.max() + 1)),
+        list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
     return df_mean
@@ -84,7 +83,7 @@ def compute_mean_velocity_per_frame(
 
 def compute_voronoi_velocity(
     *,
-    traj_data: pd.DataFrame,
+    traj_data: TrajectoryData,
     individual_velocity: pd.DataFrame,
     individual_voronoi_intersection: pd.DataFrame,
     measurement_area: MeasurementArea,
@@ -94,7 +93,7 @@ def compute_voronoi_velocity(
     Note: when using a movement direction, the velocity may be negative!
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (TrajectoryData): trajectory data
         individual_velocity (pd.DataFrame): individual velocity data
         individual_voronoi_intersection (pd.DataFrame): intersections of the
             individual with the measurement area of each pedestrian
@@ -114,7 +113,7 @@ def compute_voronoi_velocity(
     )
     df_voronoi_speed = df_voronoi.groupby("frame")["voronoi speed"].sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
-        list(range(traj_data.frame.min(), traj_data.frame.max() + 1)),
+        list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
     return pd.Series(df_voronoi_speed)
