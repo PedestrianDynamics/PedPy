@@ -6,26 +6,27 @@ import pandas as pd
 import shapely
 
 from pedpy.data.geometry import MeasurementArea
+from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import compute_intersecting_polygons
 
 
 def compute_classic_density(
     *,
-    traj_data: pd.DataFrame,
+    traj_data: TrajectoryData,
     measurement_area: MeasurementArea,
 ) -> pd.DataFrame:
     """Compute the classic density per frame inside the given measurement area.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data to analyze
+        traj_data (TrajectoryData): trajectory data to analyze
         measurement_area (MeasurementArea): area for which the density is computed
 
 
     Returns:
         DataFrame containing the columns: 'frame' and 'classic density'
     """
-    peds_in_area = traj_data[
-        shapely.contains(measurement_area.polygon, traj_data["points"])
+    peds_in_area = traj_data.data[
+        shapely.contains(measurement_area.polygon, traj_data.data["points"])
     ]
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
 
@@ -34,7 +35,7 @@ def compute_classic_density(
     # Rename column and add missing zero values
     density.columns = ["classic density"]
     density = density.reindex(
-        list(range(traj_data.frame.min(), traj_data.frame.max() + 1)),
+        list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
 

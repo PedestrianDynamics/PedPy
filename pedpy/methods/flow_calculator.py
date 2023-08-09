@@ -4,14 +4,14 @@ from typing import Tuple
 import pandas as pd
 
 from pedpy.data.geometry import MeasurementLine
+from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import compute_crossing_frames
 
 
 def compute_n_t(
     *,
-    traj_data: pd.DataFrame,
+    traj_data: TrajectoryData,
     measurement_line: MeasurementLine,
-    frame_rate: float,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the frame-wise cumulative number of pedestrians passing the line.
 
@@ -21,7 +21,6 @@ def compute_n_t(
     Args:
         traj_data (TrajectoryData): trajectory data
         measurement_line (MeasurementLine): line for which n-t is computed
-        frame_rate (float): frame rate of the trajectory data
 
     Returns:
         DataFrame containing the columns 'frame', 'Cumulative pedestrians',
@@ -48,7 +47,11 @@ def compute_n_t(
     # missing (fillna(0)).
     n_t = (
         n_t.reindex(
-            list(range(traj_data.frame.min(), traj_data.frame.max() + 1))
+            list(
+                range(
+                    traj_data.data.frame.min(), traj_data.data.frame.max() + 1
+                )
+            )
         )
         .fillna(method="ffill")
         .fillna(0)
@@ -58,7 +61,7 @@ def compute_n_t(
     n_t["Cumulative pedestrians"] = n_t["Cumulative pedestrians"].astype(int)
 
     # frame number is the index
-    n_t["Time [s]"] = n_t.index / frame_rate
+    n_t["Time [s]"] = n_t.index / traj_data.frame_rate
     return n_t, crossing_frames
 
 

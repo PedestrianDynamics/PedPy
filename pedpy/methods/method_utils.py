@@ -16,41 +16,46 @@ log = logging.getLogger(__name__)
 
 
 def is_trajectory_valid(
-    *, traj: TrajectoryData, walkable_area: WalkableArea
+    *, traj_data: TrajectoryData, walkable_area: WalkableArea
 ) -> bool:
     """Checks if all trajectory data points lie within the given walkable area.
 
     Args:
-        traj (TrajectoryData): trajectory data
+        traj_data (TrajectoryData): trajectory data
         walkable_area (WalkableArea): walkable area in which the pedestrians
             should be
 
     Returns:
         All points lie within walkable area
     """
-    return get_invalid_trajectory(traj=traj, walkable_area=walkable_area).empty
+    return get_invalid_trajectory(
+        traj_data=traj_data, walkable_area=walkable_area
+    ).empty
 
 
 def get_invalid_trajectory(
-    *, traj: TrajectoryData, walkable_area: WalkableArea
+    *, traj_data: TrajectoryData, walkable_area: WalkableArea
 ) -> pd.DataFrame:
     """Returns all trajectory data points outside the given walkable area.
 
     Args:
-        traj (TrajectoryData): trajectory data
+        traj_data (TrajectoryData): trajectory data
         walkable_area (WalkableArea): walkable area in which the pedestrians
             should be
 
     Returns:
         DataFrame showing all data points outside the given walkable area
     """
-    return traj.data.loc[
-        ~shapely.within(traj.data.points, walkable_area.polygon)
+    return traj_data.data.loc[
+        ~shapely.within(traj_data.data.points, walkable_area.polygon)
     ]
 
 
 def compute_frame_range_in_area(
-    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine, width: float
+    *,
+    traj_data: TrajectoryData,
+    measurement_line: MeasurementLine,
+    width: float,
 ) -> Tuple[pd.DataFrame, MeasurementArea]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
@@ -66,7 +71,7 @@ def compute_frame_range_in_area(
         ranges underestimates the actual movement time.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (TrajectoryData): trajectory data
         measurement_line (MeasurementLine): measurement line
         width (float): distance to the second measurement line
 
@@ -207,7 +212,7 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_time_distance_line(
-    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine
+    *, traj_data: TrajectoryData, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
     """Compute the time and distance to the measurement line.
 
@@ -217,13 +222,13 @@ def compute_time_distance_line(
     pedestrian has crossed the line will be omitted in the results.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (TrajectoryData): trajectory data
         measurement_line (MeasurementLine): line which is crossed
 
     Returns: DataFrame containing 'ID', 'frame', 'time' (frames to crossing),
         and 'distance' (to measurement line)
     """
-    df_distance_time = traj_data[["ID", "frame", "points"]].copy(deep=True)
+    df_distance_time = traj_data.data[["ID", "frame", "points"]].copy(deep=True)
 
     # Compute distance to measurement line
     df_distance_time["distance"] = shapely.distance(
@@ -247,7 +252,7 @@ def compute_time_distance_line(
 
 def compute_individual_voronoi_polygons(
     *,
-    traj_data: pd.DataFrame,
+    traj_data: TrajectoryData,
     walkable_area: WalkableArea,
     cut_off: Optional[Tuple[float, int]] = None,
     use_blind_points: bool = True,
@@ -255,7 +260,7 @@ def compute_individual_voronoi_polygons(
     """Compute the individual voronoi cells for each person and frame.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (TrajectoryData): trajectory data
         walkable_area (WalkableArea): bounding area, where pedestrian are supposed to be
         cut_off (Tuple[float, int]): radius of max extended voronoi cell (in
                 m), number of linear segments in the approximation of circular
@@ -284,7 +289,7 @@ def compute_individual_voronoi_polygons(
         ]
     )
 
-    for frame, peds_in_frame in traj_data.groupby(traj_data.frame):
+    for frame, peds_in_frame in traj_data.data.groupby(traj_data.data.frame):
         points = peds_in_frame[["X", "Y"]].values
         points = np.concatenate([points, blind_points])
 
@@ -438,7 +443,7 @@ def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
 
 
 def _compute_individual_movement(
-    *, traj_data: pd.DataFrame, frame_step: int, bidirectional: bool = True
+    *, traj_data: TrajectoryData, frame_step: int, bidirectional: bool = True
 ) -> pd.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
@@ -460,7 +465,7 @@ def _compute_individual_movement(
         where the movement start/ends, and 'start_frame'/'end_frame' are the
         corresponding frames.
     """
-    df_movement = traj_data.copy(deep=True)
+    df_movement = traj_data.data.copy(deep=True)
 
     df_movement["start"] = (
         df_movement.groupby("ID")["points"]
@@ -494,7 +499,7 @@ def _compute_individual_movement(
 
 
 def compute_crossing_frames(
-    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine
+    *, traj_data: TrajectoryData, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
@@ -542,7 +547,7 @@ def compute_crossing_frames(
 
 
 def _get_continuous_parts_in_area(
-    *, traj_data: pd.DataFrame, measurement_area: MeasurementArea
+    *, traj_data: TrajectoryData, measurement_area: MeasurementArea
 ) -> pd.DataFrame:
     """Compute the time-continuous parts of each pedestrian in the area.
 
@@ -551,14 +556,14 @@ def _get_continuous_parts_in_area(
     considered.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (TrajectoryData): trajectory data
         measurement_area (MeasurementArea): area which is considered
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
     """
-    inside = traj_data.loc[
-        shapely.within(traj_data.points, measurement_area.polygon), :
+    inside = traj_data.data.loc[
+        shapely.within(traj_data.data.points, measurement_area.polygon), :
     ].copy()
     inside.loc[:, "g"] = inside.groupby("ID", group_keys=False)["frame"].apply(
         lambda x: x.diff().ge(2).cumsum()
