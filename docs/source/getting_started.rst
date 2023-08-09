@@ -42,7 +42,7 @@ They can either originate from experiments, field observations, or simulations.
 
 *PedPy* can load trajectories from text files, when:
 
-- values are seperated by any whitespace, e.g., space, tab
+- values are separated by any whitespace, e.g., space, tab
 - file has at least 5 columns in the following order: "ID", "frame", "X", "Y", "Z", any additional columns will be ignored!
 - file may contain comment lines with `#` at in the beginning
 
@@ -79,12 +79,13 @@ No header at all:
     1 30 161.967 753.088 168.937
     ...
 
-Geometry
---------
+Walkable Area
+-------------
 
-For handling geometrical data in *PedPy* we use `Shapely >= 2.0 <https://shapely.readthedocs.io/en/latest/>`__.
+For handling geometrical data in *PedPy* we use `Shapely >= 2.0 <https://shapely.readthedocs.io/en/2.0.1/>`__ in the background.
+
 One other important step when setting up the analysis is the geometrical boundary of the environment.
-These boundaries are defined as `Shapely Polygons <https://shapely.readthedocs.io/en/latest/manual.html#polygons>`__.
+These boundaries are defined as :class:`WalkableArea <pedpy.data.geometry.WalkableArea>`.
 
 .. note::
 
@@ -104,11 +105,9 @@ In this case, this would be:
 
 .. code:: python
 
-    from shapely import Polygon
-    from pedpy import Geometry
+    from pedpy import WalkableArea
 
-    walkable_area = Polygon([(-9, 0), (-9, 5), (9, 5), (9, 0)])
-    geometry = Geometry(walkable_area=walkable_area)
+    walkable_area = WalkableArea([(-9, 0), (-9, 5), (9, 5), (9, 0)])
 
 .. figure:: images/geo_walkable_area.png
     :alt: Plot of the geometry using the walkable area as boundary.
@@ -118,34 +117,29 @@ Create a bounding box with obstacles
 
 Alternatively, it is also possible to create a larger bounding box and put some obstacles in the area to create the desired environment.
 This might be the best solution in more complex geometries.
-The obstacles are again `Shapely Polygons <https://shapely.readthedocs.io/en/latest/manual.html#polygons>`__.
 
 .. note::
 
-    The obstacles need to be completely inside the walkable area, otherwise they will be ignored!
+    The obstacles need to be covered by the walkable area, otherwise an exception will be raised!
 
 .. code:: python
 
-    from shapely import Polygon
-    from pedpy import Geometry
+    from pedpy import WalkableArea
 
-    walkable_area = Polygon([(-10, -3), (-10, 8), (10, 8), (10, -3)])
-    obstacles = [
-        Polygon([(-9, -2), (-9, 0), (9, 0), (9, -2), (-9, -2)]),
-        Polygon([(-9, 5), (-9, 7), (9, 7), (9, 5), (-9, 5)])
-    ]
-    geometry = Geometry(walkable_area=walkable_area, obstacles=obstacles)
+    walkable_area = WalkableArea(
+        [(-10, -3), (-10, 8), (10, 8), (10, -3)],
+        [
+            Polygon([(-9, -2), (-9, 0), (9, 0), (9, -2), (-9, -2)]),
+            Polygon([(-9, 5), (-9, 7), (9, 7), (9, 5), (-9, 5)]),
+        ],
+    )
 
-    # or add the obstacles one by one
-    geometry = Geometry(walkable_area=walkable_area)
-    geometry.add_obstacle(Polygon([(-9, -2), (-9, 0), (9, 0), (9, -2), (-9, -2)]))
-    geometry.add_obstacle(Polygon([(-9, 5), (-9, 7), (9, 7), (9, 5), (-9, 5)]))
 
 .. figure:: images/geo_bounding_box.png
     :alt: Plot of the geometry with bounding box and obstacles.
 
 .. warning::
-    If setting up a geometry where a wall/obstacles seperates multiple walkable
+    If setting up a geometry where a wall/obstacles separates multiple walkable
     areas make sure that the wall/obstacle has a physical depth! Otherwise it
     will be ignored in the analysis!
 
@@ -168,14 +162,13 @@ These can either be measurement lines, or measurement areas.
 Measurement line
 ^^^^^^^^^^^^^^^^
 
-A measurement line is a line between **two** points in the setup.
-They are defined as `Shapely LineStrings <https://shapely.readthedocs.io/en/latest/manual.html#linestrings>`__.
+A measurement line is a line between **two** points in the setup (:class:`MeasurementLine <pedpy.data.geometry.MeasurementLine>`).
 
 .. code:: python
 
-    from shapely import LineString
+    from pedpy import MeasurementLine
 
-    measurement_line = LineString([(0, 0), (0, 5)])
+    measurement_line = MeasurementLine([(0, 0), (0, 5)])
 
 .. figure:: images/ml.png
     :alt: Plot of the geometry with measurement line.
@@ -184,18 +177,18 @@ Measurement area
 ^^^^^^^^^^^^^^^^
 
 A measurement area is a specific area inside the setup, which will be used for the analysis.
-The area is a `Shapely Polygons <https://shapely.readthedocs.io/en/latest/manual.html#polygons>`__.
+It is a simple polygon, which covers a non-zero area, see :class:`MeasurementArea <pedpy.data.geometry.MeasurementArea>`.
 
-.. warning::
+.. note::
 
-    For reasonable results it is highly recommended to only use convex polygons as measurement area.
+    For reasonable results only convex polygons are allowed as measurement area.
     In most cases, the measurement areas should be rectangular!
 
 .. code:: python
 
-    from shapely import Polygon
+    from pedpy import MeasurementArea
 
-    measurement_area = Polygon([(-1.5, 0), (-1.5, 5), (1.5, 5), (1.5, 0), (-1.5, 0)])
+    measurement_area = MeasurementArea([(-1.5, 0), (-1.5, 5), (1.5, 5), (1.5, 0), (-1.5, 0)])
 
 .. figure:: images/ma.png
     :alt: Plot of the geometry with measurement area.
