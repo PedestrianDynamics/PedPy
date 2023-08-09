@@ -8,22 +8,22 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
 
-from pedpy.data.geometry import Geometry
+from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
 
 
-def plot_geometry(
+def plot_walkable_area(
     *,
-    geometry: Geometry,
+    walkable_area: WalkableArea,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the given geometry in 2-D.
+    """Plot the given walkable area in 2-D.
 
     Args:
-        geometry (Geometry): Geometry object to plot
+        walkable_area (WalkableArea): WalkableArea object to plot
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         line_color (optional): color of the borders
         line_color (optional): line width of the borders
@@ -31,7 +31,7 @@ def plot_geometry(
         hole_alpha (optional): alpha of background color for holes
 
     Returns:
-        matplotlib.axes.Axes instance where the geometry is plotted
+        matplotlib.axes.Axes instance where the walkable area is plotted
     """
     if ax is None:
         ax = plt.gca()
@@ -43,12 +43,12 @@ def plot_geometry(
     hole_alpha = kwargs.get("hole_alpha", 1.0)
 
     ax.plot(
-        *geometry.walkable_area.exterior.xy,
+        *walkable_area.polygon.exterior.xy,
         color=line_color,
         linewidth=line_width,
     )
 
-    for hole in geometry.walkable_area.interiors:
+    for hole in walkable_area.polygon.interiors:
         ax.plot(*hole.xy, color=line_color, linewidth=line_width)
         # Paint all holes first white, then with the desired color
         ax.fill(*hole.xy, color="w", alpha=1)
@@ -63,15 +63,15 @@ def plot_geometry(
 def plot_trajectories(
     *,
     traj: TrajectoryData,
-    geometry: Optional[Geometry] = None,
+    walkable_area: Optional[WalkableArea] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the given trajectory and geometry in 2-D.
+    """Plot the given trajectory and walkable area in 2-D.
 
     Args:
         traj (TrajectoryData): Trajectory object to plot
-        geometry (Geometry, optional): Geometry object to plot
+        walkable_area (WalkableArea, optional): WalkableArea object to plot
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
         traj_color (optional): color of the trajectories
@@ -86,7 +86,7 @@ def plot_trajectories(
         hole_alpha (optional): alpha of background color for holes
 
     Returns:
-        matplotlib.axes.Axes instance where the geometry is plotted
+        matplotlib.axes.Axes instance where the trajectories are plotted
     """
     traj_color = kwargs.get("traj_color", "r")
     traj_width = kwargs.get("traj_width", 1.0)
@@ -98,8 +98,8 @@ def plot_trajectories(
     if ax is None:
         ax = plt.gca()
 
-    if geometry is not None:
-        ax = plot_geometry(geometry=geometry, ax=ax, **kwargs)
+    if walkable_area is not None:
+        ax = plot_walkable_area(walkable_area=walkable_area, ax=ax, **kwargs)
 
     for _, ped in traj.data.groupby("ID"):
         plot = ax.plot(
@@ -131,9 +131,9 @@ def plot_trajectories(
 def plot_measurement_setup(
     *,
     traj: Optional[TrajectoryData] = None,
-    geometry: Optional[Geometry] = None,
-    measurement_areas: Optional[List[shapely.Polygon]] = None,
-    measurement_lines: Optional[List[shapely.LineString]] = None,
+    walkable_area: Optional[WalkableArea] = None,
+    measurement_areas: Optional[List[MeasurementArea]] = None,
+    measurement_lines: Optional[List[MeasurementLine]] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -141,10 +141,10 @@ def plot_measurement_setup(
 
     Args:
         traj (TrajectoryData, optional): Trajectory object to plot
-        geometry (Geometry, optional): Geometry object to plot
-        measurement_areas (List[Polygon], optional): List of measurement areas
+        walkable_area (WalkableArea, optional): WalkableArea object to plot
+        measurement_areas (List[MeasurementArea], optional): List of measurement areas
             to plot
-        measurement_lines (List[LineString], optional): List of measurement
+        measurement_lines (List[MeasurementLine], optional): List of measurement
             lines to plot
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
@@ -166,7 +166,7 @@ def plot_measurement_setup(
         hole_alpha (optional): alpha of background color for holes
 
     Returns:
-        matplotlib.axes.Axes instance where the geometry is plotted
+        matplotlib.axes.Axes instance where the measurement setup is plotted
     """
     ma_line_color = kwargs.get("ma_line_color", "k")
     ma_line_width = kwargs.get("ma_line_width", 1.0)
@@ -182,12 +182,12 @@ def plot_measurement_setup(
     if measurement_areas is not None:
         for measurement_area in measurement_areas:
             ax.plot(
-                *measurement_area.exterior.xy,
+                *measurement_area.polygon.exterior.xy,
                 color=ma_line_color,
                 linewidth=ma_line_width,
             )
             ax.fill(
-                *measurement_area.exterior.xy,
+                *measurement_area.polygon.exterior.xy,
                 color=ma_color,
                 alpha=ma_alpha,
             )
@@ -196,11 +196,11 @@ def plot_measurement_setup(
         for measurement_line in measurement_lines:
             ax.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
 
-    if geometry is not None:
-        plot_geometry(geometry=geometry, ax=ax, **kwargs)
+    if walkable_area is not None:
+        plot_walkable_area(walkable_area=walkable_area, ax=ax, **kwargs)
 
     if traj is not None:
-        plot_trajectories(traj=traj, geometry=None, ax=ax, **kwargs)
+        plot_trajectories(traj=traj, walkable_area=None, ax=ax, **kwargs)
 
     ax.set_xlabel(r"x/m")
     ax.set_ylabel(r"y/m")
@@ -211,18 +211,18 @@ def plot_measurement_setup(
 def plot_voronoi_cells(  # pylint: disable=too-many-locals
     *,
     data: pd.DataFrame,
-    geometry: Optional[Geometry] = None,
-    measurement_area: Optional[shapely.Polygon] = None,
+    walkable_area: Optional[WalkableArea] = None,
+    measurement_area: Optional[MeasurementArea] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the Voronoi cells, geometry, and measurement area in 2D.
+    """Plot the Voronoi cells, walkable able, and measurement area in 2D.
 
     Args:
         data (pd.DataFrame): Voronoi data to plot, should only contain data
             from one frame!
-        geometry (Geometry, optional): Geometry object to plot
-        measurement_area (List[Polygon], optional): measurement area used to
+        walkable_area (WalkableArea, optional): WalkableArea object to plot
+        measurement_area (MeasurementArea, optional): measurement area used to
             compute the Voronoi cells
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
@@ -256,7 +256,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         hole_alpha (optional): alpha of background color for holes
 
     Returns:
-        matplotlib.axes.Axes instance where the geometry is plotted
+        matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
     show_ped_positions = kwargs.get("show_ped_positions", False)
     ped_color = kwargs.get("ped_color", "w")
@@ -335,8 +335,8 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
             location=cb_location,
         )
 
-    if geometry is not None:
-        plot_geometry(ax=ax, geometry=geometry, **kwargs)
+    if walkable_area is not None:
+        plot_walkable_area(ax=ax, walkable_area=walkable_area, **kwargs)
     ax.set_xlabel(r"x/m")
     ax.set_ylabel(r"y/m")
     return ax

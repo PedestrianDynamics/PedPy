@@ -1,7 +1,7 @@
 # type: ignore
 """Top level imports, for easier usage."""
 from . import _version
-from .data.geometry import Geometry
+from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData, TrajectoryUnit
 from .io.trajectory_loader import load_trajectory
 from .methods.density_calculator import (
@@ -27,10 +27,10 @@ from .methods.velocity_calculator import (
     compute_voronoi_velocity,
 )
 from .plotting.plotting import (
-    plot_geometry,
     plot_measurement_setup,
     plot_trajectories,
     plot_voronoi_cells,
+    plot_walkable_area,
 )
 
 __version__ = _version.get_versions()["version"]

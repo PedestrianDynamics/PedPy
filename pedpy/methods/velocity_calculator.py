@@ -6,8 +6,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import shapely
-from shapely import Polygon
 
+from pedpy.data.geometry import MeasurementArea
 from pedpy.methods.method_utils import _compute_individual_movement
 
 
@@ -54,16 +54,16 @@ def compute_mean_velocity_per_frame(
     *,
     traj_data: pd.DataFrame,
     individual_velocity: pd.DataFrame,
-    measurement_area: Polygon,
+    measurement_area: MeasurementArea,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute mean velocity per frame.
 
-    Note: when using a movement direction the velocity may be negative!
+    Note: when using a movement direction, the velocity may be negative!
 
     Args:
         traj_data (pd.DataFrame): trajectory data
         individual_velocity (pd.DataFrame): individual velocity data
-        measurement_area (shapely.Polygon): measurement area for which the
+        measurement_area (MeasurementArea): measurement area for which the
             velocity is computed
 
     Returns:
@@ -71,7 +71,7 @@ def compute_mean_velocity_per_frame(
     """
     combined = traj_data.merge(individual_velocity, on=["ID", "frame"])
     df_mean = (
-        combined[shapely.within(combined["points"], measurement_area)]
+        combined[shapely.within(combined["points"], measurement_area.polygon)]
         .groupby("frame")["speed"]
         .mean()
     )
@@ -87,18 +87,18 @@ def compute_voronoi_velocity(
     traj_data: pd.DataFrame,
     individual_velocity: pd.DataFrame,
     individual_voronoi_intersection: pd.DataFrame,
-    measurement_area: Polygon,
+    measurement_area: MeasurementArea,
 ) -> pd.Series:
     """Compute the voronoi velocity per frame.
 
-    Note: when using a movement direction the velocity may be negative!
+    Note: when using a movement direction, the velocity may be negative!
 
     Args:
         traj_data (pd.DataFrame): trajectory data
         individual_velocity (pd.DataFrame): individual velocity data
         individual_voronoi_intersection (pd.DataFrame): intersections of the
             individual with the measurement area of each pedestrian
-        measurement_area (shapely.Polygon): area in which the voronoi velocity
+        measurement_area (MeasurementArea): area in which the voronoi velocity
             should be computed
 
     Returns:

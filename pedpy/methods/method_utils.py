@@ -8,47 +8,50 @@ import numpy as np
 import pandas as pd
 import shapely
 from scipy.spatial import Voronoi
-from shapely import LineString, Polygon
 
-from pedpy.data.geometry import Geometry
+from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
 
 
-def is_trajectory_valid(*, traj: TrajectoryData, geometry: Geometry) -> bool:
-    """Checks if all trajectory data points lie within the given geometry.
+def is_trajectory_valid(
+    *, traj: TrajectoryData, walkable_area: WalkableArea
+) -> bool:
+    """Checks if all trajectory data points lie within the given walkable area.
 
     Args:
         traj (TrajectoryData): trajectory data
-        geometry (Geometry): geometry
+        walkable_area (WalkableArea): walkable area in which the pedestrians
+            should be
 
     Returns:
-        All points lie within geometry
+        All points lie within walkable area
     """
-    return get_invalid_trajectory(traj=traj, geometry=geometry).empty
+    return get_invalid_trajectory(traj=traj, walkable_area=walkable_area).empty
 
 
 def get_invalid_trajectory(
-    *, traj: TrajectoryData, geometry: Geometry
+    *, traj: TrajectoryData, walkable_area: WalkableArea
 ) -> pd.DataFrame:
-    """Returns all trajectory data points outside the given geometry.
+    """Returns all trajectory data points outside the given walkable area.
 
     Args:
         traj (TrajectoryData): trajectory data
-        geometry (Geometry): geometry
+        walkable_area (WalkableArea): walkable area in which the pedestrians
+            should be
 
     Returns:
-        DataFrame showing all data points outside the given geometry
+        DataFrame showing all data points outside the given walkable area
     """
     return traj.data.loc[
-        ~shapely.within(traj.data.points, geometry.walkable_area)
+        ~shapely.within(traj.data.points, walkable_area.polygon)
     ]
 
 
 def compute_frame_range_in_area(
-    *, traj_data: pd.DataFrame, measurement_line: LineString, width: float
-) -> Tuple[pd.DataFrame, Polygon]:
+    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine, width: float
+) -> Tuple[pd.DataFrame, MeasurementArea]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
     Note:
@@ -57,32 +60,28 @@ def compute_frame_range_in_area(
         with the given offset in one go. If leaving the area between two lines
         through the same line will be ignored.
 
-        As passing we define the frame the pedestrians enter the area and
-        then moves through the complete area without leaving it. Hence,
+        As passing we define the frame, the pedestrians enter the area and
+        then move through the complete area without leaving it. Hence,
         doing a closed analysis of the movement area with several measuring
         ranges underestimates the actual movement time.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.LineString): measurement line
+        measurement_line (MeasurementLine): measurement line
         width (float): distance to the second measurement line
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame_start', 'frame_end' and
         the created measurement area
     """
-    assert len(shapely.get_coordinates(measurement_line)) == 2, (
-        f"The measurement line needs to be a straight line but has more  "
-        f"coordinates (expected 2, got "
-        f"{len(shapely.get_coordinates(measurement_line))})"
-    )
-
     # Create the second with the given offset
-    second_line = shapely.offset_curve(measurement_line, distance=width)
+    second_line = MeasurementLine(
+        shapely.offset_curve(measurement_line.line, distance=width)
+    )
 
     # Reverse the order of the coordinates for the second line string to
     # create a rectangular area between the lines
-    measurement_area = Polygon(
+    measurement_area = MeasurementArea(
         [
             *measurement_line.coords,
             *second_line.coords[::-1],
@@ -208,7 +207,7 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_time_distance_line(
-    *, traj_data: pd.DataFrame, measurement_line: shapely.LineString
+    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
     """Compute the time and distance to the measurement line.
 
@@ -219,7 +218,7 @@ def compute_time_distance_line(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.LineString): line which is crossed
+        measurement_line (MeasurementLine): line which is crossed
 
     Returns: DataFrame containing 'ID', 'frame', 'time' (frames to crossing),
         and 'distance' (to measurement line)
@@ -228,7 +227,7 @@ def compute_time_distance_line(
 
     # Compute distance to measurement line
     df_distance_time["distance"] = shapely.distance(
-        df_distance_time["points"], measurement_line
+        df_distance_time["points"], measurement_line.line
     )
 
     # Compute time to entrance
@@ -249,7 +248,7 @@ def compute_time_distance_line(
 def compute_individual_voronoi_polygons(
     *,
     traj_data: pd.DataFrame,
-    geometry: Geometry,
+    walkable_area: WalkableArea,
     cut_off: Optional[Tuple[float, int]] = None,
     use_blind_points: bool = True,
 ) -> pd.DataFrame:
@@ -257,13 +256,13 @@ def compute_individual_voronoi_polygons(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        geometry (Geometry): bounding area, where pedestrian are supposed to be
+        walkable_area (WalkableArea): bounding area, where pedestrian are supposed to be
         cut_off (Tuple[float, int]): radius of max extended voronoi cell (in
                 m), number of linear segments in the approximation of circular
                 arcs, needs to be divisible by 4!
-        use_blind_points (bool): adds extra 4 points outside the geometry to
-                also compute voronoi cells when less than 4 peds are in the
-                geometry (default: on!)
+        use_blind_points (bool): adds extra 4 points outside the walkable area
+                to also compute voronoi cells when less than 4 peds are in the
+                walkable area (default: on!)
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame','individual voronoi',
@@ -271,7 +270,7 @@ def compute_individual_voronoi_polygons(
     """
     dfs = []
 
-    bounds = geometry.walkable_area.bounds
+    bounds = walkable_area.polygon.bounds
     x_diff = abs(bounds[2] - bounds[0])
     y_diff = abs(bounds[3] - bounds[1])
     clipping_diameter = 2 * max(x_diff, y_diff)
@@ -308,7 +307,7 @@ def compute_individual_voronoi_polygons(
 
         # Compute the intersecting area with the walkable area
         voronoi_in_frame["individual voronoi"] = shapely.intersection(
-            voronoi_polygons, geometry.walkable_area
+            voronoi_polygons, walkable_area.polygon
         )
 
         if cut_off is not None:
@@ -349,7 +348,7 @@ def compute_individual_voronoi_polygons(
 
 
 def compute_intersecting_polygons(
-    *, individual_voronoi_data: pd.DataFrame, measurement_area: Polygon
+    *, individual_voronoi_data: pd.DataFrame, measurement_area: MeasurementArea
 ) -> pd.DataFrame:
     """Compute the intersection of the voronoi cells with the measurement area.
 
@@ -357,7 +356,8 @@ def compute_intersecting_polygons(
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
                 to contain a column 'individual voronoi' which holds
                 shapely.Polygon information
-        measurement_area (shapely.Polygon):
+        measurement_area (MeasurementArea): measurement area for which the
+            intersection will be computed.
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and
@@ -365,7 +365,7 @@ def compute_intersecting_polygons(
     """
     df_intersection = individual_voronoi_data[["ID", "frame"]].copy()
     df_intersection["intersection voronoi"] = shapely.intersection(
-        individual_voronoi_data["individual voronoi"], measurement_area
+        individual_voronoi_data["individual voronoi"], measurement_area.polygon
     )
     return df_intersection
 
@@ -375,7 +375,7 @@ def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
 ) -> List[shapely.Polygon]:
     """Generate Polygons from the Voronoi diagram.
 
-    Generate shapely.geometry.Polygon objects corresponding to the
+    Generate shapely.Polygon objects corresponding to the
     regions of a scipy.spatial.Voronoi object, in the order of the
     input points. The polygons for the infinite regions are large
     enough that all points within a distance 'diameter' of a Voronoi
@@ -494,7 +494,7 @@ def _compute_individual_movement(
 
 
 def compute_crossing_frames(
-    *, traj_data: pd.DataFrame, measurement_line: LineString
+    *, traj_data: pd.DataFrame, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
@@ -503,12 +503,12 @@ def compute_crossing_frames(
     starts on the line, it counts as crossed.
 
     Note:
-        Due to oscillations it may happen that a pedestrian crosses the
-        measurement line multiple time in a small time interval.
+        Due to oscillations, it may happen that a pedestrian crosses the
+        measurement line multiple times in a small-time interval.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_line (shapely.LineString):
+        measurement_line (MeasurementLine):
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame', where 'frame' are
@@ -535,14 +535,14 @@ def compute_crossing_frames(
     # crossing means, the current movement crosses the line and the end point
     # of the movement is not on the line. The result is sorted by frame number
     crossing_frames = df_movement.loc[
-        shapely.intersects(df_movement["movement"], measurement_line)
+        shapely.intersects(df_movement["movement"], measurement_line.line)
     ][["ID", "frame"]]
 
     return crossing_frames
 
 
 def _get_continuous_parts_in_area(
-    *, traj_data: pd.DataFrame, measurement_area: Polygon
+    *, traj_data: pd.DataFrame, measurement_area: MeasurementArea
 ) -> pd.DataFrame:
     """Compute the time-continuous parts of each pedestrian in the area.
 
@@ -552,13 +552,13 @@ def _get_continuous_parts_in_area(
 
     Args:
         traj_data (pd.DataFrame): trajectory data
-        measurement_area (shapely.Polygon): area which is considered
+        measurement_area (MeasurementArea): area which is considered
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
     """
     inside = traj_data.loc[
-        shapely.within(traj_data.points, measurement_area), :
+        shapely.within(traj_data.points, measurement_area.polygon), :
     ].copy()
     inside.loc[:, "g"] = inside.groupby("ID", group_keys=False)["frame"].apply(
         lambda x: x.diff().ge(2).cumsum()

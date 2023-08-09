@@ -4,28 +4,28 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 import shapely
-from shapely import Polygon
 
+from pedpy.data.geometry import MeasurementArea
 from pedpy.methods.method_utils import compute_intersecting_polygons
 
 
 def compute_classic_density(
     *,
     traj_data: pd.DataFrame,
-    measurement_area: Polygon,
+    measurement_area: MeasurementArea,
 ) -> pd.DataFrame:
     """Compute the classic density per frame inside the given measurement area.
 
     Args:
         traj_data (pd.DataFrame): trajectory data to analyze
-        measurement_area (shapely.Polygon): area for which the density is computed
+        measurement_area (MeasurementArea): area for which the density is computed
 
 
     Returns:
         DataFrame containing the columns: 'frame' and 'classic density'
     """
     peds_in_area = traj_data[
-        shapely.contains(measurement_area, traj_data["points"])
+        shapely.contains(measurement_area.polygon, traj_data["points"])
     ]
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
 
@@ -44,7 +44,7 @@ def compute_classic_density(
 def compute_voronoi_density(
     *,
     individual_voronoi_data: pd.DataFrame,
-    measurement_area: shapely.Polygon,
+    measurement_area: MeasurementArea,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the voronoi density per frame inside the given measurement area.
 
@@ -52,7 +52,7 @@ def compute_voronoi_density(
         individual_voronoi_data (pd.DataFrame): individual voronoi data per
             frame needs to contain the columns: 'ID', 'frame',
             'individual voronoi', which holds a shapely.Polygon
-        measurement_area (shapely.Polygon): area for which the density is
+        measurement_area (MeasurementArea): area for which the density is
             computed
     Returns:
         DataFrame containing the columns: 'frame' and 'voronoi density',
