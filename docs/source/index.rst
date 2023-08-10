@@ -46,7 +46,7 @@ Install PedPy
     .. grid-item-card:: Getting started
         :img-top: _static/getting_started.svg
         :class-card: intro-card
-        :link: getting_started
+        :link: getting_started/getting_started
         :link-type: doc
         :link-alt: To the getting started guide
 
