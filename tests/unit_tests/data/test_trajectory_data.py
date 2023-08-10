@@ -22,7 +22,5 @@ def test_changing_trajectory_data_fails():
                 }
             ),
             frame_rate=25,
-            file=pathlib.Path("not_relevant.txt"),
         )
-        print(trajectory_data)
         trajectory_data.frame_rate = 10

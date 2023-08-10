@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pathlib
 from dataclasses import dataclass
 
 import pandas as pd
@@ -31,18 +30,15 @@ class TrajectoryData:
         data (pd.DataFrame): data frame containing the data in the form:
             "ID", "frame", "X", "Y", "Z"
         frame_rate (float): frame rate of the trajectory file
-        file (pathlib.Path): file from which is trajectories was read
 
     Attributes:
         data (pd.DataFrame): data frame containing the trajectory data with the
             columns: "ID", "frame", "X", "Y", "Z", "points"
         frame_rate (float): frame rate of the trajectory data
-        file (pathlib.Path): file from which is trajectories was read
     """
 
     data: pd.DataFrame
     frame_rate: float
-    file: pathlib.Path
 
     def __post_init__(self):
         """Adds a column with the position to :py:attr:`data`.
@@ -62,7 +58,6 @@ class TrajectoryData:
             string representation for TrajectoryData object
         """
         message = f"""TrajectoryData:
-        file: {self.file}
         frame rate: {self.frame_rate}
         frames: [{self.data.frame.min(), self.data.frame.max()}]
         number pedestrians: {self.data.ID.unique().size}
