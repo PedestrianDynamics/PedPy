@@ -2,6 +2,7 @@
 import itertools
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import numpy as np
@@ -13,6 +14,25 @@ from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(
+    kw_only=True,
+)
+class Cutoff:
+    """Maximal extend of a Voronoi polygon.
+
+    The maximal extend is an approximated circle with the given radius and
+    number of line segments used to approximate a quarter circle.
+
+    Attributes:
+        radius (float): radius of the approximated circle
+        quad_segments (int): number of line elements used to approximate a
+                quarter circle
+    """
+
+    radius: float
+    quad_segments: int = 3
 
 
 def is_trajectory_valid(
@@ -254,17 +274,56 @@ def compute_individual_voronoi_polygons(
     *,
     traj_data: TrajectoryData,
     walkable_area: WalkableArea,
-    cut_off: Optional[Tuple[float, int]] = None,
+    cut_off: Optional[Cutoff] = None,
     use_blind_points: bool = True,
 ) -> pd.DataFrame:
-    """Compute the individual voronoi cells for each person and frame.
+    """Compute the individual Voronoi polygon for each person and frame.
+
+    The Voronoi cell will be computed based on the Voronoi tesselation of the
+    pedestrians position. The resulting polygons will then be intersected with
+    the walkable area.
+
+    .. warning::
+
+        In case of non-convex walkable areas it might happen that Voronoi cell
+        will be cut at unexpected places.
+
+    The computed Voronoi cells will stretch all the way to the boundaries of
+    the walkable area. As seen below:
+
+    .. image:: /images/voronoi_wo_cutoff.png
+
+    In cases with only a few pedestrians not close to each other or large
+    walkable areas this might not be desired behavior as the size of the
+    Voronoi polygon is directly related to the individual density. In this
+    case the size of the Voronoi polygon can be restricted by a
+    :class:`Cutoff`, where you give a radius and the number of line segments
+    used to approximate a quarter circle. The differences the number of
+    line segments has on the circle can be seen in the plot below:
+
+    .. image:: /images/voronoi_cutoff_differences.png
+
+    Using this cut off information, the resulting Voronoi polygons would like
+    this:
+
+    .. image:: /images/voronoi_w_cutoff.png
+
+
+    For allowing the computation of the Voronoi polygons when less than 4
+    pedestrians are in the walkable area, 4 extra points will be added outside
+    the walkable area with a significant distance. These will have no effect
+    on the size of the computed Voronoi polygons. This behavior can be turned
+    off by setting :code:`use_blind_points = False`. When turned off no Voronoi
+    polygons will be computed for frames with less than 4 persons, also
+    pedestrians walking in a line can lead to issues in the computation of the
+    Voronoi tesselation.
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        walkable_area (WalkableArea): bounding area, where pedestrian are supposed to be
-        cut_off (Tuple[float, int]): radius of max extended voronoi cell (in
-                m), number of linear segments in the approximation of circular
-                arcs, needs to be divisible by 4!
+        walkable_area (WalkableArea): bounding area, where pedestrian are
+                supposed to walk
+        cut_off (Cutoff): cutoff information, which provide the largest
+                possible extend of a single Voronoi polygon
         use_blind_points (bool): adds extra 4 points outside the walkable area
                 to also compute voronoi cells when less than 4 peds are in the
                 walkable area (default: on!)
@@ -316,13 +375,12 @@ def compute_individual_voronoi_polygons(
         )
 
         if cut_off is not None:
-            num_edges = cut_off[1]
-            radius = cut_off[0]
-            quad_edges = int(num_edges / 4)
+            radius = cut_off.radius
+            quad_segments = cut_off.quad_segments
             voronoi_in_frame["individual voronoi"] = shapely.intersection(
                 voronoi_in_frame["individual voronoi"],
                 shapely.buffer(
-                    peds_in_frame["points"], radius, quad_segs=quad_edges
+                    peds_in_frame["points"], radius, quad_segs=quad_segments
                 ),
             )
 

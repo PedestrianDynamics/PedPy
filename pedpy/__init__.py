@@ -11,6 +11,7 @@ from .methods.density_calculator import (
 )
 from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
+    Cutoff,
     compute_frame_range_in_area,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
