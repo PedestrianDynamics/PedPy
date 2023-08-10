@@ -16,6 +16,7 @@ from pedpy.methods.density_calculator import (
 )
 from pedpy.methods.flow_calculator import compute_flow, compute_n_t
 from pedpy.methods.method_utils import (
+    Cutoff,
     compute_frame_range_in_area,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
@@ -368,7 +369,7 @@ def test_voronoi_density_blind_points_cutoff(
         traj_data=trajectory,
         walkable_area=walkable_area,
         use_blind_points=True,
-        cut_off=(0.8, 12),
+        cut_off=Cutoff(radius=0.8, quad_segments=3),
     )
     result, _ = compute_voronoi_density(
         individual_voronoi_data=individual_voronoi,
@@ -735,7 +736,7 @@ def test_passing_velocity(measurement_line, width, folder):
 
 
 @pytest.mark.parametrize(
-    "walkable_area_polygon, grid_size, cut_off_radius, num_edges, min_frame, "
+    "walkable_area_polygon, grid_size, cut_off_radius, quad_segments, min_frame, "
     "max_frame, folder",
     [
         (
@@ -746,7 +747,7 @@ def test_passing_velocity(measurement_line, width, folder):
             ),
             0.2,
             0.8,
-            12,
+            3,
             110,
             120,
             ROOT_DIR / pathlib.Path("data/bottleneck"),
@@ -755,7 +756,7 @@ def test_passing_velocity(measurement_line, width, folder):
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
             0.2,
             0.8,
-            12,
+            3,
             110,
             120,
             ROOT_DIR / pathlib.Path("data/corridor"),
@@ -766,7 +767,7 @@ def test_passing_velocity(measurement_line, width, folder):
             ),
             0.2,
             0.8,
-            12,
+            3,
             110,
             120,
             ROOT_DIR / pathlib.Path("data/corner"),
@@ -777,7 +778,7 @@ def test_profiles(
     walkable_area_polygon,
     grid_size,
     cut_off_radius,
-    num_edges,
+    quad_segments,
     min_frame,
     max_frame,
     folder,
@@ -808,7 +809,7 @@ def test_profiles(
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory,
         walkable_area=walkable_area,
-        cut_off=(cut_off_radius, num_edges),
+        cut_off=Cutoff(radius=cut_off_radius, quad_segments=quad_segments),
         use_blind_points=False,
     )
     individual_speed = compute_individual_velocity(
