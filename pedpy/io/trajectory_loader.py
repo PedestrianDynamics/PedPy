@@ -45,9 +45,7 @@ def load_trajectory(
         trajectory_file=trajectory_file, unit=traj_unit
     )
 
-    return TrajectoryData(
-        data=traj_dataframe, frame_rate=traj_frame_rate, file=trajectory_file
-    )
+    return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
 
 def _load_trajectory_data(

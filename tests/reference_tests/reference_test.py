@@ -802,7 +802,6 @@ def test_profiles(
             )
         ],
         frame_rate=trajectory_original.frame_rate,
-        file=trajectory_original.file,
     )
 
     walkable_area = WalkableArea(walkable_area_polygon)
