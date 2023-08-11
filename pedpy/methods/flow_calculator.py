@@ -23,8 +23,8 @@ def compute_n_t(
         measurement_line (MeasurementLine): line for which n-t is computed
 
     Returns:
-        DataFrame containing the columns 'frame', 'Cumulative pedestrians',
-        and 'Time [s]' and DataFrame containing the columns 'ID', and 'frame'.
+        DataFrame containing the columns 'frame', 'cumulative_pedestrians',
+        and 'time' and DataFrame containing the columns 'ID', and 'frame'.
 
     """
     crossing_frames = compute_crossing_frames(
@@ -38,7 +38,7 @@ def compute_n_t(
         crossing_frames.groupby("frame")["frame"]
         .size()
         .cumsum()
-        .rename("Cumulative pedestrians")
+        .rename("cumulative_pedestrians")
     )
 
     # add missing values, to get values for each frame. First fill everything
@@ -58,10 +58,10 @@ def compute_n_t(
     )
 
     n_t = n_t.to_frame()
-    n_t["Cumulative pedestrians"] = n_t["Cumulative pedestrians"].astype(int)
+    n_t["cumulative_pedestrians"] = n_t["cumulative_pedestrians"].astype(int)
 
     # frame number is the index
-    n_t["Time [s]"] = n_t.index / traj_data.frame_rate
+    n_t["time"] = n_t.index / traj_data.frame_rate
     return n_t, crossing_frames
 
 
@@ -77,8 +77,8 @@ def compute_flow(
 
     Args:
         nt (pd.DataFrame): DataFrame containing the columns 'frame',
-            'Cumulative pedestrians', and 'Time [s]' (see result from
-            compute_nt)
+            'cumulative_pedestrians', and 'time' (see result from
+            :func:`compute_nt`)
         crossing_frames (pd.DataFrame): DataFrame containing the columns
             'ID',  and 'frame' (see result from compute_nt)
         individual_speed (pd.DataFrame): DataFrame containing the columns
@@ -87,8 +87,7 @@ def compute_flow(
         frame_rate (float): frame rate of the trajectories
 
     Returns:
-        DataFrame containing the columns 'Flow rate(1/s)', and 'Mean
-        velocity(m/s)'
+        DataFrame containing the columns 'flow' in 1/s, and 'mean_velocity' in m/s
     """
     crossing_speeds = pd.merge(
         crossing_frames, individual_speed, on=["ID", "frame"]
@@ -96,14 +95,14 @@ def compute_flow(
 
     # Get frame where the first person passes the line
     num_passed_before = 0
-    passed_frame_before = nt[nt["Cumulative pedestrians"] > 0].index.min()
+    passed_frame_before = nt[nt["cumulative_pedestrians"] > 0].index.min()
 
     rows = []
 
     for frame in range(passed_frame_before + delta_t, nt.index.max(), delta_t):
-        passed_num_peds = nt.loc[frame]["Cumulative pedestrians"]
+        passed_num_peds = nt.loc[frame]["cumulative_pedestrians"]
         passed_frame = (
-            nt[nt["Cumulative pedestrians"] == passed_num_peds].index.min() + 1
+            nt[nt["cumulative_pedestrians"] == passed_num_peds].index.min() + 1
         )
 
         if passed_num_peds != num_passed_before:
@@ -121,7 +120,7 @@ def compute_flow(
             passed_frame_before = passed_frame
 
             rows.append(
-                {"Flow rate(1/s)": flow_rate, "Mean velocity(m/s)": velocity},
+                {"flow": flow_rate, "mean_velocity": velocity},
             )
 
     return pd.DataFrame(rows)

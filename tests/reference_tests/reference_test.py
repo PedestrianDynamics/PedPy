@@ -72,9 +72,9 @@ def test_classic_density(walkable_area, measurement_area, folder):
         ),
         sep="\t",
         comment="#",
-        names=["frame", "classic density", "classic velocity"],
+        names=["frame", "density", "velocity"],
         index_col=0,
-        usecols=["frame", "classic density"],
+        usecols=["frame", "density"],
     )
 
     trajectory = load_trajectory(
@@ -87,8 +87,8 @@ def test_classic_density(walkable_area, measurement_area, folder):
 
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
-        result["classic density"],
-        reference_result["classic density"],
+        result["density"],
+        reference_result["density"],
         atol=TOLERANCE,
     ).all()
 
@@ -136,7 +136,7 @@ def test_arithmetic_velocity(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "classic density", "speed"],
+        names=["frame", "density", "speed"],
         index_col=0,
         usecols=["frame", "speed"],
     )
@@ -201,9 +201,9 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
         ),
         sep="\t",
         comment="#",
-        names=["frame", "voronoi density", "speed"],
+        names=["frame", "density", "speed"],
         index_col=0,
-        usecols=["frame", "voronoi density"],
+        usecols=["frame", "density"],
     )
 
     trajectory = load_trajectory(
@@ -221,13 +221,13 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
         measurement_area=measurement_area,
     )
 
-    # in jpsreport not all frames are written to the result (e.g., when not
+    # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["voronoi density"],
-        reference_result["voronoi density"],
+        result[result.index.isin(reference_result.index)]["density"],
+        reference_result["density"],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -276,9 +276,9 @@ def test_voronoi_density_blind_points(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "voronoi density", "speed"],
+        names=["frame", "density", "speed"],
         index_col=0,
-        usecols=["frame", "voronoi density"],
+        usecols=["frame", "density"],
     )
 
     trajectory = load_trajectory(
@@ -301,13 +301,13 @@ def test_voronoi_density_blind_points(
         result = result[result.index < 930]
         reference_result = reference_result[reference_result.index < 930]
 
-    # in jpsreport not all frames are written to the result (e.g., when not
+    # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["voronoi density"],
-        reference_result["voronoi density"],
+        result[result.index.isin(reference_result.index)]["density"],
+        reference_result["density"],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -356,9 +356,9 @@ def test_voronoi_density_blind_points_cutoff(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "voronoi density", "speed"],
+        names=["frame", "density", "speed"],
         index_col=0,
-        usecols=["frame", "voronoi density"],
+        usecols=["frame", "density"],
     )
 
     trajectory = load_trajectory(
@@ -376,13 +376,13 @@ def test_voronoi_density_blind_points_cutoff(
         measurement_area=measurement_area,
     )
 
-    # in jpsreport not all frames are written to the result (e.g., when not
+    # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["voronoi density"],
-        reference_result["voronoi density"],
+        result[result.index.isin(reference_result.index)]["density"],
+        reference_result["density"],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -434,9 +434,9 @@ def test_voronoi_velocity(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "voronoi density", "voronoi speed"],
+        names=["frame", "density", "speed"],
         index_col=0,
-        usecols=["frame", "voronoi speed"],
+        usecols=["frame", "speed"],
     )
 
     trajectory = load_trajectory(
@@ -466,13 +466,13 @@ def test_voronoi_velocity(
     )
     result = result.to_frame()
 
-    # in jpsreport not all frames are written to the result (e.g., when not
+    # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["voronoi speed"],
-        reference_result["voronoi speed"],
+        result[result.index.isin(reference_result.index)]["speed"],
+        reference_result["speed"],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -502,7 +502,7 @@ def test_nt(line, folder):
         next(folder.glob("results/Fundamental_Diagram/FlowVelocity/Flow_NT*")),
         sep="\t",
         comment="#",
-        names=["frame", "Time [s]", "Cumulative pedestrians"],
+        names=["frame", "time", "cumulative_pedestrians"],
         index_col=0,
     )
 
@@ -516,11 +516,11 @@ def test_nt(line, folder):
     )
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
-        result["Time [s]"], reference_result["Time [s]"], atol=TOLERANCE
+        result["time"], reference_result["time"], atol=TOLERANCE
     ).all()
     assert (
-        result["Cumulative pedestrians"]
-        == reference_result["Cumulative pedestrians"]
+        result["cumulative_pedestrians"]
+        == reference_result["cumulative_pedestrians"]
     ).all()
 
 
@@ -556,7 +556,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
         ),
         sep="\t",
         comment="#",
-        names=["Flow rate(1/s)", "Mean velocity(m/s)"],
+        names=["flow", "mean_velocity"],
     )
 
     trajectory = load_trajectory(
@@ -579,16 +579,16 @@ def test_flow(line, folder, flow_frame, velocity_frame):
         frame_rate=trajectory.frame_rate,
     )
 
-    # ignore the first flow value as there is a bug in jpsreport, the first x
+    # ignore the first flow value as there is a bug in JPSreport, the first x
     # passing will be not included in the flow, hence it is underestimated
     assert np.isclose(
-        result["Mean velocity(m/s)"][1:],
-        reference_result["Mean velocity(m/s)"][1:],
+        result["mean_velocity"][1:],
+        reference_result["mean_velocity"][1:],
         atol=TOLERANCE,
     ).all()
     assert np.isclose(
-        result["Flow rate(1/s)"][1:],
-        reference_result["Flow rate(1/s)"][1:],
+        result["flow"][1:],
+        reference_result["flow"][1:],
         atol=TOLERANCE,
     ).all()
 
@@ -646,7 +646,7 @@ def test_passing_density(measurement_line, width, folder):
         .reset_index(drop=True)
     )
 
-    # there are some accuracy differences in jpsreport and pedpy, hence some
+    # there are some accuracy differences in JPSreport and pedpy, hence some
     # pedestrians frame range inside the measurement area differ.
     # There pedestrians will be ignored in this test.
     if folder.name == "corridor":
@@ -715,7 +715,7 @@ def test_passing_velocity(measurement_line, width, folder):
         distance=width,
     ).reset_index(drop=True)
 
-    # there are some accuracy differences in jpsreport and pedpy, hence some
+    # there are some accuracy differences in JPSreport and pedpy, hence some
     # pedestrians frame range inside the measurement area differ.
     # There pedestrians will be ignored in this test.
     if folder.name == "corridor":
@@ -860,7 +860,7 @@ def test_profiles(
 
         # There are artifacts of the polygons going outside the geometry in
         # this test case. They appear to originate from handling the border of
-        # polygons differently in shapely and jpsreport (boost::geometry).
+        # polygons differently in shapely and JPSreport (boost::geometry).
         # These fields will be ignored.
         if folder.name == "corner":
             reference_velocity_arithmetic[:25, 15:] = 0

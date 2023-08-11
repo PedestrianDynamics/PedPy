@@ -59,7 +59,7 @@ def test_compute_classic_density(
             for frame, num_peds in num_peds_in_area_per_frame.items()
         },
         orient="index",
-        columns=["classic density"],
+        columns=["density"],
     )
     expected_density.index.name = "frame"
 

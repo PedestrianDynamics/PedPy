@@ -54,7 +54,7 @@ def compute_profiles(
         grid_intersections_area = shapely.area(
             shapely.intersection(
                 np.array(grid_cells)[:, np.newaxis],
-                np.array(frame_data["individual voronoi"])[np.newaxis, :],
+                np.array(frame_data["voronoi_polygon"])[np.newaxis, :],
             )
         )
 
@@ -62,7 +62,7 @@ def compute_profiles(
         density = (
             np.sum(
                 grid_intersections_area
-                * (1 / shapely.area(frame_data["individual voronoi"].values)),
+                * (1 / shapely.area(frame_data["voronoi_polygon"].values)),
                 axis=1,
             )
             / grid_cells[0].area
