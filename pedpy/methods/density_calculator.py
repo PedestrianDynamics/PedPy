@@ -23,7 +23,7 @@ def compute_classic_density(
 
 
     Returns:
-        DataFrame containing the columns: 'frame' and 'classic density'
+        DataFrame containing the columns: 'frame' and 'density'
     """
     peds_in_area = traj_data.data[
         shapely.contains(measurement_area.polygon, traj_data.data["points"])
@@ -33,7 +33,7 @@ def compute_classic_density(
     density = peds_in_area_per_frame / measurement_area.area
 
     # Rename column and add missing zero values
-    density.columns = ["classic density"]
+    density.columns = ["density"]
     density = density.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
@@ -52,13 +52,13 @@ def compute_voronoi_density(
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data per
             frame needs to contain the columns: 'ID', 'frame',
-            'individual voronoi', which holds a shapely.Polygon
+            'voronoi_polygon', which holds a shapely.Polygon
         measurement_area (MeasurementArea): area for which the density is
             computed
     Returns:
-        DataFrame containing the columns: 'frame' and 'voronoi density',
-        DataFrame containing the columns: 'ID', 'frame', 'individual voronoi',
-        'intersecting voronoi'.
+        DataFrame containing the columns: 'frame' and 'density',
+        DataFrame containing the columns: 'ID', 'frame', 'voronoi_polygon',
+        'voronoi_ma_intersection'.
 
     """
     df_intersecting = compute_intersecting_polygons(
@@ -73,15 +73,15 @@ def compute_voronoi_density(
         how="outer",
     )
     df_combined["relation"] = shapely.area(
-        df_combined["intersection voronoi"]
-    ) / shapely.area(df_combined["individual voronoi"])
+        df_combined["voronoi_ma_intersection"]
+    ) / shapely.area(df_combined["voronoi_polygon"])
 
     df_voronoi_density = (
         df_combined.groupby("frame")["relation"].sum() / measurement_area.area
     ).to_frame()
 
     # Rename column and add missing zero values
-    df_voronoi_density.columns = ["voronoi density"]
+    df_voronoi_density.columns = ["density"]
     df_voronoi_density = df_voronoi_density.reindex(
         list(
             range(
@@ -111,7 +111,7 @@ def compute_passing_density(
                 'frame_end'.
 
     Returns:
-          DataFrame containing the columns: 'ID' and 'density' in 1/m
+          DataFrame containing the columns: 'ID' and 'density' in 1/m^2
 
     """
     density = pd.DataFrame(frames["ID"], columns=["ID", "density"])

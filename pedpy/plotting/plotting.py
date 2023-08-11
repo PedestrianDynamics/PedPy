@@ -232,7 +232,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         voronoi_border_color (optional): border color of Voronoi cells
         voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell
             inside the measurement area, data needs to contain column
-            "intersection voronoi"!
+            "voronoi_ma_intersection"!
         voronoi_outside_ma_alpha (optional): alpha of part of Voronoi cell
             outside the measurement area
         color_mode (optional): color mode to color the Voronoi cells, "density",
@@ -299,7 +299,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         )
 
     for _, row in data.iterrows():
-        poly = row["individual voronoi"]
+        poly = row["voronoi_polygon"]
 
         if color_mode != "id":
             color = (
@@ -313,9 +313,9 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         ax.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
         ax.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
 
-        if "intersection voronoi" in data.columns:
-            if not shapely.is_empty(row["intersection voronoi"]):
-                intersection_poly = row["intersection voronoi"]
+        if "voronoi_ma_intersection" in data.columns:
+            if not shapely.is_empty(row["voronoi_ma_intersection"]):
+                intersection_poly = row["voronoi_ma_intersection"]
                 ax.fill(
                     *intersection_poly.exterior.xy,
                     fc=color,

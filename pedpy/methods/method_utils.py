@@ -187,7 +187,7 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
-            to contain a column 'individual voronoi', which holds
+            to contain a column 'voronoi_polygon', which holds
             shapely.Polygon information
 
     Returns:
@@ -198,8 +198,8 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
 
     for frame, frame_data in individual_voronoi_data.groupby("frame"):
         touching = shapely.dwithin(
-            np.array(frame_data["individual voronoi"])[:, np.newaxis],
-            np.array(frame_data["individual voronoi"])[np.newaxis, :],
+            np.array(frame_data["voronoi_polygon"])[:, np.newaxis],
+            np.array(frame_data["voronoi_polygon"])[np.newaxis, :],
             1e-9,  # Voronoi cells as close as 1 mm are touching
         )
 
@@ -238,20 +238,20 @@ def compute_time_distance_line(
 
     Compute the time (in frames) and distance to the first crossing of the
     measurement line. For further information how the crossing frames are
-    computed see :obj:`~compute_crossing_frames`. All frames after a
+    computed see :func:`~compute_crossing_frames`. All frames after a
     pedestrian has crossed the line will be omitted in the results.
 
     Args:
         traj_data (TrajectoryData): trajectory data
         measurement_line (MeasurementLine): line which is crossed
 
-    Returns: DataFrame containing 'ID', 'frame', 'time' (frames to crossing),
-        and 'distance' (to measurement line)
+    Returns: DataFrame containing 'ID', 'frame', 'time_till_crossing' (seconds
+        till crossing),  and 'distance_to_line' (meters to measurement line)
     """
     df_distance_time = traj_data.data[["ID", "frame", "points"]].copy(deep=True)
 
     # Compute distance to measurement line
-    df_distance_time["distance"] = shapely.distance(
+    df_distance_time["distance_to_line"] = shapely.distance(
         df_distance_time["points"], measurement_line.line
     )
 
@@ -260,14 +260,14 @@ def compute_time_distance_line(
         traj_data=traj_data, measurement_line=measurement_line
     ).rename(columns={"frame": "crossing_frame"})
     df_distance_time = df_distance_time.merge(crossing_frame, on="ID")
-    df_distance_time["time"] = (
+    df_distance_time["time_till_crossing"] = (
         df_distance_time["crossing_frame"] - df_distance_time["frame"]
-    )
+    ) / traj_data.frame_rate
 
     # Delete all rows where the line has already been passed
     df_distance_time = df_distance_time[df_distance_time.time >= 0]
 
-    return df_distance_time.loc[:, ["ID", "frame", "distance", "time"]]
+    return df_distance_time.loc[:, ["ID", "frame", "distance_to_line", "time"]]
 
 
 def compute_individual_voronoi_polygons(
@@ -308,7 +308,6 @@ def compute_individual_voronoi_polygons(
 
     .. image:: /images/voronoi_w_cutoff.png
 
-
     For allowing the computation of the Voronoi polygons when less than 4
     pedestrians are in the walkable area, 4 extra points will be added outside
     the walkable area with a significant distance. These will have no effect
@@ -329,8 +328,8 @@ def compute_individual_voronoi_polygons(
                 walkable area (default: on!)
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame','individual voronoi',
-        and 'individual density' in 1/m^2.
+        DataFrame containing the columns: 'ID', 'frame','voronoi_polygon',
+        and 'individual_density' in 1/m^2.
     """
     dfs = []
 
@@ -370,15 +369,15 @@ def compute_individual_voronoi_polygons(
         voronoi_in_frame = peds_in_frame.loc[:, ("ID", "frame", "points")]
 
         # Compute the intersecting area with the walkable area
-        voronoi_in_frame["individual voronoi"] = shapely.intersection(
+        voronoi_in_frame["voronoi_polygon"] = shapely.intersection(
             voronoi_polygons, walkable_area.polygon
         )
 
         if cut_off is not None:
             radius = cut_off.radius
             quad_segments = cut_off.quad_segments
-            voronoi_in_frame["individual voronoi"] = shapely.intersection(
-                voronoi_in_frame["individual voronoi"],
+            voronoi_in_frame["voronoi_polygon"] = shapely.intersection(
+                voronoi_in_frame["voronoi_polygon"],
                 shapely.buffer(
                     peds_in_frame["points"], radius, quad_segs=quad_segments
                 ),
@@ -387,14 +386,14 @@ def compute_individual_voronoi_polygons(
         # Only consider the parts of a multipolygon which contain the position
         # of the pedestrian
         voronoi_in_frame.loc[
-            shapely.get_type_id(voronoi_in_frame["individual voronoi"]) != 3,
-            "individual voronoi",
+            shapely.get_type_id(voronoi_in_frame["voronoi_polygon"]) != 3,
+            "voronoi_polygon",
         ] = voronoi_in_frame.loc[
-            shapely.get_type_id(voronoi_in_frame["individual voronoi"]) != 3, :
+            shapely.get_type_id(voronoi_in_frame["voronoi_polygon"]) != 3, :
         ].apply(
-            lambda x: shapely.get_parts(x["individual voronoi"])[
+            lambda x: shapely.get_parts(x["voronoi_polygon"])[
                 shapely.within(
-                    x["points"], shapely.get_parts(x["individual voronoi"])
+                    x["points"], shapely.get_parts(x["voronoi_polygon"])
                 )
             ][0],
             axis=1,
@@ -402,10 +401,8 @@ def compute_individual_voronoi_polygons(
 
         dfs.append(voronoi_in_frame)
 
-    result = pd.concat(dfs)[["ID", "frame", "individual voronoi"]]
-    result["individual density"] = 1.0 / shapely.area(
-        result["individual voronoi"]
-    )
+    result = pd.concat(dfs)[["ID", "frame", "voronoi_polygon"]]
+    result["individual_density"] = 1.0 / shapely.area(result["voronoi_polygon"])
 
     return result
 
@@ -417,18 +414,18 @@ def compute_intersecting_polygons(
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
-                to contain a column 'individual voronoi' which holds
+                to contain a column 'voronoi_polygon' which holds
                 shapely.Polygon information
         measurement_area (MeasurementArea): measurement area for which the
             intersection will be computed.
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and
-        'intersection voronoi'.
+        'voronoi_ma_intersection'.
     """
     df_intersection = individual_voronoi_data[["ID", "frame"]].copy()
-    df_intersection["intersection voronoi"] = shapely.intersection(
-        individual_voronoi_data["individual voronoi"], measurement_area.polygon
+    df_intersection["voronoi_ma_intersection"] = shapely.intersection(
+        individual_voronoi_data["voronoi_polygon"], measurement_area.polygon
     )
     return df_intersection
 

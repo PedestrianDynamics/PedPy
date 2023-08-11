@@ -101,17 +101,17 @@ def compute_voronoi_velocity(
             should be computed
 
     Returns:
-        DataFrame containing the columns 'frame' and 'voronoi speed'
+        DataFrame containing the columns 'frame' and 'speed'
     """
     df_voronoi = pd.merge(
         individual_voronoi_intersection, individual_velocity, on=["ID", "frame"]
     )
-    df_voronoi["voronoi speed"] = (
-        shapely.area(df_voronoi["intersection voronoi"])
+    df_voronoi["speed"] = (
+        shapely.area(df_voronoi["voronoi_ma_intersection"])
         * df_voronoi["speed"]
         / measurement_area.area
     )
-    df_voronoi_speed = df_voronoi.groupby("frame")["voronoi speed"].sum()
+    df_voronoi_speed = df_voronoi.groupby("frame")["speed"].sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
