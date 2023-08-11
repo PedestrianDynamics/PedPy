@@ -111,7 +111,7 @@ jobs:
           path: |
             notebooks/usage.ipynb
             notebooks/jpsreport.ipynb
-            demos/
+            notebooks/demo-data
 
   test:
     needs: build
