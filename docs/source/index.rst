@@ -70,9 +70,9 @@ Install PedPy
         :link-type: doc
         :link-alt: To the reference guide
 
-        A detailed description of *PedPy*'s API.
-        It explains the provided functions and their parameters.
-
+        A detailed description of  *PedPy*'s API.
+        It explains the provided
+        functions and their parameters.
 
     .. grid-item-card:: Developer guide
         :img-top: _static/developer_guide.svg
