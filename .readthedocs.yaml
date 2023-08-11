@@ -13,9 +13,8 @@ build:
 
   jobs:
     pre_build:
-      - cp notebooks/usage.ipynb docs/source/user_guide
-      - cp -r notebooks/demo-data docs/source/user_guide
-      - ls docs/source/user_guide
+      - cp notebooks/usage.ipynb docs/source
+      - cp -r notebooks/demo-data docs/source
       - pip install -e .
 
 

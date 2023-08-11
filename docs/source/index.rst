@@ -6,7 +6,7 @@ PedPy's documentation!
    :hidden:
 
    Getting started <getting_started>
-   User Guide <user_guide/usage>
+   User Guide <usage>
    API reference <api/index>
    Contribution <dev/index>
    Disclaimer <disclaimer>
@@ -35,7 +35,7 @@ It implements different measurement methods for density, velocity and flow.
 
     .. grid-item-card:: User guide
         :img-top: _static/user_guide.svg
-        :link: user_guide/usage
+        :link: usage
         :link-type: doc
         :link-alt: To the getting started guides
 
