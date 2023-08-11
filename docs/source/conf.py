@@ -18,58 +18,53 @@ current_year = datetime.datetime.today().year
 
 project = "PedPy"
 copyright = f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7"
-release = "1.0.0rc2"
+
+import pedpy
+
+release = pedpy.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.duration",
-    "sphinx.ext.doctest",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.autosectionlabel",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx_design",
     "sphinx_copybutton",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.todo",
     "sphinx.ext.napoleon",
-    "sphinxcontrib.apidoc",
     "sphinx.ext.mathjax",
     "myst_nb",
     "sphinx_favicon",
     "notfound.extension",
+    "autoapi.extension",
 ]
 
 nb_execution_excludepatterns = ["readthedocs.ipynb"]
 
+# automatic generation of api doc
+autoapi_dirs = [
+    "../../pedpy",
+]
+autoapi_root = "api"
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
+    "imported-members",
+]
+autoapi_member_order = ["groupwise"]
 
-apidoc_module_dir = "../../pedpy"
-apidoc_output_dir = "api"
-apidoc_excluded_paths = ["tests"]
-apidoc_separate_modules = True
-apidoc_toc_file = "index"
-apidoc_extra_args = ["--implicit-namespaces", "-d 10"]
-apidoc_module_first = True
-add_module_names = False
-autoclass_content = "both"
 
-# Napoleon settings
-napoleon_google_docstring = True
-napoleon_include_init_with_doc = False
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = False
-napoleon_preprocess_types = False
-napoleon_type_aliases = None
-napoleon_attr_annotations = True
+def skip_util_classes(app, what, name, obj, skip, options):
+    if what == "attribute" and "log" in name:
+        skip = True
+    return skip
+
+
+def setup(sphinx):
+    sphinx.connect("autoapi-skip-member", skip_util_classes)
+
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
@@ -77,14 +72,20 @@ intersphinx_mapping = {
 }
 intersphinx_disabled_domains = ["std"]
 
+# -- HTML generation ---------------------------------------------------------
 templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
+exclude_patterns = [
+    "build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**.ipynb_checkpoints",
+    "readthedocs.ipynb",
+]
 
-nbsphinx_allow_errors = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
