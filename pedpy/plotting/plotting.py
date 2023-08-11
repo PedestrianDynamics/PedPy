@@ -179,6 +179,12 @@ def plot_measurement_setup(
     if ax is None:
         ax = plt.gca()
 
+    if walkable_area is not None:
+        plot_walkable_area(walkable_area=walkable_area, ax=ax, **kwargs)
+
+    if traj is not None:
+        plot_trajectories(traj=traj, walkable_area=None, ax=ax, **kwargs)
+
     if measurement_areas is not None:
         for measurement_area in measurement_areas:
             ax.plot(
@@ -195,12 +201,6 @@ def plot_measurement_setup(
     if measurement_lines is not None:
         for measurement_line in measurement_lines:
             ax.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
-
-    if walkable_area is not None:
-        plot_walkable_area(walkable_area=walkable_area, ax=ax, **kwargs)
-
-    if traj is not None:
-        plot_trajectories(traj=traj, walkable_area=None, ax=ax, **kwargs)
 
     ax.set_xlabel(r"x/m")
     ax.set_ylabel(r"y/m")
@@ -313,13 +313,14 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         ax.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
         ax.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
 
-        if not shapely.is_empty(row["intersection voronoi"]):
-            intersection_poly = row["intersection voronoi"]
-            ax.fill(
-                *intersection_poly.exterior.xy,
-                fc=color,
-                alpha=voronoi_inside_ma_alpha,
-            )
+        if "intersection voronoi" in data.columns:
+            if not shapely.is_empty(row["intersection voronoi"]):
+                intersection_poly = row["intersection voronoi"]
+                ax.fill(
+                    *intersection_poly.exterior.xy,
+                    fc=color,
+                    alpha=voronoi_inside_ma_alpha,
+                )
 
         if show_ped_positions:
             ax.scatter(row["X"], row["Y"], color=ped_color, s=ped_size)
