@@ -6,16 +6,17 @@ PedPy's documentation!
    :hidden:
 
    Getting started <getting_started>
-   User Guide <user_guide/index>
+   User Guide <user_guide/usage>
    API reference <api/index>
    Contribution <dev/index>
    Disclaimer <disclaimer>
 
 
 **Useful links**:
-`Binary Installers <https://pypi.org/project/pedpy>`__ |
+`Python Packages <https://pypi.org/project/pedpy>`__ |
 `Source Repository <https://github.com/PedestrianDynamics/pedpy>`__ |
-`Issues & Ideas <https://github.com/PedestrianDynamics/pedpy/issues>`__
+`Issues <https://github.com/PedestrianDynamics/pedpy/issues>`__ |
+`Discussions <https://github.com/PedestrianDynamics/pedpy/discussions>`__
 
 *PedPy* is an open source, MIT-licensed `Python <https://www.python.org/>`__ module for pedestrian movement analysis.
 It implements different measurement methods for density, velocity and flow.
@@ -29,17 +30,17 @@ It implements different measurement methods for density, velocity and flow.
         :link-type: ref
         :link-alt: To the getting started guides
 
-        New to *PedPy*? Check out the getting started guides. They contain an
-        introduction to *PedPy*'s main concepts.
+        New to *PedPy*? Check out the getting started guide. It show cases a
+        first analysis done with *PedPy*.
 
     .. grid-item-card:: User guide
         :img-top: _static/user_guide.svg
-        :link: user_guide
-        :link-type: ref
+        :link: user_guide/usage
+        :link-type: doc
         :link-alt: To the getting started guides
 
-        The user guide provides in-depth information on the
-        key concepts of *PedPy* with useful background information and explanation.
+        The user guide shows more detailed applications and provides an overview
+        of the capabilities of *PedPy*.
 
     .. grid-item-card:: API reference
         :img-top: _static/api_reference.svg
@@ -47,9 +48,9 @@ It implements different measurement methods for density, velocity and flow.
         :link-type: doc
         :link-alt: To the reference guide
 
-        The reference guide contains a detailed description of
-        the *PedPy* API. The reference describes how the methods work and which parameters can
-        be used. It assumes that you have an understanding of the key concepts.
+        A detailed description of the *PedPy*'s API. It explains the provided
+        functions and their parameters.
+
 
     .. grid-item-card:: Developer guide
         :img-top: _static/developer_guide.svg

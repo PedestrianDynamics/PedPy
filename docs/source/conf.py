@@ -18,7 +18,6 @@ current_year = datetime.datetime.today().year
 
 project = "PedPy"
 copyright = f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7"
-author = "Tobias Schrödter"
 release = "1.0.0rc2"
 
 # -- General configuration ---------------------------------------------------
@@ -38,11 +37,14 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.napoleon",
     "sphinxcontrib.apidoc",
-    "nbsphinx",
     "sphinx.ext.mathjax",
+    "myst_nb",
+    "sphinx_favicon",
+    "notfound.extension",
 ]
 
-autodoc_typehints = "both"
+nb_execution_excludepatterns = ["readthedocs.ipynb"]
+
 
 apidoc_module_dir = "../../pedpy"
 apidoc_output_dir = "api"
@@ -51,6 +53,8 @@ apidoc_separate_modules = True
 apidoc_toc_file = "index"
 apidoc_extra_args = ["--implicit-namespaces", "-d 10"]
 apidoc_module_first = True
+add_module_names = False
+autoclass_content = "both"
 
 # Napoleon settings
 napoleon_google_docstring = True

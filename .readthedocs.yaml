@@ -10,15 +10,13 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.10"
-    # You can also specify other tool versions:
-    # nodejs: "19"
-    # rust: "1.64"
-    # golang: "1.19"
 
   jobs:
     pre_build:
+      - cp notebooks/usage.ipynb docs/source/user_guide
+      - ls docs/source/user_guide
       - pip install -e .
-      - jupyter nbconvert --to notebook --execute notebooks/usage.ipynb --output-dir=docs/source/user_guide
+
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
