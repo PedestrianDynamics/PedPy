@@ -36,39 +36,49 @@ extensions = [
     "myst_nb",
     "sphinx_favicon",
     "notfound.extension",
-    "autoapi.extension",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
+    "sphinxcontrib.apidoc",
 ]
 
+# -- Automatic execution of jupyter notebooks --------------------------------
 nb_execution_excludepatterns = ["readthedocs.ipynb"]
 
-# automatic generation of api doc
-autoapi_dirs = [
-    "../../pedpy",
-]
-autoapi_root = "api"
-autoapi_options = [
-    "members",
-    "undoc-members",
-    "show-inheritance",
-    "show-module-summary",
-    "imported-members",
-]
-autoapi_member_order = ["groupwise"]
+# -- Automatic generation of API doc -----------------------------------------
+autodoc_typehints = "both"
+
+apidoc_module_dir = "../../pedpy"
+apidoc_output_dir = "api"
+apidoc_excluded_paths = ["tests"]
+apidoc_separate_modules = True
+apidoc_toc_file = "index"
+apidoc_extra_args = ["--implicit-namespaces", "-d 10"]
+apidoc_module_first = True
+add_module_names = False
+autoclass_content = "both"
+
+# Napoleon settings
+napoleon_google_docstring = True
+napoleon_include_init_with_doc = False
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = False
+napoleon_use_admonition_for_notes = False
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = False
+napoleon_use_param = True
+napoleon_use_rtype = False
+napoleon_preprocess_types = False
+napoleon_type_aliases = None
+napoleon_attr_annotations = True
 
 
-def skip_util_classes(app, what, name, obj, skip, options):
-    if what == "attribute" and "log" in name:
-        skip = True
-    return skip
-
-
-def setup(sphinx):
-    sphinx.connect("autoapi-skip-member", skip_util_classes)
-
-
+# -- Linking ---------------------------------------------------------
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    "shapely": ("https://shapely.readthedocs.io/en/2.0.1/", None),
 }
 intersphinx_disabled_domains = ["std"]
 
