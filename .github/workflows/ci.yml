@@ -109,9 +109,7 @@ jobs:
         with:
           name: demos_usage
           path: |
-            notebooks/usage.ipynb
-            notebooks/jpsreport.ipynb
-            notebooks/demo-data/
+            notebooks/
 
   test:
     needs: build
