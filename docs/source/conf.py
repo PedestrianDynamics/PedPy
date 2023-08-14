@@ -100,7 +100,7 @@ exclude_patterns = [
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "pydata_sphinx_theme"
+html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 
 html_logo = "_static/logo_text.svg"
@@ -114,9 +114,9 @@ html_context = {"default_mode": "light"}
 html_theme_options = {
     "show_nav_level": 5,
     "github_url": "https://github.com/PedestrianDynamics/PedPy",
-    "header_links_before_dropdown": 5,
-    "show_toc_level": 5,
-    "navbar_end": ["navbar-icon-links"],
+    "use_fullscreen_button": False,
+    "use_issues_button": False,
+    "use_download_button": False,
 }
 
 # -- Options for EPUB output

@@ -1,5 +1,4 @@
 sphinx~=5.3.0
-pydata-sphinx-theme==0.13.3
 sphinx-copybutton==0.5.2
 sphinx_design==0.5.0
 sphinxcontrib-apidoc==0.3.0
@@ -7,3 +6,4 @@ myst-nb==0.17.2
 nbconvert==7.7.1
 sphinx-notfound-page==0.8.3
 sphinx-favicon==1.0.1
+sphinx-book-theme=1.0.1
