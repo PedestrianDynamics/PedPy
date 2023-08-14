@@ -8,6 +8,8 @@ import pandas as pd
 import shapely
 from aenum import Enum
 
+from pedpy.types import POINT_COL
+
 
 class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
     """Identifier of the unit of the trajectory coordinates."""
@@ -28,12 +30,12 @@ class TrajectoryData:
 
     Args:
         data (pd.DataFrame): data frame containing the data in the form:
-            "ID", "frame", "X", "Y", "Z"
+            "ID", "frame", "X", "Y"
         frame_rate (float): frame rate of the trajectory file
 
     Attributes:
         data (pd.DataFrame): data frame containing the trajectory data with the
-            columns: "ID", "frame", "X", "Y", "Z", "points"
+            columns: "ID", "frame", "X", "Y", "points"
         frame_rate (float): frame rate of the trajectory data
     """
 
@@ -48,7 +50,7 @@ class TrajectoryData:
         computations directly.
         """
         data = self.data.copy(deep=True)
-        data.loc[:, "points"] = shapely.points(data["X"], data["Y"])
+        data.loc[:, POINT_COL] = shapely.points(data.X, data.Y)
         object.__setattr__(self, "data", data)
 
     def __repr__(self):

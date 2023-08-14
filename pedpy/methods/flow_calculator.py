@@ -6,6 +6,15 @@ import pandas as pd
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import compute_crossing_frames
+from pedpy.types import (
+    CUMULATED_COL,
+    FLOW_COL,
+    FRAME_COL,
+    ID_COL,
+    MEAN_SPEED_COL,
+    SPEED_COL,
+    TIME_COL,
+)
 
 
 def compute_n_t(
@@ -31,14 +40,17 @@ def compute_n_t(
         traj_data=traj_data, measurement_line=measurement_line
     )
     crossing_frames = (
-        crossing_frames.groupby("ID")["frame"].min().sort_values().reset_index()
+        crossing_frames.groupby(by=ID_COL)[FRAME_COL]
+        .min()
+        .sort_values()
+        .reset_index()
     )
 
     n_t = (
-        crossing_frames.groupby("frame")["frame"]
+        crossing_frames.groupby(by=FRAME_COL)[FRAME_COL]
         .size()
         .cumsum()
-        .rename("cumulative_pedestrians")
+        .rename(CUMULATED_COL)
     )
 
     # add missing values, to get values for each frame. First fill everything
@@ -58,10 +70,10 @@ def compute_n_t(
     )
 
     n_t = n_t.to_frame()
-    n_t["cumulative_pedestrians"] = n_t["cumulative_pedestrians"].astype(int)
+    n_t.cumulative_pedestrians = n_t.cumulative_pedestrians.astype(int)
 
     # frame number is the index
-    n_t["time"] = n_t.index / traj_data.frame_rate
+    n_t[TIME_COL] = n_t.index / traj_data.frame_rate
     return n_t, crossing_frames
 
 
@@ -87,23 +99,21 @@ def compute_flow(
         frame_rate (float): frame rate of the trajectories
 
     Returns:
-        DataFrame containing the columns 'flow' in 1/s, and 'mean_velocity' in m/s
+        DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s
     """
     crossing_speeds = pd.merge(
-        crossing_frames, individual_speed, on=["ID", "frame"]
+        crossing_frames, individual_speed, on=[ID_COL, FRAME_COL]
     )
 
     # Get frame where the first person passes the line
     num_passed_before = 0
-    passed_frame_before = nt[nt["cumulative_pedestrians"] > 0].index.min()
+    passed_frame_before = nt[nt[CUMULATED_COL] > 0].index.min()
 
     rows = []
 
     for frame in range(passed_frame_before + delta_t, nt.index.max(), delta_t):
-        passed_num_peds = nt.loc[frame]["cumulative_pedestrians"]
-        passed_frame = (
-            nt[nt["cumulative_pedestrians"] == passed_num_peds].index.min() + 1
-        )
+        passed_num_peds = nt.loc[frame][CUMULATED_COL]
+        passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].index.min() + 1
 
         if passed_num_peds != num_passed_before:
             num_passing_peds = passed_num_peds - num_passed_before
@@ -114,13 +124,13 @@ def compute_flow(
                 crossing_speeds.frame.between(
                     passed_frame_before, passed_frame, inclusive="both"
                 )
-            ]["speed"].mean()
+            ][SPEED_COL].mean()
 
             num_passed_before = passed_num_peds
             passed_frame_before = passed_frame
 
             rows.append(
-                {"flow": flow_rate, "mean_velocity": velocity},
+                {FLOW_COL: flow_rate, MEAN_SPEED_COL: velocity},
             )
 
     return pd.DataFrame(rows)

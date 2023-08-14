@@ -5,10 +5,12 @@ import shapely
 from shapely.geometry import Point
 
 from pedpy.data.geometry import MeasurementArea
+from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.density_calculator import (
     _get_num_peds_per_frame,
     compute_classic_density,
 )
+from pedpy.types import *
 from tests.utils.utils import get_trajectory, get_trajectory_data
 
 
@@ -59,9 +61,9 @@ def test_compute_classic_density(
             for frame, num_peds in num_peds_in_area_per_frame.items()
         },
         orient="index",
-        columns=["density"],
+        columns=[DENSITY_COL],
     )
-    expected_density.index.name = "frame"
+    expected_density.index.name = FRAME_COL
 
     assert computed_density.index.min() == 0
     assert computed_density.index.max() == num_frames - 1
@@ -78,14 +80,17 @@ def test_compute_classic_density(
     ),
 )
 def test_get_num_peds_per_frame(num_peds_row, num_peds_col, num_frames):
-    traj_data = get_trajectory(
-        shape=[num_peds_col, num_peds_row],
-        number_frames=num_frames,
-        start_position=np.array([0, 0]),
-        movement_direction=np.array([0, 0.1]),
-        ped_distance=1.0,
+    traj_data = TrajectoryData(
+        data=get_trajectory(
+            shape=[num_peds_col, num_peds_row],
+            number_frames=num_frames,
+            start_position=np.array([0, 0]),
+            movement_direction=np.array([0, 0.1]),
+            ped_distance=1.0,
+        ),
+        frame_rate=25.0,
     )
     num_peds = num_peds_col * num_peds_row
     num_peds_per_frame = _get_num_peds_per_frame(traj_data)
 
-    assert (num_peds_per_frame["num_peds"] == num_peds).all()
+    assert (num_peds_per_frame[COUNT_COL] == num_peds).all()

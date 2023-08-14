@@ -54,7 +54,7 @@ def compute_profiles(
         grid_intersections_area = shapely.area(
             shapely.intersection(
                 np.array(grid_cells)[:, np.newaxis],
-                np.array(frame_data["voronoi_polygon"])[np.newaxis, :],
+                np.array(frame_data.voronoi_polygon)[np.newaxis, :],
             )
         )
 
@@ -62,7 +62,7 @@ def compute_profiles(
         density = (
             np.sum(
                 grid_intersections_area
-                * (1 / shapely.area(frame_data["voronoi_polygon"].values)),
+                * (1 / shapely.area(frame_data.voronoi_polygon.values)),
                 axis=1,
             )
             / grid_cells[0].area
@@ -106,7 +106,7 @@ def _compute_arithmetic_velocity(
     cells_with_peds = np.where(grid_intersections_area > 1e-16, 1, 0)
 
     accumulated_velocity = np.sum(
-        cells_with_peds * frame_data["speed"].values, axis=1
+        cells_with_peds * frame_data.speed.values, axis=1
     )
     num_peds = np.count_nonzero(cells_with_peds, axis=1)
 
@@ -135,7 +135,7 @@ def _compute_voronoi_velocity(
         Voronoi velocity per grid cell
     """
     velocity = (
-        np.sum(grid_intersections_area * frame_data["speed"].values, axis=1)
+        np.sum(grid_intersections_area * frame_data.speed.values, axis=1)
     ) / grid_area
 
     return velocity
