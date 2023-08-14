@@ -18,7 +18,6 @@ def test_changing_trajectory_data_fails():
                     "frame": [0, 0],
                     "X": [0, 1],
                     "Y": [0, 1],
-                    "Z": [0, 1],
                 }
             ),
             frame_rate=25,

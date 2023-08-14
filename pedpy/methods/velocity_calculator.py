@@ -10,6 +10,7 @@ import shapely
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import _compute_individual_movement
+from pedpy.types import FRAME_COL, ID_COL, SPEED_COL
 
 
 def compute_individual_velocity(
@@ -68,11 +69,11 @@ def compute_mean_velocity_per_frame(
     Returns:
         DataFrame containing the columns 'frame' and 'speed'
     """
-    combined = traj_data.data.merge(individual_velocity, on=["ID", "frame"])
+    combined = traj_data.data.merge(individual_velocity, on=[ID_COL, FRAME_COL])
     df_mean = (
-        combined[shapely.within(combined["points"], measurement_area.polygon)]
-        .groupby("frame")["speed"]
-        .mean()
+        combined[shapely.within(combined.points, measurement_area.polygon)]
+        .groupby(by=FRAME_COL)
+        .speed.mean()
     )
     df_mean = df_mean.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
@@ -106,12 +107,12 @@ def compute_voronoi_velocity(
     df_voronoi = pd.merge(
         individual_voronoi_intersection, individual_velocity, on=["ID", "frame"]
     )
-    df_voronoi["speed"] = (
-        shapely.area(df_voronoi["voronoi_ma_intersection"])
-        * df_voronoi["speed"]
+    df_voronoi[SPEED_COL] = (
+        shapely.area(df_voronoi.voronoi_ma_intersection)
+        * df_voronoi.speed
         / measurement_area.area
     )
-    df_voronoi_speed = df_voronoi.groupby("frame")["speed"].sum()
+    df_voronoi_speed = df_voronoi.groupby(by=df_voronoi.frame).speed.sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
@@ -135,8 +136,8 @@ def compute_passing_speed(
         in m/s
 
     """
-    speed = pd.DataFrame(frames_in_area["ID"], columns=["ID", "speed"])
-    speed["speed"] = (
+    speed = pd.DataFrame(frames_in_area.ID, columns=[ID_COL, SPEED_COL])
+    speed[SPEED_COL] = (
         frame_rate
         * distance
         / (np.abs(frames_in_area.frame_end - frames_in_area.frame_start))
@@ -167,10 +168,8 @@ def _compute_individual_speed(
         speed in m/s, 'v_x' and 'v_y' with the speed components in x and y
         direction if x_y_components is True
     """
-    columns = ["ID", "frame", "speed"]
-    time_interval = (
-        movement_data["end_frame"] - movement_data["start_frame"]
-    ) / frame_rate
+    columns = [ID_COL, FRAME_COL, SPEED_COL]
+    time_interval = movement_data.window_size / frame_rate
 
     # Compute displacements in x and y direction
     movement_data[["d_x", "d_y"]] = shapely.get_coordinates(

@@ -28,6 +28,7 @@ from pedpy.methods.velocity_calculator import (
     compute_passing_speed,
     compute_voronoi_velocity,
 )
+from pedpy.types import *
 
 TOLERANCE = 1e-2
 
@@ -72,9 +73,9 @@ def test_classic_density(walkable_area, measurement_area, folder):
         ),
         sep="\t",
         comment="#",
-        names=["frame", "density", "velocity"],
+        names=[FRAME_COL, DENSITY_COL],
         index_col=0,
-        usecols=["frame", "density"],
+        usecols=[FRAME_COL, DENSITY_COL],
     )
 
     trajectory = load_trajectory(
@@ -87,8 +88,8 @@ def test_classic_density(walkable_area, measurement_area, folder):
 
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
-        result["density"],
-        reference_result["density"],
+        result[DENSITY_COL],
+        reference_result[DENSITY_COL],
         atol=TOLERANCE,
     ).all()
 
@@ -136,9 +137,9 @@ def test_arithmetic_velocity(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "density", "speed"],
+        names=[FRAME_COL, DENSITY_COL, SPEED_COL],
         index_col=0,
-        usecols=["frame", "speed"],
+        usecols=[FRAME_COL, SPEED_COL],
     )
 
     trajectory = load_trajectory(
@@ -158,7 +159,7 @@ def test_arithmetic_velocity(
 
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
-        result["speed"], reference_result["speed"], atol=TOLERANCE
+        result[SPEED_COL], reference_result[SPEED_COL], atol=TOLERANCE
     ).all()
 
 
@@ -201,9 +202,9 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
         ),
         sep="\t",
         comment="#",
-        names=["frame", "density", "speed"],
+        names=[FRAME_COL, DENSITY_COL],
         index_col=0,
-        usecols=["frame", "density"],
+        usecols=[FRAME_COL, DENSITY_COL],
     )
 
     trajectory = load_trajectory(
@@ -226,8 +227,8 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["density"],
-        reference_result["density"],
+        result[result.index.isin(reference_result.index)][DENSITY_COL],
+        reference_result[DENSITY_COL],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -276,9 +277,9 @@ def test_voronoi_density_blind_points(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "density", "speed"],
+        names=[FRAME_COL, DENSITY_COL],
         index_col=0,
-        usecols=["frame", "density"],
+        usecols=[FRAME_COL, DENSITY_COL],
     )
 
     trajectory = load_trajectory(
@@ -306,8 +307,8 @@ def test_voronoi_density_blind_points(
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["density"],
-        reference_result["density"],
+        result[result.index.isin(reference_result.index)][DENSITY_COL],
+        reference_result[DENSITY_COL],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -356,9 +357,9 @@ def test_voronoi_density_blind_points_cutoff(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "density", "speed"],
+        names=[FRAME_COL, DENSITY_COL],
         index_col=0,
-        usecols=["frame", "density"],
+        usecols=[FRAME_COL, DENSITY_COL],
     )
 
     trajectory = load_trajectory(
@@ -381,8 +382,8 @@ def test_voronoi_density_blind_points_cutoff(
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["density"],
-        reference_result["density"],
+        result[result.index.isin(reference_result.index)][DENSITY_COL],
+        reference_result[DENSITY_COL],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -434,9 +435,9 @@ def test_voronoi_velocity(
         ),
         sep="\t",
         comment="#",
-        names=["frame", "density", "speed"],
+        names=[FRAME_COL, DENSITY_COL, SPEED_COL],
         index_col=0,
-        usecols=["frame", "speed"],
+        usecols=[FRAME_COL, SPEED_COL],
     )
 
     trajectory = load_trajectory(
@@ -471,8 +472,8 @@ def test_voronoi_velocity(
     # frame and check if the rest is zero
     assert np.in1d(reference_result.index.values, result.index.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)]["speed"],
-        reference_result["speed"],
+        result[result.index.isin(reference_result.index)][SPEED_COL],
+        reference_result[SPEED_COL],
         atol=TOLERANCE,
     ).all()
     assert (
@@ -502,7 +503,7 @@ def test_nt(line, folder):
         next(folder.glob("results/Fundamental_Diagram/FlowVelocity/Flow_NT*")),
         sep="\t",
         comment="#",
-        names=["frame", "time", "cumulative_pedestrians"],
+        names=[FRAME_COL, TIME_COL, CUMULATED_COL],
         index_col=0,
     )
 
@@ -516,12 +517,9 @@ def test_nt(line, folder):
     )
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
-        result["time"], reference_result["time"], atol=TOLERANCE
+        result[TIME_COL], reference_result[TIME_COL], atol=TOLERANCE
     ).all()
-    assert (
-        result["cumulative_pedestrians"]
-        == reference_result["cumulative_pedestrians"]
-    ).all()
+    assert (result[CUMULATED_COL] == reference_result[CUMULATED_COL]).all()
 
 
 @pytest.mark.parametrize(
@@ -556,7 +554,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
         ),
         sep="\t",
         comment="#",
-        names=["flow", "mean_velocity"],
+        names=[FLOW_COL, MEAN_SPEED_COL],
     )
 
     trajectory = load_trajectory(
@@ -582,13 +580,13 @@ def test_flow(line, folder, flow_frame, velocity_frame):
     # ignore the first flow value as there is a bug in JPSreport, the first x
     # passing will be not included in the flow, hence it is underestimated
     assert np.isclose(
-        result["mean_velocity"][1:],
-        reference_result["mean_velocity"][1:],
+        result[MEAN_SPEED_COL][1:],
+        reference_result[MEAN_SPEED_COL][1:],
         atol=TOLERANCE,
     ).all()
     assert np.isclose(
-        result["flow"][1:],
-        reference_result["flow"][1:],
+        result[FLOW_COL][1:],
+        reference_result[FLOW_COL][1:],
         atol=TOLERANCE,
     ).all()
 
@@ -619,10 +617,10 @@ def test_passing_density(measurement_line, width, folder):
             next(folder.glob("results/Fundamental_Diagram/TinTout/FDTinTout*")),
             sep="\t",
             comment="#",
-            names=["ID", "density", "speed"],
-            usecols=["ID", "density"],
+            names=[ID_COL, DENSITY_COL],
+            usecols=[ID_COL, DENSITY_COL],
         )
-        .sort_values(by="ID")
+        .sort_values(by=ID_COL)
         .reset_index(drop=True)
     )
 
@@ -642,7 +640,7 @@ def test_passing_density(measurement_line, width, folder):
         compute_passing_density(
             density_per_frame=density, frames=frames_in_area
         )
-        .sort_values(by="ID")
+        .sort_values(by=ID_COL)
         .reset_index(drop=True)
     )
 
@@ -660,9 +658,9 @@ def test_passing_density(measurement_line, width, folder):
             reference_result[reference_result.ID == 25].index
         )
 
-    assert reference_result["ID"].equals(result["ID"])
+    assert reference_result[ID_COL].equals(result[ID_COL])
     assert np.isclose(
-        result["density"], reference_result["density"], atol=TOLERANCE
+        result[DENSITY_COL], reference_result[DENSITY_COL], atol=TOLERANCE
     ).all()
 
 
@@ -692,8 +690,8 @@ def test_passing_velocity(measurement_line, width, folder):
             next(folder.glob("results/Fundamental_Diagram/TinTout/FDTinTout*")),
             sep="\t",
             comment="#",
-            names=["ID", "density", "speed"],
-            usecols=["ID", "speed"],
+            names=[ID_COL, DENSITY_COL, SPEED_COL],
+            usecols=[ID_COL, SPEED_COL],
         )
         .sort_values(by="ID")
         .reset_index(drop=True)
@@ -719,19 +717,19 @@ def test_passing_velocity(measurement_line, width, folder):
     # pedestrians frame range inside the measurement area differ.
     # There pedestrians will be ignored in this test.
     if folder.name == "corridor":
-        result = result.drop(result[result.ID == 429].index)
+        result = result.drop(result[result[ID_COL] == 429].index)
         reference_result = reference_result.drop(
-            reference_result[reference_result.ID == 429].index
+            reference_result[reference_result[ID_COL] == 429].index
         )
     if folder.name == "corner":
-        result = result.drop(result[result.ID == 25].index)
+        result = result.drop(result[result[ID_COL] == 25].index)
         reference_result = reference_result.drop(
-            reference_result[reference_result.ID == 25].index
+            reference_result[reference_result[ID_COL] == 25].index
         )
 
-    assert reference_result["ID"].equals(result["ID"])
+    assert reference_result[ID_COL].equals(result[ID_COL])
     assert np.isclose(
-        result["speed"], reference_result["speed"], atol=TOLERANCE
+        result[SPEED_COL], reference_result[SPEED_COL], atol=TOLERANCE
     ).all()
 
 
@@ -817,7 +815,7 @@ def test_profiles(
         frame_step=frame_step,
     )
     combined = pd.merge(
-        individual_voronoi, individual_speed, on=["ID", "frame"]
+        individual_voronoi, individual_speed, on=[ID_COL, FRAME_COL]
     )
 
     individual_voronoi_velocity_data = combined[

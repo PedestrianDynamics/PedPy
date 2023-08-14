@@ -13,6 +13,7 @@ from pedpy.io.trajectory_loader import (
     _load_trajectory_meta_data,
     load_trajectory,
 )
+from pedpy.types import *
 
 
 def prepare_data_frame(data_frame: pd.DataFrame) -> pd.DataFrame:
@@ -28,7 +29,7 @@ def prepare_data_frame(data_frame: pd.DataFrame) -> pd.DataFrame:
     Result:
         prepared data frame
     """
-    result = data_frame[[0, 1, 2, 3, 4]].copy(deep=True)
+    result = data_frame[[0, 1, 2, 3]].copy(deep=True)
     result = result.astype("float64")
 
     return result
@@ -50,7 +51,6 @@ def get_data_frame_to_write(
     if unit == TrajectoryUnit.CENTIMETER:
         data_frame_to_write[2] = pd.to_numeric(data_frame_to_write[2]).mul(100)
         data_frame_to_write[3] = pd.to_numeric(data_frame_to_write[3]).mul(100)
-        data_frame_to_write[4] = pd.to_numeric(data_frame_to_write[4]).mul(100)
     return data_frame_to_write
 
 
@@ -78,35 +78,35 @@ def write_trajectory_file(
     "data, expected_frame_rate, expected_unit",
     [
         (
-            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
             7.0,
             TrajectoryUnit.METER,
         ),
         (
-            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
             50.0,
             TrajectoryUnit.CENTIMETER,
         ),
         (
-            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
             15.0,
             TrajectoryUnit.METER,
         ),
         (
-            np.array([[0, 0, 5, 1, 10], [1, 0, -5, -1, -10]]),
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
             50.0,
             TrajectoryUnit.CENTIMETER,
         ),
         (
-            np.array([[0, 0, 5, 1, 10, 123], [1, 0, -5, -1, -10, 123]]),
+            np.array([[0, 0, 5, 1, 123], [1, 0, -5, -1, 123]]),
             50.0,
             TrajectoryUnit.CENTIMETER,
         ),
         (
             np.array(
                 [
-                    [0, 0, 5, 1, 10, "should be ignore"],
-                    [1, 0, -5, -1, -10, "this too"],
+                    [0, 0, 5, 1, "should be ignored"],
+                    [1, 0, -5, -1, "this too"],
                 ]
             ),
             50.0,
@@ -140,7 +140,7 @@ def test_load_trajectory_success(
     )
 
     assert (
-        traj_data_from_file.data[["ID", "frame", "X", "Y", "Z"]].to_numpy()
+        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
         == expected_data.to_numpy()
     ).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
@@ -164,21 +164,21 @@ def test_load_trajectory_non_file(tmp_path):
     [
         (
             np.array(
-                [(0, 0, 5, 1, 10), (1, 0, -5, -1, -10)],
+                [(0, 0, 5, 1), (1, 0, -5, -1)],
             ),
             " ",
             TrajectoryUnit.METER,
         ),
         (
             np.array(
-                [(0, 0, 5, 1, 10), (1, 0, -5, -1, -10)],
+                [(0, 0, 5, 1), (1, 0, -5, -1)],
             ),
             " ",
             TrajectoryUnit.CENTIMETER,
         ),
         (
             np.array(
-                [(0, 0, 5, 1, 10, 99999), (1, 0, -5, -1, -10, -99999)],
+                [(0, 0, 5, 1, 99999), (1, 0, -5, -1, -99999)],
             ),
             " ",
             TrajectoryUnit.CENTIMETER,
@@ -186,8 +186,8 @@ def test_load_trajectory_non_file(tmp_path):
         (
             np.array(
                 [
-                    (0, 0, 5, 1, 10, "test"),
-                    (1, 0, -5, -1, -10, "will be ignored"),
+                    (0, 0, 5, 1, "test"),
+                    (1, 0, -5, -1, "will be ignored"),
                 ],
             ),
             " ",
@@ -224,10 +224,9 @@ def test_parse_trajectory_data_success(
         dtype("int64"),
         dtype("float64"),
         dtype("float64"),
-        dtype("float64"),
     ]
     assert (
-        data_from_file[["ID", "frame", "X", "Y", "Z"]].to_numpy()
+        data_from_file[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
         == expected_data.to_numpy()
     ).all()
 
@@ -239,12 +238,11 @@ def test_parse_trajectory_data_success(
         (
             np.array(
                 [
-                    (0, 0, 5, 1),
+                    (0, 0, 5),
                     (
                         1,
                         0,
                         -5,
-                        -1,
                     ),
                 ]
             ),

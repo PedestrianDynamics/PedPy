@@ -6,6 +6,7 @@ from typing import Any, Optional, Tuple
 import pandas as pd
 
 from pedpy.data.trajectory_data import TrajectoryData, TrajectoryUnit
+from pedpy.types import FRAME_COL, ID_COL, X_COL, Y_COL
 
 
 def load_trajectory(
@@ -68,14 +69,13 @@ def _load_trajectory_data(
             sep=r"\s+",
             comment="#",
             header=None,
-            names=["ID", "frame", "X", "Y", "Z"],
-            usecols=[0, 1, 2, 3, 4],
+            names=[ID_COL, FRAME_COL, X_COL, Y_COL],
+            usecols=[0, 1, 2, 3],
             dtype={
-                "ID": "int64",
-                "frame": "int64",
-                "X": "float64",
-                "Y": "float64",
-                "Z": "float64",
+                ID_COL: "int64",
+                FRAME_COL: "int64",
+                X_COL: "float64",
+                Y_COL: "float64",
             },
         )
 
@@ -89,9 +89,8 @@ def _load_trajectory_data(
             )
 
         if unit == TrajectoryUnit.CENTIMETER:
-            data["X"] = data["X"].div(100)
-            data["Y"] = data["Y"].div(100)
-            data["Z"] = data["Z"].div(100)
+            data.X = data.X.div(100)
+            data.Y = data.Y.div(100)
 
         return data
     except pd.errors.ParserError as exc:

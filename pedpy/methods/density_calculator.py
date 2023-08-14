@@ -8,6 +8,7 @@ import shapely
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import compute_intersecting_polygons
+from pedpy.types import COUNT_COL, DENSITY_COL, FRAME_COL, ID_COL
 
 
 def compute_classic_density(
@@ -25,15 +26,18 @@ def compute_classic_density(
     Returns:
         DataFrame containing the columns: 'frame' and 'density'
     """
-    peds_in_area = traj_data.data[
-        shapely.contains(measurement_area.polygon, traj_data.data["points"])
-    ]
+    peds_in_area = TrajectoryData(
+        traj_data.data[
+            shapely.contains(measurement_area.polygon, traj_data.data.points)
+        ],
+        traj_data.frame_rate,
+    )
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
 
     density = peds_in_area_per_frame / measurement_area.area
 
     # Rename column and add missing zero values
-    density.columns = ["density"]
+    density.columns = [DENSITY_COL]
     density = density.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
@@ -69,19 +73,22 @@ def compute_voronoi_density(
     df_combined = pd.merge(
         individual_voronoi_data,
         df_intersecting,
-        on=["ID", "frame"],
+        on=[ID_COL, FRAME_COL],
         how="outer",
     )
-    df_combined["relation"] = shapely.area(
-        df_combined["voronoi_ma_intersection"]
-    ) / shapely.area(df_combined["voronoi_polygon"])
+
+    relation_col = "relation"
+    df_combined[relation_col] = shapely.area(
+        df_combined.voronoi_ma_intersection
+    ) / shapely.area(df_combined.voronoi_polygon)
 
     df_voronoi_density = (
-        df_combined.groupby("frame")["relation"].sum() / measurement_area.area
+        df_combined.groupby(df_combined.frame).relation.sum()
+        / measurement_area.area
     ).to_frame()
 
     # Rename column and add missing zero values
-    df_voronoi_density.columns = ["density"]
+    df_voronoi_density.columns = [DENSITY_COL]
     df_voronoi_density = df_voronoi_density.reindex(
         list(
             range(
@@ -94,7 +101,7 @@ def compute_voronoi_density(
 
     return (
         df_voronoi_density,
-        df_combined.loc[:, df_combined.columns != "relation"],
+        df_combined.loc[:, df_combined.columns != relation_col],
     )
 
 
@@ -114,7 +121,7 @@ def compute_passing_density(
           DataFrame containing the columns: 'ID' and 'density' in 1/m^2
 
     """
-    density = pd.DataFrame(frames["ID"], columns=["ID", "density"])
+    density = pd.DataFrame(frames.ID, columns=[ID_COL, DENSITY_COL])
 
     densities = []
     for _, row in frames.iterrows():
@@ -125,22 +132,24 @@ def compute_passing_density(
                 )
             ].mean()
         )
-    density["density"] = np.array(densities)
+    density.density = np.array(densities)
     return density
 
 
-def _get_num_peds_per_frame(traj_data: pd.DataFrame) -> pd.DataFrame:
+def _get_num_peds_per_frame(traj_data: TrajectoryData) -> pd.DataFrame:
     """Returns the number of pedestrians in each frame as DataFrame.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (TrajectoryData): trajectory data
 
     Returns:
         DataFrame containing the columns: 'frame' (as index) and 'num_peds'.
 
     """
-    num_peds_per_frame = traj_data.groupby("frame").agg(
-        num_peds=("ID", "count")
+    num_peds_per_frame = (
+        traj_data.data.groupby(traj_data.data.frame)
+        .agg({ID_COL: "count"})
+        .rename(columns={ID_COL: COUNT_COL})
     )
 
     return num_peds_per_frame
