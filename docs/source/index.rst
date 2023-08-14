@@ -48,7 +48,7 @@ It implements different measurement methods for density, velocity and flow.
         :link-type: doc
         :link-alt: To the reference guide
 
-        A detailed description of the *PedPy*'s API. It explains the provided
+        A detailed description of *PedPy*'s API. It explains the provided
         functions and their parameters.
 
 
