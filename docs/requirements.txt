@@ -6,4 +6,4 @@ myst-nb==0.17.2
 nbconvert==7.7.1
 sphinx-notfound-page==0.8.3
 sphinx-favicon==1.0.1
-sphinx-book-theme=1.0.1
+sphinx-book-theme==1.0.1
