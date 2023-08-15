@@ -111,20 +111,25 @@ html_context = {"default_mode": "light"}
 
 html_theme_options = {
     "show_nav_level": 5,
-    "github_url": "https://github.com/PedestrianDynamics/PedPy",
     "use_fullscreen_button": False,
     "use_issues_button": False,
     "use_download_button": False,
-    # "navbar_start": ["breadcrumbs"],
-    # "extra_footer": ["breadcrumbs"],
-    # "navbar_end": ["breadcrumbs"],
-    "article_header_start": [
-        "toggle-primary-sidebar",
-        "breadcrumbs_custom",
+    "article_header_end": ["breadcrumbs", "toggle-secondary-sidebar"],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/PedestrianDynamics/PedPy",
+            "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/pedpy/",
+            "icon": "https://img.shields.io/pypi/v/PedPy",
+            "type": "url",
+        },
     ],
-    "article_header_end": ["search-button", "toggle-secondary-sidebar"],
 }
 
 html_sidebars = {
-    "**": ["navbar-logo", "search-field", "sbt-sidebar-nav.html", "breadcrumbs"]
+    "**": ["navbar-logo", "icon-links", "search-field", "sbt-sidebar-nav.html"]
 }
