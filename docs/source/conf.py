@@ -106,9 +106,7 @@ html_static_path = ["_static"]
 html_logo = "_static/logo_text.svg"
 html_favicon = "_static/logo.svg"
 
-html_css_files = [
-    "css/custom.css",
-]
+html_css_files = ["css/custom.css", "css/breadcrumbs_custom"]
 html_context = {"default_mode": "light"}
 
 html_theme_options = {
@@ -117,7 +115,16 @@ html_theme_options = {
     "use_fullscreen_button": False,
     "use_issues_button": False,
     "use_download_button": False,
+    # "navbar_start": ["breadcrumbs"],
+    # "extra_footer": ["breadcrumbs"],
+    # "navbar_end": ["breadcrumbs"],
+    "article_header_start": [
+        "toggle-primary-sidebar",
+        "breadcrumbs_custom",
+    ],
+    "article_header_end": ["search-button", "toggle-secondary-sidebar"],
 }
 
-# -- Options for EPUB output
-epub_show_urls = "footnote"
+html_sidebars = {
+    "**": ["navbar-logo", "search-field", "sbt-sidebar-nav.html", "breadcrumbs"]
+}

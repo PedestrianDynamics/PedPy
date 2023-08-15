@@ -8,7 +8,7 @@ PedPy's documentation!
    Getting started <getting_started>
    User Guide <usage>
    API reference <api/index>
-   Contribution <dev/index>
+   Developer Guide <dev/index>
    Disclaimer <disclaimer>
 
 

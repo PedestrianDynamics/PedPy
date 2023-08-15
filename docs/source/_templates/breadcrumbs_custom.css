@@ -1,9 +1,3 @@
-html {
-    /*Set main color to match color of main logo color */
-    --pst-color-primary: rgb(74 163 196);
-    --pst-font-size-base: 17px;
-}
-
 /**
  * Breadcrumbs for parent pages meant for the article header
  */
@@ -11,7 +5,7 @@ ul.bd-breadcrumbs-custom {
   list-style: none;
   padding-left: 20;
   display: flex;
-  /**flex-wrap: wrap;*/
+  flex-wrap: wrap;
 
   // Font size slightly smaller to avoid cluttering up space too much
   font-size: 1rem;
