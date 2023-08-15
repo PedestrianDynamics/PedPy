@@ -8,7 +8,7 @@ PedPy's documentation!
    Getting started <getting_started>
    User Guide <usage>
    API reference <api/index>
-   Developer Guide <dev/index>
+   Developer Guide <developer_guide>
    Disclaimer <disclaimer>
 
 
@@ -27,8 +27,8 @@ It implements different measurement methods for density, velocity and flow.
     .. grid-item-card:: Getting started
         :img-top: _static/getting_started.svg
         :link: getting_started
-        :link-type: ref
-        :link-alt: To the getting started guides
+        :link-type: doc
+        :link-alt: To the getting started guide
 
         New to *PedPy*? Check out the getting started guide. It show cases a
         first analysis done with *PedPy*.
@@ -37,7 +37,7 @@ It implements different measurement methods for density, velocity and flow.
         :img-top: _static/user_guide.svg
         :link: usage
         :link-type: doc
-        :link-alt: To the getting started guides
+        :link-alt: To the user guide
 
         The user guide shows more detailed applications and provides an overview
         of the capabilities of *PedPy*.
@@ -54,8 +54,8 @@ It implements different measurement methods for density, velocity and flow.
 
     .. grid-item-card:: Developer guide
         :img-top: _static/developer_guide.svg
-        :link: development
-        :link-type: ref
+        :link: developer_guide
+        :link-type: doc
         :link-alt: To the development guide
 
         Saw a typo in the documentation? Want to improve
