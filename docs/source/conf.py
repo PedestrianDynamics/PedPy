@@ -42,7 +42,7 @@ extensions = [
 ]
 
 # -- Automatic execution of jupyter notebooks --------------------------------
-nb_execution_excludepatterns = ["readthedocs.ipynb"]
+nb_execution_excludepatterns = ["readthedocs.ipynb", "fundamental_diagram.ipynb"]
 nb_execution_timeout = 60
 myst_enable_extensions = ["colon_fence"]
 
