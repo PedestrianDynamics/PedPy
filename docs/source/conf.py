@@ -73,8 +73,6 @@ napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
 
-
-
 # -- Linking ---------------------------------------------------------
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),

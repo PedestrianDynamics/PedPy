@@ -46,12 +46,12 @@ Install PedPy
     .. grid-item-card:: Getting started
         :img-top: _static/getting_started.svg
         :class-card: intro-card
-        :link: getting_started/getting_started
+        :link: getting_started
         :link-type: doc
         :link-alt: To the getting started guide
 
-        New to *PedPy*? Check out the getting started guide. It show cases a
-        first analysis done with *PedPy*.
+        New to *PedPy*? Check out the getting started guide.
+        It show cases a first analysis done with *PedPy*.
 
     .. grid-item-card:: User guide
         :img-top: _static/user_guide.svg
@@ -60,8 +60,7 @@ Install PedPy
         :link-type: doc
         :link-alt: To the user guide
 
-        The user guide shows more detailed applications and provides an overview
-        of the capabilities of *PedPy*.
+        The user guide shows more detailed applications and provides an overview of the capabilities of *PedPy*.
 
     .. grid-item-card:: API reference
         :img-top: _static/api_reference.svg
@@ -70,9 +69,8 @@ Install PedPy
         :link-type: doc
         :link-alt: To the reference guide
 
-        A detailed description of  *PedPy*'s API.
-        It explains the provided
-        functions and their parameters.
+        A detailed description of *PedPy*'s API.
+        It explains the provided functions and their parameters.
 
     .. grid-item-card:: Developer guide
         :img-top: _static/developer_guide.svg
