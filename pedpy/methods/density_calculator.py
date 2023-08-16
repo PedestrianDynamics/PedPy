@@ -5,10 +5,10 @@ import numpy as np
 import pandas as pd
 import shapely
 
+from pedpy.column_identifier import COUNT_COL, DENSITY_COL, FRAME_COL, ID_COL
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import compute_intersecting_polygons
-from pedpy.types import COUNT_COL, DENSITY_COL, FRAME_COL, ID_COL
 
 
 def compute_classic_density(

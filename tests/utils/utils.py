@@ -7,8 +7,8 @@ import pandas as pd
 import shapely
 
 from helper.create_trajectories import get_grid_trajectory
+from pedpy.column_identifier import X_COL, Y_COL
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.types import X_COL, Y_COL
 
 
 def get_trajectory(

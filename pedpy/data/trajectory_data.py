@@ -8,7 +8,7 @@ import pandas as pd
 import shapely
 from aenum import Enum
 
-from pedpy.types import POINT_COL
+from pedpy.column_identifier import POINT_COL
 
 
 class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods

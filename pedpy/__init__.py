@@ -22,10 +22,10 @@ from .methods.method_utils import (
 )
 from .methods.profile_calculator import VelocityMethod, compute_profiles
 from .methods.velocity_calculator import (
-    compute_individual_velocity,
-    compute_mean_velocity_per_frame,
+    compute_individual_speed,
+    compute_mean_speed_per_frame,
     compute_passing_speed,
-    compute_voronoi_velocity,
+    compute_voronoi_speed,
 )
 from .plotting.plotting import (
     plot_measurement_setup,

@@ -10,9 +10,7 @@ import pandas as pd
 import shapely
 from scipy.spatial import Voronoi
 
-from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
-from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.types import (
+from pedpy.column_identifier import (
     CROSSING_FRAME_COL,
     DISTANCE_COL,
     END_POSITION_COL,
@@ -31,6 +29,8 @@ from pedpy.types import (
     X_COL,
     Y_COL,
 )
+from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
+from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
 
