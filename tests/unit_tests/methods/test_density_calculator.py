@@ -4,13 +4,13 @@ import pytest
 import shapely
 from shapely.geometry import Point
 
+from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.density_calculator import (
     _get_num_peds_per_frame,
     compute_classic_density,
 )
-from pedpy.types import *
 from tests.utils.utils import get_trajectory, get_trajectory_data
 
 

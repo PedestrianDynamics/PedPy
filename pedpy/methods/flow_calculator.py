@@ -3,10 +3,7 @@ from typing import Tuple
 
 import pandas as pd
 
-from pedpy.data.geometry import MeasurementLine
-from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import compute_crossing_frames
-from pedpy.types import (
+from pedpy.column_identifier import (
     CUMULATED_COL,
     FLOW_COL,
     FRAME_COL,
@@ -15,6 +12,9 @@ from pedpy.types import (
     SPEED_COL,
     TIME_COL,
 )
+from pedpy.data.geometry import MeasurementLine
+from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.methods.method_utils import compute_crossing_frames
 
 
 def compute_n_t(

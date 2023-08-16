@@ -6,6 +6,7 @@ import pytest
 import shapely
 
 from pedpy import TrajectoryUnit
+from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.io.trajectory_loader import load_trajectory
@@ -23,12 +24,11 @@ from pedpy.methods.method_utils import (
 )
 from pedpy.methods.profile_calculator import VelocityMethod, compute_profiles
 from pedpy.methods.velocity_calculator import (
-    compute_individual_velocity,
-    compute_mean_velocity_per_frame,
+    compute_individual_speed,
+    compute_mean_speed_per_frame,
     compute_passing_speed,
-    compute_voronoi_velocity,
+    compute_voronoi_speed,
 )
-from pedpy.types import *
 
 TOLERANCE = 1e-2
 
@@ -126,7 +126,7 @@ def test_classic_density(walkable_area, measurement_area, folder):
         ),
     ],
 )
-def test_arithmetic_velocity(
+def test_arithmetic_speed(
     walkable_area, measurement_area, folder, velocity_frame
 ):
     reference_result = pd.read_csv(
@@ -146,14 +146,14 @@ def test_arithmetic_velocity(
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
 
-    individual_velocity = compute_individual_velocity(
+    individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
     )
-    result = compute_mean_velocity_per_frame(
+    result = compute_mean_speed_per_frame(
         traj_data=trajectory,
         measurement_area=measurement_area,
-        individual_velocity=individual_velocity,
+        individual_speed=individual_speed,
     )
     result = result.to_frame()
 
@@ -423,7 +423,7 @@ def test_voronoi_density_blind_points_cutoff(
         ),
     ],
 )
-def test_voronoi_velocity(
+def test_voronoi_speed(
     walkable_area_polygon, measurement_area, folder, velocity_frame
 ):
     reference_result = pd.read_csv(
@@ -454,15 +454,15 @@ def test_voronoi_velocity(
         individual_voronoi_data=individual_voronoi,
         measurement_area=measurement_area,
     )
-    individual_velocity = compute_individual_velocity(
+    individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
     )
 
-    result = compute_voronoi_velocity(
+    result = compute_voronoi_speed(
         traj_data=trajectory,
         individual_voronoi_intersection=intersecting_voronoi,
-        individual_velocity=individual_velocity,
+        individual_speed=individual_speed,
         measurement_area=measurement_area,
     )
     result = result.to_frame()
@@ -561,7 +561,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
         trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER
     )
 
-    individual_speed = compute_individual_velocity(
+    individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
     )
@@ -684,7 +684,7 @@ def test_passing_density(measurement_line, width, folder):
         ),
     ],
 )
-def test_passing_velocity(measurement_line, width, folder):
+def test_passing_speed(measurement_line, width, folder):
     reference_result = (
         pd.read_csv(
             next(folder.glob("results/Fundamental_Diagram/TinTout/FDTinTout*")),
@@ -810,7 +810,7 @@ def test_profiles(
         cut_off=Cutoff(radius=cut_off_radius, quad_segments=quad_segments),
         use_blind_points=False,
     )
-    individual_speed = compute_individual_velocity(
+    individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=frame_step,
     )
@@ -818,20 +818,20 @@ def test_profiles(
         individual_voronoi, individual_speed, on=[ID_COL, FRAME_COL]
     )
 
-    individual_voronoi_velocity_data = combined[
+    individual_voronoi_speed_data = combined[
         combined.frame.between(min_frame, max_frame, inclusive="both")
     ]
-    density_profiles, velocity_profiles_arithmetic = compute_profiles(
-        individual_voronoi_velocity_data=individual_voronoi_velocity_data,
+    density_profiles, speed_profiles_arithmetic = compute_profiles(
+        individual_voronoi_speed_data=individual_voronoi_speed_data,
         walkable_area=walkable_area,
         grid_size=grid_size,
-        velocity_method=VelocityMethod.ARITHMETIC,
+        speed_method=VelocityMethod.ARITHMETIC,
     )
-    density_profiles, velocity_profiles_voronoi = compute_profiles(
-        individual_voronoi_velocity_data=individual_voronoi_velocity_data,
+    density_profiles, speed_profiles_voronoi = compute_profiles(
+        individual_voronoi_speed_data=individual_voronoi_speed_data,
         walkable_area=walkable_area,
         grid_size=grid_size,
-        velocity_method=VelocityMethod.VORONOI,
+        speed_method=VelocityMethod.VORONOI,
     )
     for frame in range(min_frame, max_frame + 1):
         reference_density = np.loadtxt(
@@ -843,16 +843,16 @@ def test_profiles(
             atol=TOLERANCE,
         ).all()
 
-        reference_velocity_voronoi = np.loadtxt(
+        reference_speed_voronoi = np.loadtxt(
             next(velocity_result_folder.glob(f"*Voronoi*{frame}*"))
         )
         assert np.isclose(
-            velocity_profiles_voronoi[frame - min_frame],
-            reference_velocity_voronoi,
+            speed_profiles_voronoi[frame - min_frame],
+            reference_speed_voronoi,
             atol=TOLERANCE,
         ).all()
 
-        reference_velocity_arithmetic = np.loadtxt(
+        reference_speed_arithmetic = np.loadtxt(
             next(velocity_result_folder.glob(f"*Arithmetic*{frame}*"))
         )
 
@@ -861,11 +861,11 @@ def test_profiles(
         # polygons differently in shapely and JPSreport (boost::geometry).
         # These fields will be ignored.
         if folder.name == "corner":
-            reference_velocity_arithmetic[:25, 15:] = 0
-            velocity_profiles_arithmetic[frame - min_frame][:25, 15:] = 0
+            reference_speed_arithmetic[:25, 15:] = 0
+            speed_profiles_arithmetic[frame - min_frame][:25, 15:] = 0
 
         assert np.isclose(
-            velocity_profiles_arithmetic[frame - min_frame],
-            reference_velocity_arithmetic,
+            speed_profiles_arithmetic[frame - min_frame],
+            reference_speed_arithmetic,
             atol=TOLERANCE,
         ).all()

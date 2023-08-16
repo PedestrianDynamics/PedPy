@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
 
-from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
-from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.types import (
+from pedpy.column_identifier import (
     ID_COL,
     INTERSECTION_COL,
     POLYGON_COL,
@@ -18,6 +16,8 @@ from pedpy.types import (
     X_COL,
     Y_COL,
 )
+from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
+from pedpy.data.trajectory_data import TrajectoryData
 
 log = logging.getLogger(__name__)
 
@@ -240,11 +240,11 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         voronoi_border_color (optional): border color of Voronoi cells
         voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell
             inside the measurement area, data needs to contain column
-            "voronoi_ma_intersection"!
+            "intersection"!
         voronoi_outside_ma_alpha (optional): alpha of part of Voronoi cell
             outside the measurement area
         color_mode (optional): color mode to color the Voronoi cells, "density",
-            "velocity", and "id". For 'velocity' data needs to contain a
+            "speed", and "id". For 'speed' data needs to contain a
             column 'speed'
         vmin (optional): vmin of colormap, only used when color_mode != "id"
         vmax (optional): vmax of colormap, only used when color_mode != "id"
@@ -275,22 +275,22 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
 
     color_mode = kwargs.get("color_mode", "density")
     color_mode = color_mode.lower()
-    if color_mode not in ("density", "velocity", "id"):
+    if color_mode not in ("density", "speed", "id"):
         log.warning(
-            "'density', 'velocity', and 'id' are the only supported color modes. Use "
+            "'density', 'speed', and 'id' are the only supported color modes. Use "
             "default 'density'"
         )
         color_mode = "density"
 
     vmin = kwargs.get("vmin", 0)
-    vmax = kwargs.get("vmax", 5 if color_mode == "velocity" else 10)
+    vmax = kwargs.get("vmax", 5 if color_mode == "speed" else 10)
     cb_location = kwargs.get("cb_location", "right")
     show_colorbar = kwargs.get("show_colorbar", True)
 
     if ax is None:
         ax = plt.gca()
 
-    # Create color mapping for velocity/density to color
+    # Create color mapping for speed/density to color
     if color_mode != "id":
         voronoi_colormap = plt.get_cmap("jet")
         norm = mpl.colors.Normalize(vmin, vmax)
@@ -312,7 +312,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         if color_mode != "id":
             color = (
                 scalar_mappable.to_rgba(row[SPEED_COL])
-                if color_mode == "velocity"
+                if color_mode == "speed"
                 else scalar_mappable.to_rgba(1 / poly.area)
             )
         else:
@@ -338,7 +338,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
             scalar_mappable,
             ax=ax,
             label=r"v / $\frac{m}{s}$"
-            if color_mode == "velocity"
+            if color_mode == "speed"
             else r" $\rho$ / $\frac{1}{m^2}$",
             shrink=0.4,
             location=cb_location,

@@ -5,8 +5,8 @@ from typing import Any, Optional, Tuple
 
 import pandas as pd
 
+from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 from pedpy.data.trajectory_data import TrajectoryData, TrajectoryUnit
-from pedpy.types import FRAME_COL, ID_COL, X_COL, Y_COL
 
 
 def load_trajectory(

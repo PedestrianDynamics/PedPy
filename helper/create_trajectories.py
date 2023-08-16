@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from pedpy.types import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 
 
 def required_length(nmin: int, nmax: int) -> Any:
