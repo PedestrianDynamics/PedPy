@@ -10,7 +10,7 @@ import shapely
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import _compute_individual_movement
-from pedpy.types import FRAME_COL, ID_COL, SPEED_COL
+from pedpy.types import FRAME_COL, ID_COL, SPEED_COL, V_X_COL, V_Y_COL
 
 
 def compute_individual_velocity(
@@ -33,7 +33,7 @@ def compute_individual_velocity(
             movement should be used)
         x_y_components (bool): compute the x and y components of the speed
     Returns:
-        DataFrame containing the columns 'ID', 'frame', and 'speed' in m/s,
+        DataFrame containing the columns 'id', 'frame', and 'speed' in m/s,
         'v_x' and 'v_y' with the speed components in x and y direction if
         x_y_components is True
     """
@@ -67,11 +67,11 @@ def compute_mean_velocity_per_frame(
             velocity is computed
 
     Returns:
-        DataFrame containing the columns 'frame' and 'speed'
+        DataFrame containing the columns 'frame' and 'speed' in m/s
     """
     combined = traj_data.data.merge(individual_velocity, on=[ID_COL, FRAME_COL])
     df_mean = (
-        combined[shapely.within(combined.points, measurement_area.polygon)]
+        combined[shapely.within(combined.point, measurement_area.polygon)]
         .groupby(by=FRAME_COL)
         .speed.mean()
     )
@@ -102,13 +102,15 @@ def compute_voronoi_velocity(
             should be computed
 
     Returns:
-        DataFrame containing the columns 'frame' and 'speed'
+        DataFrame containing the columns 'frame' and 'speed' in m/s
     """
     df_voronoi = pd.merge(
-        individual_voronoi_intersection, individual_velocity, on=["ID", "frame"]
+        individual_voronoi_intersection,
+        individual_velocity,
+        on=[ID_COL, FRAME_COL],
     )
     df_voronoi[SPEED_COL] = (
-        shapely.area(df_voronoi.voronoi_ma_intersection)
+        shapely.area(df_voronoi.intersection)
         * df_voronoi.speed
         / measurement_area.area
     )
@@ -132,15 +134,14 @@ def compute_passing_speed(
         frame_rate (float): frame rate of the trajectory
         distance (float): distance between the two measurement lines
     Returns:
-        DataFrame containing the columns: 'ID', 'speed' which is the speed
-        in m/s
+        DataFrame containing the columns: 'ID', 'speed' in m/s
 
     """
-    speed = pd.DataFrame(frames_in_area.ID, columns=[ID_COL, SPEED_COL])
+    speed = pd.DataFrame(frames_in_area.id, columns=[ID_COL, SPEED_COL])
     speed[SPEED_COL] = (
         frame_rate
         * distance
-        / (np.abs(frames_in_area.frame_end - frames_in_area.frame_start))
+        / (np.abs(frames_in_area.leaving_frame - frames_in_area.entering_frame))
     )
     return speed
 
@@ -164,7 +165,7 @@ def _compute_individual_speed(
         x_y_components (bool): compute the x and y components of the speed
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame', 'speed' with the
+        DataFrame containing the columns: 'id', 'frame', 'speed' with the
         speed in m/s, 'v_x' and 'v_y' with the speed components in x and y
         direction if x_y_components is True
     """
@@ -173,10 +174,10 @@ def _compute_individual_speed(
 
     # Compute displacements in x and y direction
     movement_data[["d_x", "d_y"]] = shapely.get_coordinates(
-        movement_data["end"]
-    ) - shapely.get_coordinates(movement_data["start"])
+        movement_data.end_position
+    ) - shapely.get_coordinates(movement_data.start_position)
 
-    movement_data["speed"] = (
+    movement_data[SPEED_COL] = (
         np.linalg.norm(movement_data[["d_x", "d_y"]], axis=1) / time_interval
     )
 
@@ -190,16 +191,16 @@ def _compute_individual_speed(
             * movement_direction
             * norm_movement_direction
         )
-        movement_data["speed"] = (
+        movement_data[SPEED_COL] = (
             np.dot(movement_data[["d_x", "d_y"]].values, movement_direction)
             / np.linalg.norm(movement_direction)
             / time_interval
         )
 
     if x_y_components:
-        movement_data["v_x"] = movement_data["d_x"].values / time_interval
-        movement_data["v_y"] = movement_data["d_y"].values / time_interval
-        columns.append("v_x")
-        columns.append("v_y")
+        movement_data[V_X_COL] = movement_data["d_x"].values / time_interval
+        movement_data[V_Y_COL] = movement_data["d_y"].values / time_interval
+        columns.append(V_X_COL)
+        columns.append(V_Y_COL)
 
     return movement_data[columns]

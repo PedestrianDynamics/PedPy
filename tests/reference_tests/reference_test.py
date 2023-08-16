@@ -648,14 +648,14 @@ def test_passing_density(measurement_line, width, folder):
     # pedestrians frame range inside the measurement area differ.
     # There pedestrians will be ignored in this test.
     if folder.name == "corridor":
-        result = result.drop(result[result.ID == 429].index)
+        result = result.drop(result[result.id == 429].index)
         reference_result = reference_result.drop(
-            reference_result[reference_result.ID == 429].index
+            reference_result[reference_result.id == 429].index
         )
     if folder.name == "corner":
-        result = result.drop(result[result.ID == 25].index)
+        result = result.drop(result[result.id == 25].index)
         reference_result = reference_result.drop(
-            reference_result[reference_result.ID == 25].index
+            reference_result[reference_result.id == 25].index
         )
 
     assert reference_result[ID_COL].equals(result[ID_COL])
@@ -693,7 +693,7 @@ def test_passing_velocity(measurement_line, width, folder):
             names=[ID_COL, DENSITY_COL, SPEED_COL],
             usecols=[ID_COL, SPEED_COL],
         )
-        .sort_values(by="ID")
+        .sort_values(by=ID_COL)
         .reset_index(drop=True)
     )
 

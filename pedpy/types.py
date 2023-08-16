@@ -3,33 +3,31 @@
 from typing import Final
 
 # TrajectoryData
-ID_COL: Final = "ID"
+ID_COL: Final = "id"
 FRAME_COL: Final = "frame"
-X_COL: Final = "X"
-Y_COL: Final = "Y"
-POINT_COL: Final = "points"
+X_COL: Final = "x"
+Y_COL: Final = "y"
+POINT_COL: Final = "point"
 
-
-# Density Calculator
 DENSITY_COL: Final = "density"
-POLYGON_COL: Final = "voronoi_polygon"
-INTERSECTION_COL: Final = "voronoi_ma_intersection"
+POLYGON_COL: Final = "polygon"
+INTERSECTION_COL: Final = "intersection"
 COUNT_COL: Final = "num_peds"
 
-# Flow calculator
 CUMULATED_COL: Final = "cumulative_pedestrians"
 TIME_COL: Final = "time"
 SPEED_COL: Final = "speed"
+V_X_COL: Final = "v_x"
+V_Y_COL: Final = "v_y"
 FLOW_COL: Final = "flow"
 MEAN_SPEED_COL: Final = "mean_speed"
 
-# Method utils
-FIRST_FRAME_COL: Final = "frame_start"
-LAST_FRAME_COL: Final = "frame_end"
+FIRST_FRAME_COL: Final = "entering_frame"
+LAST_FRAME_COL: Final = "leaving_frame"
 NEIGHBORS_COL: Final = "neighbors"
-DISTANCE_COL: Final = "distance_to_line"
+DISTANCE_COL: Final = "distance"
 CROSSING_FRAME_COL: Final = "crossing_frame"
 INDIVIDUAL_DENSITY_COL: Final = "individual_density"
-START_POSITION_COL: Final = "start"
-END_POSITION_COL: Final = "end"
+START_POSITION_COL: Final = "start_position"
+END_POSITION_COL: Final = "end_position"
 WINDOW_SIZE_COL: Final = "window_size"

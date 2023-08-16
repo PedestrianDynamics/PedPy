@@ -86,7 +86,7 @@ def get_invalid_trajectory(
         DataFrame showing all data points outside the given walkable area
     """
     return traj_data.data.loc[
-        ~shapely.within(traj_data.data.points, walkable_area.polygon)
+        ~shapely.within(traj_data.data.point, walkable_area.polygon)
     ]
 
 
@@ -115,8 +115,10 @@ def compute_frame_range_in_area(
         width (float): distance to the second measurement line
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end' and
-        the created measurement area
+        DataFrame containing the columns: 'id', 'entering_frame' describing the
+        frame the pedestrian crossed the first or second line, 'leaving_frame'
+        describing the frame the pedestrian crossed the second or first line,
+        and the created measurement area
     """
     # Create the second with the given offset
     second_line = MeasurementLine(
@@ -214,11 +216,11 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
-            to contain a column 'voronoi_polygon', which holds
+            to contain a column 'polygon', which holds
             shapely.Polygon information
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame' and 'neighbors', where
+        DataFrame containing the columns: 'id', 'frame' and 'neighbors', where
         neighbors are a list of the neighbor's IDs
     """
     neighbor_df = []
@@ -276,8 +278,8 @@ def compute_time_distance_line(
         traj_data (TrajectoryData): trajectory data
         measurement_line (MeasurementLine): line which is crossed
 
-    Returns: DataFrame containing 'ID', 'frame', 'time' (seconds
-        till crossing),  and 'distance_to_line' (meters to measurement line)
+    Returns: DataFrame containing 'id', 'frame', 'time' (seconds until
+        crossing),  and 'distance' (meters to measurement line)
     """
     df_distance_time = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]].copy(
         deep=True
@@ -292,7 +294,7 @@ def compute_time_distance_line(
     crossing_frame = compute_crossing_frames(
         traj_data=traj_data, measurement_line=measurement_line
     ).rename(columns={FRAME_COL: CROSSING_FRAME_COL})
-    df_distance_time = df_distance_time.merge(crossing_frame, on="ID")
+    df_distance_time = df_distance_time.merge(crossing_frame, on=ID_COL)
     df_distance_time[TIME_COL] = (
         df_distance_time[CROSSING_FRAME_COL] - df_distance_time[FRAME_COL]
     ) / traj_data.frame_rate
@@ -361,8 +363,8 @@ def compute_individual_voronoi_polygons(
                 walkable area (default: on!)
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame','voronoi_polygon',
-        and 'individual_density' in 1/m^2.
+        DataFrame containing the columns: 'ID', 'frame','polygon', and
+        'individual_density' in 1/m^2.
     """
     dfs = []
 
@@ -409,10 +411,10 @@ def compute_individual_voronoi_polygons(
         if cut_off is not None:
             radius = cut_off.radius
             quad_segments = cut_off.quad_segments
-            voronoi_in_frame.voronoi_polygon = shapely.intersection(
-                voronoi_in_frame.voronoi_polygon,
+            voronoi_in_frame.polygon = shapely.intersection(
+                voronoi_in_frame.polygon,
                 shapely.buffer(
-                    peds_in_frame.points,
+                    peds_in_frame.point,
                     radius,
                     quad_segs=quad_segments,
                 ),
@@ -421,15 +423,13 @@ def compute_individual_voronoi_polygons(
         # Only consider the parts of a multipolygon which contain the position
         # of the pedestrian
         voronoi_in_frame.loc[
-            shapely.get_type_id(voronoi_in_frame.voronoi_polygon) != 3,
+            shapely.get_type_id(voronoi_in_frame.polygon) != 3,
             POLYGON_COL,
         ] = voronoi_in_frame.loc[
-            shapely.get_type_id(voronoi_in_frame.voronoi_polygon) != 3, :
+            shapely.get_type_id(voronoi_in_frame.polygon) != 3, :
         ].apply(
             lambda row: shapely.get_parts(row[POLYGON_COL])[
-                shapely.within(
-                    row.points, shapely.get_parts(row.voronoi_polygon)
-                )
+                shapely.within(row.point, shapely.get_parts(row.polygon))
             ][0],
             axis=1,
         )
@@ -437,7 +437,7 @@ def compute_individual_voronoi_polygons(
         dfs.append(voronoi_in_frame)
 
     result = pd.concat(dfs)[[ID_COL, FRAME_COL, POLYGON_COL]]
-    result[INDIVIDUAL_DENSITY_COL] = 1.0 / shapely.area(result.voronoi_polygon)
+    result[INDIVIDUAL_DENSITY_COL] = 1.0 / shapely.area(result.polygon)
 
     return result
 
@@ -449,18 +449,19 @@ def compute_intersecting_polygons(
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
-                to contain a column 'voronoi_polygon' which holds
+                to contain a column 'polygon' which holds
                 shapely.Polygon information
         measurement_area (MeasurementArea): measurement area for which the
             intersection will be computed.
 
     Returns:
         DataFrame containing the columns: 'ID', 'frame' and
-        'voronoi_ma_intersection'.
+        'intersection' which is the intersection of the individual Voronoi
+        polygon and the given measurement area.
     """
     df_intersection = individual_voronoi_data[[ID_COL, FRAME_COL]].copy()
     df_intersection[INTERSECTION_COL] = shapely.intersection(
-        individual_voronoi_data.voronoi_polygon, measurement_area.polygon
+        individual_voronoi_data.polygon, measurement_area.polygon
     )
     return df_intersection
 
@@ -550,37 +551,37 @@ def _compute_individual_movement(
             be used to determine the movement
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame', 'start', 'end',
-        'start_frame, and 'end_frame'. Where 'start'/'end' are the points
-        where the movement start/ends, and 'start_frame'/'end_frame' are the
-        corresponding frames.
+        DataFrame containing the columns: 'id', 'frame', 'start_position',
+        'end_position', 'window_size'.Where 'start_position'/'end_position' are
+        the points where the movement start/ends, and 'window_size' is the
+        number of frames between the movement start and end.
     """
     df_movement = traj_data.data.copy(deep=True)
 
     df_movement[START_POSITION_COL] = (
         df_movement.groupby(by=ID_COL)
-        .points.shift(frame_step)
-        .fillna(df_movement.points)
+        .point.shift(frame_step)
+        .fillna(df_movement.point)
     )
     df_movement["start_frame"] = (
-        df_movement.groupby("ID")["frame"]
-        .shift(frame_step)
-        .fillna(df_movement["frame"])
+        df_movement.groupby(by=ID_COL)
+        .frame.shift(frame_step)
+        .fillna(df_movement.frame)
     )
 
     if bidirectional:
         df_movement[END_POSITION_COL] = (
-            df_movement.groupby(df_movement.ID)
-            .points.shift(-frame_step)
-            .fillna(df_movement.points)
+            df_movement.groupby(df_movement.id)
+            .point.shift(-frame_step)
+            .fillna(df_movement.point)
         )
         df_movement["end_frame"] = (
-            df_movement.groupby(df_movement.ID)
+            df_movement.groupby(df_movement.id)
             .frame.shift(-frame_step)
             .fillna(df_movement.frame)
         )
     else:
-        df_movement[END_POSITION_COL] = df_movement.points
+        df_movement[END_POSITION_COL] = df_movement.point
         df_movement["end_frame"] = df_movement.frame
 
     df_movement[WINDOW_SIZE_COL] = (
@@ -615,8 +616,8 @@ def compute_crossing_frames(
         measurement_line (MeasurementLine):
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame', where 'frame' are
-        the frames where the measurement line is crossed.
+        DataFrame containing the columns: 'id', 'frame', where 'frame' is
+        the frame where the measurement line is crossed.
     """
     # stack is used to get the coordinates in the correct order, as pygeos
     # does not support creating linestring from points directly. The
@@ -629,8 +630,8 @@ def compute_crossing_frames(
     df_movement["movement"] = shapely.linestrings(
         np.stack(
             [
-                shapely.get_coordinates(df_movement.start),
-                shapely.get_coordinates(df_movement.end),
+                shapely.get_coordinates(df_movement.start_position),
+                shapely.get_coordinates(df_movement.end_position),
             ],
             axis=1,
         )
@@ -659,10 +660,13 @@ def _get_continuous_parts_in_area(
         measurement_area (MeasurementArea): area which is considered
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame_start', 'frame_end'
+        DataFrame containing the columns: 'id', 'entering_frame',
+        'leaving_frame'. Where 'entering_frame' is the first frame a pedestrian
+        is inside the measurement area, and 'leaving_frame' is first frame a
+        pedestrian after the pedestrian has left the measurement area.
     """
     inside = traj_data.data.loc[
-        shapely.within(traj_data.data.points, measurement_area.polygon), :
+        shapely.within(traj_data.data.point, measurement_area.polygon), :
     ].copy()
     inside.loc[:, "g"] = inside.groupby(
         by=ID_COL, group_keys=False
@@ -670,8 +674,8 @@ def _get_continuous_parts_in_area(
     inside_range = (
         inside.groupby([ID_COL, "g"])
         .agg(
-            frame_start=(FRAME_COL, "first"),
-            frame_end=(FRAME_COL, "last"),
+            entering_frame=(FRAME_COL, "first"),
+            leaving_frame=(FRAME_COL, "last"),
         )
         .reset_index()[[ID_COL, FIRST_FRAME_COL, LAST_FRAME_COL]]
     )
@@ -699,8 +703,8 @@ def _check_crossing_in_frame_range(
         column_name (str): name of the result column
 
     Returns:
-        DataFrame containing the columns 'ID', 'frame_start', 'frame_end',
-        column_name
+        DataFrame containing the columns 'id', 'entering_frame',
+        'leaving_frame', and column_name
     """
     assert check_column in (
         FIRST_FRAME_COL,

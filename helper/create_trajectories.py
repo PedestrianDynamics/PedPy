@@ -10,6 +10,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from pedpy.types import FRAME_COL, ID_COL, X_COL, Y_COL
+
 
 def required_length(nmin: int, nmax: int) -> Any:
     class RequiredLength(argparse.Action):
@@ -203,7 +205,7 @@ def get_grid_trajectory(
                 position = start + frame * movement_direction
                 traj.append([ped_id, frame, position[0], position[1]])
 
-    return pd.DataFrame(traj, columns=["ID", "FR", "X", "Y"])
+    return pd.DataFrame(traj, columns=[ID_COL, FRAME_COL, X_COL, Y_COL])
 
 
 def filter_pedestrians(

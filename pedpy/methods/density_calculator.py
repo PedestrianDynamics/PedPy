@@ -20,15 +20,15 @@ def compute_classic_density(
 
     Args:
         traj_data (TrajectoryData): trajectory data to analyze
-        measurement_area (MeasurementArea): area for which the density is computed
-
+        measurement_area (MeasurementArea): area for which the density is
+            computed
 
     Returns:
-        DataFrame containing the columns: 'frame' and 'density'
+        DataFrame containing the columns: 'frame' and 'density' 1/m^2
     """
     peds_in_area = TrajectoryData(
         traj_data.data[
-            shapely.contains(measurement_area.polygon, traj_data.data.points)
+            shapely.contains(measurement_area.polygon, traj_data.data.point)
         ],
         traj_data.frame_rate,
     )
@@ -51,18 +51,20 @@ def compute_voronoi_density(
     individual_voronoi_data: pd.DataFrame,
     measurement_area: MeasurementArea,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute the voronoi density per frame inside the given measurement area.
+    """Compute the Voronoi density per frame inside the given measurement area.
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data per
-            frame needs to contain the columns: 'ID', 'frame',
-            'voronoi_polygon', which holds a shapely.Polygon
+            frame needs to contain the columns: 'id', 'frame',
+            'polygon', which holds a :class:`shapely.Polygon`
         measurement_area (MeasurementArea): area for which the density is
             computed
     Returns:
-        DataFrame containing the columns: 'frame' and 'density',
-        DataFrame containing the columns: 'ID', 'frame', 'voronoi_polygon',
-        'voronoi_ma_intersection'.
+        DataFrame containing the columns: 'frame' and 'density' in 1/m^2,
+        DataFrame containing the columns: 'id', 'frame', 'polygon' which
+        contains the Voronoi polygon of the pedestrian, 'intersection' which
+        contains the intersection area of the Voronoi polygon and the given
+        measurement area.
 
     """
     df_intersecting = compute_intersecting_polygons(
@@ -79,8 +81,8 @@ def compute_voronoi_density(
 
     relation_col = "relation"
     df_combined[relation_col] = shapely.area(
-        df_combined.voronoi_ma_intersection
-    ) / shapely.area(df_combined.voronoi_polygon)
+        df_combined.intersection
+    ) / shapely.area(df_combined.polygon)
 
     df_voronoi_density = (
         df_combined.groupby(df_combined.frame).relation.sum()
@@ -118,17 +120,19 @@ def compute_passing_density(
                 'frame_end'.
 
     Returns:
-          DataFrame containing the columns: 'ID' and 'density' in 1/m^2
+          DataFrame containing the columns: 'ID' and 'density' in 1/m^2.
 
     """
-    density = pd.DataFrame(frames.ID, columns=[ID_COL, DENSITY_COL])
+    density = pd.DataFrame(frames.id, columns=[ID_COL, DENSITY_COL])
 
     densities = []
     for _, row in frames.iterrows():
         densities.append(
             density_per_frame[
                 density_per_frame.index.to_series().between(
-                    int(row.frame_start), int(row.frame_end), inclusive="left"
+                    int(row.entering_frame),
+                    int(row.leaving_frame),
+                    inclusive="left",
                 )
             ].mean()
         )
@@ -144,7 +148,6 @@ def _get_num_peds_per_frame(traj_data: TrajectoryData) -> pd.DataFrame:
 
     Returns:
         DataFrame containing the columns: 'frame' (as index) and 'num_peds'.
-
     """
     num_peds_per_frame = (
         traj_data.data.groupby(traj_data.data.frame)
