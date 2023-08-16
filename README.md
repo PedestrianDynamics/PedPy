@@ -43,7 +43,7 @@ python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-i
 ### Usage
 
 For first time users, have a look at the [getting started notebook](notebooks/getting_started.ipynb), as it shows the first steps to start an analysis with *PedPy*.
-A more detailed overview of *PedPy* is demonstrated in the [usage notebook](notebooks/usage.ipynb).
+A more detailed overview of *PedPy* is demonstrated in the [user guide notebook](notebooks/user_guide.ipynb).
 The [fundamental diagram notebook](notebooks/fundamental_diagram.ipynb) shows how to use *PedPy* for computing the fundamental diagram of a series of experiments.
 
 #### Interactive online session
@@ -51,7 +51,7 @@ The [fundamental diagram notebook](notebooks/fundamental_diagram.ipynb) shows ho
 If you want to try out *PedPy* for the first time, you can find an interactive online environments for both notebooks here:
 
 - Getting started: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fgetting_started.ipynb)
-- Usage: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fusage.ipynb)
+- User guide: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fusage.ipynb)
 - Fundamental diagram: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Ffundamental_diagram.ipynb)
 
 **Note:** 

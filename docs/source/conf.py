@@ -43,6 +43,8 @@ extensions = [
 
 # -- Automatic execution of jupyter notebooks --------------------------------
 nb_execution_excludepatterns = ["readthedocs.ipynb"]
+nb_execution_timeout = 60
+myst_enable_extensions = ["colon_fence"]
 
 # -- Automatic generation of API doc -----------------------------------------
 autoapi_dirs = [
@@ -119,6 +121,7 @@ html_theme_options = {
             "type": "url",
         },
     ],
+    "show_toc_level": 3,
 }
 
 html_sidebars = {
