@@ -18,30 +18,33 @@ current_year = datetime.datetime.today().year
 
 project = "PedPy"
 copyright = f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7"
-author = "Tobias Schrödter"
-release = "1.0.0rc2"
+
+import pedpy
+
+release = pedpy.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.duration",
-    "sphinx.ext.doctest",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.autosectionlabel",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
     "sphinx_design",
     "sphinx_copybutton",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.todo",
     "sphinx.ext.napoleon",
-    "sphinxcontrib.apidoc",
-    "nbsphinx",
     "sphinx.ext.mathjax",
+    "myst_nb",
+    "sphinx_favicon",
+    "notfound.extension",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
+    "sphinxcontrib.apidoc",
 ]
 
+# -- Automatic execution of jupyter notebooks --------------------------------
+nb_execution_excludepatterns = ["readthedocs.ipynb"]
+
+# -- Automatic generation of API doc -----------------------------------------
 autodoc_typehints = "both"
 
 apidoc_module_dir = "../../pedpy"
@@ -51,6 +54,8 @@ apidoc_separate_modules = True
 apidoc_toc_file = "index"
 apidoc_extra_args = ["--implicit-namespaces", "-d 10"]
 apidoc_module_first = True
+add_module_names = False
+autoclass_content = "both"
 
 # Napoleon settings
 napoleon_google_docstring = True
@@ -67,42 +72,64 @@ napoleon_preprocess_types = False
 napoleon_type_aliases = None
 napoleon_attr_annotations = True
 
+
+# -- Linking ---------------------------------------------------------
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    "shapely": ("https://shapely.readthedocs.io/en/2.0.1/", None),
 }
 intersphinx_disabled_domains = ["std"]
 
+# -- HTML generation ---------------------------------------------------------
 templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["build", "Thumbs.db", ".DS_Store", "**.ipynb_checkpoints"]
+exclude_patterns = [
+    "build",
+    "Thumbs.db",
+    ".DS_Store",
+    "**.ipynb_checkpoints",
+    "readthedocs.ipynb",
+]
 
-nbsphinx_allow_errors = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "pydata_sphinx_theme"
+html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 
 html_logo = "_static/logo_text.svg"
 html_favicon = "_static/logo.svg"
 
-html_css_files = [
-    "css/custom.css",
-]
+html_css_files = ["css/custom.css", "css/breadcrumbs_custom"]
 html_context = {"default_mode": "light"}
 
 html_theme_options = {
     "show_nav_level": 5,
-    "github_url": "https://github.com/PedestrianDynamics/PedPy",
-    "header_links_before_dropdown": 5,
-    "show_toc_level": 5,
-    "navbar_end": ["navbar-icon-links"],
+    "use_fullscreen_button": False,
+    "use_issues_button": False,
+    "use_download_button": False,
+    "article_header_end": ["breadcrumbs", "toggle-secondary-sidebar"],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/PedestrianDynamics/PedPy",
+            "icon": "fa-brands fa-github",
+        },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/pedpy/",
+            "icon": "https://img.shields.io/pypi/v/PedPy",
+            "type": "url",
+        },
+    ],
 }
 
-# -- Options for EPUB output
-epub_show_urls = "footnote"
+html_sidebars = {
+    "**": ["navbar-logo", "icon-links", "search-field", "sbt-sidebar-nav.html"]
+}

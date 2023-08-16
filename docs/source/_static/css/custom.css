@@ -1,4 +1,31 @@
-html[data-theme="light"] {
+/* Provided by Sphinx's 'basic' theme, and included in the final set of assets */
+@import "../basic.css";
+
+:root {
     /*Set main color to match color of main logo color */
-    --pst-color-primary: rgb(74 163 196);
+    --pst-color-primary: 74, 163, 196;
+    --pst-font-size-base: 15px;
+}
+
+/* Main index page overview cards */
+
+.intro-card {
+  padding: 10px 10px 10px 10px;
+}
+
+.intro-card .sd-card-img-top {
+  margin: 0px;
+  height: 80px;
+  background: none !important;
+}
+
+.intro-card .sd-card-title {
+  color: var(--pst-color-primary);
+  font-size: var(--pst-font-size-h5);
+  padding: 0rem 0rem 0.25rem 0rem;
+}
+
+.intro-card .sd-card-hover{
+    border-color:color: var(--pst-color-primary)
+    transform: scale(2.01);
 }

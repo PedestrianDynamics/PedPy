@@ -109,9 +109,7 @@ jobs:
         with:
           name: demos_usage
           path: |
-            notebooks/usage.ipynb
-            notebooks/jpsreport.ipynb
-            demos/
+            notebooks/
 
   test:
     needs: build
@@ -151,11 +149,11 @@ jobs:
 
       - name: Run usage notebook
         run: |
-          jupyter nbconvert --to notebook --execute notebooks/usage.ipynb
+          jupyter nbconvert --to notebook --execute usage.ipynb
 
       - name: Run usage jpsreport notebook
         run: |
-          jupyter nbconvert --to notebook --execute notebooks/jpsreport.ipynb
+          jupyter nbconvert --to notebook --execute jpsreport.ipynb
 
   publish:
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') ||

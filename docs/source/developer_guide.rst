@@ -61,11 +61,11 @@ We will try to explain the main git commands you will need to contribute to `Ped
 This creates a personal copy of the project under your GitHub account, allowing you to freely make changes without affecting the original codebase.
 First navigate to our GitHub repository at https://github.com/PedestrianDynamics/PedPy and click on `Fork`.
 
-.. image:: ../images/github_fork_01.png
+.. image:: images/github_fork_01.png
 
 Afterwards you specify the location of the fork, this is usually just your GitHub Account.
 
-.. image:: ../images/github_fork_02.png
+.. image:: images/github_fork_02.png
 
 **2. Clone the Forked Repository**: Next, clone the forked repository to your local development environment using Git. This creates a local copy of the codebase on your machine, enabling you to make changes and test them locally.
 The correct command can also be found on GitHub in your fork.

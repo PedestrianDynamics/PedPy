@@ -1,62 +1,85 @@
-PedPy's documentation!
-=================================
+*************************************
+PedPy: Pedestrian Trajectory Analyzer
+*************************************
 
 .. toctree::
    :maxdepth: 1
    :hidden:
 
    Getting started <getting_started>
-   User Guide <user_guide/index>
+   User Guide <usage>
    API reference <api/index>
-   Contribution <dev/index>
+   Developer Guide <developer_guide>
    Disclaimer <disclaimer>
 
 
 **Useful links**:
-`Binary Installers <https://pypi.org/project/pedpy>`__ |
+`Python Packages <https://pypi.org/project/pedpy>`__ |
 `Source Repository <https://github.com/PedestrianDynamics/pedpy>`__ |
-`Issues & Ideas <https://github.com/PedestrianDynamics/pedpy/issues>`__
+`Issues <https://github.com/PedestrianDynamics/pedpy/issues>`__ |
+`Discussions <https://github.com/PedestrianDynamics/pedpy/discussions>`__
 
-*PedPy* is an open source, MIT-licensed `Python <https://www.python.org/>`__ module for pedestrian movement analysis.
-It implements different measurement methods for density, velocity and flow.
+*PedPy* is an open source, MIT-licensed `Python <https://www.python.org/>`__ library for pedestrian movement analysis.
+It provides a high-level interface for extracting fundamental measurements from trajectory data.
 
-.. grid:: 4
-    :gutter: 2
+Basic measures as **velocity**, **flow**, and **density** can directly be computed and then combined to obtain fundamental diagrams.
+Additionally, *PedPy* provides functionalities to compute density and velocity **profiles**.
+
+Install PedPy
+=============
+
+*PedPy* can directly be installed from PyPI via:
+
+.. code-block::
+
+    pip install pedpy
+
+|
+|
+|
+
+.. grid:: 1 2 2 2
+    :gutter: 4
+    :padding: 2 2 0 0
+    :class-container: sd-text-center
 
     .. grid-item-card:: Getting started
         :img-top: _static/getting_started.svg
+        :class-card: intro-card
         :link: getting_started
-        :link-type: ref
-        :link-alt: To the getting started guides
+        :link-type: doc
+        :link-alt: To the getting started guide
 
-        New to *PedPy*? Check out the getting started guides. They contain an
-        introduction to *PedPy*'s main concepts.
+        New to *PedPy*? Check out the getting started guide. It show cases a
+        first analysis done with *PedPy*.
 
     .. grid-item-card:: User guide
         :img-top: _static/user_guide.svg
-        :link: user_guide
-        :link-type: ref
-        :link-alt: To the getting started guides
+        :class-card: intro-card
+        :link: usage
+        :link-type: doc
+        :link-alt: To the user guide
 
-        The user guide provides in-depth information on the
-        key concepts of *PedPy* with useful background information and explanation.
+        The user guide shows more detailed applications and provides an overview
+        of the capabilities of *PedPy*.
 
     .. grid-item-card:: API reference
         :img-top: _static/api_reference.svg
+        :class-card: intro-card
         :link: api/index
         :link-type: doc
         :link-alt: To the reference guide
 
-        The reference guide contains a detailed description of
-        the *PedPy* API. The reference describes how the methods work and which parameters can
-        be used. It assumes that you have an understanding of the key concepts.
+        A detailed description of *PedPy*'s API.
+        It explains the provided functions and their parameters.
+
 
     .. grid-item-card:: Developer guide
         :img-top: _static/developer_guide.svg
-        :link: development
-        :link-type: ref
+        :class-card: intro-card
+        :link: developer_guide
+        :link-type: doc
         :link-alt: To the development guide
 
-        Saw a typo in the documentation? Want to improve
-        existing functionalities? The contributing guidelines will guide
-        you through the process of improving *PedPy*.
+        Want to help improving *PedPy*?
+        The developer guides explains, how you can help us to make *PedPy* better.
