@@ -51,7 +51,7 @@ def test_compute_classic_density(
     num_peds_in_area_per_frame = {frame: 0 for frame in range(0, num_frames)}
 
     for index, row in trajectory_data.data.iterrows():
-        point = Point([row.X, row.Y])
+        point = Point([row.x, row.y])
         if point.within(measurement_area.polygon):
             num_peds_in_area_per_frame[row.frame] += 1
 

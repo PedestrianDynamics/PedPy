@@ -8,6 +8,7 @@ import shapely
 from aenum import Enum
 
 from pedpy.data.geometry import WalkableArea
+from pedpy.types import FRAME_COL
 
 
 class VelocityMethod(Enum):  # pylint: disable=too-few-public-methods
@@ -32,7 +33,7 @@ def compute_profiles(
 
     Args:
         individual_voronoi_velocity_data (pd.DataFrame): individual voronoi
-            and velocity data, needs to contain a column 'individual voronoi'
+            and velocity data, needs to contain a column 'polygon'
             which holds shapely.Polygon information and a column 'speed'
             which holds a floating point value
         walkable_area (shapely.Polygon): geometry for which the profiles are
@@ -50,11 +51,11 @@ def compute_profiles(
     density_profiles = []
     velocity_profiles = []
 
-    for _, frame_data in individual_voronoi_velocity_data.groupby("frame"):
+    for _, frame_data in individual_voronoi_velocity_data.groupby(FRAME_COL):
         grid_intersections_area = shapely.area(
             shapely.intersection(
                 np.array(grid_cells)[:, np.newaxis],
-                np.array(frame_data.voronoi_polygon)[np.newaxis, :],
+                np.array(frame_data.polygon)[np.newaxis, :],
             )
         )
 
@@ -62,7 +63,7 @@ def compute_profiles(
         density = (
             np.sum(
                 grid_intersections_area
-                * (1 / shapely.area(frame_data.voronoi_polygon.values)),
+                * (1 / shapely.area(frame_data.polygon.values)),
                 axis=1,
             )
             / grid_cells[0].area

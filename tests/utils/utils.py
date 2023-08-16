@@ -8,6 +8,7 @@ import shapely
 
 from helper.create_trajectories import get_grid_trajectory
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.types import X_COL, Y_COL
 
 
 def get_trajectory(
@@ -27,7 +28,7 @@ def get_trajectory(
         number_frames=number_frames,
     )
     grid = grid.rename(columns={"FR": "frame"})
-    grid["points"] = shapely.points(grid["X"], grid["Y"])
+    grid["point"] = shapely.points(grid[X_COL], grid[Y_COL])
     return grid
 
 

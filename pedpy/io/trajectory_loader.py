@@ -15,7 +15,7 @@ def load_trajectory(
     default_frame_rate: Optional[float] = None,
     default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
-    """Loads the trajectory file in the internal trajectory data format.
+    """Loads the trajectory file in the internal :class:`TrajectoryData` format.
 
     Loads the relevant data: trajectory data, frame rate, and type of
     trajectory from the given trajectory file. If the file does not contain
@@ -29,7 +29,7 @@ def load_trajectory(
                 in the file, None if unit should be parsed from the file
 
     Returns:
-        Tuple containing: trajectory data, frame rate, and type of trajectory.
+        :class:`TrajectoryData` representation of the file data
     """
     if not trajectory_file.exists():
         raise IOError(f"{trajectory_file} does not exist.")
@@ -60,8 +60,8 @@ def _load_trajectory_data(
             in the file, None if unit should be parsed from the file
 
     Returns:
-        The trajectory data as data frame, the coordinates are converted to
-        meter (m).
+        The trajectory data as :class:`DataFrame`, the coordinates are
+        converted to meter (m).
     """
     try:
         data = pd.read_csv(
@@ -89,8 +89,8 @@ def _load_trajectory_data(
             )
 
         if unit == TrajectoryUnit.CENTIMETER:
-            data.X = data.X.div(100)
-            data.Y = data.Y.div(100)
+            data.x = data.x.div(100)
+            data.y = data.y.div(100)
 
         return data
     except pd.errors.ParserError as exc:
@@ -109,6 +109,25 @@ def _load_trajectory_meta_data(  # pylint: disable=too-many-branches
     default_frame_rate: Optional[float],
     default_unit: Optional[TrajectoryUnit],
 ) -> Tuple[float, TrajectoryUnit]:
+    """Extract the trajectory metadata from file, use defaults if none found.
+
+    Check the given trajectory file for the used unit and frame-rate, if none
+    were found, return the provided default values.
+
+    In cases that there are differences between the found and given default
+    values, an exception is raised. If no metadata found and no defaults given
+    also an exception will be raised.
+
+    Args:
+        trajectory_file (pathlib.Path): file containing the trajectory
+        default_frame_rate (float): frame rate of the file, None if frame rate
+            from file is used
+        default_unit (TrajectoryUnit): unit in which the coordinates are stored
+                in the file, None if unit should be parsed from the file
+
+    Returns:
+        Tuple containing the frame-rate and used unit.
+    """
     parsed_frame_rate: Any = None
     parsed_unit: Any = None
 

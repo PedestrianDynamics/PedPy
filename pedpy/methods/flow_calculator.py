@@ -33,7 +33,9 @@ def compute_n_t(
 
     Returns:
         DataFrame containing the columns 'frame', 'cumulative_pedestrians',
-        and 'time' and DataFrame containing the columns 'ID', and 'frame'.
+        and 'time' since frame 0, and DataFrame containing the columns 'ID',
+        and 'frame' which gives the frame the pedestrian crossed the
+        measurement line.
 
     """
     crossing_frames = compute_crossing_frames(
@@ -99,7 +101,7 @@ def compute_flow(
         frame_rate (float): frame rate of the trajectories
 
     Returns:
-        DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s
+        DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
     """
     crossing_speeds = pd.merge(
         crossing_frames, individual_speed, on=[ID_COL, FRAME_COL]

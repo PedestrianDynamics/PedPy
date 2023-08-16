@@ -30,12 +30,12 @@ class TrajectoryData:
 
     Args:
         data (pd.DataFrame): data frame containing the data in the form:
-            "ID", "frame", "X", "Y"
+            "id", "frame", "x", "y"
         frame_rate (float): frame rate of the trajectory file
 
     Attributes:
         data (pd.DataFrame): data frame containing the trajectory data with the
-            columns: "ID", "frame", "X", "Y", "points"
+            columns: "id", "frame", "x", "y", "point"
         frame_rate (float): frame rate of the trajectory data
     """
 
@@ -43,14 +43,14 @@ class TrajectoryData:
     frame_rate: float
 
     def __post_init__(self):
-        """Adds a column with the position to :py:attr:`data`.
+        """Adds a column with the position to :attr:`data`.
 
         The current position of the pedestrian in the row is added as a
-        shapely Point to the dataframe, allowing easier geometrical
+        :class:`shapely.Point` to :attr:`data`, allowing easier geometrical
         computations directly.
         """
         data = self.data.copy(deep=True)
-        data.loc[:, POINT_COL] = shapely.points(data.X, data.Y)
+        data.loc[:, POINT_COL] = shapely.points(data.x, data.y)
         object.__setattr__(self, "data", data)
 
     def __repr__(self):
@@ -62,8 +62,8 @@ class TrajectoryData:
         message = f"""TrajectoryData:
         frame rate: {self.frame_rate}
         frames: [{self.data.frame.min(), self.data.frame.max()}]
-        number pedestrians: {self.data.ID.unique().size}
-        bounding box: {shapely.MultiPoint(self.data.points).bounds}
+        number pedestrians: {self.data.id.unique().size}
+        bounding box: {shapely.MultiPoint(self.data.point).bounds}
         data: 
         {self.data.head(10)}
         """

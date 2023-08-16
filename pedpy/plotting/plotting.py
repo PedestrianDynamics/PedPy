@@ -10,6 +10,14 @@ import shapely
 
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.types import (
+    ID_COL,
+    INTERSECTION_COL,
+    POLYGON_COL,
+    SPEED_COL,
+    X_COL,
+    Y_COL,
+)
 
 log = logging.getLogger(__name__)
 
@@ -101,23 +109,23 @@ def plot_trajectories(
     if walkable_area is not None:
         ax = plot_walkable_area(walkable_area=walkable_area, ax=ax, **kwargs)
 
-    for _, ped in traj.data.groupby("ID"):
+    for _, ped in traj.data.groupby(ID_COL):
         plot = ax.plot(
-            ped["X"],
-            ped["Y"],
+            ped[X_COL],
+            ped[Y_COL],
             alpha=traj_alpha,
             color=traj_color,
             linewidth=traj_width,
         )
         ax.scatter(
-            ped[ped.frame == ped.frame.min()]["X"],
-            ped[ped.frame == ped.frame.min()]["Y"],
+            ped[ped.frame == ped.frame.min()][X_COL],
+            ped[ped.frame == ped.frame.min()][Y_COL],
             c=plot[-1].get_color(),
             marker=traj_start_marker,
         )
         ax.scatter(
-            ped[ped.frame == ped.frame.max()]["X"],
-            ped[ped.frame == ped.frame.max()]["Y"],
+            ped[ped.frame == ped.frame.max()][X_COL],
+            ped[ped.frame == ped.frame.max()][Y_COL],
             c=plot[-1].get_color(),
             marker=traj_end_marker,
         )
@@ -227,7 +235,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
         show_ped_positions (optional): show the current positions of the
-            pedestrians, data needs to contain columns "X", and "Y"!
+            pedestrians, data needs to contain columns "x", and "y"!
         ped_color (optional): color used to display current ped positions
         voronoi_border_color (optional): border color of Voronoi cells
         voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell
@@ -299,23 +307,23 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         )
 
     for _, row in data.iterrows():
-        poly = row["voronoi_polygon"]
+        poly = row[POLYGON_COL]
 
         if color_mode != "id":
             color = (
-                scalar_mappable.to_rgba(row["speed"])
+                scalar_mappable.to_rgba(row[SPEED_COL])
                 if color_mode == "velocity"
                 else scalar_mappable.to_rgba(1 / poly.area)
             )
         else:
-            color = voronoi_colormap(row["ID"] % 20)
+            color = voronoi_colormap(row[ID_COL] % 20)
 
         ax.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
         ax.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
 
-        if "voronoi_ma_intersection" in data.columns:
-            if not shapely.is_empty(row["voronoi_ma_intersection"]):
-                intersection_poly = row["voronoi_ma_intersection"]
+        if INTERSECTION_COL in data.columns:
+            if not shapely.is_empty(row[INTERSECTION_COL]):
+                intersection_poly = row[INTERSECTION_COL]
                 ax.fill(
                     *intersection_poly.exterior.xy,
                     fc=color,
@@ -323,7 +331,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
                 )
 
         if show_ped_positions:
-            ax.scatter(row["X"], row["Y"], color=ped_color, s=ped_size)
+            ax.scatter(row[X_COL], row[Y_COL], color=ped_color, s=ped_size)
 
     if show_colorbar and color_mode != "id":
         plt.colorbar(
