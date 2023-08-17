@@ -2,17 +2,10 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-import datetime
-import os
-import sys
-
-basedir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "pedpy")
-)
-sys.path.insert(0, basedir)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import datetime
 
 current_year = datetime.datetime.today().year
 
