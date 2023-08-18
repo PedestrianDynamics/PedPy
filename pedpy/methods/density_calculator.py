@@ -16,7 +16,22 @@ def compute_classic_density(
     traj_data: TrajectoryData,
     measurement_area: MeasurementArea,
 ) -> pd.DataFrame:
-    """Compute the classic density per frame inside the given measurement area.
+    r"""Compute the classic density per frame inside the given measurement area.
+
+    The classic density :math:`\rho_{classic}(t)` is the number of pedestrians
+    inside the given measurement area :math:`M` at the time :math:`t`, divided
+    by the area of that space (:math:`A(M)`):
+
+    .. math::
+
+        \rho_{classic} = {N \over A(M)},
+
+    where :math:`N` is the number of pedestrians inside the measurement area
+    :math:`M`.
+
+    .. image:: /images/classic_density.png
+        :width: 60 %
+        :align: center
 
     Args:
         traj_data (TrajectoryData): trajectory data to analyze
@@ -24,7 +39,7 @@ def compute_classic_density(
             computed
 
     Returns:
-        DataFrame containing the columns: 'frame' and 'density' 1/m^2
+        DataFrame containing the columns 'frame' and 'density' in :math:`1/m^2`
     """
     peds_in_area = TrajectoryData(
         traj_data.data[
@@ -51,16 +66,37 @@ def compute_voronoi_density(
     individual_voronoi_data: pd.DataFrame,
     measurement_area: MeasurementArea,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute the Voronoi density per frame inside the given measurement area.
+    r"""Compute the Voronoi density per frame inside the given measurement area.
+
+    The Voronoi density :math:`\rho_{voronoi}(t)` is computed based on the
+    individual Voronoi polygons :math:`V_i(t)` from
+    :func:`~method_utils.compute_individual_voronoi_polygons`.
+    Pedestrians whose Voronoi polygon have an intersection with the measurement
+    area are taken into account.
+
+    .. image:: /images/voronoi_density.png
+        :width: 60 %
+        :align: center
+
+    The Voronoi density :math:`\rho_{voronoi}(t)` is defined as
+
+    .. math::
+
+        \rho_{voronoi}(t) = { \int\int \rho_{xy}(t) dxdy \over A(M)},
+
+    where :math:`\rho_{xy}(t) = 1 / A(V_i(t))` is the individual density of
+    each pedestrian, whose :math:`V_i(t) \cap M` and :math:`A(M)` the area of
+    the measurement area.
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data per
-            frame needs to contain the columns: 'id', 'frame',
-            'polygon', which holds a :class:`shapely.Polygon`
+            frame, result from
+            :func:`method_utils.compute_individual_voronoi_polygon`
         measurement_area (MeasurementArea): area for which the density is
             computed
+
     Returns:
-        DataFrame containing the columns: 'frame' and 'density' in 1/m^2,
+        DataFrame containing the columns 'id' and 'density' in :math:`1/m^2`,
         DataFrame containing the columns: 'id', 'frame', 'polygon' which
         contains the Voronoi polygon of the pedestrian, 'intersection' which
         contains the intersection area of the Voronoi polygon and the given
@@ -110,17 +146,36 @@ def compute_voronoi_density(
 def compute_passing_density(
     *, density_per_frame: pd.DataFrame, frames: pd.DataFrame
 ) -> pd.DataFrame:
-    """Compute the individual density of the pedestrian who pass the area.
+    r"""Compute the individual density of the pedestrian who pass the area.
+
+    The passing density for each pedestrian :math:`\rho_{passing}(i)` is the
+    average number of pedestrian who are in the same measurement area :math:`M`
+    in the same time interval (:math:`[t_{in}(i), t_{out}(i)]`) as the
+    pedestrian :math:`i` divided by the area of that measurement area
+    :math:`A(M)`.
+
+    Then the computation becomes:
+
+    .. math::
+
+        \rho_{passing}(i) = {1 \over {t_{out}(i)-t_{in}(i)}}
+        \int^{t_{out}(i)}_{t_{in}(i)} {{N(t)} \over A(M)} dt
+
+    where :math:`t_{in}(i) = f_{in}(i) / fps` is the time the pedestrian
+    crossed the first line and :math:`t_{out}(i) = f_{out}(i) / fps` when they
+    crossed the second line, where :math:`f_{in}` and :math:`f_{out}` are the
+    frames where the pedestrian crossed the first line, and the second line
+    respectively. And :math:`fps` is the
+    :attr:`~trajectory_data.TrajectoryData.frame_rate` of the trajectory data.
 
     Args:
-        density_per_frame (pd.DataFrame): density per frame, DataFrame
-                containing the columns: 'frame' (as index) and 'density'
+        density_per_frame (pd.DataFrame): density per frame, result from
+            :func:`~density_calculator.compute_classic_density`
         frames (pd.DataFrame): information for each pedestrian in the area,
-                need to contain the following columns: 'ID','frame_start',
-                'frame_end'.
+            result from :func:`~method_utils.compute_frame_range_in_area`
 
     Returns:
-          DataFrame containing the columns: 'ID' and 'density' in 1/m^2.
+        DataFrame containing the columns 'id' and 'density' in :math:`1/m^2`
 
     """
     density = pd.DataFrame(frames.id, columns=[ID_COL, DENSITY_COL])
