@@ -36,42 +36,32 @@ extensions = [
     "myst_nb",
     "sphinx_favicon",
     "notfound.extension",
-    "sphinx.ext.napoleon",
+    # "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
-    "sphinxcontrib.apidoc",
+    # "sphinxcontrib.apidoc",
+    "autoapi.extension",
 ]
 
 # -- Automatic execution of jupyter notebooks --------------------------------
 nb_execution_excludepatterns = ["readthedocs.ipynb"]
 
 # -- Automatic generation of API doc -----------------------------------------
-autodoc_typehints = "both"
+autoapi_dirs = [
+    "../../pedpy",
+]
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+]
+autoapi_ignore = ["**/tests/**"]
+autoapi_member_order = ["groupwise"]
+autodoc_typehints = "description"
+autoapi_generate_api_docs = False
+autoapi_python_class_content = "both"
+autoapi_member_order = "bysource"
 
-apidoc_module_dir = "../../pedpy"
-apidoc_output_dir = "api"
-apidoc_excluded_paths = ["tests"]
-apidoc_separate_modules = True
-apidoc_toc_file = "index"
-apidoc_extra_args = ["--implicit-namespaces", "-d 10"]
-apidoc_module_first = True
 add_module_names = False
-autoclass_content = "both"
-
-# Napoleon settings
-napoleon_google_docstring = True
-napoleon_include_init_with_doc = False
-napoleon_include_private_with_doc = False
-napoleon_include_special_with_doc = True
-napoleon_use_admonition_for_examples = False
-napoleon_use_admonition_for_notes = False
-napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False
-napoleon_use_param = True
-napoleon_use_rtype = False
-napoleon_preprocess_types = False
-napoleon_type_aliases = None
-napoleon_attr_annotations = True
-
 
 # -- Linking ---------------------------------------------------------
 intersphinx_mapping = {
@@ -79,6 +69,7 @@ intersphinx_mapping = {
     "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),
     "shapely": ("https://shapely.readthedocs.io/en/2.0.1/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
 }
 intersphinx_disabled_domains = ["std"]
 
@@ -111,6 +102,7 @@ html_context = {"default_mode": "light"}
 
 html_theme_options = {
     "show_nav_level": 5,
+    "show_toc_level": 2,
     "use_fullscreen_button": False,
     "use_issues_button": False,
     "use_download_button": False,

@@ -6,9 +6,9 @@ PedPy: Pedestrian Trajectory Analyzer
    :maxdepth: 1
    :hidden:
 
-   Getting started <getting_started>
+   Getting Started <getting_started>
    User Guide <usage>
-   API reference <api/index>
+   API Reference <api/index>
    Developer Guide <developer_guide>
    Disclaimer <disclaimer>
 
@@ -35,15 +35,13 @@ Install PedPy
     pip install pedpy
 
 |
-|
-|
 
 .. grid:: 1 2 2 2
     :gutter: 4
     :padding: 2 2 0 0
     :class-container: sd-text-center
 
-    .. grid-item-card:: Getting started
+    .. grid-item-card:: Getting Started
         :img-top: _static/getting_started.svg
         :class-card: intro-card
         :link: getting_started
@@ -53,7 +51,7 @@ Install PedPy
         New to *PedPy*? Check out the getting started guide.
         It show cases a first analysis done with *PedPy*.
 
-    .. grid-item-card:: User guide
+    .. grid-item-card:: User Guide
         :img-top: _static/user_guide.svg
         :class-card: intro-card
         :link: usage
@@ -62,7 +60,7 @@ Install PedPy
 
         The user guide shows more detailed applications and provides an overview of the capabilities of *PedPy*.
 
-    .. grid-item-card:: API reference
+    .. grid-item-card:: API Reference
         :img-top: _static/api_reference.svg
         :class-card: intro-card
         :link: api/index
@@ -72,7 +70,7 @@ Install PedPy
         A detailed description of *PedPy*'s API.
         It explains the provided functions and their parameters.
 
-    .. grid-item-card:: Developer guide
+    .. grid-item-card:: Developer Guide
         :img-top: _static/developer_guide.svg
         :class-card: intro-card
         :link: developer_guide
