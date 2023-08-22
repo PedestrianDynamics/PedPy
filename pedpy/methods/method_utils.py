@@ -98,16 +98,34 @@ def compute_frame_range_in_area(
 ) -> Tuple[pd.DataFrame, MeasurementArea]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
-    Note:
-        Only pedestrians passing the complete measurement area will be
-        considered. Meaning they need to cross measurement_line and the line
-        with the given offset in one go. If leaving the area between two lines
-        through the same line will be ignored.
+    The measurement area is virtually created by creating a second measurement
+    line parallel to the given one offsetting by the given width. The area
+    between these line is the used measurement area.
 
-        As passing we define the frame, the pedestrians enter the area and
-        then move through the complete area without leaving it. Hence,
-        doing a closed analysis of the movement area with several measuring
-        ranges underestimates the actual movement time.
+    .. image:: /images/passing_area_from_lines.png
+        :width: 80 %
+        :align: center
+
+    For each pedestrians now the frames when they enter and leave the virtual
+    measurement area is computed. In this frame interval they have to be inside
+    the measurement area continuously. They also need to enter and leave the
+    measurement area via different measurement lines. If leaving the area
+    between the two lines, crossing the same line twice they will be ignored.
+    For a better understanding, see the image below, where red parts of the
+    trajectories are the detected ones inside the area. These frame intervals
+    will be returned.
+
+    .. image:: /images/frames_in_area.svg
+        :width: 80 %
+        :align: center
+
+
+    .. note::
+
+        As passing we define the frame, the pedestrians enter the area and then
+        move through the complete area without leaving it. Hence, doing a closed
+        analysis of the movement area with several measuring ranges
+        underestimates the actual movement time.
 
     Args:
         traj_data (TrajectoryData): trajectory data
@@ -115,12 +133,12 @@ def compute_frame_range_in_area(
         width (float): distance to the second measurement line
 
     Returns:
-        DataFrame containing the columns: 'id', 'entering_frame' describing the
+        DataFrame containing the columns 'id', 'entering_frame' describing the
         frame the pedestrian crossed the first or second line, 'leaving_frame'
         describing the frame the pedestrian crossed the second or first line,
         and the created measurement area
     """
-    # Create the second with the given offset
+    # Create the second measurement line with the given offset
     second_line = MeasurementLine(
         shapely.offset_curve(measurement_line.line, distance=width)
     )
@@ -211,16 +229,17 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
     """Compute the neighbors of each pedestrian based on the Voronoi cells.
 
     Computation of the neighborhood of each pedestrian per frame. Every other
-    pedestrian is a neighbor if the Voronoi cells of both pedestrian intersect
-    and some point.
+    pedestrian is a neighbor if the Voronoi cells of both pedestrian touch
+    and some point. The threshold for touching is set to 1mm.
 
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
-            to contain a column 'polygon', which holds
-            shapely.Polygon information
+            to contain a column 'polygon', which holds a
+            :class:`shapely.Polygon` (result from
+            :func:`~method_utils.compute_individual_voronoi_polygons`)
 
     Returns:
-        DataFrame containing the columns: 'id', 'frame' and 'neighbors', where
+        DataFrame containing the columns 'id', 'frame' and 'neighbors', where
         neighbors are a list of the neighbor's IDs
     """
     neighbor_df = []
@@ -270,15 +289,17 @@ def compute_time_distance_line(
     """Compute the time and distance to the measurement line.
 
     Compute the time (in frames) and distance to the first crossing of the
-    measurement line. For further information how the crossing frames are
-    computed see :func:`~compute_crossing_frames`. All frames after a
-    pedestrian has crossed the line will be omitted in the results.
+    measurement line for each pedestrian. For further information how the
+    crossing frames are computed see :func:`~compute_crossing_frames`.
+    All frames after a pedestrian has crossed the line will be omitted in the
+    results.
 
     Args:
         traj_data (TrajectoryData): trajectory data
         measurement_line (MeasurementLine): line which is crossed
 
-    Returns: DataFrame containing 'id', 'frame', 'time' (seconds until
+    Returns:
+        DataFrame containing 'id', 'frame', 'time' (seconds until
         crossing),  and 'distance' (meters to measurement line)
     """
     df_distance_time = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]].copy(
@@ -327,6 +348,8 @@ def compute_individual_voronoi_polygons(
     the walkable area. As seen below:
 
     .. image:: /images/voronoi_wo_cutoff.png
+        :width: 80 %
+        :align: center
 
     In cases with only a few pedestrians not close to each other or large
     walkable areas this might not be desired behavior as the size of the
@@ -337,11 +360,15 @@ def compute_individual_voronoi_polygons(
     line segments has on the circle can be seen in the plot below:
 
     .. image:: /images/voronoi_cutoff_differences.png
+        :width: 80 %
+        :align: center
 
     Using this cut off information, the resulting Voronoi polygons would like
     this:
 
     .. image:: /images/voronoi_w_cutoff.png
+        :width: 80 %
+        :align: center
 
     For allowing the computation of the Voronoi polygons when less than 4
     pedestrians are in the walkable area, 4 extra points will be added outside
@@ -363,8 +390,8 @@ def compute_individual_voronoi_polygons(
                 walkable area (default: on!)
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame','polygon', and
-        'individual_density' in 1/m^2.
+        DataFrame containing the columns 'id', 'frame','polygon' (
+        :class:`shapely.Polygon`), and 'individual_density' in :math:`1/m^2`.
     """
     dfs = []
 
@@ -447,23 +474,83 @@ def compute_intersecting_polygons(
 ) -> pd.DataFrame:
     """Compute the intersection of the voronoi cells with the measurement area.
 
+    .. image:: /images/voronoi_density.png
+        :width: 60 %
+        :align: center
+
     Args:
         individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
-                to contain a column 'polygon' which holds
-                shapely.Polygon information
+                to contain a column 'polygon' (:class:`shapely.Polygon`),
+                result from
+                :func:`~method_utils.compute_individual_voronoi_polygons`
         measurement_area (MeasurementArea): measurement area for which the
             intersection will be computed.
 
     Returns:
-        DataFrame containing the columns: 'ID', 'frame' and
+        DataFrame containing the columns 'id', 'frame' and
         'intersection' which is the intersection of the individual Voronoi
-        polygon and the given measurement area.
+        polygon and the given measurement area as :class:`shapely.Polygon`.
     """
     df_intersection = individual_voronoi_data[[ID_COL, FRAME_COL]].copy()
     df_intersection[INTERSECTION_COL] = shapely.intersection(
         individual_voronoi_data.polygon, measurement_area.polygon
     )
     return df_intersection
+
+
+def compute_crossing_frames(
+    *, traj_data: TrajectoryData, measurement_line: MeasurementLine
+) -> pd.DataFrame:
+    """Compute the frames at the pedestrians pass the measurement line.
+
+    As crossing we define a movement that moves across the measurement line.
+    When the movement ends on the line, the line is not crossed. When it
+    starts on the line, it counts as crossed. A visual representation is shown
+    below, where the movement goes from left to right and each dot indicates
+    the position at one frame. Red highlights where the person has crossed the
+    measurement line.
+
+    .. image:: /images/crossing_frames.svg
+        :width: 80 %
+        :align: center
+
+    Note:
+        Due to oscillations, it may happen that a pedestrian crosses the
+        measurement line multiple times in a small-time interval.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        measurement_line (MeasurementLine): measurement line which is crossed
+
+    Returns:
+        DataFrame containing the columns 'id', 'frame', where 'frame' is
+        the frame where the measurement line is crossed.
+    """
+    # stack is used to get the coordinates in the correct order, as pygeos
+    # does not support creating linestring from points directly. The
+    # resulting array looks as follows:
+    # [[[x_0_start, y_0_start], [x_0_end, y_0_end]],
+    #  [[x_1_start, y_1_start], [x_1_end, y_1_end]], ... ]
+    df_movement = _compute_individual_movement(
+        traj_data=traj_data, frame_step=1, bidirectional=False
+    )
+    df_movement["movement"] = shapely.linestrings(
+        np.stack(
+            [
+                shapely.get_coordinates(df_movement.start_position),
+                shapely.get_coordinates(df_movement.end_position),
+            ],
+            axis=1,
+        )
+    )
+
+    # crossing means, the current movement crosses the line and the end point
+    # of the movement is not on the line. The result is sorted by frame number
+    crossing_frames = df_movement.loc[
+        shapely.intersects(df_movement.movement, measurement_line.line)
+    ][[ID_COL, FRAME_COL]]
+
+    return crossing_frames
 
 
 def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
@@ -596,54 +683,6 @@ def _compute_individual_movement(
             WINDOW_SIZE_COL,
         ]
     ]
-
-
-def compute_crossing_frames(
-    *, traj_data: TrajectoryData, measurement_line: MeasurementLine
-) -> pd.DataFrame:
-    """Compute the frames at the pedestrians pass the measurement line.
-
-    As crossing we define a movement that moves across the measurement line.
-    When the movement ends on the line, the line is not crossed. When it
-    starts on the line, it counts as crossed.
-
-    Note:
-        Due to oscillations, it may happen that a pedestrian crosses the
-        measurement line multiple times in a small-time interval.
-
-    Args:
-        traj_data (pd.DataFrame): trajectory data
-        measurement_line (MeasurementLine):
-
-    Returns:
-        DataFrame containing the columns: 'id', 'frame', where 'frame' is
-        the frame where the measurement line is crossed.
-    """
-    # stack is used to get the coordinates in the correct order, as pygeos
-    # does not support creating linestring from points directly. The
-    # resulting array looks as follows:
-    # [[[x_0_start, y_0_start], [x_0_end, y_0_end]],
-    #  [[x_1_start, y_1_start], [x_1_end, y_1_end]], ... ]
-    df_movement = _compute_individual_movement(
-        traj_data=traj_data, frame_step=1, bidirectional=False
-    )
-    df_movement["movement"] = shapely.linestrings(
-        np.stack(
-            [
-                shapely.get_coordinates(df_movement.start_position),
-                shapely.get_coordinates(df_movement.end_position),
-            ],
-            axis=1,
-        )
-    )
-
-    # crossing means, the current movement crosses the line and the end point
-    # of the movement is not on the line. The result is sorted by frame number
-    crossing_frames = df_movement.loc[
-        shapely.intersects(df_movement.movement, measurement_line.line)
-    ][[ID_COL, FRAME_COL]]
-
-    return crossing_frames
 
 
 def _get_continuous_parts_in_area(
