@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
+import pandas
 import shapely
 from aenum import Enum
 
@@ -21,29 +21,54 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
 
 def compute_profiles(
     *,
-    individual_voronoi_speed_data: pd.DataFrame,
+    individual_voronoi_speed_data: pandas.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     speed_method: SpeedMethod,
 ) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
     """Computes the density and speed profiles.
 
-    Note: As this is a quite compute heavy operation, it is suggested to
-    reduce the geometry to the important areas.
+    For the computation of the profiles the given
+    :class:`~geometry.WalkableArea` is divided into square grid cells with an
+    edge length of :code:`grid_size`.
+
+    .. image:: /images/profile_grid.png
+        :width: 60 %
+        :align: center
+
+    Each of these grid cells is then used as a
+    :class:`~geometry.MeasurementArea`  to compute the Voronoi density as in
+    :func:`~density_calculator.compute_voronoi_density`.
+
+    The computation of the speed in each cell is either done with the Voronoi
+    speed computation as in :func:`~velocity_calculator.compute_voronoi_speed`
+    when using :data:`SpeedMethod.VORONOI`. Or as in
+    :func:`~velocity_calculator.compute_mean_speed_per_frame` when using
+    :data:`SpeedMethod.ARITHMETIC`.
+
+    .. note::
+
+        As this is a quite compute heavy operation, it is suggested to reduce
+        the geometry to the important areas and the limit the
+        :code:`individual_voronoi_speed_data` to the most relevant frame
+        interval.
 
     Args:
-        individual_voronoi_speed_data (pd.DataFrame): individual voronoi
+        individual_voronoi_speed_data (pandas.DataFrame): individual Voronoi
             and speed data, needs to contain a column 'polygon'
-            which holds shapely.Polygon information and a column 'speed'
-            which holds a floating point value
-        walkable_area (shapely.Polygon): geometry for which the profiles are
+            which holds a :class:`shapely.Polygon` and a column 'speed'
+            which holds a floating point value. This is usually the merged
+            result from :func:`method_utils.compute_individual_voronoi_polygons`
+            and :func:`velocity_calculator.compute_individual_speed`.
+        walkable_area (WalkableArea): geometry for which the profiles are
             computed
         grid_size (float): resolution of the grid used for computing the
             profiles
         speed_method (SpeedMethod): speed method used to compute the
             speed
+
     Returns:
-        (List of density profiles, List of speed profiles)
+        List of density profiles, List of speed profiles
     """
     grid_cells, rows, cols = _get_grid_cells(
         walkable_area=walkable_area, grid_size=grid_size
@@ -92,15 +117,17 @@ def compute_profiles(
 
 def _compute_arithmetic_speed(
     *,
-    frame_data: pd.DataFrame,
+    frame_data: pandas.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
     """Compute the arithmetic mean speed per grid cell.
 
     Args:
-        frame_data (npt.NDArray[np.float64]): all relevant data in a specific frame
-        grid_intersections_area (npt.NDArray[np.float64]): intersection areas for each
-                pedestrian with each grid cells
+        frame_data (npt.NDArray[np.float64]): all relevant data in a specific
+            frame
+        grid_intersections_area (npt.NDArray[np.float64]): intersection areas
+            for each pedestrian with each grid cells
+
     Returns:
         Arithmetic mean speed per grid cell
     """
@@ -121,7 +148,7 @@ def _compute_arithmetic_speed(
 
 def _compute_voronoi_speed(
     *,
-    frame_data: pd.DataFrame,
+    frame_data: pandas.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
 ) -> npt.NDArray[np.float64]:
