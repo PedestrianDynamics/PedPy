@@ -572,7 +572,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
         nt=nt,
         crossing_frames=crossing,
         individual_speed=individual_speed,
-        delta_t=flow_frame,
+        delta_frame=flow_frame,
         frame_rate=trajectory.frame_rate,
     )
 

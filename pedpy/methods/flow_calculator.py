@@ -84,7 +84,7 @@ def compute_flow(
     nt: pd.DataFrame,
     crossing_frames: pd.DataFrame,
     individual_speed: pd.DataFrame,
-    delta_t: int,
+    delta_frame: int,
     frame_rate: float,
 ) -> pd.DataFrame:
     """Compute the flow for the given crossing_frames and nt.
@@ -97,7 +97,7 @@ def compute_flow(
             'ID',  and 'frame' (see result from compute_nt)
         individual_speed (pd.DataFrame): DataFrame containing the columns
             'ID', 'frame', and 'speed'
-        delta_t (int): size of the time interval to compute the flow
+        delta_frame (int): size of the frame interval to compute the flow
         frame_rate (float): frame rate of the trajectories
 
     Returns:
@@ -113,7 +113,9 @@ def compute_flow(
 
     rows = []
 
-    for frame in range(passed_frame_before + delta_t, nt.index.max(), delta_t):
+    for frame in range(
+        passed_frame_before + delta_frame, nt.index.max(), delta_frame
+    ):
         passed_num_peds = nt.loc[frame][CUMULATED_COL]
         passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].index.min() + 1
 
