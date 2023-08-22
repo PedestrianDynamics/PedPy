@@ -171,6 +171,10 @@ def compute_mean_speed_per_frame(
     :math:`N` the number of pedestrians inside the measurement area (
     :math:`|P_M|`).
 
+    .. image:: /images/classic_density.png
+        :width: 60 %
+        :align: center
+
     Args:
         traj_data (TrajectoryData): trajectory data
         individual_speed (pandas.DataFrame): individual speed data from
@@ -221,6 +225,10 @@ def compute_voronoi_speed(
     where :math:`v_{xy}(t) = v_i(t)` is the individual speed of
     each pedestrian, whose :math:`V_i(t) \cap M` and :math:`A(M)` the area of
     the measurement area.
+
+    .. image:: /images/voronoi_density.png
+        :width: 60 %
+        :align: center
 
     Args:
         traj_data (TrajectoryData): trajectory data
