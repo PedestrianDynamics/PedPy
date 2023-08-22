@@ -1,5 +1,6 @@
-IO
-**
+*****************
+Load Trajectories
+*****************
 
 .. autoapimodule:: trajectory_loader
     :members:

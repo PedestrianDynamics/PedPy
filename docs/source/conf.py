@@ -36,9 +36,8 @@ extensions = [
     "myst_nb",
     "sphinx_favicon",
     "notfound.extension",
-    # "sphinx.ext.napoleon",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.autodoc",
-    # "sphinxcontrib.apidoc",
     "autoapi.extension",
 ]
 

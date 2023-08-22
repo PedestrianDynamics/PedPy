@@ -1,6 +1,6 @@
-*******
-Methods
-*******
+****************
+Analysis Methods
+****************
 
 Density
 *******
@@ -27,7 +27,7 @@ Flow
     :no-special-members:
 
 Profiles
-****
+********
 
 .. autoapimodule:: profile_calculator
     :members:
