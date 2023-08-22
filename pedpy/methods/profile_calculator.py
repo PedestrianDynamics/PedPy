@@ -11,7 +11,7 @@ from pedpy.column_identifier import FRAME_COL
 from pedpy.data.geometry import WalkableArea
 
 
-class VelocityMethod(Enum):  # pylint: disable=too-few-public-methods
+class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     """Identifier for the method used to compute the mean speed."""
 
     _init_ = "value __doc__"
@@ -24,7 +24,7 @@ def compute_profiles(
     individual_voronoi_speed_data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
-    speed_method: VelocityMethod,
+    speed_method: SpeedMethod,
 ) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
     """Computes the density and speed profiles.
 
@@ -40,7 +40,7 @@ def compute_profiles(
             computed
         grid_size (float): resolution of the grid used for computing the
             profiles
-        speed_method (VelocityMethod): speed method used to compute the
+        speed_method (SpeedMethod): speed method used to compute the
             speed
     Returns:
         (List of density profiles, List of speed profiles)
@@ -70,13 +70,13 @@ def compute_profiles(
         )
 
         # Compute speed
-        if speed_method == VelocityMethod.VORONOI:
+        if speed_method == SpeedMethod.VORONOI:
             speed = _compute_voronoi_speed(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area,
                 grid_area=grid_cells[0].area,
             )
-        elif speed_method == VelocityMethod.ARITHMETIC:
+        elif speed_method == SpeedMethod.ARITHMETIC:
             speed = _compute_arithmetic_speed(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area,

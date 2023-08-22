@@ -20,7 +20,7 @@ from .methods.method_utils import (
     get_invalid_trajectory,
     is_trajectory_valid,
 )
-from .methods.profile_calculator import VelocityMethod, compute_profiles
+from .methods.profile_calculator import SpeedMethod, compute_profiles
 from .methods.velocity_calculator import (
     compute_individual_speed,
     compute_mean_speed_per_frame,
