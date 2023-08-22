@@ -2,8 +2,8 @@
 """Top level imports, for easier usage."""
 from . import _version
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
-from .data.trajectory_data import TrajectoryData, TrajectoryUnit
-from .io.trajectory_loader import load_trajectory
+from .data.trajectory_data import TrajectoryData
+from .io.trajectory_loader import TrajectoryUnit, load_trajectory
 from .methods.density_calculator import (
     compute_classic_density,
     compute_passing_density,

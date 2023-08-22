@@ -1,12 +1,9 @@
 """Module handling the geometrical environment of the analysis."""
 
-import logging
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
 import shapely
-
-log = logging.getLogger(__name__)
 
 
 class GeometryError(Exception):
@@ -51,11 +48,11 @@ class WalkableArea:
         Args:
             polygon: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                shapely.Point objects. Passing a wkt representation of a polygon
-                is also allowed.
+                :class:`shapely.Point` objects. Passing a wkt representation of
+                a polygon is also allowed.
             obstacles (Optional): list of sequences of (x, y) numeric
                 coordinate pairs, or an array-like with shape (N, 2). Also, can
-                be a sequence of shapely.Point objects.
+                be a sequence of :class:`shapely.Point` objects.
         """
         self._polygon = polygon
         try:
@@ -107,19 +104,19 @@ class WalkableArea:
 
     @property
     def polygon(self):
-        """Walkable area as shapely Polygon.
+        """Walkable area as :class:`shapely.Polygon`.
 
         Returns:
-            Walkable area as shapely Polygon.
+            Walkable area as :class:`shapely.Polygon`.
         """
         return self._polygon
 
     @property
     def bounds(self):
-        """Walkable area as shapely Polygon.
+        """Minimum bounding region (minx, miny, maxx, maxy).
 
         Returns:
-            Walkable area as shapely Polygon.
+            Minimum bounding region (minx, miny, maxx, maxy)
         """
         return self._polygon.bounds
 
@@ -206,10 +203,10 @@ class MeasurementArea:
 
     @property
     def polygon(self):
-        """Measurement area as shapely Polygon.
+        """Measurement area as :class:`shapely.Polygon`.
 
         Returns:
-            Measurement area as shapely Polygon.
+            Measurement area as :class:`shapely.Polygon`.
         """
         return self._polygon
 
@@ -310,10 +307,10 @@ class MeasurementLine:
 
     @property
     def line(self):
-        """Measurement line as shapely LineString.
+        """Measurement line as :class:`shapely.LineString`.
 
         Returns:
-            Measurement line as shapely LineString.
+            Measurement line as :class:`shapely.LineString`.
         """
         return self._line
 
