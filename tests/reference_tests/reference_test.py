@@ -22,7 +22,7 @@ from pedpy.methods.method_utils import (
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
 )
-from pedpy.methods.profile_calculator import VelocityMethod, compute_profiles
+from pedpy.methods.profile_calculator import SpeedMethod, compute_profiles
 from pedpy.methods.velocity_calculator import (
     compute_individual_speed,
     compute_mean_speed_per_frame,
@@ -825,13 +825,13 @@ def test_profiles(
         individual_voronoi_speed_data=individual_voronoi_speed_data,
         walkable_area=walkable_area,
         grid_size=grid_size,
-        speed_method=VelocityMethod.ARITHMETIC,
+        speed_method=SpeedMethod.ARITHMETIC,
     )
     density_profiles, speed_profiles_voronoi = compute_profiles(
         individual_voronoi_speed_data=individual_voronoi_speed_data,
         walkable_area=walkable_area,
         grid_size=grid_size,
-        speed_method=VelocityMethod.VORONOI,
+        speed_method=SpeedMethod.VORONOI,
     )
     for frame in range(min_frame, max_frame + 1):
         reference_density = np.loadtxt(
