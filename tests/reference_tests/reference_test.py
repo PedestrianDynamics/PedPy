@@ -5,11 +5,10 @@ import pandas as pd
 import pytest
 import shapely
 
-from pedpy import TrajectoryUnit
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.io.trajectory_loader import load_trajectory
+from pedpy.io.trajectory_loader import TrajectoryUnit, load_trajectory
 from pedpy.methods.density_calculator import (
     compute_classic_density,
     compute_passing_density,

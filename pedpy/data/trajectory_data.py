@@ -4,19 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import pandas as pd
+import pandas
 import shapely
-from aenum import Enum
 
 from pedpy.column_identifier import POINT_COL
-
-
-class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
-    """Identifier of the unit of the trajectory coordinates."""
-
-    _init_ = "value __doc__"
-    METER = 1, "meter (m)"
-    CENTIMETER = 100, "centimeter (cm)"
 
 
 @dataclass(frozen=True)
@@ -29,17 +20,17 @@ class TrajectoryData:
         The coordinate data is stored in meter ('m')!
 
     Args:
-        data (pd.DataFrame): data frame containing the data in the form:
+        data (pandas.DataFrame): data frame containing the data in the form:
             "id", "frame", "x", "y"
         frame_rate (float): frame rate of the trajectory file
 
     Attributes:
-        data (pd.DataFrame): data frame containing the trajectory data with the
+        data (pandas.DataFrame): data frame containing the trajectory data with the
             columns: "id", "frame", "x", "y", "point"
         frame_rate (float): frame rate of the trajectory data
     """
 
-    data: pd.DataFrame
+    data: pandas.DataFrame
     frame_rate: float
 
     def __post_init__(self):

@@ -4,9 +4,18 @@ import pathlib
 from typing import Any, Optional, Tuple
 
 import pandas as pd
+from aenum import Enum
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
-from pedpy.data.trajectory_data import TrajectoryData, TrajectoryUnit
+from pedpy.data.trajectory_data import TrajectoryData
+
+
+class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
+    """Identifier of the unit of the trajectory coordinates."""
+
+    _init_ = "value __doc__"
+    METER = 1, "meter (m)"
+    CENTIMETER = 100, "centimeter (cm)"
 
 
 def load_trajectory(

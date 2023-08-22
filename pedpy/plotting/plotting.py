@@ -19,7 +19,7 @@ from pedpy.column_identifier import (
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
-log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 def plot_walkable_area(
@@ -276,7 +276,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
     color_mode = kwargs.get("color_mode", "density")
     color_mode = color_mode.lower()
     if color_mode not in ("density", "speed", "id"):
-        log.warning(
+        _log.warning(
             "'density', 'speed', and 'id' are the only supported color modes. Use "
             "default 'density'"
         )

@@ -32,7 +32,7 @@ from pedpy.column_identifier import (
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
-log = logging.getLogger(__name__)
+_log = logging.getLogger(__name__)
 
 
 @dataclass(
@@ -389,7 +389,7 @@ def compute_individual_voronoi_polygons(
         # only skip analysis if less than 4 peds are in the frame and blind
         # points are turned off
         if not use_blind_points and len(points) - len(blind_points) < 4:
-            log.warning(
+            _log.warning(
                 f"Not enough pedestrians (N="
                 f"{len(points) -len(blind_points)}) available to "
                 f"calculate Voronoi cells for frame = {frame}. "

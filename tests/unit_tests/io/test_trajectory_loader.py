@@ -8,8 +8,8 @@ import pytest
 from numpy import dtype
 
 from pedpy.column_identifier import *
-from pedpy.data.trajectory_data import TrajectoryUnit
 from pedpy.io.trajectory_loader import (
+    TrajectoryUnit,
     _load_trajectory_data,
     _load_trajectory_meta_data,
     load_trajectory,
