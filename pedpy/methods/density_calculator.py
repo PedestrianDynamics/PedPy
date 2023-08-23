@@ -29,7 +29,7 @@ def compute_classic_density(
     where :math:`N` is the number of pedestrians inside the measurement area
     :math:`M`.
 
-    .. image:: /images/classic_density.png
+    .. image:: /images/classic_density.svg
         :width: 60 %
         :align: center
 
@@ -74,7 +74,7 @@ def compute_voronoi_density(
     Pedestrians whose Voronoi polygon have an intersection with the measurement
     area are taken into account.
 
-    .. image:: /images/voronoi_density.png
+    .. image:: /images/voronoi_density.svg
         :width: 60 %
         :align: center
 

@@ -32,7 +32,7 @@ def compute_profiles(
     :class:`~geometry.WalkableArea` is divided into square grid cells with an
     edge length of :code:`grid_size`.
 
-    .. image:: /images/profile_grid.png
+    .. image:: /images/profile_grid.svg
         :width: 60 %
         :align: center
 

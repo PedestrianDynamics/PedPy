@@ -102,7 +102,7 @@ def compute_frame_range_in_area(
     line parallel to the given one offsetting by the given width. The area
     between these line is the used measurement area.
 
-    .. image:: /images/passing_area_from_lines.png
+    .. image:: /images/passing_area_from_lines.svg
         :width: 80 %
         :align: center
 
@@ -347,7 +347,7 @@ def compute_individual_voronoi_polygons(
     The computed Voronoi cells will stretch all the way to the boundaries of
     the walkable area. As seen below:
 
-    .. image:: /images/voronoi_wo_cutoff.png
+    .. image:: /images/voronoi_wo_cutoff.svg
         :width: 80 %
         :align: center
 
@@ -359,14 +359,14 @@ def compute_individual_voronoi_polygons(
     used to approximate a quarter circle. The differences the number of
     line segments has on the circle can be seen in the plot below:
 
-    .. image:: /images/voronoi_cutoff_differences.png
+    .. image:: /images/voronoi_cutoff_differences.svg
         :width: 80 %
         :align: center
 
     Using this cut off information, the resulting Voronoi polygons would like
     this:
 
-    .. image:: /images/voronoi_w_cutoff.png
+    .. image:: /images/voronoi_w_cutoff.svg
         :width: 80 %
         :align: center
 
@@ -474,7 +474,7 @@ def compute_intersecting_polygons(
 ) -> pd.DataFrame:
     """Compute the intersection of the voronoi cells with the measurement area.
 
-    .. image:: /images/voronoi_density.png
+    .. image:: /images/voronoi_density.svg
         :width: 60 %
         :align: center
 

@@ -46,7 +46,7 @@ def compute_individual_speed(
 
     |
 
-    .. image:: /images/speed_both.png
+    .. image:: /images/speed_both.svg
         :width: 80 %
         :align: center
 
@@ -73,9 +73,9 @@ def compute_individual_speed(
 
     |
 
-    .. image:: /images/speed_future.png
+    .. image:: /images/speed_future.svg
         :width: 45 %
-    .. image:: /images/speed_past.png
+    .. image:: /images/speed_past.svg
         :width: 45 %
 
     |
@@ -112,7 +112,7 @@ def compute_individual_speed(
 
     |
 
-    .. image:: /images/speed_movement_direction.png
+    .. image:: /images/speed_movement_direction.svg
         :width: 80 %
         :align: center
 
@@ -171,7 +171,7 @@ def compute_mean_speed_per_frame(
     :math:`N` the number of pedestrians inside the measurement area (
     :math:`|P_M|`).
 
-    .. image:: /images/classic_density.png
+    .. image:: /images/classic_density.svg
         :width: 60 %
         :align: center
 
@@ -226,7 +226,7 @@ def compute_voronoi_speed(
     each pedestrian, whose :math:`V_i(t) \cap M` and :math:`A(M)` the area of
     the measurement area.
 
-    .. image:: /images/voronoi_density.png
+    .. image:: /images/voronoi_density.svg
         :width: 60 %
         :align: center
 
