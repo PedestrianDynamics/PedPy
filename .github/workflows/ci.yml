@@ -147,13 +147,17 @@ jobs:
         run: |
           python3 -c "import pedpy; print(pedpy.__version__)"
 
+      - name: Run getting started notebook
+        run: |
+          jupyter nbconvert --to notebook --execute getting_started.ipynb
+
       - name: Run usage notebook
         run: |
           jupyter nbconvert --to notebook --execute usage.ipynb
 
-      - name: Run usage jpsreport notebook
+      - name: Run usage fundamental diagram notebook
         run: |
-          jupyter nbconvert --to notebook --execute jpsreport.ipynb
+          jupyter nbconvert --to notebook --execute fundamental_diagram.ipynb
 
   publish:
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
