@@ -316,7 +316,7 @@ def _compute_individual_speed(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-        compute_velocity (bool): compute the x and y components of the speed
+        compute_velocity (bool): compute the x and y components of the velocity
 
     Returns:
         DataFrame containing the columns: 'id', 'frame', 'speed' with the

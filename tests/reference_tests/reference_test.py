@@ -22,7 +22,7 @@ from pedpy.methods.method_utils import (
     compute_intersecting_polygons,
 )
 from pedpy.methods.profile_calculator import SpeedMethod, compute_profiles
-from pedpy.methods.velocity_calculator import (
+from pedpy.methods.speed_calculator import (
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,

@@ -645,28 +645,20 @@ def _compute_individual_movement(
     """
     df_movement = traj_data.data.copy(deep=True)
 
-    df_movement[START_POSITION_COL] = (
-        df_movement.groupby(by=ID_COL)
-        .point.shift(frame_step)
-        .fillna(df_movement.point)
-    )
-    df_movement["start_frame"] = (
-        df_movement.groupby(by=ID_COL)
-        .frame.shift(frame_step)
-        .fillna(df_movement.frame)
+    df_movement[START_POSITION_COL] = df_movement.groupby(
+        by=ID_COL
+    ).point.shift(frame_step)
+    df_movement["start_frame"] = df_movement.groupby(by=ID_COL).frame.shift(
+        frame_step
     )
 
     if bidirectional:
-        df_movement[END_POSITION_COL] = (
-            df_movement.groupby(df_movement.id)
-            .point.shift(-frame_step)
-            .fillna(df_movement.point)
-        )
-        df_movement["end_frame"] = (
-            df_movement.groupby(df_movement.id)
-            .frame.shift(-frame_step)
-            .fillna(df_movement.frame)
-        )
+        df_movement[END_POSITION_COL] = df_movement.groupby(
+            df_movement.id
+        ).point.shift(-frame_step)
+        df_movement["end_frame"] = df_movement.groupby(
+            df_movement.id
+        ).frame.shift(-frame_step)
     else:
         df_movement[END_POSITION_COL] = df_movement.point
         df_movement["end_frame"] = df_movement.frame
@@ -682,7 +674,7 @@ def _compute_individual_movement(
             END_POSITION_COL,
             WINDOW_SIZE_COL,
         ]
-    ]
+    ].dropna()
 
 
 def _get_continuous_parts_in_area(
