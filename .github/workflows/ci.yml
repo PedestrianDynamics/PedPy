@@ -42,21 +42,10 @@ jobs:
           python3 -m pip install --upgrade pip setuptools wheel build
           python3 -m pip install -r requirements.txt
 
-      - name: Check format
+      - name: Check format, docstring style, typing, linting
         run: |
-          ${{github.workspace}}/scripts/check-format.sh
+          ${{github.workspace}}/scripts/ci.sh
 
-      - name: Check docstring style
-        run: |
-          pydocstyle
-
-      - name: Check typing with mypy
-        run: |
-          python3 -m mypy --config-file mypy.ini pedpy/
-
-      - name: Linting with pylint
-        run: |
-          python3 -m pylint --recursive=y --extension-pkg-whitelist=scipy pedpy pedpy/data pedpy/io pedpy/methods pedpy/plotting
 
   build:
     needs: pre-build-checks

@@ -267,6 +267,7 @@ Linting in Python is an important process that helps ensure that our code is con
 Linting tools like ``pylint`` analyze our code for potential errors, bad practices, and code smells.
 This helps us catch issues early on and prevents them from becoming bigger problems down the line.
 
+If you want to run the same tests as in the CI pipeline, you can use ``scripts/ci.sh``.
 
 Update documentation
 ====================
