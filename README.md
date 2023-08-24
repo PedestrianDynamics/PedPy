@@ -18,19 +18,19 @@
 
 # PedPy: Analysis of pedestrian dynamics based on trajectory files.  
 
-`PedPy` is a python module for pedestrian movement analysis. 
+*PedPy* is a python module for pedestrian movement analysis. 
 It implements different measurement methods for density, velocity and flow.
-
-This repo is a port from the original `JPSreport` to a Python implementation, and will provide the same functionalities.
 
 ## Getting started
 
 ### Setup Python
+
 For setting up your Python Environment a Python version >= 3.10 is recommended (our code is tested with 3.10 and 3.11).
 To avoid conflicts with other libraries/applications the usage of virtual environments is recommended, see [Python Documentation](https://docs.python.org/3/library/venv.html) for more detail.
 
 ### Installing PedPy
-To install the latest **stable** version of `PedPy` and its dependencies from PyPI:
+
+To install the latest **stable** version of *PedPy* and its dependencies from PyPI:
 ```bash
 python3 -m pip install pedpy
 ```
@@ -42,15 +42,17 @@ python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-i
 
 ### Usage
 
-The general usage of `PedPy` is demonstrated in the [usage notebook](notebooks/usage.ipynb).
-The [JPSreport notebook](notebooks/jpsreport.ipynb) shows how to use `PedPy` to compute the same results as in the different JPSreport methods, e.g., computing the fundamental diagram.
+For first time users, have a look at the [getting started notebook](notebooks/getting_started.ipynb), as it shows the first steps to start an analysis with *PedPy*.
+A more detailed overview of *PedPy* is demonstrated in the [usage notebook](notebooks/usage.ipynb).
+The [fundamental diagram notebook](notebooks/fundamental_diagram.ipynb) shows how to use *PedPy* for computing the fundamental diagram of a series of experiments.
 
 #### Interactive online session
 
-If you want to try out `PedPy` for the first time, you can find an interactive online environments for both notebooks here:
+If you want to try out *PedPy* for the first time, you can find an interactive online environments for both notebooks here:
 
-- Usage notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fusage.ipynb)
-- JPSreport notebook: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fjpsreport.ipynb)
+- Getting started: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fgetting_started.ipynb)
+- Usage: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fusage.ipynb)
+- Fundamental diagram: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Ffundamental_diagram.ipynb)
 
 **Note:** 
 The execution might be slower compared to a local usage, as only limited resources are available.
@@ -58,7 +60,7 @@ It is possible to also upload different trajectory files and run the analysis co
 
 #### Local usage of the notebooks
 
-For local usage of the notebooks, you can either download the notebooks and [demo files](demos/) from the GitHub repository or clone the whole repository with:
+For local usage of the notebooks, you can either download the notebooks and [demo files](notebooks/demo-data) from the GitHub repository or clone the whole repository with:
 ```bash 
 git clone https://github.com/PedestrianDynamics/pedpy.git
 ```
@@ -70,7 +72,7 @@ You can install the needed libraries with:
 python3 -m pip install jupyter matplotlib
 ```
 
-Afterwards you can start a jupyter server with:
+Afterward, you can start a jupyter server with:
 
 ```bash
 jupyter notebook
