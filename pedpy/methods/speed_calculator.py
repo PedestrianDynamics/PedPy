@@ -1,5 +1,4 @@
 """Module containing functions to compute velocities."""
-
 from typing import Optional, Tuple
 
 import numpy as np
@@ -16,7 +15,10 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import _compute_individual_movement
+from pedpy.methods.method_utils import (
+    _compute_individual_movement,
+    SpeedBorderMethod,
+)
 
 
 def compute_individual_speed(
@@ -25,6 +27,7 @@ def compute_individual_speed(
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_velocity: bool = True,
+    speed_border_method: SpeedBorderMethod = SpeedBorderMethod.ADAPTIVE,
 ) -> pandas.DataFrame:
     r"""Compute the individual speed for each pedestrian.
 
@@ -138,7 +141,9 @@ def compute_individual_speed(
         :code:`compute_velocity` is True
     """
     df_movement = _compute_individual_movement(
-        traj_data=traj_data, frame_step=frame_step
+        traj_data=traj_data,
+        frame_step=frame_step,
+        speed_border_method=speed_border_method,
     )
     df_speed = _compute_individual_speed(
         movement_data=df_movement,

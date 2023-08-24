@@ -8,6 +8,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import shapely
+from aenum import Enum, auto
 from scipy.spatial import Voronoi
 
 from pedpy.column_identifier import (
@@ -33,6 +34,12 @@ from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 _log = logging.getLogger(__name__)
+
+
+class SpeedBorderMethod(Enum):
+    EXCLUDE = auto()
+    ADAPTIVE = auto()
+    SINGLE_SIDED = auto()
 
 
 @dataclass(
@@ -621,25 +628,49 @@ def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
 
 
 def _compute_individual_movement(
-    *, traj_data: TrajectoryData, frame_step: int, bidirectional: bool = True
+    *,
+    traj_data: TrajectoryData,
+    frame_step: int,
+    bidirectional: bool = True,
+    speed_border_method: SpeedBorderMethod = SpeedBorderMethod.ADAPTIVE,
 ) -> pd.DataFrame:
+    if speed_border_method == SpeedBorderMethod.EXCLUDE:
+        return _compute_movement_exclude_border(
+            traj_data, frame_step, bidirectional
+        )
+    elif speed_border_method == SpeedBorderMethod.SINGLE_SIDED:
+        return _compute_movement_single_sided_border(
+            traj_data, frame_step, bidirectional
+        )
+    elif speed_border_method == SpeedBorderMethod.ADAPTIVE:
+        return _compute_movememnt_adaptive_border(
+            traj_data, frame_step, bidirectional
+        )
+    else:
+        raise ValueError("speed border method not accepted")
+
+
+def _compute_movement_exclude_border(
+    traj_data: TrajectoryData,
+    frame_step: int,
+    bidirectional: bool,
+):
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
     frame_step], if one of the boundaries is not contained in the trajectory
-    frame will be used as boundary. Hence, the intervals become [frame,
-    frame + frame_step], or [frame - frame_step, frame] respectively.
+    frame these points will not be considered.
 
     Args:
         traj_data (pd.DataFrame): trajectory data
         frame_step (int): how many frames back and forwards are used to compute
             the movement.
-        bidirectional (bool): if True also the prev. frame_step points will
+        bidirectional (bool): if True also the future frame_step points will
             be used to determine the movement
 
     Returns:
         DataFrame containing the columns: 'id', 'frame', 'start_position',
-        'end_position', 'window_size'.Where 'start_position'/'end_position' are
+        'end_position', 'window_size'. Where 'start_position'/'end_position' are
         the points where the movement start/ends, and 'window_size' is the
         number of frames between the movement start and end.
     """
@@ -667,6 +698,163 @@ def _compute_individual_movement(
         df_movement.end_frame - df_movement.start_frame
     )
     return df_movement[
+        [
+            ID_COL,
+            FRAME_COL,
+            START_POSITION_COL,
+            END_POSITION_COL,
+            WINDOW_SIZE_COL,
+        ]
+    ].dropna()
+
+
+def _compute_movement_single_sided_border(
+    traj_data: TrajectoryData,
+    frame_step: int,
+    bidirectional: bool,
+):
+    """Compute the individual movement in the time interval frame_step.
+
+    The movement is computed for the interval [frame - frame_step: frame +
+    frame_step], if one of the boundaries is not contained in the trajectory
+    frame will be used as boundary. Hence, the intervals become [frame,
+    frame + frame_step], or [frame - frame_step, frame] respectively.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        frame_step (int): how many frames back and forwards are used to compute
+            the movement.
+        bidirectional (bool): if True also the future frame_step points will
+            be used to determine the movement
+
+    Returns:
+        DataFrame containing the columns: 'id', 'frame', 'start_position',
+        'end_position', 'window_size' .Where 'start_position'/'end_position' are
+        the points where the movement start/ends, and 'window_size' is the
+        number of frames between the movement start and end.
+    """
+
+    df_movement = traj_data.data.copy(deep=True)
+
+    df_movement[START_POSITION_COL] = (
+        df_movement.groupby(by=ID_COL)
+        .point.shift(frame_step)
+        .fillna(df_movement.point)
+    )
+    df_movement["start_frame"] = (
+        df_movement.groupby(by=ID_COL)
+        .frame.shift(frame_step)
+        .fillna(df_movement.frame)
+    )
+
+    if bidirectional:
+        df_movement[END_POSITION_COL] = (
+            df_movement.groupby(df_movement.id)
+            .point.shift(-frame_step)
+            .fillna(df_movement.point)
+        )
+        df_movement["end_frame"] = (
+            df_movement.groupby(df_movement.id)
+            .frame.shift(-frame_step)
+            .fillna(df_movement.frame)
+        )
+    else:
+        df_movement[END_POSITION_COL] = df_movement.point
+        df_movement["end_frame"] = df_movement.frame
+
+    df_movement[WINDOW_SIZE_COL] = (
+        df_movement.end_frame - df_movement.start_frame
+    )
+    return df_movement[
+        [
+            ID_COL,
+            FRAME_COL,
+            START_POSITION_COL,
+            END_POSITION_COL,
+            WINDOW_SIZE_COL,
+        ]
+    ]
+
+
+def _compute_movememnt_adaptive_border(
+    traj_data: TrajectoryData,
+    frame_step: int,
+    bidirectional: bool,
+):
+    """Compute the individual movement in the time interval frame_step.
+
+    The movement is computed for the interval [frame - frame_step: frame +
+    frame_step], if one of the boundaries is not contained in the trajectory
+    frame use the maximum available number of frames on this side and the same
+    number of frames also on the other side.
+
+    Args:
+        traj_data (pd.DataFrame): trajectory data
+        frame_step (int): how many frames back and forwards are used to compute
+            the movement.
+        bidirectional (bool): if True also the future frame_step points will
+            be used to determine the movement
+
+    Returns:
+        DataFrame containing the columns: 'id', 'frame', 'start_position',
+        'end_position', 'window_size'. Where 'start_position'/'end_position' are
+        the points where the movement start/ends, and 'window_size' is the
+        number of frames between the movement start and end.
+    """
+    df_movement = traj_data.data.copy(deep=True)
+
+    frame_infos = df_movement.groupby(by=ID_COL).agg(
+        frame_min=(FRAME_COL, np.min), frame_max=(FRAME_COL, np.max)
+    )
+    df_movement = df_movement.merge(frame_infos, on=ID_COL)
+
+    df_movement["distance_min"] = np.abs(
+        df_movement.frame - df_movement["frame_min"]
+    )
+    df_movement["distance_max"] = np.abs(
+        df_movement.frame - df_movement["frame_max"]
+    )
+    df_movement[WINDOW_SIZE_COL] = np.minimum(
+        frame_step,
+        np.minimum(
+            df_movement.distance_min.values, df_movement.distance_max.values
+        ),
+    )
+    df_movement["start_frame"] = df_movement.frame - df_movement.window_size
+    df_movement["end_frame"] = df_movement.frame + df_movement.window_size
+
+    start = (
+        pd.merge(
+            df_movement[[ID_COL, FRAME_COL, "start_frame", WINDOW_SIZE_COL]],
+            df_movement[[ID_COL, FRAME_COL, POINT_COL]],
+            left_on=[ID_COL, "start_frame"],
+            right_on=[ID_COL, FRAME_COL],
+            suffixes=("", "_drop"),
+        )
+        .drop("frame_drop", axis=1)
+        .rename({POINT_COL: START_POSITION_COL}, axis=1)
+    )
+
+    if bidirectional:
+        end = (
+            pd.merge(
+                df_movement[[ID_COL, FRAME_COL, "end_frame"]],
+                df_movement[[ID_COL, FRAME_COL, POINT_COL]],
+                left_on=[ID_COL, "end_frame"],
+                right_on=[ID_COL, FRAME_COL],
+                suffixes=("", "_drop"),
+            )
+            .drop("frame_drop", axis=1)
+            .rename({POINT_COL: END_POSITION_COL}, axis=1)
+        )
+        # as the window is used on both sides
+        df_movement[WINDOW_SIZE_COL] = 2 * df_movement[WINDOW_SIZE_COL]
+
+    else:
+        df_movement[END_POSITION_COL] = df_movement[POINT_COL]
+        end = df_movement[[ID_COL, FRAME_COL, END_POSITION_COL]].copy(deep=True)
+
+    return pd.merge(start, end, on=[ID_COL, FRAME_COL])[
         [
             ID_COL,
             FRAME_COL,

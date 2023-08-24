@@ -23,6 +23,7 @@ from pedpy.methods.method_utils import (
 )
 from pedpy.methods.profile_calculator import SpeedMethod, compute_profiles
 from pedpy.methods.speed_calculator import (
+    SpeedBorderMethod,
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,
@@ -148,6 +149,7 @@ def test_arithmetic_speed(
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
+        speed_border_method=SpeedBorderMethod.SINGLE_SIDED,
     )
     result = compute_mean_speed_per_frame(
         traj_data=trajectory,
@@ -456,6 +458,7 @@ def test_voronoi_speed(
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
+        speed_border_method=SpeedBorderMethod.SINGLE_SIDED,
     )
 
     result = compute_voronoi_speed(
@@ -562,6 +565,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
+        speed_border_method=SpeedBorderMethod.SINGLE_SIDED,
     )
     nt, crossing = compute_n_t(
         traj_data=trajectory,
@@ -811,6 +815,7 @@ def test_profiles(
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=frame_step,
+        speed_border_method=SpeedBorderMethod.SINGLE_SIDED,
     )
     combined = pd.merge(
         individual_voronoi, individual_speed, on=[ID_COL, FRAME_COL]
