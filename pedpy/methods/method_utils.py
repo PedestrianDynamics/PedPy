@@ -36,7 +36,9 @@ from pedpy.data.trajectory_data import TrajectoryData
 _log = logging.getLogger(__name__)
 
 
-class SpeedBorderMethod(Enum):
+class SpeedBorderMethod(Enum):  # pylint: disable=too-few-public-methods
+    """Identifier for the method used to compute the movement at traj borders."""
+
     EXCLUDE = auto()
     ADAPTIVE = auto()
     SINGLE_SIDED = auto()
@@ -638,23 +640,23 @@ def _compute_individual_movement(
         return _compute_movement_exclude_border(
             traj_data, frame_step, bidirectional
         )
-    elif speed_border_method == SpeedBorderMethod.SINGLE_SIDED:
+    if speed_border_method == SpeedBorderMethod.SINGLE_SIDED:
         return _compute_movement_single_sided_border(
             traj_data, frame_step, bidirectional
         )
-    elif speed_border_method == SpeedBorderMethod.ADAPTIVE:
+    if speed_border_method == SpeedBorderMethod.ADAPTIVE:
         return _compute_movememnt_adaptive_border(
             traj_data, frame_step, bidirectional
         )
-    else:
-        raise ValueError("speed border method not accepted")
+
+    raise ValueError("speed border method not accepted")
 
 
 def _compute_movement_exclude_border(
     traj_data: TrajectoryData,
     frame_step: int,
     bidirectional: bool,
-):
+) -> pd.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
@@ -712,7 +714,7 @@ def _compute_movement_single_sided_border(
     traj_data: TrajectoryData,
     frame_step: int,
     bidirectional: bool,
-):
+) -> pd.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
@@ -733,7 +735,6 @@ def _compute_movement_single_sided_border(
         the points where the movement start/ends, and 'window_size' is the
         number of frames between the movement start and end.
     """
-
     df_movement = traj_data.data.copy(deep=True)
 
     df_movement[START_POSITION_COL] = (
@@ -780,7 +781,7 @@ def _compute_movememnt_adaptive_border(
     traj_data: TrajectoryData,
     frame_step: int,
     bidirectional: bool,
-):
+) -> pd.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +

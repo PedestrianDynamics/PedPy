@@ -16,9 +16,21 @@ from pedpy.column_identifier import (
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
-    _compute_individual_movement,
     SpeedBorderMethod,
+    _compute_individual_movement,
 )
+
+
+class SpeedError(Exception):
+    """Class reflecting errors when computing speeds with PedPy."""
+
+    def __init__(self, message):
+        """Create SpeedError with the given message.
+
+        Args:
+            message: Error message
+        """
+        self.message = message
 
 
 def compute_individual_speed(
@@ -135,6 +147,9 @@ def compute_individual_speed(
             actual movement is projected (default: None, when the un-projected
             movement should be used)
         compute_velocity (bool): compute the x and y components of the velocity
+        speed_border_method (method_utils.SpeedBorderMethod): method used to
+            compute the speed at the borders of the individual trajectories
+
     Returns:
         DataFrame containing the columns 'id', 'frame', and 'speed' in m/s,
         'v_x' and 'v_y' with the speed components in x and y direction if
@@ -190,6 +205,16 @@ def compute_mean_speed_per_frame(
     Returns:
         DataFrame containing the columns 'frame' and 'speed' in m/s
     """
+    if len(traj_data.data.index) != len(individual_speed.index):
+        raise SpeedError(
+            f"Can not compute the mean speed, as the length of trajectory "
+            f"data (rows={len(traj_data.data.index)}) and speed data "
+            f"(rows={len(individual_speed)}) are different. To resolve this "
+            f"either edit your trajectory data, s.th. it only contains the data"
+            f"that is also contained in the speed data. Or use a different "
+            f"speed border method when computing the individual speed"
+        )
+
     combined = traj_data.data.merge(individual_speed, on=[ID_COL, FRAME_COL])
     df_mean = (
         combined[shapely.within(combined.point, measurement_area.polygon)]
@@ -248,6 +273,19 @@ def compute_voronoi_speed(
     Returns:
         DataFrame containing the columns 'frame' and 'speed' in m/s
     """
+    if len(individual_voronoi_intersection.index) != len(
+        individual_speed.index
+    ):
+        raise SpeedError(
+            f"Can not compute the Voronoi speed, as the length of individual "
+            f"Voronoi intersection data (rows="
+            f"{len(individual_voronoi_intersection.index)} and speed data "
+            f"(rows={len(individual_speed)} are different. To resolve this "
+            f"either edit your trajectory data, s.th. it only contains the data"
+            f"that is also contained in the speed data. Or use a different "
+            f"speed border method when computing the individual speed"
+        )
+
     df_voronoi = pandas.merge(
         individual_voronoi_intersection,
         individual_speed,
