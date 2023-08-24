@@ -22,7 +22,7 @@ from .methods.method_utils import (
 )
 from .methods.profile_calculator import SpeedMethod, compute_profiles
 from .methods.speed_calculator import (
-    SpeedBorderMethod,
+    SpeedCalculation,
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,

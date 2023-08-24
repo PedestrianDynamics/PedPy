@@ -7,7 +7,7 @@ from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
-    SpeedBorderMethod,
+    SpeedCalculation,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
 )
@@ -40,7 +40,7 @@ def test_mean_speed_needs_same_length_speed_and_polygon_data():
     speed = compute_individual_speed(
         traj_data=traj_data,
         frame_step=5,
-        speed_border_method=SpeedBorderMethod.EXCLUDE,
+        speed_calculation=SpeedCalculation.BORDER_EXCLUDE,
     )
 
     assert len(speed.index) != len(traj_data.data.index)
@@ -72,7 +72,7 @@ def test_voronoi_speed_needs_same_length_speed_and_polygon_data():
     speed = compute_individual_speed(
         traj_data=traj_data,
         frame_step=5,
-        speed_border_method=SpeedBorderMethod.EXCLUDE,
+        speed_calculation=SpeedCalculation.BORDER_EXCLUDE,
     )
 
     polygons = compute_individual_voronoi_polygons(

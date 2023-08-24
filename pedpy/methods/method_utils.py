@@ -36,12 +36,12 @@ from pedpy.data.trajectory_data import TrajectoryData
 _log = logging.getLogger(__name__)
 
 
-class SpeedBorderMethod(Enum):  # pylint: disable=too-few-public-methods
+class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
     """Identifier for the method used to compute the movement at traj borders."""
 
-    EXCLUDE = auto()
-    ADAPTIVE = auto()
-    SINGLE_SIDED = auto()
+    BORDER_EXCLUDE = auto()
+    BORDER_ADAPTIVE = auto()
+    BORDER_SINGLE_SIDED = auto()
 
 
 @dataclass(
@@ -634,17 +634,17 @@ def _compute_individual_movement(
     traj_data: TrajectoryData,
     frame_step: int,
     bidirectional: bool = True,
-    speed_border_method: SpeedBorderMethod = SpeedBorderMethod.ADAPTIVE,
+    speed_border_method: SpeedCalculation = SpeedCalculation.BORDER_ADAPTIVE,
 ) -> pd.DataFrame:
-    if speed_border_method == SpeedBorderMethod.EXCLUDE:
+    if speed_border_method == SpeedCalculation.BORDER_EXCLUDE:
         return _compute_movement_exclude_border(
             traj_data, frame_step, bidirectional
         )
-    if speed_border_method == SpeedBorderMethod.SINGLE_SIDED:
+    if speed_border_method == SpeedCalculation.BORDER_SINGLE_SIDED:
         return _compute_movement_single_sided_border(
             traj_data, frame_step, bidirectional
         )
-    if speed_border_method == SpeedBorderMethod.ADAPTIVE:
+    if speed_border_method == SpeedCalculation.BORDER_ADAPTIVE:
         return _compute_movememnt_adaptive_border(
             traj_data, frame_step, bidirectional
         )
