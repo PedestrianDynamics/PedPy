@@ -25,6 +25,18 @@ from pedpy.data.trajectory_data import TrajectoryData
 _log = logging.getLogger(__name__)
 
 
+def _plot_series(ax: matplotlib.axes.Axes, title: str, x, y, color: str, x_label: str, y_label: str):
+    ax.set_title(title)
+    ax.plot(
+        x,
+        y,
+        c=color
+    )
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    return ax
+
+
 def plot_nt(
         *,
         nt: pd.DataFrame,
@@ -45,17 +57,13 @@ def plot_nt(
         ax = plt.gca()
 
     color = kwargs.get("color", "k")
-    ax.set_title("N-t")
-    ax.plot(
-        nt[TIME_COL],
-        nt[CUMULATED_COL],
-        c=color
-    )
-
-    ax.set_xlabel("t / s")
-    ax.set_ylabel("# pedestrians")
-
-    return ax
+    return _plot_series(ax=ax,
+                        title="N-t",
+                        x=nt[TIME_COL],
+                        y=nt[CUMULATED_COL],
+                        color=color,
+                        x_label="t / s",
+                        y_label="# pedestrians")
 
 
 def plot_density(
@@ -78,17 +86,13 @@ def plot_density(
         ax = plt.gca()
 
     color = kwargs.get("color", "k")
-    ax.set_title("Classic density over time")
-    ax.plot(
-        classic_density.index,
-        classic_density[DENSITY_COL],
-        c=color
-    )
-
-    ax.set_xlabel("frame")
-    ax.set_ylabel("# pedestrians")
-
-    return ax
+    return _plot_series(ax=ax,
+                        title="Classic density over time",
+                        x=classic_density.index,
+                        y=classic_density[DENSITY_COL],
+                        color=color,
+                        x_label="frame",
+                        y_label="# pedestrians")
 
 
 def plot_walkable_area(
