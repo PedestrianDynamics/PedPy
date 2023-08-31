@@ -17,7 +17,9 @@ from pedpy.column_identifier import (
     Y_COL,
     TIME_COL,
     CUMULATED_COL,
-    DENSITY_COL
+    DENSITY_COL,
+    FLOW_COL,
+    MEAN_SPEED_COL
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
@@ -158,6 +160,34 @@ def plot_passing_density(
     ax.set_xlabel("")
     ax.set_ylabel("$\\rho$ / 1/$m^2$")
     ax.set_xticks([])
+    return ax
+
+
+def plot_flow(
+        *,
+        flow: pd.DataFrame,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the flow.
+
+    Args:
+        passing_density(pd.DataFrame): DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        color (optional): color of the plot
+
+    Returns:
+        matplotlib.axes.Axes instance where the density is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    color = kwargs.get("color", "k")
+
+    ax.set_title("flow")
+    ax.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color)
+    ax.set_xlabel("J / 1/s")
+    ax.set_ylabel("v / m/s")
     return ax
 
 
