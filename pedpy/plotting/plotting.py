@@ -16,7 +16,8 @@ from pedpy.column_identifier import (
     X_COL,
     Y_COL,
     TIME_COL,
-    CUMULATED_COL
+    CUMULATED_COL,
+    DENSITY_COL
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
@@ -26,14 +27,47 @@ _log = logging.getLogger(__name__)
 
 def plot_nt(
         *,
-        nt,
+        nt: pd.DataFrame,
         ax: Optional[matplotlib.axes.Axes] = None,
         **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the number of pedestrians relativ to the time.
+    """Plot the number of pedestrians over time.
 
     Args:
-        nt : List of density profiles
+        nt (pd.DataFrame): List of density profiles
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        color (optional): color of the plot
+
+    Returns:
+        matplotlib.axes.Axes instance where the number of pedestrians is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    color = kwargs.get("color", "k")
+    ax.set_title("N-t")
+    ax.plot(
+        nt[TIME_COL],
+        nt[CUMULATED_COL],
+        c=color
+    )
+
+    ax.set_xlabel("t / s")
+    ax.set_ylabel("# pedestrians")
+
+    return ax
+
+
+def plot_density(
+        *,
+        classic_density: pd.DataFrame,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the number of pedestrians over time.
+
+    Args:
+        classic_density(pd.DataFrame) : density per frame
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
 
@@ -44,14 +78,14 @@ def plot_nt(
         ax = plt.gca()
 
     color = kwargs.get("color", "k")
-
+    ax.set_title("Classic density over time")
     ax.plot(
-        nt[TIME_COL],
-        nt[CUMULATED_COL],
+        classic_density.index,
+        classic_density[DENSITY_COL],
         c=color
     )
 
-    ax.set_xlabel("t / s")
+    ax.set_xlabel("frame")
     ax.set_ylabel("# pedestrians")
 
     return ax
