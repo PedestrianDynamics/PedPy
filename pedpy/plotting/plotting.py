@@ -15,6 +15,8 @@ from pedpy.column_identifier import (
     SPEED_COL,
     X_COL,
     Y_COL,
+    TIME_COL,
+    CUMULATED_COL
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
@@ -22,11 +24,44 @@ from pedpy.data.trajectory_data import TrajectoryData
 _log = logging.getLogger(__name__)
 
 
+def plot_nt(
+        *,
+        nt,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the number of pedestrians relativ to the time.
+
+    Args:
+        nt : List of density profiles
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        color (optional): color of the plot
+
+    Returns:
+        matplotlib.axes.Axes instance where the walkable area is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    color = kwargs.get("color", "k")
+
+    ax.plot(
+        nt[TIME_COL],
+        nt[CUMULATED_COL],
+        c=color
+    )
+
+    ax.set_xlabel("t / s")
+    ax.set_ylabel("# pedestrians")
+
+    return ax
+
+
 def plot_walkable_area(
-    *,
-    walkable_area: WalkableArea,
-    ax: Optional[matplotlib.axes.Axes] = None,
-    **kwargs: Any,
+        *,
+        walkable_area: WalkableArea,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the given walkable area in 2-D.
 
@@ -69,11 +104,11 @@ def plot_walkable_area(
 
 
 def plot_trajectories(
-    *,
-    traj: TrajectoryData,
-    walkable_area: Optional[WalkableArea] = None,
-    ax: Optional[matplotlib.axes.Axes] = None,
-    **kwargs: Any,
+        *,
+        traj: TrajectoryData,
+        walkable_area: Optional[WalkableArea] = None,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the given trajectory and walkable area in 2-D.
 
@@ -137,13 +172,13 @@ def plot_trajectories(
 
 
 def plot_measurement_setup(
-    *,
-    traj: Optional[TrajectoryData] = None,
-    walkable_area: Optional[WalkableArea] = None,
-    measurement_areas: Optional[List[MeasurementArea]] = None,
-    measurement_lines: Optional[List[MeasurementLine]] = None,
-    ax: Optional[matplotlib.axes.Axes] = None,
-    **kwargs: Any,
+        *,
+        traj: Optional[TrajectoryData] = None,
+        walkable_area: Optional[WalkableArea] = None,
+        measurement_areas: Optional[List[MeasurementArea]] = None,
+        measurement_lines: Optional[List[MeasurementLine]] = None,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the given measurement setup in 2D.
 
@@ -217,12 +252,12 @@ def plot_measurement_setup(
 
 
 def plot_voronoi_cells(  # pylint: disable=too-many-locals
-    *,
-    data: pd.DataFrame,
-    walkable_area: Optional[WalkableArea] = None,
-    measurement_area: Optional[MeasurementArea] = None,
-    ax: Optional[matplotlib.axes.Axes] = None,
-    **kwargs: Any,
+        *,
+        data: pd.DataFrame,
+        walkable_area: Optional[WalkableArea] = None,
+        measurement_area: Optional[MeasurementArea] = None,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the Voronoi cells, walkable able, and measurement area in 2D.
 
