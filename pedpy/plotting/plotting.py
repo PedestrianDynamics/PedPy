@@ -72,7 +72,7 @@ def plot_density(
         ax: Optional[matplotlib.axes.Axes] = None,
         **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the number of pedestrians over time.
+    """Plot the density over time.
 
     Args:
         classic_density(pd.DataFrame) : density per frame
@@ -80,7 +80,7 @@ def plot_density(
         color (optional): color of the plot
 
     Returns:
-        matplotlib.axes.Axes instance where the walkable area is plotted
+        matplotlib.axes.Axes instance where the density is plotted
     """
     if ax is None:
         ax = plt.gca()
@@ -93,6 +93,36 @@ def plot_density(
                         color=color,
                         x_label="frame",
                         y_label="# pedestrians")
+
+
+def plot_speed(
+        *,
+        speed: pd.Series,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any
+) -> matplotlib.axes.Axes:
+    """Plot the speed over time.
+
+    Args:
+        speed(pd.Series): speed per frame
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        color (optional): color of the plot
+
+    Returns:
+        matplotlib.axes.Axes instance where the density is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    color = kwargs.get("color", "k")
+    return _plot_series(ax=ax,
+                        title="speed over time",
+                        x=speed.index,
+                        y=speed,
+                        color=color,
+                        x_label="frame",
+                        y_label="v / m/s")
+
 
 
 def plot_walkable_area(
