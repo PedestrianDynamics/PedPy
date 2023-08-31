@@ -172,7 +172,7 @@ def plot_flow(
     """Plot the flow.
 
     Args:
-        passing_density(pd.DataFrame): DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
+        flow(pd.DataFrame): DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
 
