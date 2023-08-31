@@ -124,6 +124,42 @@ def plot_speed(
                         y_label="v / m/s")
 
 
+def plot_passing_density(
+        *,
+        passing_density: pd.DataFrame,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the passing density.
+
+    Args:
+        passing_density(pd.DataFrame): DataFrame containing the columns: 'ID' and 'density' in 1/m^2.
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        facecolor (optional): color of the plot body
+        edgecolor (optional): color of the edges of the plot
+
+    Returns:
+        matplotlib.axes.Axes instance where the density is plotted
+    """
+    if ax is None:
+        ax = plt.gca()
+
+    facecolor = kwargs.get("facecolor", "r")
+    edgecolor = kwargs.get("edgecolor", "k")
+
+    ax.set_title("Individual density")
+    violin_parts = plt.violinplot(
+        passing_density.density, showmeans=True, showextrema=True, showmedians=True
+    )
+    for pc in violin_parts["bodies"]:
+        pc.set_facecolor(facecolor)
+        pc.set_edgecolor(edgecolor)
+
+    ax.set_xlabel("")
+    ax.set_ylabel("$\\rho$ / 1/$m^2$")
+    ax.set_xticks([])
+    return ax
+
 
 def plot_walkable_area(
         *,
