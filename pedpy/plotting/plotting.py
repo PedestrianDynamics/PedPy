@@ -7,6 +7,7 @@ import matplotlib.axes
 import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
+from numpy import mean
 
 from pedpy.column_identifier import (
     ID_COL,
@@ -19,7 +20,8 @@ from pedpy.column_identifier import (
     CUMULATED_COL,
     DENSITY_COL,
     FLOW_COL,
-    MEAN_SPEED_COL
+    MEAN_SPEED_COL,
+    FRAME_COL
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
@@ -177,7 +179,7 @@ def plot_flow(
         color (optional): color of the plot
 
     Returns:
-        matplotlib.axes.Axes instance where the density is plotted
+        matplotlib.axes.Axes instance where the flow is plotted
     """
     if ax is None:
         ax = plt.gca()
@@ -190,6 +192,178 @@ def plot_flow(
     ax.set_ylabel("v / m/s")
     return ax
 
+
+def plot_neighborhood(
+        *,
+        neighbors: pd.DataFrame,
+        frame: int,
+        individual_cutoff: pd.DataFrame,
+        walkable_area,
+        **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the neighborhood.
+
+    Args:
+        neighbors(pd.DataFrame): DataFrame containing the columns: 'id', 'frame' and 'neighbors'
+        frame(int): frame for which the plot is created
+        individual_cutoff (pd.DataFrame): individual Voronoi polygon for each person and frame
+        walkable_area(WalkableArea): WalkableArea object of plot
+        hole_color (optional): color of the holes in the walkable area
+        base_color (optional): color of the base pedestrians
+        neighbor_color (optional): color of neighbor pedestrians
+        default_color (optional): color of default pedestrians
+    Returns:
+        matplotlib.axes.Axes: instances where the neighborhood is plotted
+    """
+    hole_color = kwargs.get("hole_color", "w")
+    base_color = kwargs.get("base_color", "orange")
+    neighbor_color = kwargs.get("neighbor_color", "g")
+    default_color = kwargs.get("default_color", "gray")
+    voronoi_neighbors = pd.merge(
+        individual_cutoff[individual_cutoff.frame == frame],
+        neighbors[neighbors.frame == frame],
+        on=[ID_COL, FRAME_COL],
+    )
+    used_neighbors = voronoi_neighbors[ID_COL].values[4:6]
+
+    _,  axes = plt.subplots(nrows=1, ncols=len(used_neighbors))
+
+    for base, ax in zip(used_neighbors, axes):
+        base_neighbors = voronoi_neighbors[voronoi_neighbors[ID_COL] == base][
+            "neighbors"
+        ].values[0]
+        ax.set_title(f"id = {base}")
+
+        plot_walkable_area(
+            ax=ax, walkable_area=walkable_area, hole_color=hole_color
+        )
+
+        for _, row in voronoi_neighbors.iterrows():
+            poly = row[POLYGON_COL]
+            ped_id = row[ID_COL]
+
+            are_neighbors = ped_id in base_neighbors
+
+            color = default_color
+            alpha = 0.2
+            if ped_id == base:
+                color = base_color
+                alpha = 0.5
+
+            if are_neighbors:
+                color = neighbor_color
+                alpha = 0.5
+
+            ax.plot(*poly.exterior.xy, alpha=1, color=color)
+            ax.fill(*poly.exterior.xy, alpha=alpha, color=color)
+            ax.set_aspect("equal")
+
+    return axes
+
+
+def plot_distance_to(
+        *,
+        df_time_distance: pd.DataFrame,
+        frame_rate: int,
+        ax: Optional[matplotlib.axes.Axes] = None,
+        **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the flow.
+
+    Args:
+        df_time_distance(pd.DataFrame): DataFrame containing 'id', 'frame', 'time'
+        frame_rate(int): frame_rate of the trajectory
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        color (optional): color of the plot
+        title (optional): title of the plot
+
+    Returns:
+        matplotlib.axes.Axes instance where the distance is plotted
+    """
+    if ax is None:
+        ax = plt.gcf().add_subplot(111)
+
+    color = kwargs.get("color", "k")
+    title = kwargs.get("title", "distance plot")
+
+    ax.set_title(title)
+    for ped_id, ped_data in df_time_distance.groupby(by=ID_COL):
+        ax.plot(
+            ped_data.distance,
+            ped_data.time / frame_rate,
+            c="gray",
+            alpha=0.7,
+            lw=0.25,
+        )
+        min_data = ped_data[ped_data.frame == ped_data.frame.min()]
+        ax.scatter(
+            min_data.distance,
+            min_data.time / frame_rate,
+            c="gray",
+            s=5,
+            marker="o",
+        )
+
+    ax.grid()
+    ax.set_xlabel("distance to line / m")
+    ax.set_ylabel("time to line / s")
+
+    ax.set_xlim([0, None])
+    ax.set_ylim([0, None])
+
+    return ax
+
+
+def plot_profiles(
+        *,
+        walkable_area: WalkableArea,
+        density_profiles: list,
+        speed_profiles: list,
+        **kwargs: Any,
+) -> list:
+    """Plot the flow.
+
+    Args:
+        walkable_area(WalkableArea): walkable area of the plot
+        density_profiles(list): List of density profiles
+        speed_profiles(list): List of speed profiles
+        walkable_color (optional): color of the walkable area in the plot
+        hole_color (optional): color of the holes in the plot
+
+    Returns:
+        list figure and axes where the profiles are plotted
+    """
+    walkable_color = kwargs.get("color", "w")
+    hole_color = kwargs.get("hole_color", "w")
+    bounds = walkable_area.bounds
+
+    fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
+
+    ax0.set_title("Density")
+    cm = ax0.imshow(
+        mean(density_profiles, axis=0),
+        extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
+        interpolation="None",
+        cmap="jet",
+        vmin=0,
+        vmax=10,
+    )
+    fig.colorbar(cm, ax=ax0, shrink=0.3, label="$\\rho$ / 1/$m^2$")
+    ax0.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
+    plot_walkable_area(walkable_area=walkable_area, ax=ax0, hole_color=hole_color)
+
+    ax1.set_title("Speed")
+    cm = ax1.imshow(
+        mean(speed_profiles, axis=0),
+        extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
+        cmap="jet",
+        vmin=0,
+        vmax=2,
+    )
+    fig.colorbar(cm, ax=ax1, shrink=0.3, label="v / m/s")
+    plot_walkable_area(walkable_area=walkable_area, ax=ax1, hole_color=hole_color)
+
+    return fig, (ax0, ax1)
 
 def plot_walkable_area(
         *,
