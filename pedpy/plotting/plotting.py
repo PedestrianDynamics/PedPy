@@ -50,9 +50,12 @@ def plot_nt(
     """Plot the number of pedestrians over time.
 
     Args:
-        nt (pd.DataFrame): List of density profiles
+        nt (pd.DataFrame): cumulative number of pedestrians over time
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes instance where the number of pedestrians is plotted
@@ -61,13 +64,16 @@ def plot_nt(
         ax = plt.gca()
 
     color = kwargs.get("color", "k")
+    title = kwargs.get("title", "N-t")
+    x_label = kwargs.get("x_label", "t / s")
+    y_label = kwargs.get("y_label", "# pedestrians")
     return _plot_series(ax=ax,
-                        title="N-t",
+                        title=title,
                         x=nt[TIME_COL],
                         y=nt[CUMULATED_COL],
                         color=color,
-                        x_label="t / s",
-                        y_label="# pedestrians")
+                        x_label=x_label,
+                        y_label=y_label)
 
 
 def plot_density(
@@ -82,6 +88,9 @@ def plot_density(
         classic_density(pd.DataFrame) : density per frame
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
@@ -90,13 +99,16 @@ def plot_density(
         ax = plt.gca()
 
     color = kwargs.get("color", "k")
+    title = kwargs.get("title", "Classic density over time")
+    x_label = kwargs.get("x_label", "frame")
+    y_label = kwargs.get("y_label", "# pedestrians")
     return _plot_series(ax=ax,
-                        title="Classic density over time",
+                        title=title,
                         x=classic_density.index,
                         y=classic_density[DENSITY_COL],
                         color=color,
-                        x_label="frame",
-                        y_label="# pedestrians")
+                        x_label=x_label,
+                        y_label=y_label)
 
 
 def plot_speed(
@@ -111,6 +123,9 @@ def plot_speed(
         speed(pd.Series): speed per frame
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
@@ -119,13 +134,17 @@ def plot_speed(
         ax = plt.gca()
 
     color = kwargs.get("color", "k")
+    title = kwargs.get("title", "speed over time")
+    x_label = kwargs.get("x_label", "frame")
+    y_label = kwargs.get("y_label", "v / m/s")
+
     return _plot_series(ax=ax,
-                        title="speed over time",
+                        title=title,
                         x=speed.index,
                         y=speed,
                         color=color,
-                        x_label="frame",
-                        y_label="v / m/s")
+                        x_label=x_label,
+                        y_label=y_label)
 
 
 def plot_passing_density(
@@ -137,10 +156,14 @@ def plot_passing_density(
     """Plot the passing density.
 
     Args:
-        passing_density(pd.DataFrame): DataFrame containing the columns: 'ID' and 'density' in 1/m^2.
+        passing_density(pd.DataFrame): individual density of the pedestrian who pass an area.
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         facecolor (optional): color of the plot body
         edgecolor (optional): color of the edges of the plot
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
@@ -148,10 +171,13 @@ def plot_passing_density(
     if ax is None:
         ax = plt.gca()
 
-    facecolor = kwargs.get("facecolor", "r")
+    facecolor = kwargs.get("facecolor", "blue")
     edgecolor = kwargs.get("edgecolor", "k")
+    title = kwargs.get("title", "Individual density")
+    x_label = kwargs.get("x_label", "")
+    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
 
-    ax.set_title("Individual density")
+    ax.set_title(title)
     violin_parts = plt.violinplot(
         passing_density.density, showmeans=True, showextrema=True, showmedians=True
     )
@@ -159,8 +185,8 @@ def plot_passing_density(
         pc.set_facecolor(facecolor)
         pc.set_edgecolor(edgecolor)
 
-    ax.set_xlabel("")
-    ax.set_ylabel("$\\rho$ / 1/$m^2$")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     ax.set_xticks([])
     return ax
 
@@ -174,9 +200,12 @@ def plot_flow(
     """Plot the flow.
 
     Args:
-        flow(pd.DataFrame): DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
+        flow(pd.DataFrame): flow for some given crossing_frames and nt
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes instance where the flow is plotted
@@ -185,11 +214,13 @@ def plot_flow(
         ax = plt.gca()
 
     color = kwargs.get("color", "k")
-
-    ax.set_title("flow")
+    title = kwargs.get("title", "flow")
+    x_label = kwargs.get("x_label", "J / 1/s")
+    y_label = kwargs.get("y_label", "v / m/s")
+    ax.set_title(title)
     ax.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color)
-    ax.set_xlabel("J / 1/s")
-    ax.set_ylabel("v / m/s")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     return ax
 
 
@@ -204,7 +235,7 @@ def plot_neighborhood(
     """Plot the neighborhood.
 
     Args:
-        neighbors(pd.DataFrame): DataFrame containing the columns: 'id', 'frame' and 'neighbors'
+        neighbors(pd.DataFrame): neighbors of each pedestrian based on the Voronoi cells
         frame(int): frame for which the plot is created
         individual_cutoff (pd.DataFrame): individual Voronoi polygon for each person and frame
         walkable_area(WalkableArea): WalkableArea object of plot
@@ -226,7 +257,7 @@ def plot_neighborhood(
     )
     used_neighbors = voronoi_neighbors[ID_COL].values[4:6]
 
-    _,  axes = plt.subplots(nrows=1, ncols=len(used_neighbors))
+    _, axes = plt.subplots(nrows=1, ncols=len(used_neighbors))
 
     for base, ax in zip(used_neighbors, axes):
         base_neighbors = voronoi_neighbors[voronoi_neighbors[ID_COL] == base][
@@ -264,18 +295,21 @@ def plot_neighborhood(
 def plot_distance_to(
         *,
         df_time_distance: pd.DataFrame,
-        frame_rate: int,
+        frame_rate: float,
         ax: Optional[matplotlib.axes.Axes] = None,
         **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the flow.
+    """Plots the time to reach a target over distance.
 
     Args:
-        df_time_distance(pd.DataFrame): DataFrame containing 'id', 'frame', 'time'
-        frame_rate(int): frame_rate of the trajectory
+        df_time_distance(pd.DataFrame): DataFrame containing information on time and distance to some target
+        frame_rate(float): frame_rate of the trajectory
         ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
-        color (optional): color of the plot
+        marker_color (optional): color of the markers on the plot
+        line_color (optional): color of the lines on the plot
         title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes instance where the distance is plotted
@@ -283,15 +317,18 @@ def plot_distance_to(
     if ax is None:
         ax = plt.gcf().add_subplot(111)
 
-    color = kwargs.get("color", "k")
+    line_color = kwargs.get("line_color", "gray")
+    marker_color = kwargs.get("marker_color", "gray")
     title = kwargs.get("title", "distance plot")
+    x_label = kwargs.get("x_label", "distance / m")
+    y_label = kwargs.get("y_label", "time / s")
 
     ax.set_title(title)
     for ped_id, ped_data in df_time_distance.groupby(by=ID_COL):
         ax.plot(
             ped_data.distance,
             ped_data.time / frame_rate,
-            c="gray",
+            c=line_color,
             alpha=0.7,
             lw=0.25,
         )
@@ -299,14 +336,14 @@ def plot_distance_to(
         ax.scatter(
             min_data.distance,
             min_data.time / frame_rate,
-            c="gray",
+            c=marker_color,
             s=5,
             marker="o",
         )
 
     ax.grid()
-    ax.set_xlabel("distance to line / m")
-    ax.set_ylabel("time to line / s")
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
 
     ax.set_xlim([0, None])
     ax.set_ylim([0, None])
@@ -317,53 +354,47 @@ def plot_distance_to(
 def plot_profiles(
         *,
         walkable_area: WalkableArea,
-        density_profiles: list,
-        speed_profiles: list,
+        profiles: List,
+        ax: Optional[matplotlib.axes.Axes] = None,
         **kwargs: Any,
-) -> list:
+) -> matplotlib.axes.Axes:
     """Plot the flow.
 
     Args:
         walkable_area(WalkableArea): walkable area of the plot
-        density_profiles(list): List of density profiles
-        speed_profiles(list): List of speed profiles
+        profiles(list): List of profiles like speed or density profiles
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        title (optional): title of the plot
         walkable_color (optional): color of the walkable area in the plot
-        hole_color (optional): color of the holes in the plot
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
 
     Returns:
-        list figure and axes where the profiles are plotted
+         matplotlib.axes.Axes instance where the profiles are plotted
     """
-    walkable_color = kwargs.get("color", "w")
+    title = kwargs.get("title", "")
+    walkable_color = kwargs.get("walkable_color", "w")
     hole_color = kwargs.get("hole_color", "w")
+    hole_alpha = kwargs.get("hole_alpha", 1.0)
     bounds = walkable_area.bounds
 
-    fig, (ax0, ax1) = plt.subplots(nrows=1, ncols=2)
+    if ax is None:
+        ax = plt.gca()
 
-    ax0.set_title("Density")
-    cm = ax0.imshow(
-        mean(density_profiles, axis=0),
+    ax.set_title(title)
+    cm = ax.imshow(
+        mean(profiles, axis=0),
         extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
         interpolation="None",
         cmap="jet",
         vmin=0,
         vmax=10,
     )
-    fig.colorbar(cm, ax=ax0, shrink=0.3, label="$\\rho$ / 1/$m^2$")
-    ax0.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
-    plot_walkable_area(walkable_area=walkable_area, ax=ax0, hole_color=hole_color)
+    ax.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
+    plot_walkable_area(walkable_area=walkable_area, ax=ax, hole_color=hole_color, hole_alpha=hole_alpha)
 
-    ax1.set_title("Speed")
-    cm = ax1.imshow(
-        mean(speed_profiles, axis=0),
-        extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
-        cmap="jet",
-        vmin=0,
-        vmax=2,
-    )
-    fig.colorbar(cm, ax=ax1, shrink=0.3, label="v / m/s")
-    plot_walkable_area(walkable_area=walkable_area, ax=ax1, hole_color=hole_color)
+    return ax
 
-    return fig, (ax0, ax1)
 
 def plot_walkable_area(
         *,
