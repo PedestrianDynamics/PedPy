@@ -164,6 +164,66 @@ def plot_speed(
     )
 
 
+def _plot_passing_xy(
+    *,
+    data: pd.Series,
+    ax: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    if ax is None:
+        ax = plt.gca()
+
+    facecolor = kwargs.get("facecolor", PEDPY_BLUE)
+    edgecolor = kwargs.get("edgecolor", PEDPY_RED)
+    title = kwargs.get("title", "")
+    x_label = kwargs.get("x_label", "")
+    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
+
+    ax.set_title(title)
+    violin_parts = plt.violinplot(
+        data,
+        showmeans=True,
+        showextrema=True,
+        showmedians=True,
+    )
+    for pc in violin_parts["bodies"]:
+        pc.set_facecolor(facecolor)
+        pc.set_edgecolor(edgecolor)
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_xticks([])
+    return ax
+
+
+def plot_passing_speed(
+    *,
+    passing_speed: pd.DataFrame,
+    ax: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the passing speed.
+
+    Args:
+        passing_speed(pd.DataFrame): individual speed of the pedestrian who pass an area.
+        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        facecolor (optional): color of the plot body
+        edgecolor (optional): color of the edges of the plot
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
+
+    Returns:
+        matplotlib.axes.Axes instance where the density is plotted
+    """
+    if "title" not in kwargs.keys():
+        kwargs["title"] = "Individual speed"
+    if "y_label" not in kwargs.keys():
+        kwargs["y_label"] = "m/s"
+    return _plot_passing_xy(data=passing_speed.speed, ax=ax, kwargs=kwargs)
+
+
 def plot_passing_density(
     *,
     passing_density: pd.DataFrame,
@@ -185,30 +245,11 @@ def plot_passing_density(
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
     """
-    if ax is None:
-        ax = plt.gca()
-
-    facecolor = kwargs.get("facecolor", PEDPY_BLUE)
-    edgecolor = kwargs.get("edgecolor", PEDPY_RED)
-    title = kwargs.get("title", "Individual density")
-    x_label = kwargs.get("x_label", "")
-    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
-
-    ax.set_title(title)
-    violin_parts = plt.violinplot(
-        passing_density.density,
-        showmeans=True,
-        showextrema=True,
-        showmedians=True,
-    )
-    for pc in violin_parts["bodies"]:
-        pc.set_facecolor(facecolor)
-        pc.set_edgecolor(edgecolor)
-
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    ax.set_xticks([])
-    return ax
+    if "title" not in kwargs.keys():
+        kwargs["title"] = "Individual density"
+    if "y_label" not in kwargs.keys():
+        kwargs["y_label"] = "$\\rho$ / 1/$m^2$"
+    return _plot_passing_xy(data=passing_density.density, ax=ax, kwargs=kwargs)
 
 
 def plot_flow(
@@ -447,7 +488,7 @@ def plot_walkable_area(
     line_color = kwargs.get("line_color", PEDPY_GREY)
     line_width = kwargs.get("line_width", 1.0)
 
-    hole_color = kwargs.get("hole_color", "w")
+    hole_color = kwargs.get("hole_color", "lightgrey")
     hole_alpha = kwargs.get("hole_alpha", 1.0)
 
     ax.plot(
@@ -618,7 +659,9 @@ def plot_measurement_setup(
 
 def plot_voronoi_cells(  # pylint: disable=too-many-locals
     *,
-    data: pd.DataFrame,
+    voronoi_data: pd.DataFrame,
+    frame: int,
+    traj_data: Optional[TrajectoryData] = None,
     walkable_area: Optional[WalkableArea] = None,
     measurement_area: Optional[MeasurementArea] = None,
     ax: Optional[matplotlib.axes.Axes] = None,
@@ -627,15 +670,16 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
     """Plot the Voronoi cells, walkable able, and measurement area in 2D.
 
     Args:
-        data (pd.DataFrame): Voronoi data to plot, should only contain data
-            from one frame!
+        voronoi_polygons (pd.DataFrame): voronoi polygon data as returned by
+            :func:`~density_calculator.compute_voronoi_density`
+        frame (int): frame index
         walkable_area (WalkableArea, optional): WalkableArea object to plot
         measurement_area (MeasurementArea, optional): measurement area used to
             compute the Voronoi cells
         ax (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
-        show_ped_positions (optional): show the current positions of the
-            pedestrians, data needs to contain columns "x", and "y"!
+        traj_data (TrajectoryData, optional): Will add pedestrian positions to the plot
+            if provided.
         ped_color (optional): color used to display current ped positions
         voronoi_border_color (optional): border color of Voronoi cells
         voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell
@@ -643,9 +687,8 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
             "intersection"!
         voronoi_outside_ma_alpha (optional): alpha of part of Voronoi cell
             outside the measurement area
-        color_mode (optional): color mode to color the Voronoi cells, "density",
-            "speed", and "id". For 'speed' data needs to contain a
-            column 'speed'
+        color_by_column (str, optional): ...
+
         vmin (optional): vmin of colormap, only used when color_mode != "id"
         vmax (optional): vmax of colormap, only used when color_mode != "id"
         show_colorbar (optional): colorbar is displayed, only used when
@@ -667,9 +710,9 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
     show_ped_positions = kwargs.get("show_ped_positions", False)
-    ped_color = kwargs.get("ped_color", "w")
+    ped_color = kwargs.get("ped_color", PEDPY_BLUE)
     ped_size = kwargs.get("ped_size", 1)
-    voronoi_border_color = kwargs.get("voronoi_border_color", "w")
+    voronoi_border_color = kwargs.get("voronoi_border_color", PEDPY_BLUE)
     voronoi_inside_ma_alpha = kwargs.get("voronoi_inside_ma_alpha", 1)
     voronoi_outside_ma_alpha = kwargs.get("voronoi_outside_ma_alpha", 1)
 
@@ -682,41 +725,55 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         )
         color_mode = "density"
 
-    vmin = kwargs.get("vmin", 0)
-    vmax = kwargs.get("vmax", 5 if color_mode == "speed" else 10)
+    vmin = kwargs.get("vmin", None)
+    vmax = kwargs.get("vmax", None)
     cb_location = kwargs.get("cb_location", "right")
     show_colorbar = kwargs.get("show_colorbar", True)
+    color_by_column = kwargs.get("color_by_column", None)
 
     if ax is None:
         ax = plt.gca()
-
-    # Create color mapping for speed/density to color
-    if color_mode != "id":
-        voronoi_colormap = plt.get_cmap("jet")
-        norm = mpl.colors.Normalize(vmin, vmax)
-        scalar_mappable = mpl.cm.ScalarMappable(
-            norm=norm, cmap=voronoi_colormap
-        )
-
-    else:
-        voronoi_colormap = plt.get_cmap("tab20c")
 
     if measurement_area is not None:
         plot_measurement_setup(
             measurement_areas=[measurement_area], ax=ax, **kwargs
         )
 
+    if traj_data:
+        data = pd.merge(
+            traj_data.data,
+            voronoi_data[voronoi_data.frame == frame],
+            on=[ID_COL, FRAME_COL],
+        )
+    else:
+        data = voronoi_data[voronoi_data.frame == frame]
+
+    if color_by_column:
+        type = data.dtypes[color_by_column]
+        if type == "float64":
+            if not vmin:
+                vmin = voronoi_data[color_by_column].min()
+            if not vmax:
+                vmax = voronoi_data[color_by_column].max()
+            voronoi_colormap = plt.get_cmap("YlGn")
+            norm = mpl.colors.Normalize(vmin, vmax)
+            scalar_mappable = mpl.cm.ScalarMappable(
+                norm=norm, cmap=voronoi_colormap
+            )
+            color_mapper = scalar_mappable.to_rgba
+        elif type == "int64":
+            voronoi_colormap = plt.get_cmap("tab20c")
+            color_mapper = lambda x: voronoi_colormap(x % 20)
+        else:
+            pass
+
     for _, row in data.iterrows():
         poly = row[POLYGON_COL]
 
-        if color_mode != "id":
-            color = (
-                scalar_mappable.to_rgba(row[SPEED_COL])
-                if color_mode == "speed"
-                else scalar_mappable.to_rgba(1 / poly.area)
-            )
+        if color_by_column:
+            color = color_mapper(row[color_by_column])
         else:
-            color = voronoi_colormap(row[ID_COL] % 20)
+            color = "w"
 
         ax.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
         ax.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
@@ -730,7 +787,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
                     alpha=voronoi_inside_ma_alpha,
                 )
 
-        if show_ped_positions:
+        if traj_data:
             ax.scatter(row[X_COL], row[Y_COL], color=ped_color, s=ped_size)
 
     if show_colorbar and color_mode != "id":
