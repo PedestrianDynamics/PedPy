@@ -14,9 +14,6 @@ build:
   jobs:
     pre_build:
       - cp -r notebooks/* docs/source
-      - ls -l docs/source/
-      - ls -l docs/source/demo-data
-      - ls -l docs/source/demo-data/bottleneck
       - pip install -e .
 
 

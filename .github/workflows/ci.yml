@@ -92,7 +92,7 @@ jobs:
           name: dist
           path: dist/
 
-      - name: Upload usage notebook and demo files as artifacts
+      - name: Upload notebooks and demo files as artifacts
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
@@ -115,7 +115,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Download usage notebook and demo files as artifacts
+      - name: Download notebooks and demo files as artifacts
         uses: actions/download-artifact@v3
         with:
           name: demos_usage
@@ -140,11 +140,11 @@ jobs:
         run: |
           jupyter nbconvert --to notebook --execute getting_started.ipynb
 
-      - name: Run usage notebook
+      - name: Run user guide notebook
         run: |
-          jupyter nbconvert --to notebook --execute usage.ipynb
+          jupyter nbconvert --to notebook --execute user_guide.ipynb
 
-      - name: Run usage fundamental diagram notebook
+      - name: Run fundamental diagram notebook
         run: |
           jupyter nbconvert --to notebook --execute fundamental_diagram.ipynb
 
