@@ -22,7 +22,8 @@ from pedpy.methods.method_utils import (
     compute_intersecting_polygons,
 )
 from pedpy.methods.profile_calculator import SpeedMethod, compute_profiles
-from pedpy.methods.velocity_calculator import (
+from pedpy.methods.speed_calculator import (
+    SpeedCalculation,
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,
@@ -148,6 +149,7 @@ def test_arithmetic_speed(
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
+        speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
     )
     result = compute_mean_speed_per_frame(
         traj_data=trajectory,
@@ -444,19 +446,31 @@ def test_voronoi_speed(
     )
     walkable_area = WalkableArea(walkable_area_polygon)
 
+    individual_speed = compute_individual_speed(
+        traj_data=trajectory,
+        frame_step=velocity_frame,
+        speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
+    )
+
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory,
         walkable_area=walkable_area,
         use_blind_points=False,
     )
+
     intersecting_voronoi = compute_intersecting_polygons(
         individual_voronoi_data=individual_voronoi,
         measurement_area=measurement_area,
     )
-    individual_speed = compute_individual_speed(
-        traj_data=trajectory,
-        frame_step=velocity_frame,
-    )
+
+    # # as blind points were turned off, there are frames where no Voronoi
+    # # polygons could be computed but a speed
+    # speed_intersection = pd.merge(
+    #     individual_speed,
+    #     intersecting_voronoi,
+    #     on=[ID_COL, FRAME_COL],
+    #     how="right",
+    # )
 
     result = compute_voronoi_speed(
         traj_data=trajectory,
@@ -562,6 +576,7 @@ def test_flow(line, folder, flow_frame, velocity_frame):
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=velocity_frame,
+        speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
     )
     nt, crossing = compute_n_t(
         traj_data=trajectory,
@@ -811,6 +826,7 @@ def test_profiles(
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
         frame_step=frame_step,
+        speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
     )
     combined = pd.merge(
         individual_voronoi, individual_speed, on=[ID_COL, FRAME_COL]

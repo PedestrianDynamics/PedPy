@@ -21,7 +21,8 @@ from .methods.method_utils import (
     is_trajectory_valid,
 )
 from .methods.profile_calculator import SpeedMethod, compute_profiles
-from .methods.velocity_calculator import (
+from .methods.speed_calculator import (
+    SpeedCalculation,
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,

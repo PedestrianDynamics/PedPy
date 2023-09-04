@@ -1,5 +1,4 @@
 """Module containing functions to compute velocities."""
-
 from typing import Optional, Tuple
 
 import numpy as np
@@ -16,7 +15,22 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import _compute_individual_movement
+from pedpy.methods.method_utils import (
+    SpeedCalculation,
+    _compute_individual_movement,
+)
+
+
+class SpeedError(Exception):
+    """Class reflecting errors when computing speeds with PedPy."""
+
+    def __init__(self, message):
+        """Create SpeedError with the given message.
+
+        Args:
+            message: Error message
+        """
+        self.message = message
 
 
 def compute_individual_speed(
@@ -24,7 +38,8 @@ def compute_individual_speed(
     traj_data: TrajectoryData,
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
-    compute_velocity: bool = True,
+    compute_velocity: bool = False,
+    speed_calculation: SpeedCalculation = SpeedCalculation.BORDER_EXCLUDE,
 ) -> pandas.DataFrame:
     r"""Compute the individual speed for each pedestrian.
 
@@ -132,13 +147,18 @@ def compute_individual_speed(
             actual movement is projected (default: None, when the un-projected
             movement should be used)
         compute_velocity (bool): compute the x and y components of the velocity
+        speed_calculation (method_utils.SpeedCalculation): method used to
+            compute the speed at the borders of the individual trajectories
+
     Returns:
         DataFrame containing the columns 'id', 'frame', and 'speed' in m/s,
         'v_x' and 'v_y' with the speed components in x and y direction if
         :code:`compute_velocity` is True
     """
     df_movement = _compute_individual_movement(
-        traj_data=traj_data, frame_step=frame_step
+        traj_data=traj_data,
+        frame_step=frame_step,
+        speed_border_method=speed_calculation,
     )
     df_speed = _compute_individual_speed(
         movement_data=df_movement,
@@ -185,6 +205,18 @@ def compute_mean_speed_per_frame(
     Returns:
         DataFrame containing the columns 'frame' and 'speed' in m/s
     """
+    if len(individual_speed.index) < len(traj_data.data.index):
+        raise SpeedError(
+            f"Can not compute the mean speed, as the there are less speed "
+            f"data (rows={len(individual_speed)}) than trajectory data "
+            f"(rows={len(traj_data.data.index)}). This means a person occupies "
+            f"space but has no speed at some frames."
+            f"To resolve this either edit your trajectory data, s.th. it only "
+            f"contains the data that is also contained in the speed data. Or "
+            f"use a different speed border method when computing the individual "
+            f"speed."
+        )
+
     combined = traj_data.data.merge(individual_speed, on=[ID_COL, FRAME_COL])
     df_mean = (
         combined[shapely.within(combined.point, measurement_area.polygon)]
@@ -243,6 +275,18 @@ def compute_voronoi_speed(
     Returns:
         DataFrame containing the columns 'frame' and 'speed' in m/s
     """
+    if len(individual_speed.index) < len(individual_voronoi_intersection.index):
+        raise SpeedError(
+            f"Can not compute the Voronoi speed, as the there are less speed "
+            f"data (rows={len(individual_speed)}) than Voronoi intersection "
+            f"data (rows={len(individual_voronoi_intersection.index)}). This "
+            f"means a person occupies space but has no speed at some frames."
+            f"To resolve this either edit your Voronoi intersection data, s.th. "
+            f"it only contains the data that is also contained in the speed "
+            f"data. Or use a different speed border method when computing the "
+            f"individual speed."
+        )
+
     df_voronoi = pandas.merge(
         individual_voronoi_intersection,
         individual_speed,
@@ -316,7 +360,7 @@ def _compute_individual_speed(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-        compute_velocity (bool): compute the x and y components of the speed
+        compute_velocity (bool): compute the x and y components of the velocity
 
     Returns:
         DataFrame containing the columns: 'id', 'frame', 'speed' with the
