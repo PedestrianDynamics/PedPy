@@ -246,18 +246,21 @@ def plot_flow(
 
 def plot_neighborhood(
     *,
+    id: int,
     neighbors: pd.DataFrame,
     frame: int,
-    individual_cutoff: pd.DataFrame,
-    walkable_area,
+    voronoi_data: pd.DataFrame,
+    walkable_area: WalkableArea,
+    ax: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the neighborhood.
 
     Args:
-        neighbors(pd.DataFrame): neighbors of each pedestrian based on the Voronoi cells
+        id(int): id of pedestrian to plot neighbors for
+        neighbors(pd.DataFrame): neighborhood data based on the Voronoi cells
         frame(int): frame for which the plot is created
-        individual_cutoff (pd.DataFrame): individual Voronoi polygon for each person and frame
+        voronoi_data (pd.DataFrame): individual Voronoi polygon for each person and frame
         walkable_area(WalkableArea): WalkableArea object of plot
         hole_color (optional): color of the holes in the walkable area
         base_color (optional): color of the base pedestrians
@@ -267,49 +270,47 @@ def plot_neighborhood(
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
     hole_color = kwargs.get("hole_color", "w")
-    base_color = kwargs.get("base_color", PEDPY_ORANGE)
+    base_color = kwargs.get("base_color", PEDPY_RED)
     neighbor_color = kwargs.get("neighbor_color", PEDPY_GREEN)
     default_color = kwargs.get("default_color", PEDPY_GREY)
     voronoi_neighbors = pd.merge(
-        individual_cutoff[individual_cutoff.frame == frame],
+        voronoi_data[voronoi_data.frame == frame],
         neighbors[neighbors.frame == frame],
         on=[ID_COL, FRAME_COL],
     )
-    used_neighbors = voronoi_neighbors[ID_COL].values[4:6]
 
-    _, axes = plt.subplots(nrows=1, ncols=len(used_neighbors))
+    base_neighbors = voronoi_neighbors[voronoi_neighbors[ID_COL] == id][
+        "neighbors"
+    ].values[0]
+    if ax is None:
+        ax = plt.gca()
+    ax.set_title(f"Neighbors of pedestrian {id}")
 
-    for base, ax in zip(used_neighbors, axes):
-        base_neighbors = voronoi_neighbors[voronoi_neighbors[ID_COL] == base][
-            "neighbors"
-        ].values[0]
-        ax.set_title(f"id = {base}")
+    plot_walkable_area(
+        ax=ax, walkable_area=walkable_area, hole_color=hole_color
+    )
 
-        plot_walkable_area(
-            ax=ax, walkable_area=walkable_area, hole_color=hole_color
-        )
+    for _, row in voronoi_neighbors.iterrows():
+        poly = row[POLYGON_COL]
+        ped_id = row[ID_COL]
 
-        for _, row in voronoi_neighbors.iterrows():
-            poly = row[POLYGON_COL]
-            ped_id = row[ID_COL]
+        are_neighbors = ped_id in base_neighbors
 
-            are_neighbors = ped_id in base_neighbors
+        color = default_color
+        alpha = 0.2
+        if ped_id == id:
+            color = base_color
+            alpha = 0.5
 
-            color = default_color
-            alpha = 0.2
-            if ped_id == base:
-                color = base_color
-                alpha = 0.5
+        if are_neighbors:
+            color = neighbor_color
+            alpha = 0.5
 
-            if are_neighbors:
-                color = neighbor_color
-                alpha = 0.5
+        ax.plot(*poly.exterior.xy, alpha=1, color=color)
+        ax.fill(*poly.exterior.xy, alpha=alpha, color=color)
+        ax.set_aspect("equal")
 
-            ax.plot(*poly.exterior.xy, alpha=1, color=color)
-            ax.fill(*poly.exterior.xy, alpha=alpha, color=color)
-            ax.set_aspect("equal")
-
-    return axes
+    return ax
 
 
 def plot_distance_to(
