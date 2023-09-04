@@ -464,7 +464,6 @@ def test_voronoi_speed(
         individual_speed=individual_speed,
         measurement_area=measurement_area,
     )
-    result = result.to_frame()
 
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference

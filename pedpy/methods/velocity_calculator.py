@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas as pd
+import pandas
 import shapely
 
 from pedpy.column_identifier import (
@@ -25,10 +25,104 @@ def compute_individual_speed(
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_velocity: bool = True,
-) -> pd.DataFrame:
-    """Compute the individual speed for each pedestrian.
+) -> pandas.DataFrame:
+    r"""Compute the individual speed for each pedestrian.
 
-    Note: when using a movement direction the speed may be negative!
+    For computing the individuals speed at a specific frame :math:`v_i(t)`,
+    a specific frame step (:math:`n`) is needed.
+    Together with the
+    :attr:`~trajectory_data.TrajectoryData.frame_rate` of
+    the trajectory data :math:`fps` the time frame :math:`\Delta t` for
+    computing the speed becomes:
+
+    .. math::
+
+        \Delta t = 2 n / fps
+
+    This time step describes how many frames before and after the current
+    position :math:`X_{current}` are used to compute the movement.
+    These positions are called :math:`X_{future}`, :math:`X_{past}`
+    respectively.
+
+    |
+
+    .. image:: /images/speed_both.svg
+        :width: 80 %
+        :align: center
+
+    |
+
+    First computing the displacement between these positions :math:`\bar{X}`.
+    This then can be used to compute the speed with:
+
+    .. math::
+        \bar{X} = X_{future} - X_{past}
+
+
+    When getting closer to the start, or end of the trajectory data, it is not
+    possible to use the full range of the frame interval for computing the
+    speed. In these cases, one of the end points to compute the movement
+    becomes the current position :math:`X_{current}`.
+    When getting to close to the start of the trajectory, the movement is
+    computed from :math:`X_{current}` to :math:`X_{future}`. In the other case
+    the movement is from :math:`X_{past}` to :math:`X_{current}`.
+
+    .. math::
+        \bar{X} = X_{future} - X_{current} \text{, or }
+        \bar{X} = X_{current} - X_{past}
+
+    |
+
+    .. image:: /images/speed_future.svg
+        :width: 45 %
+    .. image:: /images/speed_past.svg
+        :width: 45 %
+
+    |
+
+    As only half of the time interval is used in such cases, :math:`\Delta t`
+    becomes:
+
+    .. math::
+
+        \Delta t = n / fps
+
+
+    Now, from the displacement and the time frame, the speed is defined as:
+
+    .. math::
+
+        v_i(t) = {{|\bar{X}|}\over{ \Delta t}}
+
+    .. warning::
+
+        As at the edges of the trajectories the time interval gets halved,
+        there may occur some jumps computed speeds.
+
+    **With movement direction:**
+
+    It is also possible to compute the individual speed in a specific direction
+    :math:`d`, for this the movement :math:`\bar{X}` is projected onto the
+    desired movement direction. :math:`\bar{X}` and :math:`\Delta t` are
+    computed as described above. Hence, the speed then becomes:
+
+    .. math::
+
+        v_i(t) = {{|\boldsymbol{proj}_d\; \bar{X}|} \over {\Delta t}}
+
+    |
+
+    .. image:: /images/speed_movement_direction.svg
+        :width: 80 %
+        :align: center
+
+    |
+
+    .. important::
+
+        Using a movement direction may lead to negative speeds!
+
+    If :code:`compute_velocity` is `True` also :math:`\bar{X}` is returned.
 
     Args:
         traj_data (TrajectoryData): trajectory data
@@ -41,7 +135,7 @@ def compute_individual_speed(
     Returns:
         DataFrame containing the columns 'id', 'frame', and 'speed' in m/s,
         'v_x' and 'v_y' with the speed components in x and y direction if
-        compute_velocity is True
+        :code:`compute_velocity` is True
     """
     df_movement = _compute_individual_movement(
         traj_data=traj_data, frame_step=frame_step
@@ -50,7 +144,7 @@ def compute_individual_speed(
         movement_data=df_movement,
         frame_rate=traj_data.frame_rate,
         movement_direction=movement_direction,
-        x_y_components=compute_velocity,
+        compute_velocity=compute_velocity,
     )
 
     return df_speed
@@ -59,16 +153,32 @@ def compute_individual_speed(
 def compute_mean_speed_per_frame(
     *,
     traj_data: TrajectoryData,
-    individual_speed: pd.DataFrame,
+    individual_speed: pandas.DataFrame,
     measurement_area: MeasurementArea,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Compute mean speed per frame.
+) -> Tuple[pandas.DataFrame, pandas.DataFrame]:
+    r"""Compute mean speed per frame inside a given measurement area.
 
-    Note: when using a movement direction, the speed may be negative!
+    Computes the mean speed :math:`v_{mean}(t)` inside the measurement area from
+    the given individual speed data :math:`v_i(t)` (see
+    :func:`~velocity_calculator.compute_individual_speed` for
+    details of the computation). The mean speed :math:`v_{mean}` is defined as
+
+    .. math::
+
+        v_{mean}(t) = {{1} \over {N}} \sum_{i \in P_M} v_i(t),
+
+    where :math:`P_M` are all pedestrians inside the measurement area, and
+    :math:`N` the number of pedestrians inside the measurement area (
+    :math:`|P_M|`).
+
+    .. image:: /images/classic_density.svg
+        :width: 60 %
+        :align: center
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        individual_speed (pd.DataFrame): individual speed data
+        individual_speed (pandas.DataFrame): individual speed data from
+            :func:`~velocity_calculator.compute_individual_speed`
         measurement_area (MeasurementArea): measurement area for which the
             speed is computed
 
@@ -91,26 +201,49 @@ def compute_mean_speed_per_frame(
 def compute_voronoi_speed(
     *,
     traj_data: TrajectoryData,
-    individual_speed: pd.DataFrame,
-    individual_voronoi_intersection: pd.DataFrame,
+    individual_speed: pandas.DataFrame,
+    individual_voronoi_intersection: pandas.DataFrame,
     measurement_area: MeasurementArea,
-) -> pd.Series:
-    """Compute the Voronoi speed per frame.
+) -> pandas.DataFrame:
+    r"""Compute the Voronoi speed per frame inside the measurement area.
 
-    Note: when using a movement direction, the speed may be negative!
+    Computes the Voronoi speed :math:`v_{voronoi}(t)` inside the measurement
+    area :math:`M` from the given individual speed data :math:`v_i(t)` (see
+    :func:`~velocity_calculator.compute_individual_speed` for
+    details of the computation) and their individual Voronoi intersection data
+    (from :func:`~density_calculator.compute_voronoi_density`).
+    The individuals speed are weighted by the proportion of their Voronoi cell
+    :math:`V_i` and the intersection with the measurement area
+    :math:`V_i \cap M`.
+
+    The Voronoi speed :math:`v_{voronoi}(t)` is defined as
+
+    .. math::
+
+        v_{voronoi}(t) = { \int\int v_{xy}(t) dxdy \over A(M)},
+
+    where :math:`v_{xy}(t) = v_i(t)` is the individual speed of
+    each pedestrian, whose :math:`V_i(t) \cap M` and :math:`A(M)` the area of
+    the measurement area.
+
+    .. image:: /images/voronoi_density.svg
+        :width: 60 %
+        :align: center
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        individual_speed (pd.DataFrame): individual speed data
-        individual_voronoi_intersection (pd.DataFrame): intersections of the
-            individual with the measurement area of each pedestrian
+        individual_speed (pandas.DataFrame): individual speed data from
+            :func:`~velocity_calculator.compute_individual_speed`
+        individual_voronoi_intersection (pandas.DataFrame): intersections of the
+            individual with the measurement area of each pedestrian from
+            :func:`~method_utils.compute_intersecting_polygons`
         measurement_area (MeasurementArea): area in which the voronoi speed
             should be computed
 
     Returns:
         DataFrame containing the columns 'frame' and 'speed' in m/s
     """
-    df_voronoi = pd.merge(
+    df_voronoi = pandas.merge(
         individual_voronoi_intersection,
         individual_speed,
         on=[ID_COL, FRAME_COL],
@@ -125,25 +258,40 @@ def compute_voronoi_speed(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
-    return pd.Series(df_voronoi_speed)
+    return pandas.DataFrame(df_voronoi_speed)
 
 
 def compute_passing_speed(
-    *, frames_in_area: pd.DataFrame, frame_rate: float, distance: float
-) -> pd.DataFrame:
-    """Compute the individual speed of the pedestrian who pass the area.
+    *, frames_in_area: pandas.DataFrame, frame_rate: float, distance: float
+) -> pandas.DataFrame:
+    r"""Compute the individual speed of the pedestrian who pass the area.
+
+    Compute the individual speed :math:`v^i_{passing}` at which the pedestrian
+    traveled the given distance :math:`d`, which is defined as:
+
+    .. math::
+
+        v^i_{passing} = {{d} \over{ \Delta t}},
+
+    where :math:`\Delta t = (f_{out} - f_{in}) / fps` is the time the
+    pedestrian needed to cross the area, where :math:`f_{in}` and
+    :math:`f_{out}` are the frames where the pedestrian crossed the first line,
+    and the second line respectively. For details on the computation of the
+    crossing frames, see :func:`~method_utils.compute_frame_range_in_area`.
+    And :math:`fps` is the :attr:`~trajectory_data.TrajectoryData.frame_rate`
+    of the trajectory data.
 
     Args:
-        frames_in_area (pd.DataFrame): information for each pedestrian in the
-            area, need to contain the following columns: 'ID', 'start', 'end',
-            'frame_start', 'frame_end'
+        frames_in_area (pandas.DataFrame): information for each pedestrian when
+            they were in the area, result from
+            :func:`~method_utils.compute_frame_range_in_area`
         frame_rate (float): frame rate of the trajectory
         distance (float): distance between the two measurement lines
-    Returns:
-        DataFrame containing the columns: 'ID', 'speed' in m/s
 
+    Returns:
+        DataFrame containing the columns 'id' and 'speed' in m/s
     """
-    speed = pd.DataFrame(frames_in_area.id, columns=[ID_COL, SPEED_COL])
+    speed = pandas.DataFrame(frames_in_area.id, columns=[ID_COL, SPEED_COL])
     speed[SPEED_COL] = (
         frame_rate
         * distance
@@ -154,26 +302,26 @@ def compute_passing_speed(
 
 def _compute_individual_speed(
     *,
-    movement_data: pd.DataFrame,
+    movement_data: pandas.DataFrame,
     frame_rate: float,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
-    x_y_components: bool = True,
-) -> pd.DataFrame:
+    compute_velocity: bool = True,
+) -> pandas.DataFrame:
     """Compute the instantaneous speed of each pedestrian.
 
     Args:
-        movement_data (pd.DataFrame): movement data
+        movement_data (pandas.DataFrame): movement data
             (see compute_individual_movement)
         frame_rate (float): frame rate of the trajectory data
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-        x_y_components (bool): compute the x and y components of the speed
+        compute_velocity (bool): compute the x and y components of the speed
 
     Returns:
         DataFrame containing the columns: 'id', 'frame', 'speed' with the
         speed in m/s, 'v_x' and 'v_y' with the speed components in x and y
-        direction if x_y_components is True
+        direction if compute_velocity is True
     """
     columns = [ID_COL, FRAME_COL, SPEED_COL]
     time_interval = movement_data.window_size / frame_rate
@@ -203,7 +351,7 @@ def _compute_individual_speed(
             / time_interval
         )
 
-    if x_y_components:
+    if compute_velocity:
         movement_data[V_X_COL] = movement_data["d_x"].values / time_interval
         movement_data[V_Y_COL] = movement_data["d_y"].values / time_interval
         columns.append(V_X_COL)

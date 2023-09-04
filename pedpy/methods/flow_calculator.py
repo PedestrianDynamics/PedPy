@@ -87,14 +87,34 @@ def compute_flow(
     delta_frame: int,
     frame_rate: float,
 ) -> pd.DataFrame:
-    """Compute the flow for the given crossing_frames and nt.
+    """Compute the flow for the given the frame window from the nt information.
+
+    The flow :math:`J([t,`
+
+    .. image:: /images/flow.svg
+        :width: 80 %
+        :align: center
+
+    .. image:: /images/flow_zoom.svg
+        :width: 80 %
+        :align: center
+
+
+    .. math::
+
+        J = N
+
+    .. math::
+
+        v_{mean}
 
     Args:
         nt (pd.DataFrame): DataFrame containing the columns 'frame',
             'cumulative_pedestrians', and 'time' (see result from
-            :func:`compute_nt`)
+            :func:`~flow_calculator.compute_n_t`)
         crossing_frames (pd.DataFrame): DataFrame containing the columns
-            'ID',  and 'frame' (see result from compute_nt)
+            'ID',  and 'frame' (see result from
+            :func:`~flow_calculator.compute_n_t`)
         individual_speed (pd.DataFrame): DataFrame containing the columns
             'ID', 'frame', and 'speed'
         delta_frame (int): size of the frame interval to compute the flow

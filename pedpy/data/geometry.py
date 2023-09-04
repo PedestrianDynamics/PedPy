@@ -27,12 +27,6 @@ class WalkableArea:
     are obstructed and/or can not be reached by the pedestrians can be excluded.
 
     Walkable area need to be simple and cover a non-zero area.
-
-    Attributes:
-        _polygon (shapely.Polygon): area in which the pedestrian walk,
-            they are only considered for the analysis when inside this area.
-            It also contains the excluded parts, aka obstacles, in which
-            pedestrians can not walk.
     """
 
     _polygon: shapely.Polygon
@@ -141,7 +135,7 @@ class MeasurementArea:
         non-zero area.
 
         Args:
-            coordinates: A sequence of (x, y [,z]) numeric coordinate pairs, or
+            coordinates: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
                 shapely.Point objects. Passing a wkt representation of a polygon
                 is also allowed.
@@ -231,10 +225,10 @@ class MeasurementLine:
         distance.
 
         Args:
-            coordinates: A sequence of (x, y [,z]) numeric coordinate pairs, or
+            coordinates: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                shapely.Point objects. Passing a wkt representation of a polygon
-                is also allowed.
+                shapely.Point objects. Passing a wkt representation of a
+                LineString is also allowed.
         """
         try:
             if isinstance(coordinates, shapely.LineString):
