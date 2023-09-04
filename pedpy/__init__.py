@@ -29,7 +29,15 @@ from .methods.speed_calculator import (
     compute_voronoi_speed,
 )
 from .plotting.plotting import (
+    plot_density,
+    plot_distance_to,
+    plot_flow,
     plot_measurement_setup,
+    plot_neighborhood,
+    plot_nt,
+    plot_passing_density,
+    plot_profiles,
+    plot_speed,
     plot_trajectories,
     plot_voronoi_cells,
     plot_walkable_area,
