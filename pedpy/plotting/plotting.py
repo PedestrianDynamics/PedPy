@@ -92,14 +92,14 @@ def plot_nt(
 
 def plot_density(
     *,
-    classic_density: pd.DataFrame,
+    density: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the density over time.
 
     Args:
-        classic_density(pd.DataFrame) : density per frame
+        density(pd.DataFrame) : density per frame
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
         title (optional): title of the plot
@@ -113,14 +113,15 @@ def plot_density(
         axes = plt.gca()
 
     color = kwargs.get("color", PEDPY_BLUE)
-    title = kwargs.get("title", "Classic density over time")
+    title = kwargs.get("title", "density over time")
     x_label = kwargs.get("x_label", "frame")
-    y_label = kwargs.get("y_label", "# pedestrians")
+    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
+
     return _plot_series(
         axes=axes,
         title=title,
-        x=classic_density.index,
-        y=classic_density[DENSITY_COL],
+        x=density.index,
+        y=density[DENSITY_COL],
         color=color,
         x_label=x_label,
         y_label=y_label,
@@ -626,10 +627,10 @@ def plot_measurement_setup(
     """
     ma_line_color = kwargs.get("ma_line_color", PEDPY_GREY)
     ma_line_width = kwargs.get("ma_line_width", 1.0)
-    ma_color = kwargs.get("ma_color", "w")
-    ma_alpha = kwargs.get("ma_alpha", 1.0)
+    ma_color = kwargs.get("ma_color", PEDPY_GREY)
+    ma_alpha = kwargs.get("ma_alpha", 0.2)
 
-    ml_color = kwargs.get("ml_color", "k")
+    ml_color = kwargs.get("ml_color", PEDPY_GREY)
     ml_width = kwargs.get("ml_width", 1.0)
 
     if axes is None:
@@ -658,8 +659,8 @@ def plot_measurement_setup(
         for measurement_line in measurement_lines:
             axes.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
 
-    axes.set_xlabel(r"x/m")
-    axes.set_ylabel(r"y/m")
+    axes.set_xlabel(r"x / m")
+    axes.set_ylabel(r"y / m")
 
     return axes
 
@@ -718,19 +719,10 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
         matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
     ped_color = kwargs.get("ped_color", PEDPY_BLUE)
-    ped_size = kwargs.get("ped_size", 1)
+    ped_size = kwargs.get("ped_size", 5)
     voronoi_border_color = kwargs.get("voronoi_border_color", PEDPY_BLUE)
     voronoi_inside_ma_alpha = kwargs.get("voronoi_inside_ma_alpha", 1)
     voronoi_outside_ma_alpha = kwargs.get("voronoi_outside_ma_alpha", 1)
-
-    color_mode = kwargs.get("color_mode", "density")
-    color_mode = color_mode.lower()
-    if color_mode not in ("density", "speed", "id"):
-        _log.warning(
-            "'density', 'speed', and 'id' are the only supported color modes. Use "
-            "default 'density'"
-        )
-        color_mode = "density"
 
     vmin = kwargs.get("vmin", None)
     vmax = kwargs.get("vmax", None)
