@@ -7,7 +7,8 @@ import matplotlib.axes
 import matplotlib.pyplot as plt
 import pandas as pd
 import shapely
-from numpy import mean
+from numpy import float64, mean
+from numpy.typing import NDArray
 
 from pedpy.column_identifier import (
     CUMULATED_COL,
@@ -18,7 +19,6 @@ from pedpy.column_identifier import (
     INTERSECTION_COL,
     MEAN_SPEED_COL,
     POLYGON_COL,
-    SPEED_COL,
     TIME_COL,
     X_COL,
     Y_COL,
@@ -36,33 +36,33 @@ PEDPY_GREY = (114 / 255, 125 / 255, 139 / 255)
 PEDPY_RED = (233 / 255, 117 / 255, 134 / 255)
 
 
-def _plot_series(
-    ax: matplotlib.axes.Axes,
+def _plot_series(  # pylint: disable=too-many-arguments
+    axes: matplotlib.axes.Axes,
     title: str,
-    x,
-    y,
+    x: pd.Series,
+    y: pd.Series,
     color: str,
     x_label: str,
     y_label: str,
-):
-    ax.set_title(title)
-    ax.plot(x, y, c=color)
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    return ax
+) -> matplotlib.axes.Axes:
+    axes.set_title(title)
+    axes.plot(x, y, c=color)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
+    return axes
 
 
 def plot_nt(
     *,
     nt: pd.DataFrame,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the number of pedestrians over time.
 
     Args:
         nt (pd.DataFrame): cumulative number of pedestrians over time
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
         title (optional): title of the plot
         x_label (optional): label on the x-axis
@@ -71,15 +71,15 @@ def plot_nt(
     Returns:
         matplotlib.axes.Axes instance where the number of pedestrians is plotted
     """
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     color = kwargs.get("color", PEDPY_BLUE)
     title = kwargs.get("title", "N-t")
     x_label = kwargs.get("x_label", "t / s")
     y_label = kwargs.get("y_label", "# pedestrians")
     return _plot_series(
-        ax=ax,
+        axes=axes,
         title=title,
         x=nt[TIME_COL],
         y=nt[CUMULATED_COL],
@@ -92,14 +92,14 @@ def plot_nt(
 def plot_density(
     *,
     classic_density: pd.DataFrame,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the density over time.
 
     Args:
         classic_density(pd.DataFrame) : density per frame
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
         title (optional): title of the plot
         x_label (optional): label on the x-axis
@@ -108,15 +108,15 @@ def plot_density(
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
     """
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     color = kwargs.get("color", PEDPY_BLUE)
     title = kwargs.get("title", "Classic density over time")
     x_label = kwargs.get("x_label", "frame")
     y_label = kwargs.get("y_label", "# pedestrians")
     return _plot_series(
-        ax=ax,
+        axes=axes,
         title=title,
         x=classic_density.index,
         y=classic_density[DENSITY_COL],
@@ -129,14 +129,14 @@ def plot_density(
 def plot_speed(
     *,
     speed: pd.Series,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the speed over time.
 
     Args:
         speed(pd.Series): speed per frame
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
         title (optional): title of the plot
         x_label (optional): label on the x-axis
@@ -145,8 +145,8 @@ def plot_speed(
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
     """
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     color = kwargs.get("color", PEDPY_BLUE)
     title = kwargs.get("title", "speed over time")
@@ -154,7 +154,7 @@ def plot_speed(
     y_label = kwargs.get("y_label", "v / m/s")
 
     return _plot_series(
-        ax=ax,
+        axes=axes,
         title=title,
         x=speed.index,
         y=speed,
@@ -167,11 +167,11 @@ def plot_speed(
 def _plot_passing_xy(
     *,
     data: pd.Series,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     facecolor = kwargs.get("facecolor", PEDPY_BLUE)
     edgecolor = kwargs.get("edgecolor", PEDPY_RED)
@@ -179,34 +179,34 @@ def _plot_passing_xy(
     x_label = kwargs.get("x_label", "")
     y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
 
-    ax.set_title(title)
+    axes.set_title(title)
     violin_parts = plt.violinplot(
         data,
         showmeans=True,
         showextrema=True,
         showmedians=True,
     )
-    for pc in violin_parts["bodies"]:
-        pc.set_facecolor(facecolor)
-        pc.set_edgecolor(edgecolor)
+    for parts in violin_parts["bodies"]:
+        parts.set_facecolor(facecolor)
+        parts.set_edgecolor(edgecolor)
 
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    ax.set_xticks([])
-    return ax
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
+    axes.set_xticks([])
+    return axes
 
 
 def plot_passing_speed(
     *,
     passing_speed: pd.DataFrame,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the passing speed.
 
     Args:
         passing_speed(pd.DataFrame): individual speed of the pedestrian who pass an area.
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         facecolor (optional): color of the plot body
         edgecolor (optional): color of the edges of the plot
         title (optional): title of the plot
@@ -217,24 +217,24 @@ def plot_passing_speed(
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
     """
-    if "title" not in kwargs.keys():
+    if "title" not in kwargs:
         kwargs["title"] = "Individual speed"
-    if "y_label" not in kwargs.keys():
+    if "y_label" not in kwargs:
         kwargs["y_label"] = "m/s"
-    return _plot_passing_xy(data=passing_speed.speed, ax=ax, kwargs=kwargs)
+    return _plot_passing_xy(data=passing_speed.speed, axes=axes, kwargs=kwargs)
 
 
 def plot_passing_density(
     *,
     passing_density: pd.DataFrame,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the passing density.
 
     Args:
         passing_density(pd.DataFrame): individual density of the pedestrian who pass an area.
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         facecolor (optional): color of the plot body
         edgecolor (optional): color of the edges of the plot
         title (optional): title of the plot
@@ -245,24 +245,26 @@ def plot_passing_density(
     Returns:
         matplotlib.axes.Axes instance where the density is plotted
     """
-    if "title" not in kwargs.keys():
+    if "title" not in kwargs:
         kwargs["title"] = "Individual density"
-    if "y_label" not in kwargs.keys():
+    if "y_label" not in kwargs:
         kwargs["y_label"] = "$\\rho$ / 1/$m^2$"
-    return _plot_passing_xy(data=passing_density.density, ax=ax, kwargs=kwargs)
+    return _plot_passing_xy(
+        data=passing_density.density, axes=axes, kwargs=kwargs
+    )
 
 
 def plot_flow(
     *,
     flow: pd.DataFrame,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the flow.
 
     Args:
         flow(pd.DataFrame): flow for some given crossing_frames and nt
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         color (optional): color of the plot
         title (optional): title of the plot
         x_label (optional): label on the x-axis
@@ -271,38 +273,39 @@ def plot_flow(
     Returns:
         matplotlib.axes.Axes instance where the flow is plotted
     """
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     color = kwargs.get("color", PEDPY_BLUE)
     title = kwargs.get("title", "flow")
     x_label = kwargs.get("x_label", "J / 1/s")
     y_label = kwargs.get("y_label", "v / m/s")
-    ax.set_title(title)
-    ax.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color)
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    return ax
+    axes.set_title(title)
+    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
+    return axes
 
 
 def plot_neighborhood(
     *,
-    id: int,
+    pedestrian_id: int,
     neighbors: pd.DataFrame,
     frame: int,
     voronoi_data: pd.DataFrame,
     walkable_area: WalkableArea,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the neighborhood.
 
     Args:
-        id(int): id of pedestrian to plot neighbors for
+        pedestrian_id(int): id of pedestrian to plot neighbors for
         neighbors(pd.DataFrame): neighborhood data based on the Voronoi cells
         frame(int): frame for which the plot is created
         voronoi_data (pd.DataFrame): individual Voronoi polygon for each person and frame
         walkable_area(WalkableArea): WalkableArea object of plot
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         hole_color (optional): color of the holes in the walkable area
         base_color (optional): color of the base pedestrians
         neighbor_color (optional): color of neighbor pedestrians
@@ -320,15 +323,15 @@ def plot_neighborhood(
         on=[ID_COL, FRAME_COL],
     )
 
-    base_neighbors = voronoi_neighbors[voronoi_neighbors[ID_COL] == id][
-        "neighbors"
-    ].values[0]
-    if ax is None:
-        ax = plt.gca()
-    ax.set_title(f"Neighbors of pedestrian {id}")
+    base_neighbors = voronoi_neighbors[
+        voronoi_neighbors[ID_COL] == pedestrian_id
+    ]["neighbors"].values[0]
+    if axes is None:
+        axes = plt.gca()
+    axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
 
     plot_walkable_area(
-        ax=ax, walkable_area=walkable_area, hole_color=hole_color
+        axes=axes, walkable_area=walkable_area, hole_color=hole_color
     )
 
     for _, row in voronoi_neighbors.iterrows():
@@ -339,7 +342,7 @@ def plot_neighborhood(
 
         color = default_color
         alpha = 0.2
-        if ped_id == id:
+        if ped_id == pedestrian_id:
             color = base_color
             alpha = 0.5
 
@@ -347,26 +350,27 @@ def plot_neighborhood(
             color = neighbor_color
             alpha = 0.5
 
-        ax.plot(*poly.exterior.xy, alpha=1, color=color)
-        ax.fill(*poly.exterior.xy, alpha=alpha, color=color)
-        ax.set_aspect("equal")
+        axes.plot(*poly.exterior.xy, alpha=1, color=color)
+        axes.fill(*poly.exterior.xy, alpha=alpha, color=color)
+        axes.set_aspect("equal")
 
-    return ax
+    return axes
 
 
 def plot_distance_to(
     *,
     df_time_distance: pd.DataFrame,
     frame_rate: float,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plots the time to reach a target over distance.
 
     Args:
-        df_time_distance(pd.DataFrame): DataFrame containing information on time and distance to some target
+        df_time_distance(pd.DataFrame): DataFrame containing information on time and
+            distance to some target
         frame_rate(float): frame_rate of the trajectory
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         marker_color (optional): color of the markers on the plot
         line_color (optional): color of the lines on the plot
         title (optional): title of the plot
@@ -376,8 +380,8 @@ def plot_distance_to(
     Returns:
         matplotlib.axes.Axes instance where the distance is plotted
     """
-    if ax is None:
-        ax = plt.gcf().add_subplot(111)
+    if axes is None:
+        axes = plt.gcf().add_subplot(111)
 
     line_color = kwargs.get("line_color", PEDPY_GREY)
     marker_color = kwargs.get("marker_color", PEDPY_GREY)
@@ -385,9 +389,9 @@ def plot_distance_to(
     x_label = kwargs.get("x_label", "distance / m")
     y_label = kwargs.get("y_label", "time / s")
 
-    ax.set_title(title)
-    for ped_id, ped_data in df_time_distance.groupby(by=ID_COL):
-        ax.plot(
+    axes.set_title(title)
+    for _, ped_data in df_time_distance.groupby(by=ID_COL):
+        axes.plot(
             ped_data.distance,
             ped_data.time / frame_rate,
             c=line_color,
@@ -395,7 +399,7 @@ def plot_distance_to(
             lw=0.25,
         )
         min_data = ped_data[ped_data.frame == ped_data.frame.min()]
-        ax.scatter(
+        axes.scatter(
             min_data.distance,
             min_data.time / frame_rate,
             c=marker_color,
@@ -403,21 +407,21 @@ def plot_distance_to(
             marker="o",
         )
 
-    ax.grid()
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
+    axes.grid()
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
-    ax.set_xlim([0, None])
-    ax.set_ylim([0, None])
+    axes.set_xlim([0, None])
+    axes.set_ylim([0, None])
 
-    return ax
+    return axes
 
 
 def plot_profiles(
     *,
     walkable_area: WalkableArea,
-    profiles: List,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    profiles: list[NDArray[float64]],
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the flow.
@@ -425,7 +429,7 @@ def plot_profiles(
     Args:
         walkable_area(WalkableArea): walkable area of the plot
         profiles(list): List of profiles like speed or density profiles
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         title (optional): title of the plot
         walkable_color (optional): color of the walkable area in the plot
         hole_color (optional): background color of holes
@@ -440,11 +444,11 @@ def plot_profiles(
     hole_alpha = kwargs.get("hole_alpha", 1.0)
     bounds = walkable_area.bounds
 
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
-    ax.set_title(title)
-    cm = ax.imshow(
+    axes.set_title(title)
+    axes.imshow(
         mean(profiles, axis=0),
         extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
         interpolation="None",
@@ -452,28 +456,28 @@ def plot_profiles(
         vmin=0,
         vmax=10,
     )
-    ax.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
+    axes.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
     plot_walkable_area(
         walkable_area=walkable_area,
-        ax=ax,
+        axes=axes,
         hole_color=hole_color,
         hole_alpha=hole_alpha,
     )
 
-    return ax
+    return axes
 
 
 def plot_walkable_area(
     *,
     walkable_area: WalkableArea,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the given walkable area in 2-D.
 
     Args:
         walkable_area (WalkableArea): WalkableArea object to plot
-        ax (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         line_color (optional): color of the borders
         line_color (optional): line width of the borders
         hole_color (optional): background color of holes
@@ -482,8 +486,8 @@ def plot_walkable_area(
     Returns:
         matplotlib.axes.Axes instance where the walkable area is plotted
     """
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     line_color = kwargs.get("line_color", PEDPY_GREY)
     line_width = kwargs.get("line_width", 1.0)
@@ -491,29 +495,29 @@ def plot_walkable_area(
     hole_color = kwargs.get("hole_color", "lightgrey")
     hole_alpha = kwargs.get("hole_alpha", 1.0)
 
-    ax.plot(
+    axes.plot(
         *walkable_area.polygon.exterior.xy,
         color=line_color,
         linewidth=line_width,
     )
 
     for hole in walkable_area.polygon.interiors:
-        ax.plot(*hole.xy, color=line_color, linewidth=line_width)
+        axes.plot(*hole.xy, color=line_color, linewidth=line_width)
         # Paint all holes first white, then with the desired color
-        ax.fill(*hole.xy, color="w", alpha=1)
-        ax.fill(*hole.xy, color=hole_color, alpha=hole_alpha)
+        axes.fill(*hole.xy, color="w", alpha=1)
+        axes.fill(*hole.xy, color=hole_color, alpha=hole_alpha)
 
-    ax.set_xlabel(r"x/m")
-    ax.set_ylabel(r"y/m")
+    axes.set_xlabel(r"x/m")
+    axes.set_ylabel(r"y/m")
 
-    return ax
+    return axes
 
 
 def plot_trajectories(
     *,
     traj: TrajectoryData,
     walkable_area: Optional[WalkableArea] = None,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the given trajectory and walkable area in 2-D.
@@ -521,7 +525,7 @@ def plot_trajectories(
     Args:
         traj (TrajectoryData): Trajectory object to plot
         walkable_area (WalkableArea, optional): WalkableArea object to plot
-        ax (matplotlib.axes.Axes, optional): Axes to plot on,
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
         traj_color (optional): color of the trajectories
         traj_width (optional): width of the trajectories
@@ -544,37 +548,39 @@ def plot_trajectories(
     traj_start_marker = kwargs.get("traj_start_marker", "")
     traj_end_marker = kwargs.get("traj_end_marker", "")
 
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     if walkable_area is not None:
-        ax = plot_walkable_area(walkable_area=walkable_area, ax=ax, **kwargs)
+        axes = plot_walkable_area(
+            walkable_area=walkable_area, axes=axes, **kwargs
+        )
 
     for _, ped in traj.data.groupby(ID_COL):
-        plot = ax.plot(
+        plot = axes.plot(
             ped[X_COL],
             ped[Y_COL],
             alpha=traj_alpha,
             color=traj_color,
             linewidth=traj_width,
         )
-        ax.scatter(
+        axes.scatter(
             ped[ped.frame == ped.frame.min()][X_COL],
             ped[ped.frame == ped.frame.min()][Y_COL],
             c=plot[-1].get_color(),
             marker=traj_start_marker,
         )
-        ax.scatter(
+        axes.scatter(
             ped[ped.frame == ped.frame.max()][X_COL],
             ped[ped.frame == ped.frame.max()][Y_COL],
             c=plot[-1].get_color(),
             marker=traj_end_marker,
         )
 
-    ax.set_xlabel(r"x/m")
-    ax.set_ylabel(r"y/m")
+    axes.set_xlabel(r"x/m")
+    axes.set_ylabel(r"y/m")
 
-    return ax
+    return axes
 
 
 def plot_measurement_setup(
@@ -583,7 +589,7 @@ def plot_measurement_setup(
     walkable_area: Optional[WalkableArea] = None,
     measurement_areas: Optional[List[MeasurementArea]] = None,
     measurement_lines: Optional[List[MeasurementLine]] = None,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the given measurement setup in 2D.
@@ -595,7 +601,7 @@ def plot_measurement_setup(
             to plot
         measurement_lines (List[MeasurementLine], optional): List of measurement
             lines to plot
-        ax (matplotlib.axes.Axes, optional): Axes to plot on,
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
         ma_line_color (optional): color of the measurement areas borders
         ma_line_width (optional): line width of the measurement areas borders
@@ -625,23 +631,23 @@ def plot_measurement_setup(
     ml_color = kwargs.get("ml_color", "k")
     ml_width = kwargs.get("ml_width", 1.0)
 
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     if walkable_area is not None:
-        plot_walkable_area(walkable_area=walkable_area, ax=ax, **kwargs)
+        plot_walkable_area(walkable_area=walkable_area, axes=axes, **kwargs)
 
     if traj is not None:
-        plot_trajectories(traj=traj, walkable_area=None, ax=ax, **kwargs)
+        plot_trajectories(traj=traj, walkable_area=None, axes=axes, **kwargs)
 
     if measurement_areas is not None:
         for measurement_area in measurement_areas:
-            ax.plot(
+            axes.plot(
                 *measurement_area.polygon.exterior.xy,
                 color=ma_line_color,
                 linewidth=ma_line_width,
             )
-            ax.fill(
+            axes.fill(
                 *measurement_area.polygon.exterior.xy,
                 color=ma_color,
                 alpha=ma_alpha,
@@ -649,22 +655,22 @@ def plot_measurement_setup(
 
     if measurement_lines is not None:
         for measurement_line in measurement_lines:
-            ax.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
+            axes.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
 
-    ax.set_xlabel(r"x/m")
-    ax.set_ylabel(r"y/m")
+    axes.set_xlabel(r"x/m")
+    axes.set_ylabel(r"y/m")
 
-    return ax
+    return axes
 
 
-def plot_voronoi_cells(  # pylint: disable=too-many-locals
+def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches,too-many-locals
     *,
     voronoi_data: pd.DataFrame,
     frame: int,
     traj_data: Optional[TrajectoryData] = None,
     walkable_area: Optional[WalkableArea] = None,
     measurement_area: Optional[MeasurementArea] = None,
-    ax: Optional[matplotlib.axes.Axes] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the Voronoi cells, walkable able, and measurement area in 2D.
@@ -676,7 +682,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         walkable_area (WalkableArea, optional): WalkableArea object to plot
         measurement_area (MeasurementArea, optional): measurement area used to
             compute the Voronoi cells
-        ax (matplotlib.axes.Axes, optional): Axes to plot on,
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
             if None new will be created
         traj_data (TrajectoryData, optional): Will add pedestrian positions to the plot
             if provided.
@@ -687,8 +693,9 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
             "intersection"!
         voronoi_outside_ma_alpha (optional): alpha of part of Voronoi cell
             outside the measurement area
-        color_by_column (str, optional): ...
-
+        color_by_column (str, optional): Optioanlly provide a column name to specify
+            the data to color the cell. Only supports Integer and Float data types.
+            E.g. color_by_column `DENSITY_COL`
         vmin (optional): vmin of colormap, only used when color_mode != "id"
         vmax (optional): vmax of colormap, only used when color_mode != "id"
         show_colorbar (optional): colorbar is displayed, only used when
@@ -709,7 +716,6 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
     Returns:
         matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
-    show_ped_positions = kwargs.get("show_ped_positions", False)
     ped_color = kwargs.get("ped_color", PEDPY_BLUE)
     ped_size = kwargs.get("ped_size", 1)
     voronoi_border_color = kwargs.get("voronoi_border_color", PEDPY_BLUE)
@@ -731,12 +737,12 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
     show_colorbar = kwargs.get("show_colorbar", True)
     color_by_column = kwargs.get("color_by_column", None)
 
-    if ax is None:
-        ax = plt.gca()
+    if axes is None:
+        axes = plt.gca()
 
     if measurement_area is not None:
         plot_measurement_setup(
-            measurement_areas=[measurement_area], ax=ax, **kwargs
+            measurement_areas=[measurement_area], axes=axes, **kwargs
         )
 
     if traj_data:
@@ -749,8 +755,8 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         data = voronoi_data[voronoi_data.frame == frame]
 
     if color_by_column:
-        type = data.dtypes[color_by_column]
-        if type == "float64":
+        typ = data.dtypes[color_by_column]
+        if typ == "float64":
             if not vmin:
                 vmin = voronoi_data[color_by_column].min()
             if not vmax:
@@ -761,9 +767,13 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
                 norm=norm, cmap=voronoi_colormap
             )
             color_mapper = scalar_mappable.to_rgba
-        elif type == "int64":
+        elif typ == "int64":
             voronoi_colormap = plt.get_cmap("tab20c")
-            color_mapper = lambda x: voronoi_colormap(x % 20)
+
+            def _map(x):
+                return voronoi_colormap(x % 20)
+
+            color_mapper = _map
         else:
             pass
 
@@ -775,25 +785,25 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         else:
             color = "w"
 
-        ax.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
-        ax.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
+        axes.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
+        axes.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
 
         if INTERSECTION_COL in data.columns:
             if not shapely.is_empty(row[INTERSECTION_COL]):
                 intersection_poly = row[INTERSECTION_COL]
-                ax.fill(
+                axes.fill(
                     *intersection_poly.exterior.xy,
                     fc=color,
                     alpha=voronoi_inside_ma_alpha,
                 )
 
         if traj_data:
-            ax.scatter(row[X_COL], row[Y_COL], color=ped_color, s=ped_size)
+            axes.scatter(row[X_COL], row[Y_COL], color=ped_color, s=ped_size)
 
     if show_colorbar and color_mode != "id":
         plt.colorbar(
             scalar_mappable,
-            ax=ax,
+            axes=axes,
             label=r"v / $\frac{m}{s}$"
             if color_mode == "speed"
             else r" $\rho$ / $\frac{1}{m^2}$",
@@ -802,7 +812,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-locals
         )
 
     if walkable_area is not None:
-        plot_walkable_area(ax=ax, walkable_area=walkable_area, **kwargs)
-    ax.set_xlabel(r"x/m")
-    ax.set_ylabel(r"y/m")
-    return ax
+        plot_walkable_area(axes=axes, walkable_area=walkable_area, **kwargs)
+    axes.set_xlabel(r"x/m")
+    axes.set_ylabel(r"y/m")
+    return axes
