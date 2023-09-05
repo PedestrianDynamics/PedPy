@@ -19,6 +19,7 @@ from pedpy.column_identifier import (
     INTERSECTION_COL,
     MEAN_SPEED_COL,
     POLYGON_COL,
+    SPEED_COL,
     TIME_COL,
     X_COL,
     Y_COL,
@@ -557,7 +558,7 @@ def plot_trajectories(
         )
 
     for _, ped in traj.data.groupby(ID_COL):
-        plot = axes.plot(
+        axes.plot(
             ped[X_COL],
             ped[Y_COL],
             alpha=traj_alpha,
@@ -567,13 +568,13 @@ def plot_trajectories(
         axes.scatter(
             ped[ped.frame == ped.frame.min()][X_COL],
             ped[ped.frame == ped.frame.min()][Y_COL],
-            c=plot[-1].get_color(),
+            color=traj_color,
             marker=traj_start_marker,
         )
         axes.scatter(
             ped[ped.frame == ped.frame.max()][X_COL],
             ped[ped.frame == ped.frame.max()][Y_COL],
-            c=plot[-1].get_color(),
+            color=traj_color,
             marker=traj_end_marker,
         )
 
@@ -754,6 +755,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
     else:
         data = voronoi_data[voronoi_data.frame == frame]
 
+    typ = ""
     if color_by_column:
         typ = data.dtypes[color_by_column]
         if typ == "float64":
@@ -800,13 +802,19 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
         if traj_data:
             axes.scatter(row[X_COL], row[Y_COL], color=ped_color, s=ped_size)
 
-    if show_colorbar and color_mode != "id":
+    if show_colorbar and color_by_column and typ == "float64":
+        if color_by_column == DENSITY_COL:
+            label = "$\\rho$ / $\\frac{1}{m^2}$"
+        elif color_by_column == SPEED_COL:
+            label = r"v / $\frac{m}{s}$"
+        elif color_by_column == ID_COL:
+            label = "Id"
+        else:
+            label = ""
         plt.colorbar(
             scalar_mappable,
-            axes=axes,
-            label=r"v / $\frac{m}{s}$"
-            if color_mode == "speed"
-            else r" $\rho$ / $\frac{1}{m^2}$",
+            ax=axes,
+            label=label,
             shrink=0.4,
             location=cb_location,
         )
