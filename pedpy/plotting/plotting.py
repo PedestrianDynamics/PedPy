@@ -359,7 +359,7 @@ def plot_neighborhood(
     return axes
 
 
-def plot_distance_to(
+def plot_time_distance(
     *,
     df_time_distance: pd.DataFrame,
     frame_rate: float,
@@ -813,6 +813,6 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
 
     if walkable_area is not None:
         plot_walkable_area(axes=axes, walkable_area=walkable_area, **kwargs)
-    axes.set_xlabel(r"x/m")
-    axes.set_ylabel(r"y/m")
+    axes.set_xlabel(r"x / m")
+    axes.set_ylabel(r"y / m")
     return axes
