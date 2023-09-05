@@ -36,11 +36,17 @@ from .plotting.plotting import (
     plot_neighborhood,
     plot_nt,
     plot_passing_density,
+    plot_passing_speed,
     plot_profiles,
     plot_speed,
     plot_trajectories,
     plot_voronoi_cells,
     plot_walkable_area,
+    PEDPY_RED,
+    PEDPY_BLUE,
+    PEDPY_GREY,
+    PEDPY_PETROL,
+    PEDPY_ORANGE,
 )
 
 __version__ = _version.get_versions()["version"]
