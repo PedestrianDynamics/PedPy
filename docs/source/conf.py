@@ -40,13 +40,17 @@ nb_execution_excludepatterns = [
     "fundamental_diagram.ipynb",
 ]
 nb_execution_timeout = 60
-myst_enable_extensions = [
-    "amsmath",
-    "colon_fence",
-    "deflist",
-    "dollarmath",
-    "html_image",
-]
+myst_enable_extensions = (
+    [
+        "amsmath",
+        "colon_fence",
+        "deflist",
+        "dollarmath",
+        "html_image",
+    ],
+)
+nb_execution_raise_on_error = True
+
 # -- Automatic generation of API doc -----------------------------------------
 autoapi_dirs = [
     "../../pedpy",

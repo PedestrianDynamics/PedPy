@@ -49,7 +49,7 @@ def compute_profiles(
     .. note::
 
         As this is a quite compute heavy operation, it is suggested to reduce
-        the geometry to the important areas and the limit the
+        the geometry to the important areas and limit the
         :code:`individual_voronoi_speed_data` to the most relevant frame
         interval.
 
