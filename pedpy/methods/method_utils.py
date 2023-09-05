@@ -13,12 +13,12 @@ from scipy.spatial import Voronoi
 
 from pedpy.column_identifier import (
     CROSSING_FRAME_COL,
+    DENSITY_COL,
     DISTANCE_COL,
     END_POSITION_COL,
     FIRST_FRAME_COL,
     FRAME_COL,
     ID_COL,
-    INDIVIDUAL_DENSITY_COL,
     INTERSECTION_COL,
     LAST_FRAME_COL,
     NEIGHBORS_COL,
@@ -473,7 +473,7 @@ def compute_individual_voronoi_polygons(
         dfs.append(voronoi_in_frame)
 
     result = pd.concat(dfs)[[ID_COL, FRAME_COL, POLYGON_COL]]
-    result[INDIVIDUAL_DENSITY_COL] = 1.0 / shapely.area(result.polygon)
+    result[DENSITY_COL] = 1.0 / shapely.area(result.polygon)
 
     return result
 
