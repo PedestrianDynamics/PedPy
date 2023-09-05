@@ -849,13 +849,13 @@ def _compute_movememnt_adaptive_border(
             .rename({POINT_COL: END_POSITION_COL}, axis=1)
         )
         # as the window is used on both sides
-        df_movement[WINDOW_SIZE_COL] = 2 * df_movement[WINDOW_SIZE_COL]
+        start[WINDOW_SIZE_COL] = 2 * start[WINDOW_SIZE_COL]
 
     else:
         df_movement[END_POSITION_COL] = df_movement[POINT_COL]
         end = df_movement[[ID_COL, FRAME_COL, END_POSITION_COL]].copy(deep=True)
 
-    return pd.merge(start, end, on=[ID_COL, FRAME_COL])[
+    result = pd.merge(start, end, on=[ID_COL, FRAME_COL])[
         [
             ID_COL,
             FRAME_COL,
@@ -863,7 +863,8 @@ def _compute_movememnt_adaptive_border(
             END_POSITION_COL,
             WINDOW_SIZE_COL,
         ]
-    ].dropna()
+    ]
+    return result[result.window_size > 0]
 
 
 def _get_continuous_parts_in_area(
