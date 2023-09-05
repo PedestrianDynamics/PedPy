@@ -241,7 +241,7 @@ def compute_voronoi_speed(
 
     Computes the Voronoi speed :math:`v_{voronoi}(t)` inside the measurement
     area :math:`M` from the given individual speed data :math:`v_i(t)` (see
-    :func:`~velocity_calculator.compute_individual_speed` for
+    :func:`~speed_calculator.compute_individual_speed` for
     details of the computation) and their individual Voronoi intersection data
     (from :func:`~density_calculator.compute_voronoi_density`).
     The individuals speed are weighted by the proportion of their Voronoi cell
