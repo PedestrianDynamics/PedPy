@@ -29,6 +29,11 @@ from .methods.speed_calculator import (
     compute_voronoi_speed,
 )
 from .plotting.plotting import (
+    PEDPY_BLUE,
+    PEDPY_GREY,
+    PEDPY_ORANGE,
+    PEDPY_PETROL,
+    PEDPY_RED,
     plot_density,
     plot_distance_to,
     plot_flow,
@@ -42,11 +47,6 @@ from .plotting.plotting import (
     plot_trajectories,
     plot_voronoi_cells,
     plot_walkable_area,
-    PEDPY_RED,
-    PEDPY_BLUE,
-    PEDPY_GREY,
-    PEDPY_PETROL,
-    PEDPY_ORANGE,
 )
 
 __version__ = _version.get_versions()["version"]
