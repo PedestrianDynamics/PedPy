@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import shapely
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from numpy import float64, mean
 from numpy.typing import NDArray
 
 from pedpy.column_identifier import (
@@ -422,7 +421,7 @@ def plot_time_distance(
 def plot_profiles(
     *,
     walkable_area: WalkableArea,
-    profiles: list[NDArray[float64]],
+    profiles: list[NDArray[np.float64]],
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -453,7 +452,7 @@ def plot_profiles(
         axes = plt.gca()
 
     axes.set_title(title)
-    cm = axes.imshow(
+    imshow = axes.imshow(
         np.mean(profiles, axis=0),
         extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
         interpolation="None",
@@ -465,7 +464,7 @@ def plot_profiles(
     cax = divider.append_axes("right", size="5%", pad=0.05)
     fig = plt.gcf()
 
-    fig.colorbar(cm, cax=cax, orientation="vertical", label=label)
+    fig.colorbar(imshow, cax=cax, orientation="vertical", label=label)
 
     axes.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
     plot_walkable_area(
