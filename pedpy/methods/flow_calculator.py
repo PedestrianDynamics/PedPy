@@ -24,7 +24,13 @@ def compute_n_t(
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the frame-wise cumulative number of pedestrians passing the line.
 
-    Warnings:
+    Records the frames, when a pedestrian crossed the given measurement line.
+    A frame counts as crossed when the movement is across the line, but does
+    not end on it. Then the next frame when the movement starts on the line
+    is counted as crossing frame.
+
+    .. warning::
+
         For each pedestrian only the first passing of the line is considered!
 
     Args:
@@ -87,26 +93,52 @@ def compute_flow(
     delta_frame: int,
     frame_rate: float,
 ) -> pd.DataFrame:
-    """Compute the flow for the given the frame window from the nt information.
+    r"""Compute the flow for the given the frame window from the nt information.
 
-    The flow :math:`J([t,`
+    Computes the flow :math:`J` in a frame interval of length
+    :data:`delta_frame` (:math:`\Delta frame`). The first intervals starts,
+    when the first person crossed the measurement, given by
+    :data:`crossing_frames`. The next interval always starts at the time when
+    the last person in the previous frame interval crossed the line.
 
     .. image:: /images/flow.svg
-        :width: 80 %
         :align: center
+        :width: 80 %
+
+    In each of the time interval it is checked, if any person has crossed the
+    line, if yes, a flow $J$ can be computed. From the first frame the line was
+    crossed :math:`f^{\Delta frame}_1`, the last frame someone crossed the line
+    :math:`f^{\Delta frame}_N` the length of the frame interval
+    :math:`\Delta f$` can be computed:
+
+    .. math::
+
+        \Delta f = f^{\Delta frame}_N - f^{\Delta frame}_1
+
+    This directly together with the frame rate with :data:`frame_rate` ($fps$)
+    gives the time interval $\Delta t$:
+
+    .. math::
+
+        \Delta t = \Delta f / fps
+
+    Given the number of pedestrian crossing the line is given by
+    :math:`N^{\Delta frame}`, the flow :math:`J` becomes:
+
+    .. math::
+
+        J = \frac{N^{\Delta frame}}{\Delta t}
 
     .. image:: /images/flow_zoom.svg
-        :width: 80 %
         :align: center
+        :width: 60 %
 
+    At the same time also the mean speed of the pedestrian when crossing the
+    line is computed from :data:`individual_speed`.
 
     .. math::
 
-        J = N
-
-    .. math::
-
-        v_{mean}
+        v_{crossing} = {1 \over N^{\Delta t} } \sum^{N^{\Delta t}}_{i=1} v_i(t)
 
     Args:
         nt (pd.DataFrame): DataFrame containing the columns 'frame',

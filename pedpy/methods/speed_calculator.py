@@ -76,43 +76,69 @@ def compute_individual_speed(
 
     When getting closer to the start, or end of the trajectory data, it is not
     possible to use the full range of the frame interval for computing the
-    speed. In these cases, one of the end points to compute the movement
-    becomes the current position :math:`X_{current}`.
-    When getting to close to the start of the trajectory, the movement is
-    computed from :math:`X_{current}` to :math:`X_{future}`. In the other case
-    the movement is from :math:`X_{past}` to :math:`X_{current}`.
+    speed. For these cases *PedPy* offers three different methods to compute
+    the speed:
+
+    #. exclude these parts.
+    #. adaptively shrink the window in which the speed is computed.
+    #. switch to one-sided window.
+
+    **Exclude border:**
+
+    When not enough frames available to compute the speed at the borders, for
+    these parts no speed can be computed and they are ignored. Use
+    :code:`speed_calculation=SpeedCalculation.BORDER_EXCLUDE`.
+
+    **Adaptive border window:**
+
+    In the adaptive approach, it is checked how many frames :math:`n` are
+    available to from :math:`X_{current}` to the end of the trajectory. This
+    number is then used on both sides to create a smaller symmetric window,
+    which yields :math:`X_{past}` and :math:`X_{future}`. Now with the same
+    principles as before the individual speed :math:`v_i(t)` can be computed.
+
+    .. image:: /images/speed_border_adaptive_future.svg
+        :width: 46 %
+
+    .. image:: /images/speed_border_adaptive_past.svg
+        :width: 46 %
+
+    Use :code:`speed_calculation=SpeedCalculation.BORDER_ADAPTIVE`.
+
+    .. important::
+
+        As the time interval gets smaller to the ends of the individual
+        trajectories, the oscillations in the speed increase here.
+
+
+    **Single sided border window:**
+
+    In these cases, one of the end points to compute the movement becomes the
+    current position :math:`X_{current}`. When getting too close to the start
+    of the trajectory, the movement is computed from :math:`X_{current}` to
+    :math:`X_{future}`. In the other case the movement is from :math:`X_{past}`
+    to :math:`X_{current}`.
 
     .. math::
-        \bar{X} = X_{future} - X_{current} \text{, or }
-        \bar{X} = X_{current} - X_{past}
+
+        v_i(t) = {|{X_{future} - X_{current}|}\over{ \frac{1}{2} \Delta t}}
+        \text{, or }
+        v_i(t) = {|{X_{current} - X_{past}|}\over{ \frac{1}{2} \Delta t}}
+
+    .. image:: /images/speed_border_single_sided_future.svg
+        :width: 46 %
+
+    .. image:: /images/speed_border_single_sided_past.svg
+        :width: 46 %
 
     |
+    Use :code:`speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED`.
 
-    .. image:: /images/speed_future.svg
-        :width: 45 %
-    .. image:: /images/speed_past.svg
-        :width: 45 %
-
-    |
-
-    As only half of the time interval is used in such cases, :math:`\Delta t`
-    becomes:
-
-    .. math::
-
-        \Delta t = n / fps
-
-
-    Now, from the displacement and the time frame, the speed is defined as:
-
-    .. math::
-
-        v_i(t) = {{|\bar{X}|}\over{ \Delta t}}
-
-    .. warning::
+    .. important::
 
         As at the edges of the trajectories the time interval gets halved,
-        there may occur some jumps computed speeds.
+        there may occur some jumps computed speeds at this point.
+
 
     **With movement direction:**
 
@@ -180,7 +206,7 @@ def compute_mean_speed_per_frame(
 
     Computes the mean speed :math:`v_{mean}(t)` inside the measurement area from
     the given individual speed data :math:`v_i(t)` (see
-    :func:`~velocity_calculator.compute_individual_speed` for
+    :func:`~speed_calculator.compute_individual_speed` for
     details of the computation). The mean speed :math:`v_{mean}` is defined as
 
     .. math::
@@ -198,7 +224,7 @@ def compute_mean_speed_per_frame(
     Args:
         traj_data (TrajectoryData): trajectory data
         individual_speed (pandas.DataFrame): individual speed data from
-            :func:`~velocity_calculator.compute_individual_speed`
+            :func:`~speed_calculator.compute_individual_speed`
         measurement_area (MeasurementArea): measurement area for which the
             speed is computed
 
@@ -265,7 +291,7 @@ def compute_voronoi_speed(
     Args:
         traj_data (TrajectoryData): trajectory data
         individual_speed (pandas.DataFrame): individual speed data from
-            :func:`~velocity_calculator.compute_individual_speed`
+            :func:`~speed_calculator.compute_individual_speed`
         individual_voronoi_intersection (pandas.DataFrame): intersections of the
             individual with the measurement area of each pedestrian from
             :func:`~method_utils.compute_intersecting_polygons`
