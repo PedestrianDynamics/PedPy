@@ -5,9 +5,10 @@ from typing import Any, List, Optional
 import matplotlib as mpl
 import matplotlib.axes
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import shapely
-from numpy import float64, mean
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.typing import NDArray
 
 from pedpy.column_identifier import (
@@ -166,7 +167,7 @@ def plot_speed(
     )
 
 
-def _plot_passing_xy(
+def _plot_violin_xy(
     *,
     data: pd.Series,
     axes: Optional[matplotlib.axes.Axes] = None,
@@ -179,7 +180,7 @@ def _plot_passing_xy(
     edgecolor = kwargs.get("edgecolor", PEDPY_RED)
     title = kwargs.get("title", "")
     x_label = kwargs.get("x_label", "")
-    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
+    y_label = kwargs.get("y_label", "")
 
     axes.set_title(title)
     violin_parts = plt.violinplot(
@@ -198,16 +199,16 @@ def _plot_passing_xy(
     return axes
 
 
-def plot_passing_speed(
+def plot_speed_distribution(
     *,
-    passing_speed: pd.DataFrame,
+    speed: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the passing speed.
+    """Plot the speed distribution as violin plot.
 
     Args:
-        passing_speed(pd.DataFrame): individual speed of the pedestrian who pass an area.
+        speed(pd.DataFrame): speed of the pedestrians
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         facecolor (optional): color of the plot body
         edgecolor (optional): color of the edges of the plot
@@ -223,19 +224,19 @@ def plot_passing_speed(
         kwargs["title"] = "Individual speed"
     if "y_label" not in kwargs:
         kwargs["y_label"] = "m/s"
-    return _plot_passing_xy(data=passing_speed.speed, axes=axes, kwargs=kwargs)
+    return _plot_violin_xy(data=speed.speed, axes=axes, **kwargs)
 
 
-def plot_passing_density(
+def plot_density_distribution(
     *,
-    passing_density: pd.DataFrame,
+    density: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the passing density.
+    """Plot the density distribution as violin plot.
 
     Args:
-        passing_density(pd.DataFrame): individual density of the pedestrian who pass an area.
+        density(pd.DataFrame): individual density of the pedestrian
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         facecolor (optional): color of the plot body
         edgecolor (optional): color of the edges of the plot
@@ -251,9 +252,7 @@ def plot_passing_density(
         kwargs["title"] = "Individual density"
     if "y_label" not in kwargs:
         kwargs["y_label"] = "$\\rho$ / 1/$m^2$"
-    return _plot_passing_xy(
-        data=passing_density.density, axes=axes, kwargs=kwargs
-    )
+    return _plot_violin_xy(data=density.density, axes=axes, **kwargs)
 
 
 def plot_flow(
@@ -361,7 +360,7 @@ def plot_neighborhood(
 
 def plot_time_distance(
     *,
-    df_time_distance: pd.DataFrame,
+    time_distance: pd.DataFrame,
     frame_rate: float,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
@@ -369,7 +368,7 @@ def plot_time_distance(
     """Plots the time to reach a target over distance.
 
     Args:
-        df_time_distance(pd.DataFrame): DataFrame containing information on time and
+        time_distance(pd.DataFrame): DataFrame containing information on time and
             distance to some target
         frame_rate(float): frame_rate of the trajectory
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
@@ -392,7 +391,7 @@ def plot_time_distance(
     y_label = kwargs.get("y_label", "time / s")
 
     axes.set_title(title)
-    for _, ped_data in df_time_distance.groupby(by=ID_COL):
+    for _, ped_data in time_distance.groupby(by=ID_COL):
         axes.plot(
             ped_data.distance,
             ped_data.time / frame_rate,
@@ -422,11 +421,11 @@ def plot_time_distance(
 def plot_profiles(
     *,
     walkable_area: WalkableArea,
-    profiles: list[NDArray[float64]],
+    profiles: list[NDArray[np.float64]],
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the flow.
+    """Plot the mean of the profiles.
 
     Args:
         walkable_area(WalkableArea): walkable area of the plot
@@ -445,19 +444,28 @@ def plot_profiles(
     hole_color = kwargs.get("hole_color", "w")
     hole_alpha = kwargs.get("hole_alpha", 1.0)
     bounds = walkable_area.bounds
+    vmin = kwargs.get("vmin", np.min(profiles))
+    vmax = kwargs.get("vmax", np.max(profiles))
+    label = kwargs.get("label", None)
 
     if axes is None:
         axes = plt.gca()
 
     axes.set_title(title)
-    axes.imshow(
-        mean(profiles, axis=0),
+    imshow = axes.imshow(
+        np.mean(profiles, axis=0),
         extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
         interpolation="None",
         cmap="jet",
-        vmin=0,
-        vmax=10,
+        vmin=vmin,
+        vmax=vmax,
     )
+    divider = make_axes_locatable(axes)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig = plt.gcf()
+
+    fig.colorbar(imshow, cax=cax, orientation="vertical", label=label)
+
     axes.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
     plot_walkable_area(
         walkable_area=walkable_area,
@@ -625,12 +633,12 @@ def plot_measurement_setup(
     Returns:
         matplotlib.axes.Axes instance where the measurement setup is plotted
     """
-    ma_line_color = kwargs.get("ma_line_color", PEDPY_GREY)
+    ma_line_color = kwargs.get("ma_line_color", PEDPY_BLUE)
     ma_line_width = kwargs.get("ma_line_width", 1.0)
-    ma_color = kwargs.get("ma_color", PEDPY_GREY)
+    ma_color = kwargs.get("ma_color", PEDPY_BLUE)
     ma_alpha = kwargs.get("ma_alpha", 0.2)
 
-    ml_color = kwargs.get("ml_color", PEDPY_GREY)
+    ml_color = kwargs.get("ml_color", PEDPY_BLUE)
     ml_width = kwargs.get("ml_width", 1.0)
 
     if axes is None:

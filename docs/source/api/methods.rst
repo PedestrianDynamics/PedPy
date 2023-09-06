@@ -13,7 +13,7 @@ Density
 Speed
 *****
 
-.. autoapimodule:: velocity_calculator
+.. autoapimodule:: speed_calculator
     :members:
     :no-private-members:
     :no-special-members:

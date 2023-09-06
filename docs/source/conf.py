@@ -2,17 +2,10 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-import datetime
-import os
-import sys
-
-basedir = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "pedpy")
-)
-sys.path.insert(0, basedir)
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import datetime
 
 current_year = datetime.datetime.today().year
 
@@ -42,7 +35,20 @@ extensions = [
 ]
 
 # -- Automatic execution of jupyter notebooks --------------------------------
-nb_execution_excludepatterns = ["readthedocs.ipynb"]
+nb_execution_excludepatterns = [
+    "readthedocs.ipynb",
+    "fundamental_diagram.ipynb",
+]
+nb_execution_timeout = 60
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "html_image",
+]
+
+nb_execution_raise_on_error = True
 
 # -- Automatic generation of API doc -----------------------------------------
 autoapi_dirs = [
@@ -119,6 +125,7 @@ html_theme_options = {
             "type": "url",
         },
     ],
+    "show_toc_level": 3,
 }
 
 html_sidebars = {

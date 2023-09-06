@@ -7,7 +7,7 @@ PedPy: Pedestrian Trajectory Analyzer
    :hidden:
 
    Getting Started <getting_started>
-   User Guide <usage>
+   User Guide <user_guide>
    API Reference <api/index>
    Developer Guide <developer_guide>
    Disclaimer <disclaimer>
@@ -54,7 +54,7 @@ Install PedPy
     .. grid-item-card:: User Guide
         :img-top: _static/user_guide.svg
         :class-card: intro-card
-        :link: usage
+        :link: user_guide
         :link-type: doc
         :link-alt: To the user guide
 
