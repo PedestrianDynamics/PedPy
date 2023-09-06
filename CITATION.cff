@@ -20,3 +20,4 @@ identifiers:
   - description: This is the collection of archived snapshots of all versions of PedPy
     type: doi
     value: "10.5281/zenodo.8254431"
+version: 1.0.0rc3
