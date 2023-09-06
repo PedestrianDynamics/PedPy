@@ -1,180 +1,180 @@
-#name: pedpy-ci
-#
-#on:
-#  schedule:
-#    # Runs at 2:00 am each day
-#    - cron: '00 2 * * *'
-#  push:
-#    branches:
-#      - main
-#    tags:
-#      - '**'
-#  pull_request:
-#    branches:
-#      - main
-#
-#jobs:
-#  pre-build-checks:
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ ubuntu-latest ]
-#        python-version: [ '3.10' ]
-#    runs-on: ${{ matrix.os }}
-#    continue-on-error: true
-#
-#    steps:
-#      - name: Check out repository code
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#
-#      - name: Install dependencies
-#        run: |
-#          python3 -m pip install --upgrade pip
-#          python3 -VV
-#          python3 -m site
-#          python3 -m pip install --upgrade pip setuptools wheel build
-#          python3 -m pip install -r requirements.txt
-#
-#      - name: Check format, docstring style, typing, linting
-#        run: |
-#          ${{github.workspace}}/scripts/ci.sh
-#
-#
-#  build:
-#    needs: pre-build-checks
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ ubuntu-latest, macos-latest, windows-latest ]
-#        python-version: [ '3.10' ]
-#    runs-on: ${{ matrix.os }}
-#
-#    steps:
-#      - name: Check out repository code
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#
-#      - name: Install dependencies
-#        run: |
-#          python3 -m pip install --upgrade pip
-#          python3 -VV
-#          python3 -m site
-#          python3 -m pip install --upgrade pip setuptools wheel build
-#          python3 -m pip install -r requirements.txt
-#
-#      - name: Run pytests
-#        run: |
-#          python3 -m pytest -vv -s tests
-#
-#      - name: Build wheel
-#        id: build-wheel
-#        if: matrix.os == 'ubuntu-latest'
-#        run: |
-#          python3 -m build
-#
-#      - name: Upload wheel as artifact
-#        if: matrix.os == 'ubuntu-latest'
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: dist
-#          path: dist/
-#
-#      - name: Upload notebooks and demo files as artifacts
-#        if: matrix.os == 'ubuntu-latest'
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: demos_usage
-#          path: |
-#            notebooks/
-#
-#  test:
-#    needs: build
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ ubuntu-latest, macos-latest, windows-latest ]
-#        python-version: [ '3.10', '3.11' ]
-#    runs-on: ${{ matrix.os }}
-#
-#    steps:
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v4
-#        with:
-#          python-version: ${{ matrix.python-version }}
-#
-#      - name: Download notebooks and demo files as artifacts
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: demos_usage
-#
-#      - name: Download wheel
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: dist
-#          path: dist/
-#
-#      - name: Install wheel
-#        shell: bash
-#        run: |
-#          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib
-#          python3 -m pip install dist/*whl
-#
-#      - name: Test if install was successful
-#        run: |
-#          python3 -c "import pedpy; print(pedpy.__version__)"
-#
-#      - name: Run getting started notebook
-#        run: |
-#          jupyter nbconvert --to notebook --execute getting_started.ipynb
-#
-#      - name: Run user guide notebook
-#        run: |
-#          jupyter nbconvert --to notebook --execute user_guide.ipynb
-#
-#      - name: Run fundamental diagram notebook
-#        run: |
-#          jupyter nbconvert --to notebook --execute fundamental_diagram.ipynb
-#
-#  publish:
-#    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-#      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags'))}}
-#    needs: [ build, test ]
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ ubuntu-latest ]
-#        python-version: [ '3.10' ]
-#    runs-on: ${{ matrix.os }}
-#
-#    steps:
-#      - name: Download wheel
-#        uses: actions/download-artifact@v3
-#        with:
-#          name: dist
-#          path: dist/
-#
-#      - name: Publish package to test PyPi
-#        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-#        uses: pypa/gh-action-pypi-publish@release/v1
-#        with:
-#          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-#          repository_url: https://test.pypi.org/legacy/
-#
-#      - name: Publish package to PyPi
-#        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-#        uses: pypa/gh-action-pypi-publish@release/v1
-#        with:
-#          password: ${{ secrets.PYPI_API_TOKEN }}
+name: pedpy-ci
+
+on:
+  schedule:
+    # Runs at 2:00 am each day
+    - cron: '00 2 * * *'
+  push:
+    branches:
+      - main
+    tags:
+      - '**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pre-build-checks:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -VV
+          python3 -m site
+          python3 -m pip install --upgrade pip setuptools wheel build
+          python3 -m pip install -r requirements.txt
+
+      - name: Check format, docstring style, typing, linting
+        run: |
+          ${{github.workspace}}/scripts/ci.sh
+
+
+  build:
+    needs: pre-build-checks
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ '3.10' ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -VV
+          python3 -m site
+          python3 -m pip install --upgrade pip setuptools wheel build
+          python3 -m pip install -r requirements.txt
+
+      - name: Run pytests
+        run: |
+          python3 -m pytest -vv -s tests
+
+      - name: Build wheel
+        id: build-wheel
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          python3 -m build
+
+      - name: Upload wheel as artifact
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+      - name: Upload notebooks and demo files as artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: demos_usage
+          path: |
+            notebooks/
+
+  test:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        python-version: [ '3.10', '3.11' ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download notebooks and demo files as artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: demos_usage
+
+      - name: Download wheel
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+      - name: Install wheel
+        shell: bash
+        run: |
+          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib
+          python3 -m pip install dist/*whl
+
+      - name: Test if install was successful
+        run: |
+          python3 -c "import pedpy; print(pedpy.__version__)"
+
+      - name: Run getting started notebook
+        run: |
+          jupyter nbconvert --to notebook --execute getting_started.ipynb
+
+      - name: Run user guide notebook
+        run: |
+          jupyter nbconvert --to notebook --execute user_guide.ipynb
+
+      - name: Run fundamental diagram notebook
+        run: |
+          jupyter nbconvert --to notebook --execute fundamental_diagram.ipynb
+
+  publish:
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags'))}}
+    needs: [ build, test ]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest ]
+        python-version: [ '3.10' ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Download wheel
+        uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish package to test PyPi
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+
+      - name: Publish package to PyPi
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
