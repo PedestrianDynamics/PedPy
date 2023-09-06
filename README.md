@@ -21,6 +21,11 @@
 *PedPy* is a python module for pedestrian movement analysis. 
 It implements different measurement methods for density, velocity and flow.
 
+If you use *PedPy* in your work, please cite it using the following information from zenodo:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7386931.svg)](https://doi.org/10.5281/zenodo.7386931)
+
+
 ## Getting started
 
 ### Setup Python

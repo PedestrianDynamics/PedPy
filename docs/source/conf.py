@@ -124,6 +124,12 @@ html_theme_options = {
             "icon": "https://img.shields.io/pypi/v/PedPy",
             "type": "url",
         },
+        {
+            "name": "DOI",
+            "url": "https://doi.org/10.5281/zenodo.8254431",
+            "icon": "https://zenodo.org/badge/DOI/10.5281/zenodo.8254431.svg",
+            "type": "url",
+        },
     ],
     "show_toc_level": 3,
 }
