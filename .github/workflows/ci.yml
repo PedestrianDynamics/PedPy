@@ -129,7 +129,7 @@ jobs:
       - name: Install wheel
         shell: bash
         run: |
-          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib
+          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib h5py
           python3 -m pip install dist/*whl
 
       - name: Test if install was successful
