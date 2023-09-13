@@ -48,7 +48,7 @@ def _plot_series(  # pylint: disable=too-many-arguments
     y_label: str,
 ) -> matplotlib.axes.Axes:
     axes.set_title(title)
-    axes.plot(x, y, c=color)
+    axes.plot(x, y, color=color)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
@@ -395,7 +395,7 @@ def plot_time_distance(
         axes.plot(
             ped_data.distance,
             ped_data.time / frame_rate,
-            c=line_color,
+            color=line_color,
             alpha=0.7,
             lw=0.25,
         )
@@ -403,7 +403,7 @@ def plot_time_distance(
         axes.scatter(
             min_data.distance,
             min_data.time / frame_rate,
-            c=marker_color,
+            color=marker_color,
             s=5,
             marker="o",
         )
@@ -788,14 +788,16 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
             color = "w"
 
         axes.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
-        axes.fill(*poly.exterior.xy, fc=color, alpha=voronoi_outside_ma_alpha)
+        axes.fill(
+            *poly.exterior.xy, facecolor=color, alpha=voronoi_outside_ma_alpha
+        )
 
         if INTERSECTION_COL in data.columns:
             if not shapely.is_empty(row[INTERSECTION_COL]):
                 intersection_poly = row[INTERSECTION_COL]
                 axes.fill(
                     *intersection_poly.exterior.xy,
-                    fc=color,
+                    facecolor=color,
                     alpha=voronoi_inside_ma_alpha,
                 )
 
