@@ -42,6 +42,5 @@ setuptools.setup(
         "Shapely~=2.0",
         "scipy~=1.11",
         "matplotlib~=3.7",
-        "tables~=3.8",
     ],
 )
