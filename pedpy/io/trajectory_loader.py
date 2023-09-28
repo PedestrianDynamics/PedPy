@@ -117,23 +117,24 @@ def load_trajectory_from_txt(
     return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
 
-def _calculate_frames_and_fps(df: pd.DataFrame) -> Tuple[pd.Series, int]:
+def _calculate_frames_and_fps(
+    traj_dataframe: pd.DataFrame,
+) -> Tuple[pd.Series, int]:
     """Calculates fps and frames based on the time column of the dataframe."""
-    mean_diff = df.groupby(ID_COL)["time"].diff().dropna().mean()
+    mean_diff = traj_dataframe.groupby(ID_COL)["time"].diff().dropna().mean()
     fps = int(round(1 / mean_diff))
-    frames = (df["time"] * fps).astype(int)
+    frames = (traj_dataframe["time"] * fps).astype(int)
     return frames, fps
 
 
 def _load_viswalk_trajectory_data(
-    *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
+    *, trajectory_file: pathlib.Path
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
         trajectory_file (pathlib.Path): file containing the trajectory
-        unit (TrajectoryUnit): unit in which the coordinates are stored
-            in the file, None if unit is meter.
+        Unit is always in meter.
 
     Returns:
         The trajectory data as :class:`DataFrame`, the coordinates are
@@ -163,10 +164,6 @@ def _load_viswalk_trajectory_data(
                 "first 18 lines are ignored"
                 f"Please check your trajectory file: {trajectory_file}."
             )
-
-        if unit == TrajectoryUnit.CENTIMETER:
-            data.x = data.x.div(100)
-            data.y = data.y.div(100)
 
         return data
     except pd.errors.ParserError as exc:
@@ -470,8 +467,8 @@ def load_walkable_area_from_ped_data_archive_hdf5(
 
 
 def load_viswalk_trajectories(
+    *,
     trajectory_file: pathlib.Path,
-    default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
     """Loads trajectory data from a Viswalk-CSV file and returns a PedPy.TrajectoryData object.
 
@@ -479,10 +476,12 @@ def load_viswalk_trajectories(
     converts it into a PedPy TrajectoryData object which can be used for further analysis and
     processing in the PedPy framework.
 
-    Note: viswalk data have a time column, that is going to be converted to a frame column for use with PedPy.
+    Note: viswalk data have a time column, that is going to be converted to
+          a frame column for use with PedPy.
 
     Args:
-    filename (str): The full path of the CSV file containing the Viswalk trajectory data.
+    filename (str): The full path of the CSV file containing the Viswalk
+                    trajectory data.
                     The file should be formatted with the following columns:
                     'id', 'time', 'x', 'y', 'COORDCENT'.
 
@@ -492,7 +491,8 @@ def load_viswalk_trajectories(
 
 
     See Also:
-    https://pedpy.readthedocs.io/ for more information on the PedPy library and TrajectoryData object.
+    https://pedpy.readthedocs.io/ for more information on the PedPy library
+    and TrajectoryData object.
     """
     if not trajectory_file.exists():
         raise IOError(f"{trajectory_file} does not exist.")
@@ -501,7 +501,7 @@ def load_viswalk_trajectories(
         raise IOError(f"{trajectory_file} is not a file.")
 
     traj_dataframe = _load_viswalk_trajectory_data(
-        trajectory_file=trajectory_file, unit=default_unit
+        trajectory_file=trajectory_file
     )
     traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
         traj_dataframe
