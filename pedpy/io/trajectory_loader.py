@@ -117,6 +117,69 @@ def load_trajectory_from_txt(
     return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
 
+def _calculate_frames_and_fps(df: pd.DataFrame) -> Tuple[pd.Series, int]:
+    """Calculates fps and frames based on the time column of the dataframe."""
+    mean_diff = df.groupby(ID_COL)["time"].diff().dropna().mean()
+    fps = int(round(1 / mean_diff))
+    frames = (df["time"] * fps).astype(int)
+    return frames, fps
+
+
+def _load_viswalk_trajectory_data(
+    *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
+) -> pd.DataFrame:
+    """Parse the trajectory file for trajectory data.
+
+    Args:
+        trajectory_file (pathlib.Path): file containing the trajectory
+        unit (TrajectoryUnit): unit in which the coordinates are stored
+            in the file, None if unit is meter.
+
+    Returns:
+        The trajectory data as :class:`DataFrame`, the coordinates are
+        converted to meter (m).
+    """
+    try:
+        data = pd.read_csv(
+            trajectory_file,
+            delimiter=";",
+            names=[ID_COL, "time", X_COL, Y_COL, "COORDCENT"],
+            header=None,
+            skiprows=18,
+            dtype={
+                ID_COL: "int64",
+                "time": "float64",
+                X_COL: "float64",
+                Y_COL: "float64",
+                "COORDCENT": "float64",
+            },
+        )
+        if data.empty:
+            raise ValueError(
+                "The given trajectory file seem to be empty. It should "
+                "contain at least 5 columns: ID, time, X, Y, COORDCENT. The values "
+                "should be separated by ';'. Comment line may "
+                "start with a '*' and will be ignored."
+                "first 18 lines are ignored"
+                f"Please check your trajectory file: {trajectory_file}."
+            )
+
+        if unit == TrajectoryUnit.CENTIMETER:
+            data.x = data.x.div(100)
+            data.y = data.y.div(100)
+
+        return data
+    except pd.errors.ParserError as exc:
+        raise ValueError(
+            "The given trajectory file seem to be empty. It should "
+            "contain at least 5 columns: ID, time, X, Y, COORDCENT. The values "
+            "should be separated by ';'. Comment line may "
+            "start with a '*' and will be ignored."
+            "first 18 lines are ignored"
+            f"Please check your trajectory file: {trajectory_file}."
+        ) from exc
+
+
 def _load_trajectory_data_from_txt(
     *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
 ) -> pd.DataFrame:
@@ -404,3 +467,44 @@ def load_walkable_area_from_ped_data_archive_hdf5(
         # pylint: enable=protected-access
 
     return walkable_area
+
+
+def load_viswalk_trajectories(
+    trajectory_file: pathlib.Path,
+    default_unit: Optional[TrajectoryUnit] = None,
+) -> TrajectoryData:
+    """Loads trajectory data from a Viswalk-CSV file and returns a PedPy.TrajectoryData object.
+
+    This function reads a CSV file containing trajectory data from Viswalk simulations and
+    converts it into a PedPy TrajectoryData object which can be used for further analysis and
+    processing in the PedPy framework.
+
+    Note: viswalk data have a time column, that is going to be converted to a frame column for use with PedPy.
+
+    Args:
+    filename (str): The full path of the CSV file containing the Viswalk trajectory data.
+                    The file should be formatted with the following columns:
+                    'id', 'time', 'x', 'y', 'COORDCENT'.
+
+    Returns:
+    pedpy.TrajectoryData: A PedPy TrajectoryData object containing the loaded
+                          trajectory data
+
+
+    See Also:
+    https://pedpy.readthedocs.io/ for more information on the PedPy library and TrajectoryData object.
+    """
+    if not trajectory_file.exists():
+        raise IOError(f"{trajectory_file} does not exist.")
+
+    if not trajectory_file.is_file():
+        raise IOError(f"{trajectory_file} is not a file.")
+
+    traj_dataframe = _load_viswalk_trajectory_data(
+        trajectory_file=trajectory_file, unit=default_unit
+    )
+    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
+        traj_dataframe
+    )
+
+    return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
