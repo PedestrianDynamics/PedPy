@@ -496,14 +496,17 @@ def load_viswalk_trajectories(
           a frame column for use with PedPy.
 
     Args:
-    filename (str): The full path of the CSV file containing the Viswalk
-                    trajectory data.
-                    The file should be formatted with the following columns:
-                    'id', 'time', 'x', 'y', 'COORDCENT'.
+    filename (pathlib.Path): The full path of the CSV file containing the Viswalk trajectory data.
+                             The expected format is a CSV file with ';' as delimiter, and it should
+                             contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
+                             Comment lines may start with a '*' and will be ignored.
 
     Returns:
     pedpy.TrajectoryData: A PedPy TrajectoryData object containing the loaded
                           trajectory data
+
+    Raises:
+    IOError: If the provided path does not exist or is not a file.
 
 
     See Also:
@@ -511,10 +514,14 @@ def load_viswalk_trajectories(
     and TrajectoryData object.
     """
     if not trajectory_file.exists():
-        raise IOError(f"{trajectory_file} does not exist.")
+        raise IOError(
+            f"The provided path {trajectory_file} does not exist. Please provide a valid path to a Viswalk-CSV file."
+        )
 
     if not trajectory_file.is_file():
-        raise IOError(f"{trajectory_file} is not a file.")
+        raise IOError(
+            f"The provided path {trajectory_file} is not a valid file. Please provide a valid path to a Viswalk-CSV file."
+        )
 
     traj_dataframe = _load_viswalk_trajectory_data(
         trajectory_file=trajectory_file
