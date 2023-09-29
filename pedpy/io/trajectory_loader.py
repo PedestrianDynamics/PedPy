@@ -140,13 +140,18 @@ def _load_viswalk_trajectory_data(
         The trajectory data as :class:`DataFrame`, the coordinates are
         converted to meter (m).
     """
+    columns_to_keep = ["NO", "SIMSEC", "COORDCENTX", "COORDCENTY"]
+    rename_mapping = {
+        "NO": ID_COL,
+        "SIMSEC": "time",
+        "COORDCENTX": X_COL,
+        "COORDCENTY": Y_COL,
+    }
     try:
         data = pd.read_csv(
             trajectory_file,
             delimiter=";",
-            names=[ID_COL, "time", X_COL, Y_COL, "COORDCENT"],
-            header=None,
-            skiprows=18,
+            skiprows=1,
             dtype={
                 ID_COL: "int64",
                 "time": "float64",
@@ -155,13 +160,30 @@ def _load_viswalk_trajectory_data(
                 "COORDCENT": "float64",
             },
         )
+        got_columns = data.columns
+        cleaned_columns = got_columns.map(
+            lambda x: x.replace("$PEDESTRIAN:", "")
+        )
+        data.columns = cleaned_columns
+        data = data[columns_to_keep]
+        data.rename(columns=rename_mapping, inplace=True)
+        set_columns_to_keep = set(columns_to_keep)
+        set_cleaned_columns = set(cleaned_columns)
+        missing_columns = set_columns_to_keep - set_cleaned_columns
+        if missing_columns:
+            error_message = (
+                f"The following columns in {columns_to_keep} are not present"
+                f"in {cleaned_columns}: {', '.join(missing_columns)}."
+                f"Please check your trajectory file: {trajectory_file}."
+            )
+            raise ValueError(error_message)
+
         if data.empty:
             raise ValueError(
                 "The given trajectory file seem to be empty. It should "
-                "contain at least 5 columns: ID, time, X, Y, COORDCENT. The values "
-                "should be separated by ';'. Comment line may "
+                "contain at least 4 columns: NO, SIMSEC, COORDCENTX, COORDCENTY."
+                "The values should be separated by ';'. Comment line may "
                 "start with a '*' and will be ignored."
-                "first 18 lines are ignored"
                 f"Please check your trajectory file: {trajectory_file}."
             )
 
@@ -169,10 +191,9 @@ def _load_viswalk_trajectory_data(
     except pd.errors.ParserError as exc:
         raise ValueError(
             "The given trajectory file seem to be empty. It should "
-            "contain at least 5 columns: ID, time, X, Y, COORDCENT. The values "
-            "should be separated by ';'. Comment line may "
+            "contain at least 4 columns: NO, SIMSEC, COORDCENTX, COORDCENTY."
+            "The values should be separated by ';'. Comment line may "
             "start with a '*' and will be ignored."
-            "first 18 lines are ignored"
             f"Please check your trajectory file: {trajectory_file}."
         ) from exc
 
