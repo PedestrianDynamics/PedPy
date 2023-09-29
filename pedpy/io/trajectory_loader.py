@@ -133,12 +133,13 @@ def _load_viswalk_trajectory_data(
     """Parse the trajectory file for trajectory data.
 
     Args:
-        trajectory_file (pathlib.Path): file containing the trajectory
-        Unit is always in meter.
-
+        trajectory_file (pathlib.Path): The file containing the trajectory data.
+        The expected format is a CSV file with ';' as delimiter, and it should
+        contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
+        Comment lines may start with a '*' and will be ignored.
     Returns:
         The trajectory data as :class:`DataFrame`, the coordinates are
-        converted to meter (m).
+        in meter (m).
     """
     columns_to_keep = ["NO", "SIMSEC", "COORDCENTX", "COORDCENTY"]
     rename_mapping = {
@@ -147,6 +148,13 @@ def _load_viswalk_trajectory_data(
         "COORDCENTX": X_COL,
         "COORDCENTY": Y_COL,
     }
+    common_error_message = (
+        "The given trajectory file seems to be incorrect or empty. "
+        "It should contain at least the following columns: "
+        "NO, SIMSEC, COORDCENTX, COORDCENTY, separated by ';'. "
+        "Comment lines may start with a '*' and will be ignored. "
+        f"Please check your trajectory file: {trajectory_file}."
+    )
     try:
         data = pd.read_csv(
             trajectory_file,
@@ -164,38 +172,25 @@ def _load_viswalk_trajectory_data(
         cleaned_columns = got_columns.map(
             lambda x: x.replace("$PEDESTRIAN:", "")
         )
-        data.columns = cleaned_columns
-        data = data[columns_to_keep]
-        data.rename(columns=rename_mapping, inplace=True)
         set_columns_to_keep = set(columns_to_keep)
         set_cleaned_columns = set(cleaned_columns)
         missing_columns = set_columns_to_keep - set_cleaned_columns
         if missing_columns:
-            error_message = (
-                f"The following columns in {columns_to_keep} are not present"
-                f"in {cleaned_columns}: {', '.join(missing_columns)}."
-                f"Please check your trajectory file: {trajectory_file}."
+            raise ValueError(
+                f"{common_error_message}"
+                f"Missing columns: {', '.join(missing_columns)}."
             )
-            raise ValueError(error_message)
+
+        data.columns = cleaned_columns
+        data = data[columns_to_keep]
+        data.rename(columns=rename_mapping, inplace=True)
 
         if data.empty:
-            raise ValueError(
-                "The given trajectory file seem to be empty. It should "
-                "contain at least 4 columns: NO, SIMSEC, COORDCENTX, COORDCENTY."
-                "The values should be separated by ';'. Comment line may "
-                "start with a '*' and will be ignored."
-                f"Please check your trajectory file: {trajectory_file}."
-            )
+            raise ValueError(common_error_message)
 
         return data
     except pd.errors.ParserError as exc:
-        raise ValueError(
-            "The given trajectory file seem to be empty. It should "
-            "contain at least 4 columns: NO, SIMSEC, COORDCENTX, COORDCENTY."
-            "The values should be separated by ';'. Comment line may "
-            "start with a '*' and will be ignored."
-            f"Please check your trajectory file: {trajectory_file}."
-        ) from exc
+        raise ValueError(common_error_message) from exc
 
 
 def _load_trajectory_data_from_txt(
