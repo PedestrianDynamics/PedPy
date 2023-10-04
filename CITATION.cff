@@ -19,5 +19,8 @@ license: MIT
 identifiers:
   - description: This is the collection of archived snapshots of all versions of PedPy
     type: doi
-    value: "10.5281/zenodo.8254431"
-version: 1.0.0rc3
+    value: "10.5281/zenodo.7194992"
+  - description: This is the archived snapshot of version 1.0.0 of PedPy
+    type: doi
+    value: "10.5281/zenodo.8405437"
+version: 1.0.1
