@@ -11,6 +11,7 @@ PedPy: Pedestrian Trajectory Analyzer
    API Reference <api/index>
    Developer Guide <developer_guide>
    Cite PedPy <citation>
+   Changelog <changelog>
    Disclaimer <disclaimer>
 
 
