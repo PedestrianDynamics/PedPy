@@ -17,6 +17,7 @@ So don't hesitate to reach out with any questions or ideas you may have. We look
 
 Reporting bugs
 ==============
+
 At *PedPy*, we value feedback from our users, and we encourage you to report any issues or bugs that you encounter while using the library.
 You can do this by visiting our `GitHub issues page <https://github.com/PedestrianDynamics/PedPy/issues>`_.
 From there, you can submit a new issue, provide a detailed description of the problem, and even include code snippets or screenshots to help us better understand the issue.
