@@ -2,7 +2,6 @@
 
 from typing import Final
 
-# TrajectoryData
 ID_COL: Final = "id"
 FRAME_COL: Final = "frame"
 X_COL: Final = "x"

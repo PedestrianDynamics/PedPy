@@ -71,6 +71,7 @@ def compute_individual_speed(
     This then can be used to compute the speed with:
 
     .. math::
+
         \bar{X} = X_{future} - X_{past}
 
 
