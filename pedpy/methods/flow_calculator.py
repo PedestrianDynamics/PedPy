@@ -73,7 +73,7 @@ def compute_n_t(
                 )
             )
         )
-        .fillna(method="ffill")
+        .ffill()
         .fillna(0)
     )
 
