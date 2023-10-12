@@ -183,7 +183,7 @@ def _plot_violin_xy(
     y_label = kwargs.get("y_label", "")
 
     axes.set_title(title)
-    violin_parts = plt.violinplot(
+    violin_parts = axes.violinplot(
         data,
         showmeans=True,
         showextrema=True,
