@@ -805,7 +805,7 @@ def _compute_movememnt_adaptive_border(
     df_movement = traj_data.data.copy(deep=True)
 
     frame_infos = df_movement.groupby(by=ID_COL).agg(
-        frame_min=(FRAME_COL, min), frame_max=(FRAME_COL, max)
+        frame_min=(FRAME_COL, "min"), frame_max=(FRAME_COL, "max")
     )
     df_movement = df_movement.merge(frame_infos, on=ID_COL)
 
