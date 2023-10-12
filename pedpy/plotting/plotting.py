@@ -722,7 +722,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
         line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
-
+        cmap (optional): colormap used for
     Returns:
         matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
@@ -737,6 +737,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
     cb_location = kwargs.get("cb_location", "right")
     show_colorbar = kwargs.get("show_colorbar", True)
     color_by_column = kwargs.get("color_by_column", None)
+    voronoi_colormap = plt.get_cmap(kwargs.get("cmap", "YlGn"))
 
     if axes is None:
         axes = plt.gca()
@@ -763,7 +764,6 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
                 vmin = voronoi_data[color_by_column].min()
             if not vmax:
                 vmax = voronoi_data[color_by_column].max()
-            voronoi_colormap = plt.get_cmap("YlGn")
             norm = mpl.colors.Normalize(vmin, vmax)
             scalar_mappable = mpl.cm.ScalarMappable(
                 norm=norm, cmap=voronoi_colormap
