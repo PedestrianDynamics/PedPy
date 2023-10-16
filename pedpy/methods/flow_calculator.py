@@ -2,6 +2,8 @@
 from typing import Tuple
 
 import pandas as pd
+import shapely
+import numpy
 
 from pedpy.column_identifier import (
     CUMULATED_COL,
@@ -18,9 +20,9 @@ from pedpy.methods.method_utils import compute_crossing_frames
 
 
 def compute_n_t(
-    *,
-    traj_data: TrajectoryData,
-    measurement_line: MeasurementLine,
+        *,
+        traj_data: TrajectoryData,
+        measurement_line: MeasurementLine,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Compute the frame-wise cumulative number of pedestrians passing the line.
 
@@ -86,12 +88,12 @@ def compute_n_t(
 
 
 def compute_flow(
-    *,
-    nt: pd.DataFrame,
-    crossing_frames: pd.DataFrame,
-    individual_speed: pd.DataFrame,
-    delta_frame: int,
-    frame_rate: float,
+        *,
+        nt: pd.DataFrame,
+        crossing_frames: pd.DataFrame,
+        individual_speed: pd.DataFrame,
+        delta_frame: int,
+        frame_rate: float,
 ) -> pd.DataFrame:
     r"""Compute the flow for the given the frame window from the nt information.
 
@@ -166,7 +168,7 @@ def compute_flow(
     rows = []
 
     for frame in range(
-        passed_frame_before + delta_frame, nt.index.max(), delta_frame
+            passed_frame_before + delta_frame, nt.index.max(), delta_frame
     ):
         passed_num_peds = nt.loc[frame][CUMULATED_COL]
         passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].index.min() + 1
@@ -190,3 +192,91 @@ def compute_flow(
             )
 
     return pd.DataFrame(rows)
+
+
+def calc_n(line):
+    n = numpy.array([line.xy[1][1] - line.xy[1][0], line.xy[0][0] - line.xy[0][1]])
+    return n / numpy.linalg.norm(n)
+
+
+def separate_species(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed):
+    """creates a list containing the species for each agent"""
+    # create dataframe with id and first frame where voronoi polygon intersects measurement line
+    line = measurement_line.line
+    intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons["polygon"], line)]
+    min_idx = intersecting_polys.groupby('id')['frame'].idxmin()
+    result = intersecting_polys.loc[min_idx, ['id', 'frame']]
+
+    n = calc_n(line)
+
+    # create dataframe with 'id' and 'species'
+    end_result = result.merge(individual_speed, left_on=['id', 'frame'], right_on=['id', 'frame'])
+    end_result["species"] = numpy.sign(n[0] * end_result["v_x"] + n[1] * end_result["v_y"])
+    return end_result[["id", "species"]]
+
+
+def calc_speed_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
+    line = measurement_line.line
+    n = calc_n(line)
+    i_poly = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons["polygon"], line)]
+    i_poly = i_poly.merge(species, on="id", how="left")
+    i_poly = i_poly.merge(individual_speed, left_on=['id', 'frame'], right_on=['id', 'frame'])
+    species_1 = i_poly[i_poly['species'] == 1].groupby('frame').apply(
+        lambda group: ((group['v_x'] * n[0] + group['v_y'] * n[1]) * (
+            shapely.length(shapely.intersection(group['polygon'], line)) / shapely.length(line))).sum()).reset_index()
+    species_2 = i_poly[i_poly['species'] == -1].groupby('frame').apply(
+        lambda group: ((group['v_x'] * n[0] + group['v_y'] * n[1]) * (
+            shapely.length(shapely.intersection(group['polygon'], line)) / shapely.length(line))).sum()).reset_index()
+
+    species_1.columns = ['frame', 'v_sp+1']
+    species_2.columns = ['frame', 'v_sp-1']
+
+    species_2['v_sp-1'] *= -1
+
+    result = species_1.merge(species_2, on="frame", how="left")
+    result['v_total'] = result['v_sp+1'] + result['v_sp-1']
+    return result
+
+
+def calc_density_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, species):
+    line = measurement_line.line
+    i_poly = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons["polygon"], line)]
+    i_poly = i_poly.merge(species, on="id", how="left")
+    species_1 = i_poly[i_poly['species'] == 1].groupby('frame').apply(
+        lambda group: (group['density'] * (
+            shapely.length(shapely.intersection(group['polygon'], line)) / shapely.length(line))).sum()).reset_index()
+    species_2 = i_poly[i_poly['species'] == -1].groupby('frame').apply(
+        lambda group: (group['density'] * (
+            shapely.length(shapely.intersection(group['polygon'], line)) / shapely.length(line))).sum()).reset_index()
+
+    species_1.columns = ['frame', 'p_sp+1']
+    species_2.columns = ['frame', 'p_sp-1']
+
+    result = species_1.merge(species_2, on="frame", how="left")
+    result['p_total'] = result['p_sp+1'] + result['p_sp-1']
+    return result
+
+
+def calc_flow_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
+    line = measurement_line.line
+    n = calc_n(line)
+    i_poly = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons["polygon"], line)]
+    i_poly = i_poly.merge(species, on="id", how="left")
+    i_poly = i_poly.merge(individual_speed, left_on=['id', 'frame'], right_on=['id', 'frame'])
+    species_1 = i_poly[i_poly['species'] == 1].groupby('frame').apply(
+        lambda group: ((group['v_x'] * n[0] + group['v_y'] * n[1]) * (
+            shapely.length(shapely.intersection(group['polygon'], line)) / shapely.length(line)) *
+                       group['density']).sum()).reset_index()
+    species_2 = i_poly[i_poly['species'] == -1].groupby('frame').apply(
+        lambda group: ((group['v_x'] * n[0] + group['v_y'] * n[1]) * (
+            shapely.length(shapely.intersection(group['polygon'], line)) / shapely.length(line)) *
+                       group['density']).sum()).reset_index()
+
+    species_1.columns = ['frame', 'j_sp+1']
+    species_2.columns = ['frame', 'j_sp-1']
+
+    species_2['j_sp-1'] *= -1
+
+    result = species_1.merge(species_2, on="frame", how="left")
+    result['j_total'] = result['j_sp+1'] + result['j_sp-1']
+    return result
