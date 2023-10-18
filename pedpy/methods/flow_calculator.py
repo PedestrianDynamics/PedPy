@@ -245,15 +245,23 @@ def calc_speed_on_line(individual_voronoi_polygons, measurement_line: Measuremen
     line = measurement_line.line
     n = calc_n(line)
     i_poly = merge_table(individual_voronoi_polygons, species, line, individual_speed)
-    species_1 = i_poly[i_poly['species'] == 1].groupby('frame').apply(
-        lambda group: (weight_value(group, n, line)).sum()).reset_index()
-    species_2 = i_poly[i_poly['species'] == -1].groupby('frame').apply(
-        lambda group: (weight_value(group, n, line)).sum()).reset_index()
+    species_1 = i_poly[i_poly['species'] == 1]
+    species_2 = i_poly[i_poly['species'] == -1]
+    if not species_1.empty:
+        species_1 = species_1.groupby('frame').apply(
+            lambda group: (weight_value(group, n, line)).sum()).reset_index()
+        species_1.columns = ['frame', 'v_sp+1']
+    else:
+        species_1 = pd.DataFrame(columns=['frame', 'v_sp+1'])
 
-    species_1.columns = ['frame', 'v_sp+1']
-    species_2.columns = ['frame', 'v_sp-1']
-
-    species_2['v_sp-1'] *= -1
+    if not species_2.empty:
+        print(species_2.size())
+        species_2 = species_2.groupby('frame').apply(
+            lambda group: (weight_value(group, n, line)).sum()).reset_index()
+        species_2.columns = ['frame', 'v_sp-1']
+        species_2['v_sp-1'] *= -1
+    else:
+        species_2 = pd.DataFrame(columns=['frame', 'v_sp-1'])
 
     result = species_1.merge(species_2, on="frame", how="left")
     result['v_total'] = result['v_sp+1'] + result['v_sp-1']
@@ -264,13 +272,23 @@ def calc_density_on_line(individual_voronoi_polygons, measurement_line: Measurem
     # note:  species needs to contain the columns id, species where species == 1 or species == -1
     line = measurement_line.line
     i_poly = merge_table(individual_voronoi_polygons, species, line)
-    species_1 = i_poly[i_poly['species'] == 1].groupby('frame').apply(
-        lambda group: (group['density'] * (partial_line_length(group['polygon'], line))).sum()).reset_index()
-    species_2 = i_poly[i_poly['species'] == -1].groupby('frame').apply(
-        lambda group: (group['density'] * (partial_line_length(group['polygon'], line))).sum()).reset_index()
+    species_1 = i_poly[i_poly['species'] == 1]
+    species_2 = i_poly[i_poly['species'] == -1]
+    if not species_1.empty:
+        species_1 = species_1.groupby('frame').apply(
+            lambda group: (group['density'] * (partial_line_length(group['polygon'], line))).sum()).reset_index()
+        species_1.columns = ['frame', 'p_sp+1']
+    else:
+        species_1 = pd.DataFrame(columns=['frame', 'p_sp+1'])
 
-    species_1.columns = ['frame', 'p_sp+1']
-    species_2.columns = ['frame', 'p_sp-1']
+    if not species_2.empty:
+        print(species_2.size())
+        species_2 = species_2.groupby('frame').apply(
+            lambda group: (group['density'] * (partial_line_length(group['polygon'], line))).sum()).reset_index()
+
+        species_2.columns = ['frame', 'p_sp-1']
+    else:
+        species_2 = pd.DataFrame(columns=['frame', 'p_sp-1'])
 
     result = species_1.merge(species_2, on="frame", how="left")
     result['p_total'] = result['p_sp+1'] + result['p_sp-1']
@@ -282,15 +300,24 @@ def calc_flow_on_line(individual_voronoi_polygons, measurement_line: Measurement
     line = measurement_line.line
     n = calc_n(line)
     i_poly = merge_table(individual_voronoi_polygons, species, line, individual_speed)
-    species_1 = i_poly[i_poly['species'] == 1].groupby('frame').apply(
-        lambda group: (weight_value(group, n, line) * group['density']).sum()).reset_index()
-    species_2 = i_poly[i_poly['species'] == -1].groupby('frame').apply(
-        lambda group: (weight_value(group, n, line) * group['density']).sum()).reset_index()
 
-    species_1.columns = ['frame', 'j_sp+1']
-    species_2.columns = ['frame', 'j_sp-1']
+    species_1 = i_poly[i_poly['species'] == 1]
+    species_2 = i_poly[i_poly['species'] == -1]
+    if not species_1.empty:
+        species_1 = species_1.groupby('frame').apply(
+            lambda group: (weight_value(group, n, line) * group['density']).sum()).reset_index()
+        species_1.columns = ['frame', 'j_sp+1']
+    else:
+        species_1 = pd.DataFrame(columns=['frame', 'j_sp+1'])
 
-    species_2['j_sp-1'] *= -1
+    if not species_2.empty:
+        print(species_2.size())
+        species_2 = species_2.groupby('frame').apply(
+            lambda group: (weight_value(group, n, line) * group['density']).sum()).reset_index()
+        species_2.columns = ['frame', 'j_sp-1']
+        species_2['v_sp-1'] *= -1
+    else:
+        species_2 = pd.DataFrame(columns=['frame', 'j_sp-1'])
 
     result = species_1.merge(species_2, on="frame", how="left")
     result['j_total'] = result['j_sp+1'] + result['j_sp-1']
