@@ -274,7 +274,7 @@ def calc_speed_on_line(individual_voronoi_polygons, measurement_line: Measuremen
     else:
         species_2 = pd.DataFrame(columns=[FRAME_COL, V_SP2_COL])
 
-    result = species_1.merge(species_2, on=FRAME_COL, how="left")
+    result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
     result[VELOCITY_COL] = result[V_SP1_COL] + result[V_SP2_COL]
     return result
 
@@ -300,7 +300,8 @@ def calc_density_on_line(individual_voronoi_polygons, measurement_line: Measurem
     else:
         species_2 = pd.DataFrame(columns=[FRAME_COL, DENSITY_SP2_COL])
 
-    result = species_1.merge(species_2, on=FRAME_COL, how="left")
+    result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
+
     result[DENSITY_COL] = result[DENSITY_SP1_COL] + result[DENSITY_SP2_COL]
     return result
 
@@ -328,6 +329,6 @@ def calc_flow_on_line(individual_voronoi_polygons, measurement_line: Measurement
     else:
         species_2 = pd.DataFrame(columns=[FRAME_COL, FLOW_SP2_COL])
 
-    result = species_1.merge(species_2, on=FRAME_COL, how="left")
+    result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
     result[FLOW_COL] = result[FLOW_SP1_COL] + result[FLOW_SP2_COL]
     return result
