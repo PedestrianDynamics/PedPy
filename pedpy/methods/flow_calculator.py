@@ -25,6 +25,7 @@ from pedpy.column_identifier import (
     VELOCITY_COL,
     FLOW_SP1_COL,
     FLOW_SP2_COL,
+    POINT_COL
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
@@ -250,6 +251,25 @@ def separate_species(individual_voronoi_polygons, measurement_line: MeasurementL
     end_result = result.merge(individual_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
     end_result[SPECIES_COL] = numpy.sign(n[0] * end_result[V_X_COL] + n[1] * end_result[V_Y_COL])
     return end_result[[ID_COL, SPECIES_COL]]
+
+
+def separate_species_with_traj(individual_voronoi_polygons, measurement_line: MeasurementLine, traj: TrajectoryData):
+    """creates a list containing the species for each agent"""
+    # create dataframe with id and first frame where voronoi polygon intersects measurement line
+    data = traj.data
+    line = measurement_line.line
+    intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], line)]
+    min_idx = intersecting_polys.groupby(ID_COL)[FRAME_COL].idxmin()
+    result = intersecting_polys.loc[min_idx, [ID_COL, FRAME_COL, POLYGON_COL]]
+
+    n = calc_n(line)
+    # create dataframe with 'id' and 'species'
+    end_result = result.merge(data, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
+    end_result["closest_point_on_line"] = line.interpolate(line.project(end_result[POINT_COL]))
+    end_result["x_direction"] = shapely.get_x(end_result["closest_point_on_line"]) - shapely.get_x(end_result[POINT_COL])
+    end_result["y_direction"] = shapely.get_y(end_result["closest_point_on_line"]) - shapely.get_y(end_result[POINT_COL])
+    end_result[SPECIES_COL] = numpy.sign(n[0] * end_result["x_direction"] + n[1] * end_result["y_direction"])
+    return end_result [[ID_COL, SPECIES_COL]]
 
 
 def calc_speed_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
