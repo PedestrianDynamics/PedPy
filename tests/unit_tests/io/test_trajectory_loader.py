@@ -1,18 +1,24 @@
 import pathlib
+import sqlite3
 from typing import Any, List, Optional
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import pytest
+import shapely
 from numpy import dtype
 
 from pedpy.column_identifier import *
+from pedpy.data.geometry import WalkableArea
 from pedpy.io.trajectory_loader import (
     TrajectoryUnit,
-    _load_trajectory_data,
-    _load_trajectory_meta_data,
+    _load_trajectory_data_from_txt,
+    _load_trajectory_meta_data_from_txt,
     load_trajectory,
+    load_trajectory_from_jupedsim_sqlite,
+    load_trajectory_from_txt,
+    load_walkable_area_from_jupedsim_sqlite,
 )
 
 
@@ -54,7 +60,7 @@ def get_data_frame_to_write(
     return data_frame_to_write
 
 
-def write_trajectory_file(
+def write_txt_trajectory_file(
     *,
     data: pd.DataFrame,
     file: pathlib.Path,
@@ -72,6 +78,63 @@ def write_trajectory_file(
                 f.write("# id frame x/m y/m z/m\n")
 
         f.write(data.to_csv(sep=" ", header=False, index=False))
+
+
+def prepare_jupedsim_sqlite_trajectory_file(*, file):
+    con = sqlite3.connect(file)
+
+    cur = con.cursor()
+    cur.execute("BEGIN")
+    cur.execute("DROP TABLE IF EXISTS trajectory_data")
+    cur.execute(
+        "CREATE TABLE trajectory_data ("
+        "   frame INTEGER NOT NULL,"
+        "   id INTEGER NOT NULL,"
+        "   pos_x REAL NOT NULL,"
+        "   pos_y REAL NOT NULL,"
+        "   ori_x REAL NOT NULL,"
+        "   ori_y REAL NOT NULL)"
+    )
+    cur.execute("DROP TABLE IF EXISTS metadata")
+    cur.execute(
+        "CREATE TABLE metadata(key TEXT NOT NULL UNIQUE PRIMARY KEY, value TEXT NOT NULL)"
+    )
+    cur.execute("DROP TABLE IF EXISTS geometry")
+    cur.execute("CREATE TABLE geometry(wkt TEXT NOT NULL)")
+    cur.execute("CREATE INDEX frame_id_idx ON trajectory_data(frame, id)")
+    cur.execute("COMMIT")
+
+
+def write_jupedsim_sqlite_trajectory_file(
+    *,
+    data: pd.DataFrame,
+    file: pathlib.Path,
+    frame_rate: float,
+    geometry: Optional[shapely.Polygon] = None,
+):
+    prepare_jupedsim_sqlite_trajectory_file(file=file)
+    con = sqlite3.connect(file)
+
+    cur = con.cursor()
+    cur.executemany(
+        "INSERT INTO metadata VALUES(?, ?)",
+        (("version", "1"), ("fps", frame_rate)),
+    )
+
+    if geometry:
+        geometry_wkt = shapely.to_wkt(
+            geometry,
+            rounding_precision=-1,
+        )
+        cur.execute("INSERT INTO geometry VALUES(?)", (geometry_wkt,))
+
+    cur.execute("COMMIT")
+
+    # write trajectory data
+    data.columns = ["id", "frame", "pos_x", "pos_y"]
+    data["ori_x"] = 0
+    data["ori_y"] = 0
+    data.to_sql("trajectory_data", con, index=False, if_exists="append")
 
 
 @pytest.mark.parametrize(
@@ -114,7 +177,7 @@ def write_trajectory_file(
         ),
     ],
 )
-def test_load_trajectory_success(
+def test_load_trajectory_from_txt_success(
     tmp_path: pathlib.Path,
     data: List[npt.NDArray[np.float64]],
     expected_frame_rate: float,
@@ -125,7 +188,7 @@ def test_load_trajectory_success(
     expected_data = pd.DataFrame(data=data)
 
     written_data = get_data_frame_to_write(expected_data, expected_unit)
-    write_trajectory_file(
+    write_txt_trajectory_file(
         file=trajectory_txt,
         frame_rate=expected_frame_rate,
         unit=expected_unit,
@@ -133,7 +196,7 @@ def test_load_trajectory_success(
     )
 
     expected_data = prepare_data_frame(expected_data)
-    traj_data_from_file = load_trajectory(
+    traj_data_from_file = load_trajectory_from_txt(
         trajectory_file=trajectory_txt,
         default_unit=None,
         default_frame_rate=None,
@@ -146,15 +209,17 @@ def test_load_trajectory_success(
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
-def test_load_trajectory_non_existing_file():
+def test_load_trajectory_from_txt_non_existing_file():
     with pytest.raises(IOError) as error_info:
-        load_trajectory(trajectory_file=pathlib.Path("non_existing_file"))
+        load_trajectory_from_txt(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
     assert "does not exist" in str(error_info.value)
 
 
-def test_load_trajectory_non_file(tmp_path):
+def test_load_trajectory_from_txt_non_file(tmp_path):
     with pytest.raises(IOError) as error_info:
-        load_trajectory(trajectory_file=tmp_path)
+        load_trajectory_from_txt(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
 
@@ -195,7 +260,7 @@ def test_load_trajectory_non_file(tmp_path):
         ),
     ],
 )
-def test_parse_trajectory_data_success(
+def test_parse_trajectory_data_from_txt_success(
     tmp_path: pathlib.Path,
     data: npt.NDArray[np.float64],
     separator: str,
@@ -207,7 +272,7 @@ def test_parse_trajectory_data_success(
 
     written_data = get_data_frame_to_write(expected_data, expected_unit)
 
-    write_trajectory_file(
+    write_txt_trajectory_file(
         file=trajectory_txt,
         unit=expected_unit,
         data=written_data,
@@ -215,7 +280,7 @@ def test_parse_trajectory_data_success(
 
     expected_data = prepare_data_frame(expected_data)
 
-    data_from_file = _load_trajectory_data(
+    data_from_file = _load_trajectory_data_from_txt(
         trajectory_file=trajectory_txt, unit=expected_unit
     )
 
@@ -250,19 +315,19 @@ def test_parse_trajectory_data_success(
         ),
     ],
 )
-def test_parse_trajectory_data_failure(
+def test_parse_trajectory_data_from_txt_failure(
     tmp_path: pathlib.Path, data: npt.NDArray[np.float64], expected_message: str
 ) -> None:
     trajectory_txt = pathlib.Path(tmp_path / "trajectory.txt")
     written_data = pd.DataFrame(data=data)
 
-    write_trajectory_file(
+    write_txt_trajectory_file(
         file=trajectory_txt,
         data=written_data,
     )
 
     with pytest.raises(ValueError) as error_info:
-        _load_trajectory_data(
+        _load_trajectory_data_from_txt(
             trajectory_file=trajectory_txt, unit=TrajectoryUnit.METER  # type: ignore
         )
 
@@ -339,7 +404,7 @@ def test_parse_trajectory_data_failure(
         ),
     ],
 )
-def test_load_trajectory_meta_data_success(
+def test_load_trajectory_meta_data_from_txt_success(
     tmp_path: pathlib.Path,
     file_content: str,
     expected_frame_rate: float,
@@ -350,7 +415,7 @@ def test_load_trajectory_meta_data_success(
     with trajectory_txt.open("w") as f:
         f.write(file_content)
 
-    frame_rate_from_file, unit_from_file = _load_trajectory_meta_data(
+    frame_rate_from_file, unit_from_file = _load_trajectory_meta_data_from_txt(
         trajectory_file=trajectory_txt,
         default_frame_rate=None,
         default_unit=None,
@@ -525,7 +590,7 @@ def test_load_trajectory_meta_data_success(
         ),
     ],
 )
-def test_load_trajectory_meta_data_failure(
+def test_load_trajectory_meta_data_from_txt_failure(
     tmp_path: pathlib.Path,
     file_content: str,
     default_frame_rate: float,
@@ -539,10 +604,135 @@ def test_load_trajectory_meta_data_failure(
         f.write(file_content)
 
     with pytest.raises(expected_exception) as error_info:
-        _load_trajectory_meta_data(
+        _load_trajectory_meta_data_from_txt(
             trajectory_file=trajectory_txt,
             default_unit=default_unit,
             default_frame_rate=default_frame_rate,
         )
 
     assert expected_message in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "data, expected_frame_rate",
+    [
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            7.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            15.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+    ],
+)
+def test_load_trajectory_from_jupedsim_sqlite_success(
+    tmp_path: pathlib.Path,
+    data: List[npt.NDArray[np.float64]],
+    expected_frame_rate: float,
+) -> None:
+    trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
+
+    expected_data = pd.DataFrame(data=data)
+
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_jupedsim_sqlite_trajectory_file(
+        file=trajectory_sqlite,
+        frame_rate=expected_frame_rate,
+        data=written_data,
+    )
+
+    expected_data = prepare_data_frame(expected_data)
+    traj_data_from_file = load_trajectory_from_jupedsim_sqlite(
+        trajectory_file=trajectory_sqlite,
+    )
+
+    assert (
+        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
+        == expected_data.to_numpy()
+    ).all()
+    assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+def test_load_trajectory_from_jupedsim_sqlite_non_existing_file():
+    with pytest.raises(IOError) as error_info:
+        load_trajectory_from_jupedsim_sqlite(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_trajectory_from_jupedsim_sqlite_non_file(tmp_path):
+    with pytest.raises(IOError) as error_info:
+        load_trajectory_from_jupedsim_sqlite(trajectory_file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "data, frame_rate, walkable_area",
+    [
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            7.0,
+            shapely.Polygon([(-10, -10), (-10, 10), (10, 10), (10, -10)]),
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            10,
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+        ),
+    ],
+)
+def test_load_walkable_area_from_jupedsim_sqlite_success(
+    tmp_path: pathlib.Path, data, frame_rate, walkable_area
+):
+    trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
+
+    expected_data = pd.DataFrame(data=data)
+
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_jupedsim_sqlite_trajectory_file(
+        file=trajectory_sqlite,
+        frame_rate=frame_rate,
+        data=written_data,
+        geometry=walkable_area,
+    )
+
+    expected_walkable_area = WalkableArea(walkable_area)
+    walkable_area = load_walkable_area_from_jupedsim_sqlite(trajectory_sqlite)
+    assert expected_walkable_area.polygon.equals(walkable_area.polygon)
+
+
+def test_load_walkable_area_from_jupedsim_sqlite_non_existing_file():
+    with pytest.raises(IOError) as error_info:
+        load_walkable_area_from_jupedsim_sqlite(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_walkable_area_from_jupedsim_sqlite_non_file(tmp_path):
+    with pytest.raises(IOError) as error_info:
+        load_walkable_area_from_jupedsim_sqlite(trajectory_file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
