@@ -296,7 +296,7 @@ def calc_speed_on_line(individual_voronoi_polygons, measurement_line: Measuremen
 
     result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
     result[VELOCITY_COL] = result[V_SP1_COL] + result[V_SP2_COL]
-    return result
+    return result.sort_values(by=FRAME_COL, ascending=False)
 
 
 def calc_density_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, species):
@@ -323,7 +323,7 @@ def calc_density_on_line(individual_voronoi_polygons, measurement_line: Measurem
     result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
 
     result[DENSITY_COL] = result[DENSITY_SP1_COL] + result[DENSITY_SP2_COL]
-    return result
+    return result.sort_values(by=FRAME_COL, ascending=False)
 
 
 def calc_flow_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
@@ -351,4 +351,4 @@ def calc_flow_on_line(individual_voronoi_polygons, measurement_line: Measurement
 
     result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
     result[FLOW_COL] = result[FLOW_SP1_COL] + result[FLOW_SP2_COL]
-    return result
+    return result.sort_values(by=FRAME_COL, ascending=False)
