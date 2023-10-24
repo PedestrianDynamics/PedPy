@@ -686,7 +686,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
     """Plot the Voronoi cells, walkable able, and measurement area in 2D.
 
     Args:
-        voronoi_polygons (pd.DataFrame): voronoi polygon data as returned by
+        voronoi_data (pd.DataFrame): voronoi polygon data as returned by
             :func:`~density_calculator.compute_voronoi_density`
         frame (int): frame index
         walkable_area (WalkableArea, optional): WalkableArea object to plot

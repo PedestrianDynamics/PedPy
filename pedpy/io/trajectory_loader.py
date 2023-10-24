@@ -1,12 +1,14 @@
 """Load trajectories to the internal trajectory data format."""
 
 import pathlib
+import sqlite3
 from typing import Any, Optional, Tuple
 
 import pandas as pd
 from aenum import Enum
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 
@@ -40,25 +42,54 @@ def load_trajectory(
     Returns:
         :class:`TrajectoryData` representation of the file data
     """
+    return load_trajectory_from_txt(
+        trajectory_file=trajectory_file,
+        default_frame_rate=default_frame_rate,
+        default_unit=default_unit,
+    )
+
+
+def load_trajectory_from_txt(
+    *,
+    trajectory_file: pathlib.Path,
+    default_frame_rate: Optional[float] = None,
+    default_unit: Optional[TrajectoryUnit] = None,
+) -> TrajectoryData:
+    """Loads the trajectory file in the internal :class:`TrajectoryData` format.
+
+    Loads the relevant data: trajectory data, frame rate, and type of
+    trajectory from the given trajectory file. If the file does not contain
+    some data, defaults can be submitted.
+
+    Args:
+        trajectory_file (pathlib.Path): file containing the trajectory
+        default_frame_rate (float): frame rate of the file, None if frame rate
+            from file is used
+        default_unit (TrajectoryUnit): unit in which the coordinates are stored
+                in the file, None if unit should be parsed from the file
+
+    Returns:
+        :class:`TrajectoryData` representation of the file data
+    """
     if not trajectory_file.exists():
         raise IOError(f"{trajectory_file} does not exist.")
 
     if not trajectory_file.is_file():
         raise IOError(f"{trajectory_file} is not a file.")
 
-    traj_frame_rate, traj_unit = _load_trajectory_meta_data(
+    traj_frame_rate, traj_unit = _load_trajectory_meta_data_from_txt(
         trajectory_file=trajectory_file,
         default_frame_rate=default_frame_rate,
         default_unit=default_unit,
     )
-    traj_dataframe = _load_trajectory_data(
+    traj_dataframe = _load_trajectory_data_from_txt(
         trajectory_file=trajectory_file, unit=traj_unit
     )
 
     return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
 
-def _load_trajectory_data(
+def _load_trajectory_data_from_txt(
     *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
@@ -112,7 +143,7 @@ def _load_trajectory_data(
         ) from exc
 
 
-def _load_trajectory_meta_data(  # pylint: disable=too-many-branches
+def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
     *,
     trajectory_file: pathlib.Path,
     default_frame_rate: Optional[float],
@@ -212,3 +243,57 @@ def _load_trajectory_meta_data(  # pylint: disable=too-many-branches
             )
 
     return frame_rate, unit
+
+
+def load_trajectory_from_jupedsim_sqlite(
+    trajectory_file: pathlib.Path,
+) -> TrajectoryData:
+    """Loads data from the sqlite file in the internal :class:`TrajectoryData` format.
+
+    Args:
+        trajectory_file: trajectory file in JuPedSim sqlite format
+
+    Returns:
+        :class:`TrajectoryData` representation of the file data
+    """
+    if not trajectory_file.exists():
+        raise IOError(f"{trajectory_file} does not exist.")
+
+    if not trajectory_file.is_file():
+        raise IOError(f"{trajectory_file} is not a file.")
+
+    with sqlite3.connect(trajectory_file) as con:
+        data = pd.read_sql_query(
+            "select frame, id, pos_x as x, pos_y as y from trajectory_data",
+            con,
+        )
+        fps = float(
+            con.cursor()
+            .execute("select value from metadata where key = 'fps'")
+            .fetchone()[0]
+        )
+    return TrajectoryData(data=data, frame_rate=fps)
+
+
+def load_walkable_area_from_jupedsim_sqlite(
+    trajectory_file: pathlib.Path,
+) -> WalkableArea:
+    """Loads the walkable area from the sqlite file in the internal :class:`TrajectoryData` format.
+
+    Args:
+        trajectory_file: trajectory file in JuPedSim sqlite format
+
+    Returns:
+        :class:`WalkableArea` used in the simulation
+    """
+    if not trajectory_file.exists():
+        raise IOError(f"{trajectory_file} does not exist.")
+
+    if not trajectory_file.is_file():
+        raise IOError(f"{trajectory_file} is not a file.")
+
+    with sqlite3.connect(trajectory_file) as con:
+        walkable_area = (
+            con.cursor().execute("select wkt from geometry").fetchone()[0]
+        )
+    return WalkableArea(walkable_area)
