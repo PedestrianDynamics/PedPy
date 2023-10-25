@@ -218,9 +218,10 @@ def partial_line_length(polygon, line):
     return shapely.length(shapely.intersection(polygon, line)) / shapely.length(line)
 
 
-def weight_value(group, n, line):
+def weight_value(group, line):
     """calculates the velocity in direction n times partial line length of the polygon
     group is a dataframe containing the columns 'v_x', 'v_y' and 'polygon' """
+    n = calc_n(line)
     return (group[V_X_COL] * n[0] + group[V_Y_COL] * n[1]) * partial_line_length(group[POLYGON_COL], line)
 
 
@@ -273,82 +274,63 @@ def separate_species_with_traj(individual_voronoi_polygons, measurement_line: Me
 
 
 def calc_speed_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
-    # note:  species needs to contain the columns id, species where species == 1 or species == -1
-    line = measurement_line.line
-    n = calc_n(line)
-    i_poly = merge_table(individual_voronoi_polygons, species, line, individual_speed)
-    species_1 = i_poly[i_poly[SPECIES_COL] == 1]
-    species_2 = i_poly[i_poly[SPECIES_COL] == -1]
-    if not species_1.empty:
-        species_1 = species_1.groupby(FRAME_COL).apply(
-            lambda group: (weight_value(group, n, line)).sum()).reset_index()
-        species_1.columns = [FRAME_COL, V_SP1_COL]
-    else:
-        species_1 = pd.DataFrame(columns=[FRAME_COL, V_SP1_COL])
 
-    if not species_2.empty:
-        species_2 = species_2.groupby(FRAME_COL).apply(
-            lambda group: (weight_value(group, n, line)).sum()).reset_index()
-        species_2.columns = [FRAME_COL, V_SP2_COL]
-        species_2[V_SP2_COL] *= -1
-    else:
-        species_2 = pd.DataFrame(columns=[FRAME_COL, V_SP2_COL])
-
-    result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
+    result = calc_lambda_on_line(individual_voronoi_polygons=individual_voronoi_polygons,
+                                 measurement_line=measurement_line,
+                                 species=species,
+                                 lambda_for_group=lambda group, line: (weight_value(group, line)).sum(),
+                                 column_id_sp1=V_SP1_COL,
+                                 column_id_sp2=V_SP2_COL,
+                                 individual_speed=individual_speed)
+    result[V_SP2_COL] *= -1
     result[VELOCITY_COL] = result[V_SP1_COL] + result[V_SP2_COL]
-    return result.sort_values(by=FRAME_COL, ascending=False)
+    return result
 
 
 def calc_density_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, species):
     # note:  species needs to contain the columns id, species where species == 1 or species == -1
-    line = measurement_line.line
-    i_poly = merge_table(individual_voronoi_polygons, species, line)
-    species_1 = i_poly[i_poly[SPECIES_COL] == 1]
-    species_2 = i_poly[i_poly[SPECIES_COL] == -1]
-    if not species_1.empty:
-        species_1 = species_1.groupby(FRAME_COL).apply(
-            lambda group: (group[DENSITY_COL] * (partial_line_length(group[POLYGON_COL], line))).sum()).reset_index()
-        species_1.columns = [FRAME_COL, DENSITY_SP1_COL]
-    else:
-        species_1 = pd.DataFrame(columns=[FRAME_COL, DENSITY_SP1_COL])
-
-    if not species_2.empty:
-        species_2 = species_2.groupby(FRAME_COL).apply(
-            lambda group: (group[DENSITY_COL] * (partial_line_length(group[POLYGON_COL], line))).sum()).reset_index()
-
-        species_2.columns = [FRAME_COL, DENSITY_SP2_COL]
-    else:
-        species_2 = pd.DataFrame(columns=[FRAME_COL, DENSITY_SP2_COL])
-
-    result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
+    result = calc_lambda_on_line(individual_voronoi_polygons=individual_voronoi_polygons,
+                                 measurement_line=measurement_line,
+                                 species=species,
+                                 lambda_for_group=lambda group, line: (group[DENSITY_COL] * (partial_line_length(group[POLYGON_COL], line))).sum(),
+                                 column_id_sp1=DENSITY_SP1_COL,
+                                 column_id_sp2=DENSITY_SP2_COL)
 
     result[DENSITY_COL] = result[DENSITY_SP1_COL] + result[DENSITY_SP2_COL]
-    return result.sort_values(by=FRAME_COL, ascending=False)
+    return result
 
 
 def calc_flow_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
-    # note:  species needs to contain the columns id, species where species == 1 or species == -1
+    result = calc_lambda_on_line(individual_voronoi_polygons=individual_voronoi_polygons,
+                                 measurement_line=measurement_line,
+                                 species=species,
+                                 lambda_for_group=lambda group, line: (weight_value(group, line) * group[DENSITY_COL]).sum(),
+                                 column_id_sp1=FLOW_SP1_COL,
+                                 column_id_sp2=FLOW_SP2_COL,
+                                 individual_speed=individual_speed)
+    result[FLOW_SP2_COL] *= -1
+    result[FLOW_COL] = result[FLOW_SP1_COL] + result[FLOW_SP2_COL]
+    return result
+
+
+def calc_lambda_on_line(individual_voronoi_polygons, measurement_line:MeasurementLine, species, lambda_for_group, column_id_sp1, column_id_sp2, individual_speed=None):
     line = measurement_line.line
-    n = calc_n(line)
     i_poly = merge_table(individual_voronoi_polygons, species, line, individual_speed)
 
     species_1 = i_poly[i_poly[SPECIES_COL] == 1]
     species_2 = i_poly[i_poly[SPECIES_COL] == -1]
+
     if not species_1.empty:
-        species_1 = species_1.groupby(FRAME_COL).apply(
-            lambda group: (weight_value(group, n, line) * group[DENSITY_COL]).sum()).reset_index()
-        species_1.columns = [FRAME_COL, FLOW_SP1_COL]
+        species_1 = species_1.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, line)).reset_index()
+        species_1.columns = [FRAME_COL, column_id_sp1]
     else:
-        species_1 = pd.DataFrame(columns=[FRAME_COL, FLOW_SP1_COL])
+        species_1 = pd.DataFrame(columns=[FRAME_COL, column_id_sp1])
 
     if not species_2.empty:
-        species_2 = species_2.groupby(FRAME_COL).apply(
-            lambda group: (weight_value(group, n, line) * group[DENSITY_COL]).sum()).reset_index()
-        species_2.columns = [FRAME_COL, FLOW_SP2_COL]
-        species_2[FLOW_SP2_COL] *= -1
+        species_2 = species_2.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, line)).reset_index()
+        species_2.columns = [FRAME_COL, column_id_sp2]
     else:
-        species_2 = pd.DataFrame(columns=[FRAME_COL, FLOW_SP2_COL])
+        species_2 = pd.DataFrame(columns=[FRAME_COL, column_id_sp2])
 
     result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
-    result[FLOW_COL] = result[FLOW_SP1_COL] + result[FLOW_SP2_COL]
     return result.sort_values(by=FRAME_COL, ascending=False)
