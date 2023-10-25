@@ -2,9 +2,8 @@ import pathlib
 
 from pedpy.data.geometry import WalkableArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.io.trajectory_loader import load_trajectory
 from pedpy.methods.flow_calculator import calc_n, partial_line_length, weight_value, merge_table, separate_species, \
-    calc_speed_on_line, calc_density_on_line, calc_flow_on_line
+    calc_speed_on_line, calc_density_on_line, calc_flow_on_line, separate_species_with_traj
 
 import pytest
 from shapely import LineString, Polygon
@@ -303,7 +302,6 @@ def test_separate_species_correct_amount_without_cutoff(bidirectional_setup):
     traj = bidirectional_setup["traj"]
     walkable_area = bidirectional_setup["walkable_area"]
     measurement_line = bidirectional_setup["measurement_line"]
-    number_of_agents = bidirectional_setup["n_o_a"]
 
     individual_cutoff = compute_individual_voronoi_polygons(
         traj_data=traj,
@@ -338,4 +336,84 @@ def test_separate_species_correct_amount_with_cutoff(bidirectional_setup):
     actual_species = separate_species(individual_voronoi_polygons=individual_cutoff,
                                       measurement_line=measurement_line,
                                       individual_speed=individual_speed)
+    assert actual_species.shape[0] == 50
+
+
+def test_separate_species_with_traj_correct_with_cutoff(bidirectional_setup):
+    traj = bidirectional_setup["traj"]
+    walkable_area = bidirectional_setup["walkable_area"]
+    measurement_line = bidirectional_setup["measurement_line"]
+
+    min_idx = traj.data.groupby(ID_COL)[FRAME_COL].idxmin()
+    expected_species = traj.data.loc[min_idx, [ID_COL]]
+    expected_species[SPECIES_COL] = np.where(expected_species[ID_COL] < 25, -1, 1)
+
+    individual_cutoff = compute_individual_voronoi_polygons(
+        traj_data=traj,
+        walkable_area=walkable_area,
+        cut_off=Cutoff(radius=0.8, quad_segments=3)
+    )
+    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
+                                                measurement_line=measurement_line,
+                                                traj=traj)
+
+    suffixes = ('_expected', '_species')
+    non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes)
+    columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
+    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
+    assert non_matching.shape[0] == 0
+
+
+def test_separate_species_with_traj_correct_without_cutoff(bidirectional_setup):
+    traj = bidirectional_setup["traj"]
+    walkable_area = bidirectional_setup["walkable_area"]
+    measurement_line = bidirectional_setup["measurement_line"]
+
+    min_idx = traj.data.groupby(ID_COL)[FRAME_COL].idxmin()
+    expected_species = traj.data.loc[min_idx, [ID_COL]]
+    expected_species[SPECIES_COL] = np.where(expected_species[ID_COL] < 25, -1, 1)
+
+    individual_cutoff = compute_individual_voronoi_polygons(
+        traj_data=traj,
+        walkable_area=walkable_area,
+    )
+    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
+                                                measurement_line=measurement_line,
+                                                traj=traj)
+
+    suffixes = ('_expected', '_species')
+    non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes, how="outer")
+    columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
+    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
+    assert non_matching.shape[0] == 0
+
+
+def test_separate_species_with_traj_correct_amount_without_cutoff(bidirectional_setup):
+    traj = bidirectional_setup["traj"]
+    walkable_area = bidirectional_setup["walkable_area"]
+    measurement_line = bidirectional_setup["measurement_line"]
+
+    individual_cutoff = compute_individual_voronoi_polygons(
+        traj_data=traj,
+        walkable_area=walkable_area,
+    )
+    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
+                                                measurement_line=measurement_line,
+                                                traj=traj)
+    assert actual_species.shape[0] == 50
+
+
+def test_separate_species_with_traj_correct_amount_with_cutoff(bidirectional_setup):
+    traj = bidirectional_setup["traj"]
+    walkable_area = bidirectional_setup["walkable_area"]
+    measurement_line = bidirectional_setup["measurement_line"]
+
+    individual_cutoff = compute_individual_voronoi_polygons(
+        traj_data=traj,
+        walkable_area=walkable_area,
+        cut_off=Cutoff(radius=0.8, quad_segments=3)
+    )
+    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
+                                                measurement_line=measurement_line,
+                                                traj=traj)
     assert actual_species.shape[0] == 50
