@@ -239,7 +239,32 @@ def merge_table(individual_voronoi_polygons, species, line, individual_speed=Non
 
 
 def separate_species(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed):
-    """creates a list containing the species for each agent"""
+    """creates a Dataframe containing the species for each agent
+
+    the species decides from what side an agent is encountering the measurement line
+    the species of an agent :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l0}))`,
+    With the normal vector n of the measurement line and the velocity  of agent i :math:`v_i`
+    at the time when his voronoi cell touches the measurement line :math:`t_{i,l0}`
+
+    if the voronoi polygon of an agent never touches the measurement line
+     the agent will not be included in the returned Dataframe
+
+    if there is no entry matching for the agent and frame in individual_speed
+     the agent will not be included in the returned Dataframe.
+    Keep this in mind when choosing the frame step for the individual speed
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+            frame, result from :func:`method_utils.compute_individual_voronoi_polygon`
+
+        measurement_line (MeasurementLine): measurement line
+
+        individual_speed (pd.DataFrame): individual speed data per frame, result from
+            :func:`methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+
+    Returns:
+        Dataframe containing columns 'id' and 'species'
+    """
     # create dataframe with id and first frame where voronoi polygon intersects measurement line
     line = measurement_line.line
     intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], line)]
@@ -255,7 +280,27 @@ def separate_species(individual_voronoi_polygons, measurement_line: MeasurementL
 
 
 def separate_species_with_traj(individual_voronoi_polygons, measurement_line: MeasurementLine, traj: TrajectoryData):
-    """creates a list containing the species for each agent"""
+    """creates a Dataframe containing the species for each agent
+
+    the species decides from what side an agent is encountering the measurement line
+    the species of an agent :math:`i` is calculated by :math:`sign(n * r(t_{i,l0}))`,
+    With the normal vector n of the measurement line and the vector :math:`r` between the agent :math:`i`
+    at the time :math:`t_{i,l0}` when his voronoi cell touches the measurement line
+
+    if the voronoi polygon of an agent never touches the measurement line
+     the agent will not be included in the returned Dataframe
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+            frame, result from :func:`method_utils.compute_individual_voronoi_polygon`
+
+        measurement_line (MeasurementLine): measurement line
+
+        traj (TrajectoryData): trajectory data
+
+    Returns:
+        Dataframe containing columns 'id' and 'species'
+    """
     # create dataframe with id and first frame where voronoi polygon intersects measurement line
     data = traj.data
     line = measurement_line.line
@@ -270,11 +315,31 @@ def separate_species_with_traj(individual_voronoi_polygons, measurement_line: Me
     end_result["x_direction"] = shapely.get_x(end_result["closest_point_on_line"]) - shapely.get_x(end_result[POINT_COL])
     end_result["y_direction"] = shapely.get_y(end_result["closest_point_on_line"]) - shapely.get_y(end_result[POINT_COL])
     end_result[SPECIES_COL] = numpy.sign(n[0] * end_result["x_direction"] + n[1] * end_result["y_direction"])
-    return end_result [[ID_COL, SPECIES_COL]]
+    return end_result[[ID_COL, SPECIES_COL]]
 
 
 def calc_speed_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
+    r"""calculates the speed for both species and the total speed along the measurement line
 
+    the speed of each frame is accumulated from
+    :math:`v_{i} * n_{l0} *  \frac{w_i(t)}{w}`
+    for each agent :math:`i` whose Voronoi cell intersects the line l0.
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+            frame, result from :func:`method_utils.compute_individual_voronoi_polygon`
+
+        measurement_line (MeasurementLine): line at which the speed is calculated
+
+        individual_speed (pd.DataFrame): individual speed data per frame, result from
+            :func:`methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+
+        species (pd.Dataframe): dataframe containing information about the species
+            of every agent intersecting with the line, result from :func:`methods.flow_calculator.separate_species`
+            or :func:`methods.flow_calculator.separate_species_with_traj`
+    Returns:
+        Dataframe containing columns 'frame', 'v_sp+1', 'v_sp-1', 'v'
+    """
     result = calc_lambda_on_line(individual_voronoi_polygons=individual_voronoi_polygons,
                                  measurement_line=measurement_line,
                                  species=species,
@@ -288,7 +353,24 @@ def calc_speed_on_line(individual_voronoi_polygons, measurement_line: Measuremen
 
 
 def calc_density_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, species):
-    # note:  species needs to contain the columns id, species where species == 1 or species == -1
+    r"""calculates the density for both species and the total density along the measurement line
+
+    the density of each frame is accumulated from
+    :math:`\frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
+    for each agent :math:`i` whose Voronoi cell intersects the line l0.
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+            frame, result from :func:`method_utils.compute_individual_voronoi_polygon`
+
+        measurement_line (MeasurementLine): line at which the density is calculated
+
+        species (pd.Dataframe): dataframe containing information about the species
+            of every agent intersecting with the line, result from :func:`methods.flow_calculator.separate_species`
+            or :func:`methods.flow_calculator.separate_species_with_traj`
+    Returns:
+        Dataframe containing columns 'frame', 'p_sp+1', 'p_sp-1', 'density'
+    """
     result = calc_lambda_on_line(individual_voronoi_polygons=individual_voronoi_polygons,
                                  measurement_line=measurement_line,
                                  species=species,
@@ -301,6 +383,27 @@ def calc_density_on_line(individual_voronoi_polygons, measurement_line: Measurem
 
 
 def calc_flow_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
+    r"""calculates the flow for both species and the total flow along the measurement line
+
+        the flow of each frame is accumulated from
+        :math:`v_{i} * n_{l0} * \frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
+        for each agent :math:`i` whose Voronoi cell intersects the line l0.
+
+        Args:
+            individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+                frame, result from :func:`method_utils.compute_individual_voronoi_polygon`
+
+            measurement_line (MeasurementLine): line at which the flow is calculated
+
+            individual_speed (pd.DataFrame): individual speed data per frame, result from
+                :func:`methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+
+            species (pd.Dataframe): dataframe containing information about the species
+                of every agent intersecting with the line, result from :func:`methods.flow_calculator.separate_species`
+                or :func:`methods.flow_calculator.separate_species_with_traj`
+        Returns:
+            Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
+        """
     result = calc_lambda_on_line(individual_voronoi_polygons=individual_voronoi_polygons,
                                  measurement_line=measurement_line,
                                  species=species,
@@ -313,7 +416,10 @@ def calc_flow_on_line(individual_voronoi_polygons, measurement_line: Measurement
     return result
 
 
-def calc_lambda_on_line(individual_voronoi_polygons, measurement_line:MeasurementLine, species, lambda_for_group, column_id_sp1, column_id_sp2, individual_speed=None):
+def calc_lambda_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, species, lambda_for_group, column_id_sp1, column_id_sp2, individual_speed=None):
+    """applies lambda for both species for each frame where the voronoi-polygon intersects with the measurement line
+
+    lambda_for_group is called with a group containing the data of one species and a shapely-line"""
     line = measurement_line.line
     i_poly = merge_table(individual_voronoi_polygons, species, line, individual_speed)
 
