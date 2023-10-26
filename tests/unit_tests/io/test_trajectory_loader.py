@@ -2,6 +2,7 @@ import pathlib
 import sqlite3
 from typing import Any, List, Optional
 
+import h5py
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -12,20 +13,24 @@ from numpy import dtype
 from pedpy.column_identifier import *
 from pedpy.data.geometry import WalkableArea
 from pedpy.io.trajectory_loader import (
+    LoadTrajectoryError,
     TrajectoryUnit,
     _load_trajectory_data_from_txt,
     _load_trajectory_meta_data_from_txt,
+    _validate_is_file,
     load_trajectory,
     load_trajectory_from_jupedsim_sqlite,
+    load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
     load_walkable_area_from_jupedsim_sqlite,
+    load_walkable_area_from_ped_data_archive_hdf5,
 )
 
 
 def prepare_data_frame(data_frame: pd.DataFrame) -> pd.DataFrame:
     """Prepare the data set for comparison with the result of the parsing.
 
-    Trims the data frame to the first 5 columns and sets the column dtype to
+    Trims the data frame to the first 4 columns and sets the column dtype to
     float. This needs to be done, as only the relevant data are read from the
     file, and the rest will be ignored.
 
@@ -35,7 +40,7 @@ def prepare_data_frame(data_frame: pd.DataFrame) -> pd.DataFrame:
     Result:
         prepared data frame
     """
-    result = data_frame[[0, 1, 2, 3]].copy(deep=True)
+    result = data_frame.iloc[:, :4].copy(deep=True)
     result = result.astype("float64")
 
     return result
@@ -137,6 +142,52 @@ def write_jupedsim_sqlite_trajectory_file(
     data.to_sql("trajectory_data", con, index=False, if_exists="append")
 
 
+def write_data_archive_hdf5_file(
+    *,
+    data: Optional[pd.DataFrame] = None,
+    file: pathlib.Path,
+    frame_rate: Optional[float] = None,
+    geometry: Optional[shapely.Polygon] = None,
+):
+    with h5py.File(file, "w") as h5_file:
+        dt = h5py.special_dtype(vlen=str)
+        h5_file.attrs["file_version"] = "1.0.0"
+        if geometry:
+            h5_file.attrs["wkt_geometry"] = shapely.to_wkt(
+                geometry.normalize(), rounding_precision=-1
+            )
+        if data is not None:
+            records = data.to_records(
+                index=False,
+                column_dtypes={
+                    col: dt for col in data.columns[data.dtypes == "object"]
+                },
+            )
+            ds_traj = h5_file.create_dataset(
+                "trajectory",
+                data=records,
+            )
+            if frame_rate:
+                ds_traj.attrs["fps"] = frame_rate
+            ds_traj.attrs["id"] = "unique identifier for pedestrian"
+            ds_traj.attrs["frame"] = "frame number"
+            ds_traj.attrs["x"] = "pedestrian x-coordinate (meter [m])"
+            ds_traj.attrs["y"] = "pedestrian y-coordinate (meter [m])"
+
+
+def test_validate_file_non_existing_file():
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        _validate_is_file(file=pathlib.Path("non_existing_file"))
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_trajectory_from_txt_non_file(tmp_path):
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        _validate_is_file(file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
+
+
 @pytest.mark.parametrize(
     "data, expected_frame_rate, expected_unit",
     [
@@ -210,7 +261,7 @@ def test_load_trajectory_from_txt_success(
 
 
 def test_load_trajectory_from_txt_non_existing_file():
-    with pytest.raises(IOError) as error_info:
+    with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_txt(
             trajectory_file=pathlib.Path("non_existing_file")
         )
@@ -218,7 +269,7 @@ def test_load_trajectory_from_txt_non_existing_file():
 
 
 def test_load_trajectory_from_txt_non_file(tmp_path):
-    with pytest.raises(IOError) as error_info:
+    with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_txt(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
@@ -671,7 +722,7 @@ def test_load_trajectory_from_jupedsim_sqlite_success(
 
 
 def test_load_trajectory_from_jupedsim_sqlite_non_existing_file():
-    with pytest.raises(IOError) as error_info:
+    with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_jupedsim_sqlite(
             trajectory_file=pathlib.Path("non_existing_file")
         )
@@ -679,7 +730,7 @@ def test_load_trajectory_from_jupedsim_sqlite_non_existing_file():
 
 
 def test_load_trajectory_from_jupedsim_sqlite_non_file(tmp_path):
-    with pytest.raises(IOError) as error_info:
+    with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_jupedsim_sqlite(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
@@ -724,7 +775,7 @@ def test_load_walkable_area_from_jupedsim_sqlite_success(
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_non_existing_file():
-    with pytest.raises(IOError) as error_info:
+    with pytest.raises(LoadTrajectoryError) as error_info:
         load_walkable_area_from_jupedsim_sqlite(
             trajectory_file=pathlib.Path("non_existing_file")
         )
@@ -732,7 +783,232 @@ def test_load_walkable_area_from_jupedsim_sqlite_non_existing_file():
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_non_file(tmp_path):
-    with pytest.raises(IOError) as error_info:
+    with pytest.raises(LoadTrajectoryError) as error_info:
         load_walkable_area_from_jupedsim_sqlite(trajectory_file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "data, expected_frame_rate",
+    [
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            7.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            15.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            50.0,
+        ),
+    ],
+)
+def test_load_trajectory_from_data_archive_hdf5_success(
+    tmp_path: pathlib.Path,
+    data: List[npt.NDArray[np.float64]],
+    expected_frame_rate: float,
+) -> None:
+    trajectory_hdf5 = pathlib.Path(tmp_path / "trajectory.h5")
+
+    expected_data = pd.DataFrame(
+        data=data,
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    print()
+    print(written_data.head())
+    write_data_archive_hdf5_file(
+        file=trajectory_hdf5,
+        frame_rate=expected_frame_rate,
+        data=written_data,
+    )
+
+    expected_data = prepare_data_frame(expected_data)
+    traj_data_from_file = load_trajectory_from_ped_data_archive_hdf5(
+        trajectory_file=trajectory_hdf5,
+    )
+
+    assert (
+        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
+        == expected_data.to_numpy()
+    ).all()
+    assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+def test_load_trajectory_from_ped_data_archive_hdf5_no_trajectory_dataset(
+    tmp_path: pathlib.Path,
+):
+    trajectory_hdf5 = pathlib.Path(tmp_path / "trajectory.h5")
+
+    write_data_archive_hdf5_file(
+        file=trajectory_hdf5,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_ped_data_archive_hdf5(
+            trajectory_file=trajectory_hdf5
+        )
+
+    assert "it does not contain a 'trajectory' dataset." in str(
+        error_info.value
+    )
+
+
+def test_load_trajectory_from_ped_data_archive_hdf5_trajectory_wrong_columns(
+    tmp_path: pathlib.Path,
+):
+    trajectory_hdf5 = pathlib.Path(tmp_path / "trajectory.h5")
+    traj_df = pd.DataFrame(
+        np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+        columns=["foo", FRAME_COL, X_COL, Y_COL],
+    )
+
+    write_data_archive_hdf5_file(
+        file=trajectory_hdf5,
+        data=traj_df,
+        frame_rate=10,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_ped_data_archive_hdf5(
+            trajectory_file=trajectory_hdf5
+        )
+
+    assert (
+        "'trajectory' dataset does not contain the following columns: 'id', 'frame', 'x', and 'y'"
+        in str(error_info.value)
+    )
+
+
+def test_load_trajectory_from_ped_data_archive_hdf5_trajectory_dataset_no_fps(
+    tmp_path: pathlib.Path,
+):
+    trajectory_hdf5 = pathlib.Path(tmp_path / "trajectory.h5")
+    traj_df = pd.DataFrame(
+        np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+
+    write_data_archive_hdf5_file(
+        file=trajectory_hdf5,
+        data=traj_df,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_ped_data_archive_hdf5(
+            trajectory_file=trajectory_hdf5
+        )
+
+    assert "the 'trajectory' dataset does not contain a 'fps' attribute" in str(
+        error_info.value
+    )
+
+
+def test_load_trajectory_from_ped_data_archive_hdf5_non_existing_file():
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_ped_data_archive_hdf5(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_trajectory_from_ped_data_archive_hdf5_non_file(tmp_path):
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_ped_data_archive_hdf5(trajectory_file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "data, frame_rate, walkable_area",
+    [
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            7.0,
+            shapely.Polygon([(-10, -10), (-10, 10), (10, 10), (10, -10)]),
+        ),
+        (
+            np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+            10,
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+        ),
+    ],
+)
+def test_load_walkable_area_from_ped_data_archive_hdf5_success(
+    tmp_path: pathlib.Path, data, frame_rate, walkable_area
+):
+    trajectory_hdf5 = pathlib.Path(tmp_path / "trajectory.sqlite")
+
+    expected_data = pd.DataFrame(data=data)
+
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_data_archive_hdf5_file(
+        file=trajectory_hdf5,
+        frame_rate=frame_rate,
+        data=written_data,
+        geometry=walkable_area,
+    )
+
+    expected_walkable_area = WalkableArea(walkable_area)
+    walkable_area = load_walkable_area_from_ped_data_archive_hdf5(
+        trajectory_hdf5
+    )
+    assert expected_walkable_area.polygon.equals(walkable_area.polygon)
+
+
+def test_load_walkable_area_from_ped_data_archive_hdf5_no_wkt_in_file(
+    tmp_path: pathlib.Path,
+):
+    trajectory_hdf5 = pathlib.Path(tmp_path / "trajectory.h5")
+    traj_df = pd.DataFrame(
+        np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+
+    write_data_archive_hdf5_file(
+        file=trajectory_hdf5,
+        frame_rate=10,
+        data=traj_df,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_walkable_area_from_ped_data_archive_hdf5(
+            trajectory_file=trajectory_hdf5
+        )
+
+    assert "it does not contain a 'wkt_geometry' attribute" in str(
+        error_info.value
+    )
+
+
+def test_load_walkable_area_from_ped_data_archive_hdf5_non_existing_file():
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_walkable_area_from_ped_data_archive_hdf5(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_walkable_area_from_ped_data_archive_hdf5_non_file(tmp_path):
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
