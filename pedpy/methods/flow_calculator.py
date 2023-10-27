@@ -29,7 +29,8 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import compute_crossing_frames
+from pedpy.methods.method_utils import compute_crossing_frames, SpeedCalculation
+from pedpy.methods.speed_calculator import  compute_individual_speed
 
 
 def compute_n_t(
@@ -238,7 +239,7 @@ def merge_table(individual_voronoi_polygons, species, line, individual_speed=Non
         return merged_table.merge(individual_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
 
 
-def separate_species(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed):
+def separate_species(traj:TrajectoryData, individual_voronoi_polygons, measurement_line: MeasurementLine, frame_step):
     """creates a Dataframe containing the species for each agent
 
     the species decides from what side an agent is encountering the measurement line
@@ -249,18 +250,17 @@ def separate_species(individual_voronoi_polygons, measurement_line: MeasurementL
     if the voronoi polygon of an agent never touches the measurement line
      the agent will not be included in the returned Dataframe
 
-    if there is no entry matching for the agent and frame in individual_speed
-     the agent will not be included in the returned Dataframe.
-    Keep this in mind when choosing the frame step for the individual speed
 
     Args:
+        traj (TrajectoryData): trajectory data
+
         individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
             frame, result from :func:`method_utils.compute_individual_voronoi_polygon`
 
         measurement_line (MeasurementLine): measurement line
 
-        individual_speed (pd.DataFrame): individual speed data per frame, result from
-            :func:`methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+        frame_step (int): gives the size of time interval for calculating the
+            velocity.
 
     Returns:
         Dataframe containing columns 'id' and 'species'
@@ -269,14 +269,18 @@ def separate_species(individual_voronoi_polygons, measurement_line: MeasurementL
     line = measurement_line.line
     intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], line)]
     min_idx = intersecting_polys.groupby(ID_COL)[FRAME_COL].idxmin()
-    result = intersecting_polys.loc[min_idx, [ID_COL, FRAME_COL]]
+    first_frames = intersecting_polys.loc[min_idx, [ID_COL, FRAME_COL]]
 
     n = calc_n(line)
 
+    initial_speed = compute_individual_speed(traj_data=traj,
+                                             frame_step=frame_step,
+                                             compute_velocity=True,
+                                             speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED)
     # create dataframe with 'id' and 'species'
-    end_result = result.merge(individual_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
-    end_result[SPECIES_COL] = numpy.sign(n[0] * end_result[V_X_COL] + n[1] * end_result[V_Y_COL])
-    return end_result[[ID_COL, SPECIES_COL]]
+    result = first_frames.merge(initial_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
+    result[SPECIES_COL] = numpy.sign(n[0] * result[V_X_COL] + n[1] * result[V_Y_COL])
+    return result[[ID_COL, SPECIES_COL]]
 
 
 def separate_species_with_traj(individual_voronoi_polygons, measurement_line: MeasurementLine, traj: TrajectoryData):

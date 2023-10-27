@@ -252,14 +252,10 @@ def test_separate_species_correct_with_cutoff(bidirectional_setup):
         walkable_area=walkable_area,
         cut_off=Cutoff(radius=0.8, quad_segments=3)
     )
-    individual_speed = compute_individual_speed(
-        traj_data=traj,
-        frame_step=10,
-        compute_velocity=True,
-    )
     actual_species = separate_species(individual_voronoi_polygons=individual_cutoff,
                                       measurement_line=measurement_line,
-                                      individual_speed=individual_speed)
+                                      frame_step=10,
+                                      traj=traj)
 
     suffixes = ('_expected', '_species')
     non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes)
@@ -281,14 +277,10 @@ def test_separate_species_correct_without_cutoff(bidirectional_setup):
         traj_data=traj,
         walkable_area=walkable_area,
     )
-    individual_speed = compute_individual_speed(
-        traj_data=traj,
-        frame_step=10,
-        compute_velocity=True,
-    )
     actual_species = separate_species(individual_voronoi_polygons=individual_cutoff,
                                       measurement_line=measurement_line,
-                                      individual_speed=individual_speed)
+                                      frame_step=10,
+                                      traj=traj)
 
     suffixes = ('_expected', '_species')
     non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes, how="outer")
@@ -306,14 +298,10 @@ def test_separate_species_correct_amount_without_cutoff(bidirectional_setup):
         traj_data=traj,
         walkable_area=walkable_area,
     )
-    individual_speed = compute_individual_speed(
-        traj_data=traj,
-        frame_step=10,
-        compute_velocity=True,
-    )
     actual_species = separate_species(individual_voronoi_polygons=individual_cutoff,
                                       measurement_line=measurement_line,
-                                      individual_speed=individual_speed)
+                                      frame_step=10,
+                                      traj=traj)
     assert actual_species.shape[0] == 50
 
 
@@ -327,14 +315,10 @@ def test_separate_species_correct_amount_with_cutoff(bidirectional_setup):
         walkable_area=walkable_area,
         cut_off=Cutoff(radius=0.8, quad_segments=3)
     )
-    individual_speed = compute_individual_speed(
-        traj_data=traj,
-        frame_step=10,
-        compute_velocity=True,
-    )
     actual_species = separate_species(individual_voronoi_polygons=individual_cutoff,
                                       measurement_line=measurement_line,
-                                      individual_speed=individual_speed)
+                                      frame_step=10,
+                                      traj=traj)
     assert actual_species.shape[0] == 50
 
 
@@ -477,20 +461,16 @@ def test_separate_species_correct_for_not_intersecting(non_intersecting_setup):
     traj = non_intersecting_setup["traj"]
     walkable_area = non_intersecting_setup["walkable_area"]
     measurement_line = non_intersecting_setup["measurement_line"]
-    individual_speed = compute_individual_speed(
-        traj_data=traj,
-        frame_step=4,
-        compute_velocity=True,
-    )
     individual_cutoff = compute_individual_voronoi_polygons(traj_data=traj,
                                                             walkable_area=walkable_area,
                                                             cut_off=Cutoff(radius=1.0, quad_segments=3))
     expected = pd.DataFrame(data=[[0, -1], [1, -1], [2, -1], [3, -1]], columns=[ID_COL, SPECIES_COL])
     actual = separate_species(individual_voronoi_polygons=individual_cutoff,
                               measurement_line=measurement_line,
-                              individual_speed=individual_speed)
+                              frame_step=4,
+                              traj=traj)
 
-    suffixes = ["expected", "actual"]
+    suffixes = ("expected", "actual")
     non_matching = expected.merge(actual, on="id", suffixes=suffixes, how="outer")
     columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
     non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
