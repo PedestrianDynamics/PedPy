@@ -2,8 +2,8 @@ import pathlib
 
 from pedpy.data.geometry import WalkableArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.flow_calculator import calc_n, partial_line_length, weight_value, merge_table, separate_species, \
-    calc_speed_on_line, calc_density_on_line, calc_flow_on_line, separate_species_with_traj
+from pedpy.methods.flow_calculator import partial_line_length, weight_value, merge_table, separate_species, \
+    calc_speed_on_line, calc_density_on_line, calc_flow_on_line
 
 import pytest
 from shapely import LineString, Polygon
@@ -17,36 +17,23 @@ from tests.utils.utils import get_trajectory
 
 
 def test_calc_n_correct_result():
-    line = LineString([(0, 0), (1, 1)])
+    line = MeasurementLine([(0, 0), (1, 1)])
     expected_n = np.array([0.5 ** 0.5, -0.5 ** 0.5])
-    actual_n = calc_n(line)
+    actual_n = line.normal_vector()
     tolerance = 1e-8
     assert (np.allclose(expected_n, actual_n, atol=tolerance))
-
-
-def test_calc_n_with_line_length_zero():
-    line = LineString([(0, 0), (0, 0)])
-    actual_n = calc_n(line)
-    assert (np.all(np.isnan(actual_n)))
 
 
 @pytest.mark.parametrize(
     "line, polygon, expected",
     [
-        (LineString([(0, 0), (1, 1)]), Polygon([(0, 0), (1, 0), (1, 0.5), (0, 0.5)]), 0.5),
-        (LineString([(0, 0), (1, 1)]), Polygon([(0, 0), (1, 0), (1, -0.5), (0, -0.5)]), 0)
+        (MeasurementLine([(0, 0), (1, 1)]), Polygon([(0, 0), (1, 0), (1, 0.5), (0, 0.5)]), 0.5),
+        (MeasurementLine([(0, 0), (1, 1)]), Polygon([(0, 0), (1, 0), (1, -0.5), (0, -0.5)]), 0)
     ]
 )
 def test_partial_line_length_correct(line, polygon, expected):
     actual = partial_line_length(polygon, line)
     assert (expected == actual)
-
-
-def test_partial_line_length_with_line_length_zero():
-    line = LineString([(0, 0), (0, 0)])
-    polygon = Polygon([(0, 0), (1, 0), (1, 0.5), (0, 0.5)])
-    actual = partial_line_length(polygon, line)
-    assert (np.isnan(actual))
 
 
 def test_weight_value():
@@ -55,9 +42,9 @@ def test_weight_value():
     poly = Polygon([(0, 0), (1, 0), (1, 0.5), (0, 0.5)])
     group = {V_X_COL: v_x, V_Y_COL: v_y, POLYGON_COL: poly}
     n = [0.5 ** 0.5, -0.5 ** 0.5]
-    line = LineString([(0, 0), (1, 1)])
-    assert (np.allclose(n, calc_n(line)))
-    actual = weight_value(group=group, line=line)
+    line = MeasurementLine([(0, 0), (1, 1)])
+    assert (np.allclose(n, line.normal_vector()))
+    actual = weight_value(group=group, measurement_line=line)
     assert partial_line_length(poly, line) == 0.5
     expected = (v_x * n[0] + v_y * n[1]) * 0.5
     assert np.isclose(actual, expected)
@@ -156,7 +143,7 @@ def test_calc_speed_on_line(example_data):
     speed_on_line = calc_speed_on_line(individual_speed=speed, species=species,
                                        individual_voronoi_polygons=voronoi, measurement_line=line)
 
-    n = calc_n(line.line)
+    n = line.normal_vector()
     assert speed_on_line.shape[0] == 1
     assert speed_on_line[V_SP1_COL].values[0] == pytest.approx((n[0] * 1 + n[1] * 1) * 0.5)
     assert speed_on_line[V_SP2_COL].values[0] == pytest.approx((n[0] * -1 + n[1] * -1) * 0.5 * -1)
@@ -188,7 +175,7 @@ def test_calc_flow_on_line(example_data):
     flow_on_line = calc_flow_on_line(individual_voronoi_polygons=voronoi, measurement_line=line,
                                      species=species, individual_speed=speed)
 
-    n = calc_n(line.line)
+    n = line.normal_vector()
     assert flow_on_line.shape[0] == 1
     assert flow_on_line[FLOW_SP1_COL].values[0] == pytest.approx((n[0] * 1 + n[1] * 1) * 0.5 * 3)
     assert flow_on_line[FLOW_SP2_COL].values[0] == pytest.approx((n[0] * -1 + n[1] * -1) * 0.5 * -1 * 3)
@@ -322,86 +309,6 @@ def test_separate_species_correct_amount_with_cutoff(bidirectional_setup):
     assert actual_species.shape[0] == 50
 
 
-def test_separate_species_with_traj_correct_with_cutoff(bidirectional_setup):
-    traj = bidirectional_setup["traj"]
-    walkable_area = bidirectional_setup["walkable_area"]
-    measurement_line = bidirectional_setup["measurement_line"]
-
-    min_idx = traj.data.groupby(ID_COL)[FRAME_COL].idxmin()
-    expected_species = traj.data.loc[min_idx, [ID_COL]]
-    expected_species[SPECIES_COL] = np.where(expected_species[ID_COL] < 25, -1, 1)
-
-    individual_cutoff = compute_individual_voronoi_polygons(
-        traj_data=traj,
-        walkable_area=walkable_area,
-        cut_off=Cutoff(radius=0.8, quad_segments=3)
-    )
-    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
-                                                measurement_line=measurement_line,
-                                                traj=traj)
-
-    suffixes = ('_expected', '_species')
-    non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes)
-    columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
-    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
-    assert non_matching.shape[0] == 0
-
-
-def test_separate_species_with_traj_correct_without_cutoff(bidirectional_setup):
-    traj = bidirectional_setup["traj"]
-    walkable_area = bidirectional_setup["walkable_area"]
-    measurement_line = bidirectional_setup["measurement_line"]
-
-    min_idx = traj.data.groupby(ID_COL)[FRAME_COL].idxmin()
-    expected_species = traj.data.loc[min_idx, [ID_COL]]
-    expected_species[SPECIES_COL] = np.where(expected_species[ID_COL] < 25, -1, 1)
-
-    individual_cutoff = compute_individual_voronoi_polygons(
-        traj_data=traj,
-        walkable_area=walkable_area,
-    )
-    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
-                                                measurement_line=measurement_line,
-                                                traj=traj)
-
-    suffixes = ('_expected', '_species')
-    non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes, how="outer")
-    columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
-    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
-    assert non_matching.shape[0] == 0
-
-
-def test_separate_species_with_traj_correct_amount_without_cutoff(bidirectional_setup):
-    traj = bidirectional_setup["traj"]
-    walkable_area = bidirectional_setup["walkable_area"]
-    measurement_line = bidirectional_setup["measurement_line"]
-
-    individual_cutoff = compute_individual_voronoi_polygons(
-        traj_data=traj,
-        walkable_area=walkable_area,
-    )
-    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
-                                                measurement_line=measurement_line,
-                                                traj=traj)
-    assert actual_species.shape[0] == 50
-
-
-def test_separate_species_with_traj_correct_amount_with_cutoff(bidirectional_setup):
-    traj = bidirectional_setup["traj"]
-    walkable_area = bidirectional_setup["walkable_area"]
-    measurement_line = bidirectional_setup["measurement_line"]
-
-    individual_cutoff = compute_individual_voronoi_polygons(
-        traj_data=traj,
-        walkable_area=walkable_area,
-        cut_off=Cutoff(radius=0.8, quad_segments=3)
-    )
-    actual_species = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
-                                                measurement_line=measurement_line,
-                                                traj=traj)
-    assert actual_species.shape[0] == 50
-
-
 @pytest.fixture
 def non_intersecting_setup(non_intersecting_traj, non_intersecting_walkable_area, non_intersecting_measurement_line):
     return {
@@ -435,26 +342,6 @@ def non_intersecting_measurement_line():
 @pytest.fixture
 def non_intersecting_walkable_area():
     return WalkableArea([(2, 0), (12, 0), (12, 5), (2, 5)])
-
-
-def test_separate_species_with_traj_correct_for_not_intersecting(non_intersecting_setup):
-    traj = non_intersecting_setup["traj"]
-    walkable_area = non_intersecting_setup["walkable_area"]
-    measurement_line = non_intersecting_setup["measurement_line"]
-
-    individual_cutoff = compute_individual_voronoi_polygons(traj_data=traj,
-                                                            walkable_area=walkable_area,
-                                                            cut_off=Cutoff(radius=1.0, quad_segments=3))
-    expected = pd.DataFrame(data=[[0, -1], [1, -1], [2, -1], [3, -1]], columns=[ID_COL, SPECIES_COL])
-    actual = separate_species_with_traj(individual_voronoi_polygons=individual_cutoff,
-                                        measurement_line=measurement_line,
-                                        traj=traj)
-
-    suffixes = ["expected", "actual"]
-    non_matching = expected.merge(actual, on="id", suffixes=suffixes, how="outer")
-    columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
-    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
-    assert non_matching.shape[0] == 0
 
 
 def test_separate_species_correct_for_not_intersecting(non_intersecting_setup):

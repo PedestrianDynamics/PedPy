@@ -208,22 +208,18 @@ def compute_flow(
     return pd.DataFrame(rows)
 
 
-def calc_n(line):
-    """calculates normal vector n of the line"""
-    n = numpy.array([line.xy[1][1] - line.xy[1][0], line.xy[0][0] - line.xy[0][1]])
-    return n / numpy.linalg.norm(n)
 
-
-def partial_line_length(polygon, line):
+def partial_line_length(polygon, measurement_line: MeasurementLine):
     """calculates the fraction of the length that is intersected by the polygon"""
+    line = measurement_line.line
     return shapely.length(shapely.intersection(polygon, line)) / shapely.length(line)
 
 
-def weight_value(group, line):
+def weight_value(group, measurement_line: MeasurementLine):
     """calculates the velocity in direction n times partial line length of the polygon
     group is a dataframe containing the columns 'v_x', 'v_y' and 'polygon' """
-    n = calc_n(line)
-    return (group[V_X_COL] * n[0] + group[V_Y_COL] * n[1]) * partial_line_length(group[POLYGON_COL], line)
+    n = measurement_line.normal_vector()
+    return (group[V_X_COL] * n[0] + group[V_Y_COL] * n[1]) * partial_line_length(group[POLYGON_COL], measurement_line)
 
 
 def merge_table(individual_voronoi_polygons, species, line, individual_speed=None):
@@ -239,7 +235,7 @@ def merge_table(individual_voronoi_polygons, species, line, individual_speed=Non
         return merged_table.merge(individual_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
 
 
-def separate_species(traj:TrajectoryData, individual_voronoi_polygons, measurement_line: MeasurementLine, frame_step):
+def separate_species(traj: TrajectoryData, individual_voronoi_polygons, measurement_line: MeasurementLine, frame_step):
     """creates a Dataframe containing the species for each agent
 
     the species decides from what side an agent is encountering the measurement line
@@ -266,12 +262,10 @@ def separate_species(traj:TrajectoryData, individual_voronoi_polygons, measureme
         Dataframe containing columns 'id' and 'species'
     """
     # create dataframe with id and first frame where voronoi polygon intersects measurement line
-    line = measurement_line.line
-    intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], line)]
-    min_idx = intersecting_polys.groupby(ID_COL)[FRAME_COL].idxmin()
-    first_frames = intersecting_polys.loc[min_idx, [ID_COL, FRAME_COL]]
+    intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
+    first_frames = intersecting_polys.groupby(ID_COL)[FRAME_COL].min().reset_index()
 
-    n = calc_n(line)
+    n = measurement_line.normal_vector()
 
     initial_speed = compute_individual_speed(traj_data=traj,
                                              frame_step=frame_step,
@@ -281,45 +275,6 @@ def separate_species(traj:TrajectoryData, individual_voronoi_polygons, measureme
     result = first_frames.merge(initial_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
     result[SPECIES_COL] = numpy.sign(n[0] * result[V_X_COL] + n[1] * result[V_Y_COL])
     return result[[ID_COL, SPECIES_COL]]
-
-
-def separate_species_with_traj(individual_voronoi_polygons, measurement_line: MeasurementLine, traj: TrajectoryData):
-    """creates a Dataframe containing the species for each agent
-
-    the species decides from what side an agent is encountering the measurement line
-    the species of an agent :math:`i` is calculated by :math:`sign(n * r(t_{i,l0}))`,
-    With the normal vector n of the measurement line and the vector :math:`r` between the agent :math:`i`
-    at the time :math:`t_{i,l0}` when his voronoi cell touches the measurement line
-
-    if the voronoi polygon of an agent never touches the measurement line
-     the agent will not be included in the returned Dataframe
-
-    Args:
-        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
-            frame, result from :func:`method_utils.compute_individual_voronoi_polygon`
-
-        measurement_line (MeasurementLine): measurement line
-
-        traj (TrajectoryData): trajectory data
-
-    Returns:
-        Dataframe containing columns 'id' and 'species'
-    """
-    # create dataframe with id and first frame where voronoi polygon intersects measurement line
-    data = traj.data
-    line = measurement_line.line
-    intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], line)]
-    min_idx = intersecting_polys.groupby(ID_COL)[FRAME_COL].idxmin()
-    result = intersecting_polys.loc[min_idx, [ID_COL, FRAME_COL, POLYGON_COL]]
-
-    n = calc_n(line)
-    # create dataframe with 'id' and 'species'
-    end_result = result.merge(data, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
-    end_result["closest_point_on_line"] = line.interpolate(line.project(end_result[POINT_COL]))
-    end_result["x_direction"] = shapely.get_x(end_result["closest_point_on_line"]) - shapely.get_x(end_result[POINT_COL])
-    end_result["y_direction"] = shapely.get_y(end_result["closest_point_on_line"]) - shapely.get_y(end_result[POINT_COL])
-    end_result[SPECIES_COL] = numpy.sign(n[0] * end_result["x_direction"] + n[1] * end_result["y_direction"])
-    return end_result[[ID_COL, SPECIES_COL]]
 
 
 def calc_speed_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, individual_speed, species):
@@ -340,7 +295,6 @@ def calc_speed_on_line(individual_voronoi_polygons, measurement_line: Measuremen
 
         species (pd.Dataframe): dataframe containing information about the species
             of every agent intersecting with the line, result from :func:`methods.flow_calculator.separate_species`
-            or :func:`methods.flow_calculator.separate_species_with_traj`
     Returns:
         Dataframe containing columns 'frame', 'v_sp+1', 'v_sp-1', 'v'
     """
@@ -371,7 +325,6 @@ def calc_density_on_line(individual_voronoi_polygons, measurement_line: Measurem
 
         species (pd.Dataframe): dataframe containing information about the species
             of every agent intersecting with the line, result from :func:`methods.flow_calculator.separate_species`
-            or :func:`methods.flow_calculator.separate_species_with_traj`
     Returns:
         Dataframe containing columns 'frame', 'p_sp+1', 'p_sp-1', 'density'
     """
@@ -404,7 +357,6 @@ def calc_flow_on_line(individual_voronoi_polygons, measurement_line: Measurement
 
             species (pd.Dataframe): dataframe containing information about the species
                 of every agent intersecting with the line, result from :func:`methods.flow_calculator.separate_species`
-                or :func:`methods.flow_calculator.separate_species_with_traj`
         Returns:
             Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
         """
@@ -431,13 +383,13 @@ def calc_lambda_on_line(individual_voronoi_polygons, measurement_line: Measureme
     species_2 = i_poly[i_poly[SPECIES_COL] == -1]
 
     if not species_1.empty:
-        species_1 = species_1.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, line)).reset_index()
+        species_1 = species_1.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, measurement_line)).reset_index()
         species_1.columns = [FRAME_COL, column_id_sp1]
     else:
         species_1 = pd.DataFrame(columns=[FRAME_COL, column_id_sp1])
 
     if not species_2.empty:
-        species_2 = species_2.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, line)).reset_index()
+        species_2 = species_2.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, measurement_line)).reset_index()
         species_2.columns = [FRAME_COL, column_id_sp2]
     else:
         species_2 = pd.DataFrame(columns=[FRAME_COL, column_id_sp2])
