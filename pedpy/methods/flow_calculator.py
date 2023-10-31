@@ -222,19 +222,6 @@ def weight_value(group, measurement_line: MeasurementLine):
     return (group[V_X_COL] * n[0] + group[V_Y_COL] * n[1]) * partial_line_length(group[POLYGON_COL], measurement_line)
 
 
-def merge_table(individual_voronoi_polygons, species, line, individual_speed=None):
-    """merges the entries of the tables individual_voronoi_polygons, species, individual speed
-    when a polygon intersects the line
-    if no individual speed is given it does not merge the table
-    """
-    merged_table = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], line)]
-    merged_table = merged_table.merge(species, on="id", how="left")
-    if individual_speed is None:
-        return merged_table
-    else:
-        return merged_table.merge(individual_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
-
-
 def separate_species(traj: TrajectoryData, individual_voronoi_polygons, measurement_line: MeasurementLine, frame_step):
     """creates a Dataframe containing the species for each agent
 
@@ -375,12 +362,17 @@ def calc_flow_on_line(individual_voronoi_polygons, measurement_line: Measurement
 def calc_lambda_on_line(individual_voronoi_polygons, measurement_line: MeasurementLine, species, lambda_for_group, column_id_sp1, column_id_sp2, individual_speed=None):
     """applies lambda for both species for each frame where the voronoi-polygon intersects with the measurement line
 
-    lambda_for_group is called with a group containing the data of one species and a shapely-line"""
-    line = measurement_line.line
-    i_poly = merge_table(individual_voronoi_polygons, species, line, individual_speed)
+    lambda_for_group is called with a group containing the data of one species and a Measurement Line"""
 
-    species_1 = i_poly[i_poly[SPECIES_COL] == 1]
-    species_2 = i_poly[i_poly[SPECIES_COL] == -1]
+    merged_table = individual_voronoi_polygons[shapely.intersects(
+        individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
+
+    merged_table = merged_table.merge(species, on="id", how="left")
+    if individual_speed is not None:
+        merged_table = merged_table.merge(individual_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
+
+    species_1 = merged_table[merged_table[SPECIES_COL] == 1]
+    species_2 = merged_table[merged_table[SPECIES_COL] == -1]
 
     if not species_1.empty:
         species_1 = species_1.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, measurement_line)).reset_index()

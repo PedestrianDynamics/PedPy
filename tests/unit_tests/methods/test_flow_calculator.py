@@ -2,7 +2,7 @@ import pathlib
 
 from pedpy.data.geometry import WalkableArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.flow_calculator import partial_line_length, weight_value, merge_table, separate_species, \
+from pedpy.methods.flow_calculator import partial_line_length, weight_value, separate_species, \
     calc_speed_on_line, calc_density_on_line, calc_flow_on_line
 
 import pytest
@@ -48,64 +48,6 @@ def test_weight_value():
     assert partial_line_length(poly, line) == 0.5
     expected = (v_x * n[0] + v_y * n[1]) * 0.5
     assert np.isclose(actual, expected)
-
-
-def test_merge_table_all_columns_included_with_speed():
-    individual_voronoi = pd.DataFrame(columns=[ID_COL, FRAME_COL, POLYGON_COL, DENSITY_COL])
-    species = pd.DataFrame(columns=[ID_COL, SPECIES_COL])
-    line = LineString()
-    individual_speed = pd.DataFrame(columns=[ID_COL, FRAME_COL, SPEED_COL, V_X_COL, V_Y_COL])
-    merged = merge_table(individual_voronoi_polygons=individual_voronoi,
-                         species=species, line=line,
-                         individual_speed=individual_speed)
-    for column in [ID_COL, FRAME_COL, POLYGON_COL, DENSITY_COL, SPECIES_COL, V_X_COL, V_Y_COL]:
-        assert column in merged.columns
-
-
-def test_merge_table_all_columns_included_without_speed():
-    individual_voronoi = pd.DataFrame(columns=[ID_COL, FRAME_COL, POLYGON_COL, DENSITY_COL])
-    species = pd.DataFrame(columns=[ID_COL, SPECIES_COL])
-    line = LineString()
-    merged = merge_table(individual_voronoi_polygons=individual_voronoi,
-                         species=species, line=line, individual_speed=None)
-    for column in [ID_COL, FRAME_COL, POLYGON_COL, DENSITY_COL, SPECIES_COL]:
-        assert column in merged.columns
-
-
-def test_merge_table_correct():
-    species = pd.DataFrame({
-        ID_COL: [1, 3, 4, 5],
-        SPECIES_COL: [1, -1, 1, 2]
-    })
-    line = LineString([(0, 0), (1, 1)])
-    matching_poly = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
-    non_matching_poly = Polygon()
-    individual_voronoi = pd.DataFrame({
-        ID_COL: [1, 2, 3, 4],
-        FRAME_COL: [5, 6, 7, 8],
-        POLYGON_COL: [matching_poly, matching_poly, matching_poly, non_matching_poly],
-        DENSITY_COL: [1, 2, 3, 4]
-    })
-    individual_speed = pd.DataFrame({
-        ID_COL: [1, 2, 4, 6],
-        FRAME_COL: [5, 6, 8, 10],
-        SPEED_COL: [1, 2, 4, 6],
-        V_X_COL: [1, 2, 4, 6],
-        V_Y_COL: [1, 2, 4, 6]
-    })
-    merged = merge_table(individual_voronoi_polygons=individual_voronoi,
-                         species=species, line=line, individual_speed=individual_speed)
-    for elem in merged[ID_COL]:  # assert cases to not be included in merged table
-        assert elem not in [3,  # not included in speed
-                            4,  # non matching polygon
-                            5,  # only in species included
-                            6]  # only in speed included
-    elem = merged[merged[ID_COL] == 1]  # default case
-    assert elem.shape[0] == 1
-    assert elem[SPECIES_COL].values[0] == 1 and elem[FRAME_COL].values[0] == 5 and elem[V_X_COL].values[0] == 1
-
-    elem = merged[merged[ID_COL] == 2]  # is not included in species but should be merged
-    assert np.isnan(elem[SPECIES_COL].values[0])
 
 
 @pytest.fixture
