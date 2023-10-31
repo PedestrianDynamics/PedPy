@@ -20,17 +20,15 @@ from pedpy.column_identifier import (
     SPECIES_COL,
     DENSITY_SP1_COL,
     DENSITY_SP2_COL,
-    V_SP1_COL,
-    V_SP2_COL,
-    VELOCITY_COL,
+    SPEED_SP1_COL,
+    SPEED_SP2_COL,
     FLOW_SP1_COL,
     FLOW_SP2_COL,
-    POINT_COL
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import compute_crossing_frames, SpeedCalculation
-from pedpy.methods.speed_calculator import  compute_individual_speed
+from pedpy.methods.speed_calculator import compute_individual_speed
 
 
 def compute_n_t(
@@ -208,7 +206,6 @@ def compute_flow(
     return pd.DataFrame(rows)
 
 
-
 def partial_line_length(polygon, measurement_line: MeasurementLine):
     """calculates the fraction of the length that is intersected by the polygon"""
     line = measurement_line.line
@@ -249,7 +246,8 @@ def separate_species(traj: TrajectoryData, individual_voronoi_polygons, measurem
         Dataframe containing columns 'id' and 'species'
     """
     # create dataframe with id and first frame where voronoi polygon intersects measurement line
-    intersecting_polys = individual_voronoi_polygons[shapely.intersects(individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
+    intersecting_polys = individual_voronoi_polygons[
+        shapely.intersects(individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
     first_frames = intersecting_polys.groupby(ID_COL)[FRAME_COL].min().reset_index()
 
     n = measurement_line.normal_vector()
@@ -257,10 +255,11 @@ def separate_species(traj: TrajectoryData, individual_voronoi_polygons, measurem
     initial_speed = compute_individual_speed(traj_data=traj,
                                              frame_step=frame_step,
                                              compute_velocity=True,
-                                             speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED)
+                                             speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
+                                             movement_direction=n)
     # create dataframe with 'id' and 'species'
     result = first_frames.merge(initial_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
-    result[SPECIES_COL] = numpy.sign(n[0] * result[V_X_COL] + n[1] * result[V_Y_COL])
+    result[SPECIES_COL] = numpy.sign(result[SPEED_COL])
     return result[[ID_COL, SPECIES_COL]]
 
 
@@ -283,17 +282,17 @@ def calc_speed_on_line(individual_voronoi_polygons, measurement_line: Measuremen
         species (pd.Dataframe): dataframe containing information about the species
             of every agent intersecting with the line, result from :func:`methods.flow_calculator.separate_species`
     Returns:
-        Dataframe containing columns 'frame', 'v_sp+1', 'v_sp-1', 'v'
+        Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
     """
     result = calc_lambda_on_line(individual_voronoi_polygons=individual_voronoi_polygons,
                                  measurement_line=measurement_line,
                                  species=species,
                                  lambda_for_group=lambda group, line: (weight_value(group, line)).sum(),
-                                 column_id_sp1=V_SP1_COL,
-                                 column_id_sp2=V_SP2_COL,
+                                 column_id_sp1=SPEED_SP1_COL,
+                                 column_id_sp2=SPEED_SP2_COL,
                                  individual_speed=individual_speed)
-    result[V_SP2_COL] *= -1
-    result[VELOCITY_COL] = result[V_SP1_COL] + result[V_SP2_COL]
+    result[SPEED_SP2_COL] *= -1
+    result[SPEED_COL] = result[SPEED_SP1_COL] + result[SPEED_SP2_COL]
     return result
 
 

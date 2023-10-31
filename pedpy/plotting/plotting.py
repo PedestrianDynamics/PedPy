@@ -24,9 +24,8 @@ from pedpy.column_identifier import (
     TIME_COL,
     X_COL,
     Y_COL,
-    V_SP1_COL,
-    V_SP2_COL,
-    VELOCITY_COL,
+    SPEED_SP1_COL,
+    SPEED_SP2_COL,
     DENSITY_SP1_COL,
     DENSITY_SP2_COL,
     FLOW_SP1_COL,
@@ -120,7 +119,7 @@ def plot_speed_at_line(
 
     return _plot_multiple_series(axes=axes, title=title,
                                  x=speed_at_line[FRAME_COL],
-                                 ys=[speed_at_line[V_SP1_COL], speed_at_line[V_SP2_COL], speed_at_line[VELOCITY_COL]],
+                                 ys=[speed_at_line[SPEED_SP1_COL], speed_at_line[SPEED_SP2_COL], speed_at_line[SPEED_COL]],
                                  colors=[color_sp1, color_sp2, color_total],
                                  labels=[label_sp1, label_sp2, label_total],
                                  x_label=x_label, y_label=y_label, line_width=line_width)
