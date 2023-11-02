@@ -28,7 +28,7 @@ from pedpy.column_identifier import (
     TIME_COL,
     WINDOW_SIZE_COL,
     X_COL,
-    Y_COL,
+    Y_COL, V_X_COL, V_Y_COL, SPECIES_COL,
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
@@ -943,3 +943,55 @@ def _check_crossing_in_frame_range(
     crossed[column_name] = crossed[column_name] == "both"
     crossed = crossed[crossed[column_name]]
     return crossed
+
+
+def _compute_orthogonal_speed_in_relation_to_proprotion(group, measurement_line: MeasurementLine):
+    """calculates the speed orthogonal to the line times partial line length of the polygon
+    group is a dataframe containing the columns 'v_x', 'v_y' and 'polygon' """
+    n = measurement_line.normal_vector()
+    return ((group[V_X_COL] * n[0] + group[V_Y_COL] * n[1]) *
+            _compute_partial_line_length(group[POLYGON_COL], measurement_line))
+
+
+def _compute_partial_line_length(polygon: shapely.Polygon, measurement_line: MeasurementLine):
+    """calculates the fraction of the length that is intersected by the polygon"""
+    line = measurement_line.line
+    return shapely.length(shapely.intersection(polygon, line)) / shapely.length(line)
+
+
+def _apply_lambda_for_intersecting_frames(*,
+                                          individual_voronoi_polygons: pd.DataFrame,
+                                          measurement_line: MeasurementLine,
+                                          species: pd.DataFrame,
+                                          lambda_for_group,
+                                          column_id_sp1: str,
+                                          column_id_sp2: str,
+                                          individual_speed: pd.DataFrame = None):
+    """applies lambda for both species for each frame where the voronoi-polygon intersects with the measurement line
+
+    lambda_for_group is called with a group containing the data of one species and a Measurement Line"""
+
+    merged_table = individual_voronoi_polygons[shapely.intersects(
+        individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
+
+    merged_table = merged_table.merge(species, on="id", how="left")
+    if individual_speed is not None:
+        merged_table = merged_table.merge(individual_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
+
+    species_1 = merged_table[merged_table[SPECIES_COL] == 1]
+    species_2 = merged_table[merged_table[SPECIES_COL] == -1]
+
+    if not species_1.empty:
+        species_1 = species_1.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, measurement_line)).reset_index()
+        species_1.columns = [FRAME_COL, column_id_sp1]
+    else:
+        species_1 = pd.DataFrame(columns=[FRAME_COL, column_id_sp1])
+
+    if not species_2.empty:
+        species_2 = species_2.groupby(FRAME_COL).apply(lambda group: lambda_for_group(group, measurement_line)).reset_index()
+        species_2.columns = [FRAME_COL, column_id_sp2]
+    else:
+        species_2 = pd.DataFrame(columns=[FRAME_COL, column_id_sp2])
+
+    result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
+    return result.sort_values(by=FRAME_COL, ascending=False)
