@@ -39,9 +39,10 @@ setuptools.setup(
     install_requires=[
         "aenum~=3.1",
         "numpy~=1.25",
-        "pandas~=2.0",
+        "pandas[hdf5]~=2.0",
         "Shapely~=2.0",
         "scipy~=1.11",
         "matplotlib~=3.7",
+        "tables~=3.9.0",
     ],
 )
