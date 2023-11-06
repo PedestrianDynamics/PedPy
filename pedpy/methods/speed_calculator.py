@@ -12,7 +12,11 @@ from pedpy.column_identifier import (
     ID_COL,
     SPEED_COL,
     V_X_COL,
-    V_Y_COL, SPEED_SP1_COL, SPEED_SP2_COL, SPECIES_COL, POLYGON_COL,
+    V_Y_COL,
+    SPEED_SP1_COL,
+    SPEED_SP2_COL,
+    SPECIES_COL,
+    POLYGON_COL,
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
@@ -20,6 +24,7 @@ from pedpy.methods.method_utils import (
     SpeedCalculation,
     _compute_individual_movement, _apply_lambda_for_intersecting_frames,
     _compute_orthogonal_speed_in_relation_to_proprotion,
+    is_species_valid, is_individual_speed_valid,
 )
 
 
@@ -458,6 +463,20 @@ def compute_line_speed(*,
     Returns:
         Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
     """
+    if not is_species_valid(species=species,
+                            individual_voronoi_polygons=individual_voronoi_polygons,
+                            measurement_line=measurement_line):
+        print("the species data does not contain all information required to calculate the line speed.\n"
+              "Perhaps the species was computed with different Voronoi data or a different measurement line.")
+        return
+
+    if not is_individual_speed_valid(individual_speed=individual_speed,
+                                     individual_voronoi_polygons=individual_voronoi_polygons,
+                                     measurement_line=measurement_line):
+        print("the individual speed data does not contain all information required to calculate the line speed.\n"
+              "Perhaps there is some data missing at the beginning or the end. "
+              "An other speed_calculation might fix this Problem.")
+        return
     result = _apply_lambda_for_intersecting_frames(
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,

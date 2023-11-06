@@ -995,3 +995,51 @@ def _apply_lambda_for_intersecting_frames(*,
 
     result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
     return result.sort_values(by=FRAME_COL, ascending=False)
+
+
+def is_species_valid(*,
+                     species: pd.DataFrame,
+                     individual_voronoi_polygons: pd.DataFrame,
+                     measurement_line: MeasurementLine):
+    """tests if there is species data for every pedestrian intersecting with the measurement line.
+
+    Args:
+        species (pd.DataFrame):  dataframe containing information about the species
+            of every agent intersecting with the line, result from :func:`~methods.speed_calculator.compute_species`
+
+        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+            frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
+
+        measurement_line (MeasurementLine): measurement line
+
+    Returns:
+        True if all needed data is provided by the species dataframe, else False.
+    """
+    intersecting_polygons = individual_voronoi_polygons[shapely.intersects(
+        individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
+    return intersecting_polygons[ID_COL].isin(species[ID_COL]).all()
+
+
+def is_individual_speed_valid(*,
+                              individual_speed: pd.DataFrame,
+                              individual_voronoi_polygons: pd.DataFrame,
+                              measurement_line: MeasurementLine):
+    """tests if there is speed data provided for every pedestrian in every frame they intersect the measurement line
+
+    Args:
+        individual_speed (pd.DataFrame): individual speed data per frame, result from
+            :func:`~methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+
+        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+            frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
+
+        measurement_line (MeasurementLine): measurement line
+    Returns:
+        True if all needed data is provided by the individual speed dataframe, else False
+    """
+    intersecting_polygons = individual_voronoi_polygons[shapely.intersects(
+        individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
+    temp1 = intersecting_polygons.merge(individual_speed, on=['id', 'frame'], how='left')
+    temp2 = temp1.notna()
+    temp3 = temp2.all()
+    return temp3.all()

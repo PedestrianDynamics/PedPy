@@ -9,8 +9,12 @@ from pedpy.column_identifier import COUNT_COL, DENSITY_COL, FRAME_COL, ID_COL, D
     POLYGON_COL
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import compute_intersecting_polygons, _apply_lambda_for_intersecting_frames, \
-    _compute_partial_line_length
+from pedpy.methods.method_utils import (
+    compute_intersecting_polygons,
+    _apply_lambda_for_intersecting_frames,
+    _compute_partial_line_length,
+    is_species_valid
+)
 
 
 def compute_classic_density(
@@ -236,6 +240,12 @@ def compute_line_density(*,
     Returns:
         Dataframe containing columns 'frame', 'p_sp+1', 'p_sp-1', 'density'
     """
+    if not is_species_valid(species=species,
+                            individual_voronoi_polygons=individual_voronoi_polygons,
+                            measurement_line=measurement_line):
+        print("the species data does not contain all information required to calculate the line density.\n"
+              "Perhaps the species was computed with different Voronoi data or a different measurement line")
+
     result = _apply_lambda_for_intersecting_frames(
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,

@@ -16,8 +16,12 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import compute_crossing_frames, _apply_lambda_for_intersecting_frames, \
-    _compute_orthogonal_speed_in_relation_to_proprotion
+from pedpy.methods.method_utils import (
+    compute_crossing_frames,
+    _apply_lambda_for_intersecting_frames,
+    _compute_orthogonal_speed_in_relation_to_proprotion,
+    is_species_valid, is_individual_speed_valid
+)
 
 
 def compute_n_t(
@@ -220,6 +224,19 @@ def compute_line_flow(*,
         Returns:
             Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
         """
+    if not is_species_valid(species=species,
+                            individual_voronoi_polygons=individual_voronoi_polygons,
+                            measurement_line=measurement_line):
+        print("the species data does not contain all information required to calculate the line flow.\n"
+              "Perhaps the species was computed with different Voronoi data or a different measurement line.")
+
+    if not is_individual_speed_valid(individual_speed=individual_speed,
+                                     individual_voronoi_polygons=individual_voronoi_polygons,
+                                     measurement_line=measurement_line):
+        print("the individual speed data does not contain all information required to calculate the line speed.\n"
+              "Perhaps there is some data missing at the beginning or the end. "
+              "An other speed_calculation might fix this Problem.")
+
     result = _apply_lambda_for_intersecting_frames(
        individual_voronoi_polygons=individual_voronoi_polygons,
        measurement_line=measurement_line,
