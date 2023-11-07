@@ -6,10 +6,15 @@ from .data.trajectory_data import TrajectoryData
 from .io.trajectory_loader import TrajectoryUnit, load_trajectory
 from .methods.density_calculator import (
     compute_classic_density,
+    compute_line_density,
     compute_passing_density,
     compute_voronoi_density,
 )
-from .methods.flow_calculator import compute_flow, compute_n_t
+from .methods.flow_calculator import (
+    compute_flow,
+    compute_line_flow,
+    compute_n_t,
+)
 from .methods.method_utils import (
     Cutoff,
     compute_frame_range_in_area,
@@ -18,14 +23,18 @@ from .methods.method_utils import (
     compute_neighbors,
     compute_time_distance_line,
     get_invalid_trajectory,
+    is_individual_speed_valid,
+    is_species_valid,
     is_trajectory_valid,
 )
 from .methods.profile_calculator import SpeedMethod, compute_profiles
 from .methods.speed_calculator import (
     SpeedCalculation,
     compute_individual_speed,
+    compute_line_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,
+    compute_species,
     compute_voronoi_speed,
 )
 from .plotting.plotting import (
@@ -36,13 +45,16 @@ from .plotting.plotting import (
     PEDPY_PETROL,
     PEDPY_RED,
     plot_density,
+    plot_density_at_line,
     plot_density_distribution,
     plot_flow,
+    plot_flow_at_line,
     plot_measurement_setup,
     plot_neighborhood,
     plot_nt,
     plot_profiles,
     plot_speed,
+    plot_speed_at_line,
     plot_speed_distribution,
     plot_time_distance,
     plot_trajectories,

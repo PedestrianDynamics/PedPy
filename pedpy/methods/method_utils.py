@@ -1095,9 +1095,11 @@ def is_individual_speed_valid(
             individual_voronoi_polygons[POLYGON_COL], measurement_line.line
         )
     ]
-    temp1 = intersecting_polygons.merge(
-        individual_speed, on=["id", "frame"], how="left"
+    return (
+        intersecting_polygons.merge(
+            individual_speed, on=["id", "frame"], how="left"
+        )
+        .notna()
+        .all()
+        .all()
     )
-    temp2 = temp1.notna()
-    temp3 = temp2.all()
-    return temp3.all()
