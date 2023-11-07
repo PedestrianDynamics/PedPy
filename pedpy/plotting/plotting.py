@@ -376,7 +376,7 @@ def _plot_violin_xy(
         showextrema=True,
         showmedians=True,
     )
-    for parts in violin_parts["bodies"]:
+    for parts in violin_parts["bodies"]:  # type: ignore[attr-defined]
         parts.set_facecolor(facecolor)
         parts.set_edgecolor(edgecolor)
 
@@ -599,8 +599,8 @@ def plot_time_distance(
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
 
-    axes.set_xlim([0, None])
-    axes.set_ylim([0, None])
+    axes.set_xlim(0, None)
+    axes.set_ylim(0, None)
 
     return axes
 
@@ -641,7 +641,7 @@ def plot_profiles(
     axes.set_title(title)
     imshow = axes.imshow(
         np.mean(profiles, axis=0),
-        extent=[bounds[0], bounds[2], bounds[1], bounds[3]],
+        extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
         interpolation="None",
         cmap="jet",
         vmin=vmin,
@@ -959,10 +959,17 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
         elif typ == "int64":
             voronoi_colormap = plt.get_cmap("tab20c")
 
-            def _map(x):
-                return voronoi_colormap(x % 20)
+            def forward(values):
+                return values % 20
 
-            color_mapper = _map
+            def inverse(values):
+                return forward(values)
+
+            norm = mpl.colors.FuncNorm((forward, inverse), 0, 19)
+            scalar_mappable = mpl.cm.ScalarMappable(
+                norm=norm, cmap=voronoi_colormap
+            )
+            color_mapper = scalar_mappable.to_rgba
         else:
             pass
 
@@ -972,7 +979,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
         if color_by_column:
             color = color_mapper(row[color_by_column])
         else:
-            color = "w"
+            color = np.array([1, 1, 1])
 
         axes.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
         axes.fill(
