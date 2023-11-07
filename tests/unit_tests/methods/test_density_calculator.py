@@ -9,7 +9,8 @@ from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.density_calculator import (
     _get_num_peds_per_frame,
-    compute_classic_density, compute_line_density,
+    compute_classic_density,
+    compute_line_density,
 )
 from tests.utils.utils import get_trajectory, get_trajectory_data
 
@@ -98,34 +99,46 @@ def test_get_num_peds_per_frame(num_peds_row, num_peds_col, num_frames):
 
 @pytest.fixture
 def example_data():
-    species = pd.DataFrame({
-        ID_COL: [1, 2, 3, 4],
-        SPECIES_COL: [1, -1, np.nan, 1]
-    })
-    speed = pd.DataFrame({
-        ID_COL: [1, 2, 3, 4],
-        FRAME_COL: [3, 3, 3, 3],
-        SPEED_COL: [0, 0, 0, 0],
-        V_X_COL: [1, -1, 5, -5],
-        V_Y_COL: [1, -1, 5, -5]
-    })
+    species = pd.DataFrame(
+        {ID_COL: [1, 2, 3, 4], SPECIES_COL: [1, -1, np.nan, 1]}
+    )
+    speed = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 4],
+            FRAME_COL: [3, 3, 3, 3],
+            SPEED_COL: [0, 0, 0, 0],
+            V_X_COL: [1, -1, 5, -5],
+            V_Y_COL: [1, -1, 5, -5],
+        }
+    )
     line = MeasurementLine([(2, 0), (0, 2)])
     matching_poly1 = Polygon([(0, 0), (2, 2), (1, 3), (-1, 1)])
     matching_poly2 = Polygon([(1, -1), (3, 1), (2, 2), (0, 0)])
     non_matching_poly = Polygon()
-    voronoi = pd.DataFrame({
-        ID_COL: [1, 2, 3, 4],
-        FRAME_COL: [3, 3, 3, 3],
-        POLYGON_COL: [matching_poly1, matching_poly2, matching_poly1, non_matching_poly],
-        DENSITY_COL: [3, 3, 3, 3]
-    })
+    voronoi = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 4],
+            FRAME_COL: [3, 3, 3, 3],
+            POLYGON_COL: [
+                matching_poly1,
+                matching_poly2,
+                matching_poly1,
+                non_matching_poly,
+            ],
+            DENSITY_COL: [3, 3, 3, 3],
+        }
+    )
     return species, speed, voronoi, line
 
 
 def test_compute_line_density(example_data):
     species, speed, voronoi, line = example_data
 
-    desity_on_line = compute_line_density(individual_voronoi_polygons=voronoi, measurement_line=line, species=species)
+    desity_on_line = compute_line_density(
+        individual_voronoi_polygons=voronoi,
+        measurement_line=line,
+        species=species,
+    )
 
     assert desity_on_line.shape[0] == 1
     assert desity_on_line[DENSITY_SP1_COL].values[0] == pytest.approx(3 * 0.5)

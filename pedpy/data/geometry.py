@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-import shapely
 import numpy
+import shapely
 
 
 class GeometryError(Exception):
@@ -310,9 +310,14 @@ class MeasurementLine:
         return self._line
 
     def normal_vector(self):
-        """returns a normalized normal vector of the line"""
-        n = numpy.array([self._line.xy[1][1] - self._line.xy[1][0], self._line.xy[0][0] - self._line.xy[0][1]])
-        return n / numpy.linalg.norm(n)
+        """Returns a normalized normal vector of the line."""
+        normal_vec = numpy.array(
+            [
+                self._line.xy[1][1] - self._line.xy[1][0],
+                self._line.xy[0][0] - self._line.xy[0][1],
+            ]
+        )
+        return normal_vec / numpy.linalg.norm(normal_vec)
 
 
 ###############################################################################
