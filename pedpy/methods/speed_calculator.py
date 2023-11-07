@@ -512,7 +512,7 @@ def compute_species(
     measurement_line: MeasurementLine,
     frame_step: int,
 ) -> pandas.DataFrame:
-    """Creates a Dataframe containing the species for each agent.
+    """Creates a Dataframe containing the species for each pedestrian.
 
     the species decides from what side a pedestrian is encountering the measurement line
     the species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l0}))`,
