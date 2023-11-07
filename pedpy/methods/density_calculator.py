@@ -223,20 +223,20 @@ def compute_line_density(*,
                          individual_voronoi_polygons: pd.DataFrame,
                          measurement_line: MeasurementLine,
                          species: pd.DataFrame):
-    r"""calculates the density for both species and the total density orthogonal to the measurement line
+    r"""calculates the density for both species and the total density orthogonal to the measurement line.
 
     the density of each frame is accumulated from
     :math:`\frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
-    for each agent :math:`i` whose Voronoi cell intersects the line l0.
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line l0.
 
     Args:
-        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
             frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
 
         measurement_line (MeasurementLine): line at which the density is calculated
 
         species (pd.Dataframe): dataframe containing information about the species
-            of every agent intersecting with the line, result from :func:`~methods.speed_calculator.compute_species`
+            of every pedestrian intersecting the line, result from :func:`~methods.speed_calculator.compute_species`
     Returns:
         Dataframe containing columns 'frame', 'p_sp+1', 'p_sp-1', 'density'
     """
@@ -244,7 +244,7 @@ def compute_line_density(*,
                             individual_voronoi_polygons=individual_voronoi_polygons,
                             measurement_line=measurement_line):
         print("the species data does not contain all information required to calculate the line density.\n"
-              "Perhaps the species was computed with different Voronoi data or a different measurement line")
+              "Perhaps the species was computed with different Voronoi data or a different measurement line.")
 
     result = _apply_lambda_for_intersecting_frames(
         individual_voronoi_polygons=individual_voronoi_polygons,

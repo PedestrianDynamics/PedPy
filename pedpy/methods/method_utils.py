@@ -946,8 +946,8 @@ def _check_crossing_in_frame_range(
 
 
 def _compute_orthogonal_speed_in_relation_to_proprotion(group, measurement_line: MeasurementLine):
-    """calculates the speed orthogonal to the line times partial line length of the polygon
-    group is a dataframe containing the columns 'v_x', 'v_y' and 'polygon' """
+    """calculates the speed orthogonal to the line times partial line length of the polygon.
+    group is a dataframe containing the columns 'v_x', 'v_y' and 'polygon'."""
     n = measurement_line.normal_vector()
     return ((group[V_X_COL] * n[0] + group[V_Y_COL] * n[1]) *
             _compute_partial_line_length(group[POLYGON_COL], measurement_line))
@@ -967,9 +967,9 @@ def _apply_lambda_for_intersecting_frames(*,
                                           column_id_sp1: str,
                                           column_id_sp2: str,
                                           individual_speed: pd.DataFrame = None):
-    """applies lambda for both species for each frame where the voronoi-polygon intersects with the measurement line
+    """applies lambda for both species for each frame where the Voronoi-polygon intersects with the measurement line.
 
-    lambda_for_group is called with a group containing the data of one species and a Measurement Line"""
+    lambda_for_group is called with a group containing the data of one species and a Measurement Line."""
 
     merged_table = individual_voronoi_polygons[shapely.intersects(
         individual_voronoi_polygons[POLYGON_COL], measurement_line.line)]
@@ -1004,10 +1004,10 @@ def is_species_valid(*,
     """tests if there is species data for every pedestrian intersecting with the measurement line.
 
     Args:
-        species (pd.DataFrame):  dataframe containing information about the species
-            of every agent intersecting with the line, result from :func:`~methods.speed_calculator.compute_species`
+        species (pd.DataFrame):  dataframe containing information about the species of every pedestrian
+            intersecting with the line, result from :func:`~methods.speed_calculator.compute_species`
 
-        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
             frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
 
         measurement_line (MeasurementLine): measurement line
@@ -1024,13 +1024,13 @@ def is_individual_speed_valid(*,
                               individual_speed: pd.DataFrame,
                               individual_voronoi_polygons: pd.DataFrame,
                               measurement_line: MeasurementLine):
-    """tests if there is speed data provided for every pedestrian in every frame they intersect the measurement line
+    """tests if there is speed data provided for every pedestrian in every frame they intersect the measurement line.
 
     Args:
         individual_speed (pd.DataFrame): individual speed data per frame, result from
             :func:`~methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
 
-        individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
             frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
 
         measurement_line (MeasurementLine): measurement line

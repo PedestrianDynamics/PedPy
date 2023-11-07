@@ -204,14 +204,14 @@ def compute_line_flow(*,
                       measurement_line: MeasurementLine,
                       individual_speed: pd.DataFrame,
                       species: pd.DataFrame):
-    r"""calculates the flow for both species and the total flow orthogonal to the measurement line
+    r"""calculates the flow for both species and the total flow orthogonal to the measurement line.
 
         the flow of each frame is accumulated from
         :math:`v_{i} * n_{l0} * \frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
-        for each agent :math:`i` whose Voronoi cell intersects the line l0.
+        for each pedestrian :math:`i` whose Voronoi cell intersects the line l0.
 
         Args:
-            individual_voronoi_polygons (pd.DataFrame): individual voronoi data per
+            individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
                 frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
 
             measurement_line (MeasurementLine): line at which the flow is calculated
@@ -220,7 +220,7 @@ def compute_line_flow(*,
                 :func:`~methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
 
             species (pd.Dataframe): dataframe containing information about the species
-                of every agent intersecting with the line, result from :func:`~methods.speed_calculator.compute_species`
+                of every pedestrian intersecting the line, result from :func:`~methods.speed_calculator.compute_species`
         Returns:
             Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
         """
