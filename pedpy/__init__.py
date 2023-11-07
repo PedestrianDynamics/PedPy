@@ -3,7 +3,15 @@
 from . import _version
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
-from .io.trajectory_loader import TrajectoryUnit, load_trajectory
+from .io.trajectory_loader import (
+    TrajectoryUnit,
+    load_trajectory,
+    load_trajectory_from_jupedsim_sqlite,
+    load_trajectory_from_ped_data_archive_hdf5,
+    load_trajectory_from_txt,
+    load_walkable_area_from_jupedsim_sqlite,
+    load_walkable_area_from_ped_data_archive_hdf5,
+)
 from .methods.density_calculator import (
     compute_classic_density,
     compute_passing_density,
