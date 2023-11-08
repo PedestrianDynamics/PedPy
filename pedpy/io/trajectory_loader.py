@@ -117,82 +117,6 @@ def load_trajectory_from_txt(
     return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
 
-def _calculate_frames_and_fps(
-    traj_dataframe: pd.DataFrame,
-) -> Tuple[pd.Series, int]:
-    """Calculates fps and frames based on the time column of the dataframe."""
-    mean_diff = traj_dataframe.groupby(ID_COL)["time"].diff().dropna().mean()
-    fps = int(round(1 / mean_diff))
-    frames = (traj_dataframe["time"] * fps).astype(int)
-    return frames, fps
-
-
-def _load_viswalk_trajectory_data(
-    *, trajectory_file: pathlib.Path
-) -> pd.DataFrame:
-    """Parse the trajectory file for trajectory data.
-
-    Args:
-        trajectory_file (pathlib.Path): The file containing the trajectory data.
-        The expected format is a CSV file with ';' as delimiter, and it should
-        contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
-        Comment lines may start with a '*' and will be ignored.
-    Returns:
-        The trajectory data as :class:`DataFrame`, the coordinates are
-        in meter (m).
-    """
-    columns_to_keep = ["NO", "SIMSEC", "COORDCENTX", "COORDCENTY"]
-    rename_mapping = {
-        "NO": ID_COL,
-        "SIMSEC": "time",
-        "COORDCENTX": X_COL,
-        "COORDCENTY": Y_COL,
-    }
-    common_error_message = (
-        "The given trajectory file seems to be incorrect or empty. "
-        "It should contain at least the following columns: "
-        "NO, SIMSEC, COORDCENTX, COORDCENTY, separated by ';'. "
-        "Comment lines may start with a '*' and will be ignored. "
-        f"Please check your trajectory file: {trajectory_file}."
-    )
-    try:
-        data = pd.read_csv(
-            trajectory_file,
-            delimiter=";",
-            skiprows=1,
-            dtype={
-                ID_COL: "int64",
-                "time": "float64",
-                X_COL: "float64",
-                Y_COL: "float64",
-                "COORDCENT": "float64",
-            },
-        )
-        got_columns = data.columns
-        cleaned_columns = got_columns.map(
-            lambda x: x.replace("$PEDESTRIAN:", "")
-        )
-        set_columns_to_keep = set(columns_to_keep)
-        set_cleaned_columns = set(cleaned_columns)
-        missing_columns = set_columns_to_keep - set_cleaned_columns
-        if missing_columns:
-            raise ValueError(
-                f"{common_error_message}"
-                f"Missing columns: {', '.join(missing_columns)}."
-            )
-
-        data.columns = cleaned_columns
-        data = data[columns_to_keep]
-        data.rename(columns=rename_mapping, inplace=True)
-
-        if data.empty:
-            raise ValueError(common_error_message)
-
-        return data
-    except pd.errors.ParserError as exc:
-        raise ValueError(common_error_message) from exc
-
-
 def _load_trajectory_data_from_txt(
     *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
 ) -> pd.DataFrame:
@@ -482,52 +406,120 @@ def load_walkable_area_from_ped_data_archive_hdf5(
     return walkable_area
 
 
-def load_viswalk_trajectories(
+def load_trajectory_from_viswalk(
     *,
     trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
-    """Loads trajectory data from a Viswalk-CSV file and returns a PedPy.TrajectoryData object.
+    """Loads data from Viswalk-csv file as :class:`~trajectory_data.TrajectoryData`.
 
     This function reads a CSV file containing trajectory data from Viswalk simulations and
-    converts it into a PedPy TrajectoryData object which can be used for further analysis and
-    processing in the PedPy framework.
+    converts it into a :class:`~trajectory_data.TrajectoryData` object which can be used for
+    further analysis and processing in the *PedPy* framework.
 
-    Note: viswalk data have a time column, that is going to be converted to
-          a frame column for use with PedPy.
+    .. note::
 
-    Args:
-    filename (pathlib.Path): The full path of the CSV file containing the Viswalk trajectory data.
-                             The expected format is a CSV file with ';' as delimiter, and it should
-                             contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
-                             Comment lines may start with a '*' and will be ignored.
+        Viswalk data have a time column, that is going to be converted to a frame column for use
+        with *PedPy*.
+
+    Args:`
+        trajectory_file (pathlib.Path): The full path of the CSV file containing the Viswalk
+            trajectory data. The expected format is a CSV file with `;` as delimiter, and it should
+            contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY. Comment
+            lines may start with a `*` and will be ignored.
 
     Returns:
-    pedpy.TrajectoryData: A PedPy TrajectoryData object containing the loaded
-                          trajectory data
+        :class:`~trajectory_data.TrajectoryData` representation of the file data
 
     Raises:
-    IOError: If the provided path does not exist or is not a file.
-
-
-    See Also:
-    https://pedpy.readthedocs.io/ for more information on the PedPy library
-    and TrajectoryData object.
+        LoadTrajectoryError: If the provided path does not exist or is not a file.
     """
-    if not trajectory_file.exists():
-        raise IOError(
-            f"The provided path {trajectory_file} does not exist. Please provide a valid path to a Viswalk-CSV file."
-        )
+    _validate_is_file(trajectory_file)
 
-    if not trajectory_file.is_file():
-        raise IOError(
-            f"The provided path {trajectory_file} is not a valid file. Please provide a valid path to a Viswalk-CSV file."
-        )
-
-    traj_dataframe = _load_viswalk_trajectory_data(
+    traj_dataframe = _load_trajectory_data_from_viswalk(
         trajectory_file=trajectory_file
     )
     traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
         traj_dataframe
     )
 
-    return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
+    return TrajectoryData(
+        data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
+        frame_rate=traj_frame_rate,
+    )
+
+
+def _calculate_frames_and_fps(
+    traj_dataframe: pd.DataFrame,
+) -> Tuple[pd.Series, int]:
+    """Calculates fps and frames based on the time column of the dataframe."""
+    mean_diff = traj_dataframe.groupby(ID_COL)["time"].diff().dropna().mean()
+    fps = int(round(1 / mean_diff))
+    frames = (traj_dataframe["time"] * fps).astype(int)
+    return frames, fps
+
+
+def _load_trajectory_data_from_viswalk(
+    *, trajectory_file: pathlib.Path
+) -> pd.DataFrame:
+    """Parse the trajectory file for trajectory data.
+
+    Args:
+        trajectory_file (pathlib.Path): The file containing the trajectory data.
+        The expected format is a CSV file with ';' as delimiter, and it should
+        contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
+        Comment lines may start with a '*' and will be ignored.
+
+    Returns:
+        The trajectory data as :class:`DataFrame`, the coordinates are
+        in meter (m).
+    """
+    columns_to_keep = ["NO", "SIMSEC", "COORDCENTX", "COORDCENTY"]
+    rename_mapping = {
+        "NO": ID_COL,
+        "SIMSEC": "time",
+        "COORDCENTX": X_COL,
+        "COORDCENTY": Y_COL,
+    }
+    common_error_message = (
+        "The given trajectory file seems to be incorrect or empty. "
+        "It should contain at least the following columns: "
+        "NO, SIMSEC, COORDCENTX, COORDCENTY, separated by ';'. "
+        "Comment lines may start with a '*' and will be ignored. "
+        f"Please check your trajectory file: {trajectory_file}."
+    )
+    try:
+        data = pd.read_csv(
+            trajectory_file,
+            delimiter=";",
+            skiprows=1,
+            dtype={
+                ID_COL: "int64",
+                "time": "float64",
+                X_COL: "float64",
+                Y_COL: "float64",
+                "COORDCENT": "float64",
+            },
+        )
+        got_columns = data.columns
+        cleaned_columns = got_columns.map(
+            lambda x: x.replace("$PEDESTRIAN:", "")
+        )
+        set_columns_to_keep = set(columns_to_keep)
+        set_cleaned_columns = set(cleaned_columns)
+        missing_columns = set_columns_to_keep - set_cleaned_columns
+        if missing_columns:
+            raise ValueError(
+                f"{common_error_message}"
+                f"Missing columns: {', '.join(missing_columns)}."
+            )
+
+        data.columns = cleaned_columns
+        data = data[columns_to_keep]
+        data.rename(columns=rename_mapping, inplace=True)
+
+        if data.empty:
+            raise ValueError(common_error_message)
+
+        return data
+    except pd.errors.ParserError as exc:
+        raise LoadTrajectoryError(common_error_message) from exc
