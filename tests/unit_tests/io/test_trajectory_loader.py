@@ -360,7 +360,9 @@ def test_load_trajectory_from_txt_success(
 
 
 def test_load_trajectory_from_txt_reference_file():
-    traj_txt = pathlib.Path("test-data/ped_data_archive_text.txt")
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/ped_data_archive_text.txt"
+    )
     load_trajectory_from_txt(trajectory_file=traj_txt)
 
 
@@ -826,7 +828,9 @@ def test_load_trajectory_from_jupedsim_sqlite_success(
 
 
 def test_load_trajectory_from_jupedsim_sqlite_reference_file():
-    traj_txt = pathlib.Path("test-data/jupedsim.sqlite")
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/jupedsim.sqlite"
+    )
     load_trajectory_from_jupedsim_sqlite(trajectory_file=traj_txt)
 
 
@@ -884,7 +888,9 @@ def test_load_walkable_area_from_jupedsim_sqlite_success(
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_reference_file():
-    traj_txt = pathlib.Path("test-data/jupedsim.sqlite")
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/jupedsim.sqlite"
+    )
     load_walkable_area_from_jupedsim_sqlite(trajectory_file=traj_txt)
 
 
@@ -963,7 +969,9 @@ def test_load_trajectory_from_data_archive_hdf5_success(
 
 
 def test_load_trajectory_from_data_archive_hdf5_reference_file():
-    traj_txt = pathlib.Path("test-data/ped_data_archive_hdf5.h5")
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/ped_data_archive_hdf5.h5"
+    )
     load_trajectory_from_ped_data_archive_hdf5(trajectory_file=traj_txt)
 
 
@@ -1092,7 +1100,10 @@ def test_load_walkable_area_from_ped_data_archive_hdf5_success(
 
 
 def test_load_walkable_area_from_data_archive_hdf5_reference_file():
-    traj_txt = pathlib.Path("test-data/ped_data_archive_hdf5.h5")
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/ped_data_archive_hdf5.h5"
+    )
+    print(traj_txt.absolute())
     load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=traj_txt)
 
 
@@ -1196,7 +1207,9 @@ def test_load_trajectory_from_viswalk_success(
 
 
 def test_load_trajectory_from_viswalk_reference_file():
-    traj_txt = pathlib.Path("test-data/viswalk.pp")
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/viswalk.pp"
+    )
     load_trajectory_from_viswalk(trajectory_file=traj_txt)
 
 
