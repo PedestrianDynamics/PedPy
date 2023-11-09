@@ -476,9 +476,9 @@ def _load_trajectory_data_from_viswalk(
 
     Args:
         trajectory_file (pathlib.Path): The file containing the trajectory data.
-        The expected format is a CSV file with ';' as delimiter, and it should
-        contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
-        Comment lines may start with a '*' and will be ignored.
+            The expected format is a CSV file with ';' as delimiter, and it should
+            contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
+            Comment lines may start with a '*' and will be ignored.
 
     Returns:
         The trajectory data as :class:`DataFrame`, the coordinates are
