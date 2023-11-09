@@ -48,8 +48,8 @@ class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
     BORDER_SINGLE_SIDED = auto()
 
 
-class ReturnCode(Enum):
-    """Identifies the result of a return value"""
+class ReturnCode(Enum):  # pylint: disable=too-few-public-methods
+    """Identifies the result of a return value."""
 
     DATA_CORRECT = auto()
     COLUMN_MISSING = auto()
@@ -1100,17 +1100,24 @@ def is_individual_speed_valid(
         COLUMN_MISSING if there is a column missing,
         ENTRY_MISSING if there is no matching entry for a frame where polygon and line intersect.
     """
-    if not all(column in individual_speed.columns
-               for column in [ID_COL, FRAME_COL, V_X_COL, V_Y_COL]):
+    if not all(
+        column in individual_speed.columns
+        for column in [ID_COL, FRAME_COL, V_X_COL, V_Y_COL]
+    ):
         return ReturnCode.COLUMN_MISSING
     intersecting_polygons = individual_voronoi_polygons[
         shapely.intersects(
             individual_voronoi_polygons[POLYGON_COL], measurement_line.line
         )
     ]
-    if not intersecting_polygons.merge(
+    if (
+        not intersecting_polygons.merge(
             individual_speed, on=["id", "frame"], how="left"
-        ).notna().all().all():
+        )
+        .notna()
+        .all()
+        .all()
+    ):
         return ReturnCode.ENTRY_MISSING
 
     return ReturnCode.DATA_CORRECT

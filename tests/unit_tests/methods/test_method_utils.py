@@ -6,11 +6,11 @@ from shapely import Polygon
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementLine
 from pedpy.methods.method_utils import (
+    ReturnCode,
     _compute_orthogonal_speed_in_relation_to_proprotion,
     _compute_partial_line_length,
     is_individual_speed_valid,
     is_species_valid,
-    ReturnCode
 )
 
 
@@ -125,11 +125,14 @@ def test_is_speed_valid_for_correct_speed():
         }
     )
     measurement_line = MeasurementLine([(0, 0), (1, 1)])
-    assert is_individual_speed_valid(
-        individual_speed=speed,
-        individual_voronoi_polygons=voronoi_polys,
-        measurement_line=measurement_line,
-    ) == ReturnCode.DATA_CORRECT
+    assert (
+        is_individual_speed_valid(
+            individual_speed=speed,
+            individual_voronoi_polygons=voronoi_polys,
+            measurement_line=measurement_line,
+        )
+        == ReturnCode.DATA_CORRECT
+    )
 
 
 def test_is_speed_valid_for_missing_speed():
@@ -155,11 +158,14 @@ def test_is_speed_valid_for_missing_speed():
         }
     )
     measurement_line = MeasurementLine([(0, 0), (1, 1)])
-    assert is_individual_speed_valid(
-        individual_speed=speed,
-        individual_voronoi_polygons=voronoi_polys,
-        measurement_line=measurement_line,
-    ) == ReturnCode.ENTRY_MISSING
+    assert (
+        is_individual_speed_valid(
+            individual_speed=speed,
+            individual_voronoi_polygons=voronoi_polys,
+            measurement_line=measurement_line,
+        )
+        == ReturnCode.ENTRY_MISSING
+    )
 
 
 def test_is_speed_valid_for_missing_velocity():
@@ -167,7 +173,7 @@ def test_is_speed_valid_for_missing_velocity():
         data={
             ID_COL: [1, 2, 1, 2],
             FRAME_COL: [2, 2, 3, 3],
-            SPEED_COL: [3, 4, 5, 6]
+            SPEED_COL: [3, 4, 5, 6],
         }
     )
     intersecting_poly = Polygon([(0, 0), (1, 0), (1, 0.5), (0, 0.5)])
@@ -177,14 +183,17 @@ def test_is_speed_valid_for_missing_velocity():
             ID_COL: [1, 2, 1, 2, 1, 2],
             FRAME_COL: [1, 1, 2, 2, 3, 3],
             POLYGON_COL: [non_intersecting_poly] * 1
-                         + [intersecting_poly] * 3
-                         + [non_intersecting_poly] * 1
-                         + [intersecting_poly] * 1,
+            + [intersecting_poly] * 3
+            + [non_intersecting_poly] * 1
+            + [intersecting_poly] * 1,
         }
     )
     measurement_line = MeasurementLine([(0, 0), (1, 1)])
-    assert is_individual_speed_valid(
-        individual_speed=speed,
-        individual_voronoi_polygons=voronoi_polys,
-        measurement_line=measurement_line,
-    ) == ReturnCode.COLUMN_MISSING
+    assert (
+        is_individual_speed_valid(
+            individual_speed=speed,
+            individual_voronoi_polygons=voronoi_polys,
+            measurement_line=measurement_line,
+        )
+        == ReturnCode.COLUMN_MISSING
+    )

@@ -19,12 +19,12 @@ from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
     InputError,
+    ReturnCode,
     _apply_lambda_for_intersecting_frames,
     _compute_orthogonal_speed_in_relation_to_proprotion,
     compute_crossing_frames,
     is_individual_speed_valid,
     is_species_valid,
-    ReturnCode,
 )
 
 

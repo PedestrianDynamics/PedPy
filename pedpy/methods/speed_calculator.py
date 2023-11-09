@@ -21,13 +21,13 @@ from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
     InputError,
+    ReturnCode,
     SpeedCalculation,
     _apply_lambda_for_intersecting_frames,
     _compute_individual_movement,
     _compute_orthogonal_speed_in_relation_to_proprotion,
     is_individual_speed_valid,
     is_species_valid,
-    ReturnCode,
 )
 
 
@@ -470,7 +470,6 @@ def compute_line_speed(
     Returns:
         Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
     """
-
     if is_species_valid(
         species=species,
         individual_voronoi_polygons=individual_voronoi_polygons,
