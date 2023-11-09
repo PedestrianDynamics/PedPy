@@ -48,6 +48,14 @@ class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
     BORDER_SINGLE_SIDED = auto()
 
 
+class ReturnCode(Enum):
+    """Identifies the result of a return value"""
+
+    DATA_CORRECT = auto()
+    COLUMN_MISSING = auto()
+    ENTRY_MISSING = auto()
+
+
 @dataclass(
     kw_only=True,
 )
@@ -1076,7 +1084,7 @@ def is_individual_speed_valid(
     individual_speed: pd.DataFrame,
     individual_voronoi_polygons: pd.DataFrame,
     measurement_line: MeasurementLine,
-) -> bool:
+) -> ReturnCode:
     """Checks if speed data is provided for every pedestrian in every frame they intersect the line.
 
     Args:
@@ -1088,18 +1096,21 @@ def is_individual_speed_valid(
 
         measurement_line (MeasurementLine): measurement line
     Returns:
-        True if all needed data is provided by the individual speed dataframe, else False
+        DATA_CORRECT if all needed data is provided by the individual speed dataframe,
+        COLUMN_MISSING if there is a column missing,
+        ENTRY_MISSING if there is no matching entry for a frame where polygon and line intersect.
     """
+    if not all(column in individual_speed.columns
+               for column in [ID_COL, FRAME_COL, V_X_COL, V_Y_COL]):
+        return ReturnCode.COLUMN_MISSING
     intersecting_polygons = individual_voronoi_polygons[
         shapely.intersects(
             individual_voronoi_polygons[POLYGON_COL], measurement_line.line
         )
     ]
-    return (
-        intersecting_polygons.merge(
+    if not intersecting_polygons.merge(
             individual_speed, on=["id", "frame"], how="left"
-        )
-        .notna()
-        .all()
-        .all()
-    )
+        ).notna().all().all():
+        return ReturnCode.ENTRY_MISSING
+
+    return ReturnCode.DATA_CORRECT

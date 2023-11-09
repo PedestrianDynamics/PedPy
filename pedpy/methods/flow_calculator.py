@@ -24,6 +24,7 @@ from pedpy.methods.method_utils import (
     compute_crossing_frames,
     is_individual_speed_valid,
     is_species_valid,
+    ReturnCode,
 )
 
 
@@ -213,7 +214,12 @@ def compute_line_flow(
 
     the flow of each frame is accumulated from
     :math:`v_{i} * n_{l0} * \frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
-    for each pedestrian :math:`i` whose Voronoi cell intersects the line l0.
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line.
+    where :math:`v_{i} * n_{l0}` is the
+    :math:`A_i(t)` is the area of the Voronoi Cell,
+    :math:`w` is the length of the measurement line
+    and :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell for a frame.
+
 
     Args:
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
@@ -222,11 +228,12 @@ def compute_line_flow(
         measurement_line (MeasurementLine): line at which the flow is calculated
 
         individual_speed (pd.DataFrame): individual speed data per frame, result from
-        :func:`~methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+            :func:`~methods.speed_calculator.compute_individual_speed`
+            using :code:`compute_velocity`
 
         species (pd.Dataframe): dataframe containing information about the species
             of every pedestrian intersecting the line,
-             result from :func:`~methods.speed_calculator.compute_species`
+            result from :func:`~methods.speed_calculator.compute_species`
     Returns:
         Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
     """
@@ -241,15 +248,28 @@ def compute_line_flow(
             " or a different measurement line."
         )
 
-    if not is_individual_speed_valid(
+    speed_validation_result = is_individual_speed_valid(
         individual_speed=individual_speed,
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,
-    ):
+    )
+
+    if speed_validation_result == ReturnCode.ENTRY_MISSING:
         raise InputError(
-            "individual speed doesn't contain all data required to calculate the line speed.\n"
+            "individual speed doesn't contain all data required to calculate the line flow.\n"
             "Perhaps there is some data missing at the beginning or the end. "
             "An other speed_calculation might fix this Problem."
+        )
+
+    if speed_validation_result == ReturnCode.COLUMN_MISSING_MISSING:
+        raise InputError(
+            "individual speed doesn't contain all data required to calculate the line flow.\n"
+            "Perhaps the individual speed was not calculated with the option compute_velocity."
+        )
+
+    if speed_validation_result != ReturnCode.DATA_CORRECT:
+        raise InputError(
+            "individual speed doesn't contain all data required to calculate the line flow."
         )
 
     result = _apply_lambda_for_intersecting_frames(

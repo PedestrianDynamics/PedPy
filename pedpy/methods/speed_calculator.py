@@ -27,6 +27,7 @@ from pedpy.methods.method_utils import (
     _compute_orthogonal_speed_in_relation_to_proprotion,
     is_individual_speed_valid,
     is_species_valid,
+    ReturnCode,
 )
 
 
@@ -460,35 +461,51 @@ def compute_line_speed(
         measurement_line (MeasurementLine): line at which the speed is calculated
 
         individual_speed (pandas.DataFrame): individual speed data per frame, result from
-        :func:`~methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+            :func:`~methods.speed_calculator.compute_individual_speed`
+            using :code:`compute_velocity`
 
         species (pandas.Dataframe): dataframe containing information about the species
             of every pedestrian intersecting the line,
-             result from :func:`~methods.speed_calculator.compute_species`
+            result from :func:`~methods.speed_calculator.compute_species`
     Returns:
         Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
     """
-    if not is_species_valid(
+
+    if is_species_valid(
         species=species,
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,
     ):
         raise InputError(
-            "the species doesn't contain all data required to calculate the line flow.\n"
+            "the species doesn't contain all data required to calculate the line speed.\n"
             "Perhaps the species was computed with different Voronoi data"
             " or a different measurement line."
         )
 
-    if not is_individual_speed_valid(
+    speed_validation_result = is_individual_speed_valid(
         individual_speed=individual_speed,
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,
-    ):
+    )
+
+    if speed_validation_result == ReturnCode.ENTRY_MISSING:
         raise InputError(
             "individual speed doesn't contain all data required to calculate the line speed.\n"
             "Perhaps there is some data missing at the beginning or the end. "
             "An other speed_calculation might fix this Problem."
         )
+
+    if speed_validation_result == ReturnCode.COLUMN_MISSING_MISSING:
+        raise InputError(
+            "individual speed doesn't contain all data required to calculate the line speed.\n"
+            "Perhaps the individual speed was not calculated with the option compute_velocity."
+        )
+
+    if speed_validation_result != ReturnCode.DATA_CORRECT:
+        raise InputError(
+            "individual speed doesn't contain all data required to calculate the line speed."
+        )
+
     result = _apply_lambda_for_intersecting_frames(
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,
