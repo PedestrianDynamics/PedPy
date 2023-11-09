@@ -4,8 +4,8 @@ from . import _version
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
 from .io.trajectory_loader import (
-    TrajectoryUnit,
     LoadTrajectoryError,
+    TrajectoryUnit,
     load_trajectory,
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_ped_data_archive_hdf5,

@@ -1,5 +1,5 @@
 """Load trajectories to the internal trajectory data format."""
-
+import math
 import pathlib
 import sqlite3
 from typing import Any, Optional, Tuple
@@ -421,11 +421,15 @@ def load_trajectory_from_viswalk(
         Viswalk data have a time column, that is going to be converted to a frame column for use
         with *PedPy*.
 
-    Args:`
-        trajectory_file (pathlib.Path): The full path of the CSV file containing the Viswalk
-            trajectory data. The expected format is a CSV file with `;` as delimiter, and it should
-            contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY. Comment
-            lines may start with a `*` and will be ignored.
+    .. warning::
+
+        Currently only Viswalk files with a time column can be loaded.
+
+    Args:
+        trajectory_file: The full path of the CSV file containing the Viswalk
+            trajectory data. The expected format is a CSV file with :code:`;` as delimiter, and it
+            should contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
+            Comment lines may start with a :code:`*` and will be ignored.
 
     Returns:
         :class:`~trajectory_data.TrajectoryData` representation of the file data
@@ -453,8 +457,15 @@ def _calculate_frames_and_fps(
 ) -> Tuple[pd.Series, int]:
     """Calculates fps and frames based on the time column of the dataframe."""
     mean_diff = traj_dataframe.groupby(ID_COL)["time"].diff().dropna().mean()
+    if math.isnan(mean_diff):
+        raise LoadTrajectoryError(
+            "Can not determine the frame rate used to write the trajectory file. "
+            "This may happen, if the file only contains data for a single frame."
+        )
+
     fps = int(round(1 / mean_diff))
-    frames = (traj_dataframe["time"] * fps).astype(int)
+    frames = traj_dataframe["time"] * fps
+    frames = frames.round().astype("int64")
     return frames, fps
 
 
@@ -491,13 +502,13 @@ def _load_trajectory_data_from_viswalk(
         data = pd.read_csv(
             trajectory_file,
             delimiter=";",
-            skiprows=1,
+            skiprows=1,  # skip first row containing '$VISION'
+            comment="*",
             dtype={
                 ID_COL: "int64",
                 "time": "float64",
                 X_COL: "float64",
                 Y_COL: "float64",
-                "COORDCENT": "float64",
             },
         )
         got_columns = data.columns
@@ -508,7 +519,7 @@ def _load_trajectory_data_from_viswalk(
         set_cleaned_columns = set(cleaned_columns)
         missing_columns = set_columns_to_keep - set_cleaned_columns
         if missing_columns:
-            raise ValueError(
+            raise LoadTrajectoryError(
                 f"{common_error_message}"
                 f"Missing columns: {', '.join(missing_columns)}."
             )
@@ -518,7 +529,7 @@ def _load_trajectory_data_from_viswalk(
         data.rename(columns=rename_mapping, inplace=True)
 
         if data.empty:
-            raise ValueError(common_error_message)
+            raise LoadTrajectoryError(common_error_message)
 
         return data
     except pd.errors.ParserError as exc:
