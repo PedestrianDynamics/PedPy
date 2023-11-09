@@ -199,7 +199,7 @@ def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
     parsed_frame_rate: Any = None
     parsed_unit: Any = None
 
-    with open(trajectory_file, "r", encoding="utf-8") as file_content:
+    with open(trajectory_file, "r", encoding="utf-8-sig") as file_content:
         for line in file_content:
             if not line.startswith("#"):
                 break
@@ -510,6 +510,7 @@ def _load_trajectory_data_from_viswalk(
                 X_COL: "float64",
                 Y_COL: "float64",
             },
+            encoding="utf-8-sig",
         )
         got_columns = data.columns
         cleaned_columns = got_columns.map(

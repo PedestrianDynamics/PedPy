@@ -280,7 +280,7 @@ def test_validate_file_non_existing_file():
     assert "does not exist" in str(error_info.value)
 
 
-def test_load_trajectory_from_txt_non_file(tmp_path):
+def test_validate_file_non_file(tmp_path):
     with pytest.raises(LoadTrajectoryError) as error_info:
         _validate_is_file(file=tmp_path)
 
@@ -359,19 +359,9 @@ def test_load_trajectory_from_txt_success(
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
-def test_load_trajectory_from_txt_non_existing_file():
-    with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_txt(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
-    assert "does not exist" in str(error_info.value)
-
-
-def test_load_trajectory_from_txt_non_file(tmp_path):
-    with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_txt(trajectory_file=tmp_path)
-
-    assert "is not a file" in str(error_info.value)
+def test_load_trajectory_from_txt_reference_file():
+    traj_txt = pathlib.Path("test-data/ped_data_archive_text.txt")
+    load_trajectory_from_txt(trajectory_file=traj_txt)
 
 
 @pytest.mark.parametrize(
@@ -763,6 +753,21 @@ def test_load_trajectory_meta_data_from_txt_failure(
     assert expected_message in str(error_info.value)
 
 
+def test_load_trajectory_from_txt_non_existing_file():
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_jupedsim_sqlite(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_trajectory_from_txt_non_file(tmp_path):
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_jupedsim_sqlite(trajectory_file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
+
+
 @pytest.mark.parametrize(
     "data, expected_frame_rate",
     [
@@ -820,6 +825,11 @@ def test_load_trajectory_from_jupedsim_sqlite_success(
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
+def test_load_trajectory_from_jupedsim_sqlite_reference_file():
+    traj_txt = pathlib.Path("test-data/jupedsim.sqlite")
+    load_trajectory_from_jupedsim_sqlite(trajectory_file=traj_txt)
+
+
 def test_load_trajectory_from_jupedsim_sqlite_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_jupedsim_sqlite(
@@ -871,6 +881,11 @@ def test_load_walkable_area_from_jupedsim_sqlite_success(
     expected_walkable_area = WalkableArea(walkable_area)
     walkable_area = load_walkable_area_from_jupedsim_sqlite(trajectory_sqlite)
     assert expected_walkable_area.polygon.equals(walkable_area.polygon)
+
+
+def test_load_walkable_area_from_jupedsim_sqlite_reference_file():
+    traj_txt = pathlib.Path("test-data/jupedsim.sqlite")
+    load_walkable_area_from_jupedsim_sqlite(trajectory_file=traj_txt)
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_non_existing_file():
@@ -945,6 +960,11 @@ def test_load_trajectory_from_data_archive_hdf5_success(
         == expected_data.to_numpy()
     ).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+def test_load_trajectory_from_data_archive_hdf5_reference_file():
+    traj_txt = pathlib.Path("test-data/ped_data_archive_hdf5.h5")
+    load_trajectory_from_ped_data_archive_hdf5(trajectory_file=traj_txt)
 
 
 def test_load_trajectory_from_ped_data_archive_hdf5_no_trajectory_dataset(
@@ -1071,6 +1091,11 @@ def test_load_walkable_area_from_ped_data_archive_hdf5_success(
     assert expected_walkable_area.polygon.equals(walkable_area.polygon)
 
 
+def test_load_walkable_area_from_data_archive_hdf5_reference_file():
+    traj_txt = pathlib.Path("test-data/ped_data_archive_hdf5.h5")
+    load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=traj_txt)
+
+
 def test_load_walkable_area_from_ped_data_archive_hdf5_no_wkt_in_file(
     tmp_path: pathlib.Path,
 ):
@@ -1168,6 +1193,11 @@ def test_load_trajectory_from_viswalk_success(
         == expected_data.to_numpy()
     ).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+def test_load_trajectory_from_viswalk_reference_file():
+    traj_txt = pathlib.Path("test-data/viswalk.pp")
+    load_trajectory_from_viswalk(trajectory_file=traj_txt)
 
 
 def test_load_trajectory_from_viswalk_no_data(
