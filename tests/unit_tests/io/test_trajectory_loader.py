@@ -198,7 +198,7 @@ def write_viswalk_csv_file(
     data.columns = [column.upper() for column in data.columns]
 
     write_header_viswalk(file=file, data=data)
-    data.to_csv(file, sep=";", index=False, mode="a")
+    data.to_csv(file, sep=";", index=False, mode="a", encoding="utf-8-sig")
 
 
 def write_header_viswalk(file, data):
@@ -209,7 +209,7 @@ def write_header_viswalk(file, data):
         "COORDCENTY": "CoordCentY, Coordinate center (y) (Y-coordinate of pedestrian’s center)",
     }
 
-    with open(file, "w") as writer:
+    with open(file, "w", encoding="utf-8-sig") as writer:
         writer.write(
             textwrap.dedent(
                 f"""\
