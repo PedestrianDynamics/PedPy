@@ -287,15 +287,41 @@ def load_trajectory_from_jupedsim_sqlite(
     _validate_is_file(trajectory_file)
 
     with sqlite3.connect(trajectory_file) as con:
-        data = pd.read_sql_query(
-            "select frame, id, pos_x as x, pos_y as y from trajectory_data",
-            con,
-        )
-        fps = float(
-            con.cursor()
-            .execute("select value from metadata where key = 'fps'")
-            .fetchone()[0]
-        )
+        try:
+            data = pd.read_sql_query(
+                "select frame, id, pos_x as x, pos_y as y from trajectory_data",
+                con,
+            )
+        except Exception as exc:
+            raise LoadTrajectoryError(
+                "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
+                "contain a 'trajectory_data' table. Please check your file."
+            ) from exc
+        if data.empty:
+            raise LoadTrajectoryError(
+                "The given sqlite trajectory file seems to be empty. "
+                "Please check your file."
+            )
+
+        try:
+            fps_query_result = (
+                con.cursor()
+                .execute("select value from metadata where key = 'fps'")
+                .fetchone()
+            )
+        except Exception as exc:
+            raise LoadTrajectoryError(
+                "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
+                "contain a 'metadata' table. Please check your file."
+            ) from exc
+
+        if fps_query_result is None:
+            raise LoadTrajectoryError(
+                "The given sqlite trajectory file seems not include a frame rate. "
+                "Please check your file."
+            )
+        fps = float(fps_query_result[0])
+
     return TrajectoryData(data=data, frame_rate=fps)
 
 
@@ -313,9 +339,23 @@ def load_walkable_area_from_jupedsim_sqlite(
     _validate_is_file(trajectory_file)
 
     with sqlite3.connect(trajectory_file) as con:
-        walkable_area = (
-            con.cursor().execute("select wkt from geometry").fetchone()[0]
-        )
+        try:
+            walkable_query_result = (
+                con.cursor().execute("select wkt from geometry").fetchone()
+            )
+        except Exception as exc:
+            raise LoadTrajectoryError(
+                "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
+                "contain a 'geometry' table. Please check your file."
+            ) from exc
+
+        if walkable_query_result is None:
+            raise LoadTrajectoryError(
+                "The given sqlite trajectory file seems not include a geometry. "
+                "Please check your file."
+            )
+        walkable_area = walkable_query_result[0]
+
     return WalkableArea(walkable_area)
 
 
