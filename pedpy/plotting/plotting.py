@@ -72,10 +72,8 @@ def _plot_multiple_series(  # pylint: disable=too-many-arguments
     y_label: str,
 ) -> matplotlib.axes.Axes:
     axes.set_title(title)
-    for i in range(len(y_s)):
-        axes.plot(
-            x, y_s[i], color=colors[i], label=labels[i], linewidth=line_width
-        )
+    for y, color, label in zip(y_s, colors, labels):
+        axes.plot(x, y, color=color, label=label, linewidth=line_width)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     axes.legend()
