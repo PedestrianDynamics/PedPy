@@ -470,7 +470,7 @@ def compute_line_speed(
     Returns:
         Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
     """
-    if is_species_valid(
+    if not is_species_valid(
         species=species,
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,
@@ -494,7 +494,7 @@ def compute_line_speed(
             "An other speed_calculation might fix this Problem."
         )
 
-    if speed_validation_result == ReturnCode.COLUMN_MISSING_MISSING:
+    if speed_validation_result == ReturnCode.COLUMN_MISSING:
         raise InputError(
             "individual speed doesn't contain all data required to calculate the line speed.\n"
             "Perhaps the individual speed was not calculated with the option compute_velocity."

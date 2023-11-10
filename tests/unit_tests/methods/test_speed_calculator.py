@@ -121,7 +121,7 @@ def example_data():
             POLYGON_COL: [
                 matching_poly1,
                 matching_poly2,
-                matching_poly1,
+                non_matching_poly,
                 non_matching_poly,
             ],
             DENSITY_COL: [3, 3, 3, 3],

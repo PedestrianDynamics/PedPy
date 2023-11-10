@@ -261,7 +261,7 @@ def compute_line_flow(
             "An other speed_calculation might fix this Problem."
         )
 
-    if speed_validation_result == ReturnCode.COLUMN_MISSING_MISSING:
+    if speed_validation_result == ReturnCode.COLUMN_MISSING:
         raise InputError(
             "individual speed doesn't contain all data required to calculate the line flow.\n"
             "Perhaps the individual speed was not calculated with the option compute_velocity."
