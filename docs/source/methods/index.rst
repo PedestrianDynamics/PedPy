@@ -6,7 +6,7 @@ Methods
     :widths: 20 80
 
     * - :doc:`CECM <../CECM>`
-      -
+      - calculating speed, flow and density when analysing pedestrian trajectories at a measurement line.
 
 
 .. toctree::
