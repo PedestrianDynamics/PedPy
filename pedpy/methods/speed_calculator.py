@@ -20,8 +20,8 @@ from pedpy.column_identifier import (
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
+    DataValidationStatus,
     InputError,
-    ReturnCode,
     SpeedCalculation,
     _apply_lambda_for_intersecting_frames,
     _compute_individual_movement,
@@ -487,20 +487,20 @@ def compute_line_speed(
         measurement_line=measurement_line,
     )
 
-    if speed_validation_result == ReturnCode.ENTRY_MISSING:
+    if speed_validation_result == DataValidationStatus.ENTRY_MISSING:
         raise InputError(
             "individual speed doesn't contain all data required to calculate the line speed.\n"
             "Perhaps there is some data missing at the beginning or the end. "
             "An other speed_calculation might fix this Problem."
         )
 
-    if speed_validation_result == ReturnCode.COLUMN_MISSING:
+    if speed_validation_result == DataValidationStatus.COLUMN_MISSING:
         raise InputError(
             "individual speed doesn't contain all data required to calculate the line speed.\n"
             "Perhaps the individual speed was not calculated with the option compute_velocity."
         )
 
-    if speed_validation_result != ReturnCode.DATA_CORRECT:
+    if speed_validation_result != DataValidationStatus.DATA_CORRECT:
         raise InputError(
             "individual speed doesn't contain all data required to calculate the line speed."
         )

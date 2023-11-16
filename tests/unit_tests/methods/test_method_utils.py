@@ -6,7 +6,7 @@ from shapely import Polygon
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementLine
 from pedpy.methods.method_utils import (
-    ReturnCode,
+    DataValidationStatus,
     _compute_orthogonal_speed_in_relation_to_proprotion,
     _compute_partial_line_length,
     is_individual_speed_valid,
@@ -131,7 +131,7 @@ def test_is_speed_valid_for_correct_speed():
             individual_voronoi_polygons=voronoi_polys,
             measurement_line=measurement_line,
         )
-        == ReturnCode.DATA_CORRECT
+        == DataValidationStatus.DATA_CORRECT
     )
 
 
@@ -164,7 +164,7 @@ def test_is_speed_valid_for_missing_speed():
             individual_voronoi_polygons=voronoi_polys,
             measurement_line=measurement_line,
         )
-        == ReturnCode.ENTRY_MISSING
+        == DataValidationStatus.ENTRY_MISSING
     )
 
 
@@ -195,5 +195,5 @@ def test_is_speed_valid_for_missing_velocity():
             individual_voronoi_polygons=voronoi_polys,
             measurement_line=measurement_line,
         )
-        == ReturnCode.COLUMN_MISSING
+        == DataValidationStatus.COLUMN_MISSING
     )

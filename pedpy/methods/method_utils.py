@@ -48,7 +48,7 @@ class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
     BORDER_SINGLE_SIDED = auto()
 
 
-class ReturnCode(Enum):  # pylint: disable=too-few-public-methods
+class DataValidationStatus(Enum):  # pylint: disable=too-few-public-methods
     """Identifies the result of a return value."""
 
     DATA_CORRECT = auto()
@@ -1084,7 +1084,7 @@ def is_individual_speed_valid(
     individual_speed: pd.DataFrame,
     individual_voronoi_polygons: pd.DataFrame,
     measurement_line: MeasurementLine,
-) -> ReturnCode:
+) -> DataValidationStatus:
     """Checks if speed data is provided for every pedestrian in every frame they intersect the line.
 
     Args:
@@ -1104,7 +1104,7 @@ def is_individual_speed_valid(
         column in individual_speed.columns
         for column in [ID_COL, FRAME_COL, V_X_COL, V_Y_COL]
     ):
-        return ReturnCode.COLUMN_MISSING
+        return DataValidationStatus.COLUMN_MISSING
     intersecting_polygons = individual_voronoi_polygons[
         shapely.intersects(
             individual_voronoi_polygons[POLYGON_COL], measurement_line.line
@@ -1118,6 +1118,6 @@ def is_individual_speed_valid(
         .all()
         .all()
     ):
-        return ReturnCode.ENTRY_MISSING
+        return DataValidationStatus.ENTRY_MISSING
 
-    return ReturnCode.DATA_CORRECT
+    return DataValidationStatus.DATA_CORRECT
