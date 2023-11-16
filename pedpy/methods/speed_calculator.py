@@ -451,8 +451,11 @@ def compute_line_speed(
     r"""Calculates speed for both species and the total speed orthogonal to the measurement line.
 
     the speed of each frame is accumulated from
-    :math:`v_{i} * n_{l0} *  \frac{w_i(t)}{w}`
-    for each pedestrian :math:`i` whose Voronoi cell intersects the line l0.
+    :math:`v_{i} * n_{l} *  \frac{w_i(t)}{w}`
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line :math:`l`.
+    :math:`w` is the length of the measurement line
+    and :math:`w_i(t)` is the length of the intersecting line
+    of the Voronoi cell for frame :math:`t`.
 
     Args:
         individual_voronoi_polygons (pandas.DataFrame): individual Voronoi data per
@@ -530,13 +533,13 @@ def compute_species(
 ) -> pandas.DataFrame:
     """Creates a Dataframe containing the species for each pedestrian.
 
-    the species decides from what side a pedestrian is encountering the measurement line
-    the species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l0}))`,
-    With the normal vector n of the measurement line and the velocity  of pedestrian i :math:`v_i`
-    at the time when his Voronoi cell touches the measurement line :math:`t_{i,l0}`
+    the species decides from what side a pedestrian is encountering the measurement line.
+    the species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l}))`,
+    with the normal vector n of the measurement line and the velocity  of pedestrian i :math:`v_i`
+    at the time when his Voronoi cell touches the measurement line :math:`t_{i,l}`.
 
     if the Voronoi polygon of a pedestrian never touches the measurement line
-     the pedestrian will not be included in the returned Dataframe
+     the pedestrian will not be included in the returned Dataframe.
 
 
     Args:

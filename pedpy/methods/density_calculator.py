@@ -237,10 +237,11 @@ def compute_line_density(
 
     the density of each frame is accumulated from
     :math:`\frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
-    for each pedestrian :math:`i` whose Voronoi cell intersects the line l0.
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line :math:`l`.
     where :math:`A_i(t)` is the area of the Voronoi Cell,
     :math:`w` is the length of the measurement line
-    and :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell for frame $t$.
+    and :math:`w_i(t)` is the length of the intersecting line
+    of the Voronoi cell for frame :math:`t`.
 
     Args:
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
