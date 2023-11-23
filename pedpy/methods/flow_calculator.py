@@ -233,7 +233,7 @@ def compute_line_flow(
             :func:`~methods.speed_calculator.compute_individual_speed`
             using :code:`compute_velocity`
 
-        species (pd.Dataframe): dataframe containing information about the species
+        species (pd.DataFrame): dataframe containing information about the species
             of every pedestrian intersecting the line,
             result from :func:`~methods.speed_calculator.compute_species`
     Returns:

@@ -469,7 +469,7 @@ def compute_line_speed(
         individual_speed (pandas.DataFrame): individual speed data per frame, result from
             :func:`~speed_calculator.compute_individual_speed` using :code:`compute_velocity`
 
-        species (pandas.Dataframe): dataframe containing information about the species
+        species (pandas.DataFrame): dataframe containing information about the species
             of every pedestrian intersecting the line,
             result from :func:`~methods.speed_calculator.compute_species`
     Returns:

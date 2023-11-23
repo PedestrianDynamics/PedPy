@@ -251,7 +251,7 @@ def compute_line_density(
 
         measurement_line (MeasurementLine): line at which the density is calculated
 
-        species (pd.Dataframe): dataframe containing information about the species
+        species (pd.DataFrame): dataframe containing information about the species
             of every pedestrian intersecting the line,
             result from :func:`~methods.speed_calculator.compute_species`
     Returns:
