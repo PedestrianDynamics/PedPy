@@ -233,19 +233,21 @@ def compute_line_density(
     measurement_line: MeasurementLine,
     species: pd.DataFrame,
 ) -> pd.DataFrame:
-    r"""Calculates density for both species and total density orthogonal to the measurement line.
+    r"""Calculates the flow for both species and the total flow orthogonal to the measurement line.
 
-    the density of each frame is accumulated from
-    :math:`\frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
-    for each pedestrian :math:`i` whose Voronoi cell intersects the line :math:`l`.
-    where :math:`A_i(t)` is the area of the Voronoi Cell,
-    :math:`w` is the length of the measurement line
-    and :math:`w_i(t)` is the length of the intersecting line
-    of the Voronoi cell for frame :math:`t`.
+    The flow of each frame is accumulated from
+    :math:`v_{i} * n_{l} * \frac{1}{A_i(t)}*  \frac{w_i(t)}{w}'
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line.
+    * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i` orthogonal to the line :math:`l`
+    * :math:`A_i(t)` is the area of the Voronoi Cell
+    * :math:`w` is the length of the measurement line
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
+
+    results are computed for both species (see :func:`~speed_calculator.compute_species`)
 
     Args:
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
-            frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
+            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`
 
         measurement_line (MeasurementLine): line at which the density is calculated
 

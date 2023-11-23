@@ -453,18 +453,21 @@ def compute_line_speed(
     the speed of each frame is accumulated from
     :math:`v_{i} * n_{l} *  \frac{w_i(t)}{w}`
     for each pedestrian :math:`i` whose Voronoi cell intersects the line :math:`l`.
-    :math:`w` is the length of the measurement line
-    and :math:`w_i(t)` is the length of the intersecting line
-    of the Voronoi cell for frame :math:`t`.
+    * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i` orthogonal to the line :math:`l`
+    * :math:`w` is the length of the measurement line
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
+
+    results are computed for both species (see :func:`~speed_calculator.compute_species`)
 
     Args:
         individual_voronoi_polygons (pandas.DataFrame): individual Voronoi data per
-            frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
+            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`.
 
         measurement_line (MeasurementLine): line at which the speed is calculated
 
         individual_speed (pandas.DataFrame): individual speed data per frame, result from
-            :func:`~methods.speed_calculator.compute_individual_speed`
+            :func:`~speed_calculator.compute_individual_speed`
+
             using :code:`compute_velocity`
 
         species (pandas.Dataframe): dataframe containing information about the species
@@ -533,20 +536,31 @@ def compute_species(
 ) -> pandas.DataFrame:
     """Creates a Dataframe containing the species for each pedestrian.
 
-    the species decides from what side a pedestrian is encountering the measurement line.
-    the species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l}))`,
-    with the normal vector n of the measurement line and the velocity  of pedestrian i :math:`v_i`
-    at the time when his Voronoi cell touches the measurement line :math:`t_{i,l}`.
+    The species describes from which side a pedestrian is encountering the measurement line.
+    The species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l}))`,
+    With the normal vector n of the measurement line and the velocity  of pedestrian i $v_i$
+    at the time when his Voronoi cell intersects the measurement line :math:`t_{i,l}`
+    for the first time.
 
-    if the Voronoi polygon of a pedestrian never touches the measurement line
-     the pedestrian will not be included in the returned Dataframe.
+    If the Voronoi polygon of a pedestrian never intersects the measurement
+    line the pedestrian will not be included in the returned dataframe.
 
+    .. image:: /images/species_determination.svg
+        :width: 60 %
+        :align: center
+
+    This image shows the frame when the decision as to
+    which species the pedestrian belongs to is made.
+    It is the first frame in which his Voronoi cell intersects the line.
+    Now the current velocity decides which species they are assigned to.
+
+    For the decision it is not relevant whether a pedestrian actually crosses the line afterward.
 
     Args:
         trajectory_data (TrajectoryData): trajectory data
 
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
-            frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
+            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`
 
         measurement_line (MeasurementLine): measurement line
 

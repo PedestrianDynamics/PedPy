@@ -212,14 +212,15 @@ def compute_line_flow(
 ) -> pd.DataFrame:
     r"""Calculates the flow for both species and the total flow orthogonal to the measurement line.
 
-    the flow of each frame is accumulated from
+    The flow of each frame is accumulated from
     :math:`v_{i} * n_{l} * \frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
     for each pedestrian :math:`i` whose Voronoi cell intersects the line.
-    where :math:`v_{i} * n_{l}` is the
-    :math:`A_i(t)` is the area of the Voronoi Cell,
-    :math:`w` is the length of the measurement line
-    and :math:`w_i(t)` is the length of the intersecting line
-    of the Voronoi cell for the frame :math:`t`.
+    * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i` orthogonal to the line :math:`l`
+    * :math:`A_i(t)` is the area of the Voronoi Cell
+    * :math:`w` is the length of the measurement line
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
+
+    results are computed for both species (see :func:`~speed_calculator.compute_species`)
 
 
     Args:
