@@ -253,7 +253,7 @@ def compute_line_density(
 
         species (pd.DataFrame): dataframe containing information about the species
             of every pedestrian intersecting the line,
-            result from :func:`~methods.speed_calculator.compute_species`
+            result from :func:`~speed_calculator.compute_species`
     Returns:
         Dataframe containing columns 'frame', 'p_sp+1', 'p_sp-1', 'density'
     """

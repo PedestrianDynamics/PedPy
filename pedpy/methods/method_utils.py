@@ -1060,11 +1060,11 @@ def is_species_valid(
 
     Args:
         species (pd.DataFrame): dataframe containing information about the species
-         of every pedestrian intersecting with the line,
-          result from :func:`~methods.speed_calculator.compute_species`
+            of every pedestrian intersecting with the line,
+            result from :func:`~speed_calculator.compute_species`
 
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
-        frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
+            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`
 
         measurement_line (MeasurementLine): measurement line
 
@@ -1089,12 +1089,13 @@ def is_individual_speed_valid(
 
     Args:
         individual_speed (pd.DataFrame): individual speed data per frame, result from
-        :func:`~methods.speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+            :func:`~speed_calculator.compute_individual_speed` using :code:`compute_velocity`
 
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
-            frame, result from :func:`~method_utils.compute_individual_voronoi_polygon`
+            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`
 
         measurement_line (MeasurementLine): measurement line
+
     Returns:
         DATA_CORRECT if all needed data is provided by the individual speed dataframe,
         COLUMN_MISSING if there is a column missing,

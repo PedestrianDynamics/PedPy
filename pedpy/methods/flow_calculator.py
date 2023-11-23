@@ -235,7 +235,7 @@ def compute_line_flow(
 
         species (pd.DataFrame): dataframe containing information about the species
             of every pedestrian intersecting the line,
-            result from :func:`~methods.speed_calculator.compute_species`
+            result from :func:`~speed_calculator.compute_species`
     Returns:
         Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
     """
