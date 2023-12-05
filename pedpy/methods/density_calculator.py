@@ -243,7 +243,7 @@ def compute_line_density(
     * :math:`w` is the length of the measurement line
     * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
 
-    results are computed for both species (see :func:`~speed_calculator.compute_species`)
+    Results are computed for both species (see :func:`~speed_calculator.compute_species`)
 
     Args:
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per

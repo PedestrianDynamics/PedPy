@@ -450,7 +450,7 @@ def compute_line_speed(
 ) -> pandas.DataFrame:
     r"""Calculates speed for both species and the total speed orthogonal to the measurement line.
 
-    the speed of each frame is accumulated from
+    The speed of each frame is accumulated from
     :math:`v_{i} * n_{l} *  \frac{w_i(t)}{w}`
     for each pedestrian :math:`i` whose Voronoi cell intersects the line :math:`l`.
 
@@ -458,7 +458,7 @@ def compute_line_speed(
     * :math:`w` is the length of the measurement line
     * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
 
-    results are computed for both species (see :func:`~speed_calculator.compute_species`)
+    Results are computed for both species (see :func:`~speed_calculator.compute_species`)
 
     Args:
         individual_voronoi_polygons (pandas.DataFrame): individual Voronoi data per
@@ -537,7 +537,7 @@ def compute_species(
 
     The species describes from which side a pedestrian is encountering the measurement line.
     The species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l}))`,
-    With the normal vector n of the measurement line and the velocity  of pedestrian i :math:`v_i`
+    with the normal vector n of the measurement line and the velocity  of pedestrian i being :math:`v_i`
     at the time when his Voronoi cell intersects the measurement line :math:`t_{i,l}`
     for the first time.
 
