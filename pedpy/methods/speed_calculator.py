@@ -536,8 +536,8 @@ def compute_species(
     """Creates a Dataframe containing the species for each pedestrian.
 
     The species describes from which side a pedestrian is encountering the measurement line.
-    The species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l}))`,
-    with the normal vector n of the measurement line and the velocity  of pedestrian i being :math:`v_i`
+    The species of a pedestrian :math:`i` is calculated by :math:`sign(n * v_i(t_{i,l}))`, with
+    the normal vector n of the measurement line and the velocity  of pedestrian i being :math:`v_i`
     at the time when his Voronoi cell intersects the measurement line :math:`t_{i,l}`
     for the first time.
 
