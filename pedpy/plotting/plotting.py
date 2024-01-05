@@ -439,13 +439,15 @@ def plot_profiles(
     Returns:
          matplotlib.axes.Axes instance where the profiles are plotted
     """
+    mean_profiles = np.mean(profiles, axis=0)
+    bounds = walkable_area.bounds
+
     title = kwargs.get("title", "")
     walkable_color = kwargs.get("walkable_color", "w")
     hole_color = kwargs.get("hole_color", "w")
     hole_alpha = kwargs.get("hole_alpha", 1.0)
-    bounds = walkable_area.bounds
-    vmin = kwargs.get("vmin", np.min(profiles))
-    vmax = kwargs.get("vmax", np.max(profiles))
+    vmin = kwargs.get("vmin", np.min(mean_profiles))
+    vmax = kwargs.get("vmax", np.max(mean_profiles))
     label = kwargs.get("label", None)
 
     if axes is None:
@@ -453,7 +455,7 @@ def plot_profiles(
 
     axes.set_title(title)
     imshow = axes.imshow(
-        np.mean(profiles, axis=0),
+        mean_profiles,
         extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
         interpolation="None",
         cmap="jet",
