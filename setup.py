@@ -37,7 +37,6 @@ setuptools.setup(
     ],
     python_requires=">=3.10",
     install_requires=[
-        "aenum~=3.1",
         "numpy~=1.25",
         "pandas[hdf5]~=2.0",
         "Shapely~=2.0",

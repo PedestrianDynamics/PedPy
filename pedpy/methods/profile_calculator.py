@@ -1,11 +1,11 @@
 """Module containing functions to compute profiles."""
+from enum import Enum, auto
 from typing import List, Tuple
 
 import numpy as np
 import numpy.typing as npt
 import pandas
 import shapely
-from aenum import Enum
 
 from pedpy.column_identifier import FRAME_COL
 from pedpy.data.geometry import WalkableArea
@@ -14,9 +14,10 @@ from pedpy.data.geometry import WalkableArea
 class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     """Identifier for the method used to compute the mean speed."""
 
-    _init_ = "value __doc__"
-    ARITHMETIC = 0, "arithmetic mean speed"
-    VORONOI = 1, "voronoi speed"
+    ARITHMETIC = auto()
+    """arithmetic mean speed profile (see :func:`~speed_calculator.compute_mean_speed_per_frame`)"""
+    VORONOI = auto()
+    """Voronoi speed profile (see :func:`~speed_calculator.compute_voronoi_speed`)"""
 
 
 def compute_profiles(
