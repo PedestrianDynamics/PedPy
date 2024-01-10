@@ -1,10 +1,10 @@
 """Load trajectories to the internal trajectory data format."""
 import pathlib
 import sqlite3
+from enum import Enum
 from typing import Any, Optional, Tuple
 
 import pandas as pd
-from aenum import Enum
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
@@ -26,9 +26,10 @@ class LoadTrajectoryError(Exception):
 class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
     """Identifier of the unit of the trajectory coordinates."""
 
-    _init_ = "value __doc__"
-    METER = 1, "meter (m)"
-    CENTIMETER = 100, "centimeter (cm)"
+    METER = 1
+    """meter (m)"""
+    CENTIMETER = 100
+    """centimeter (cm)"""
 
 
 def _validate_is_file(file: pathlib.Path) -> None:

@@ -3,12 +3,12 @@ import itertools
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 import shapely
-from aenum import Enum, auto
 from scipy.spatial import Voronoi
 
 from pedpy.column_identifier import (
