@@ -16,5 +16,5 @@ python3 -m mypy --config-file mypy.ini pedpy/
 echo "-------------------------------------------------------------------------"
 
 echo "Linting with pylint"
-python3 -m pylint --recursive=y --extension-pkg-whitelist=scipy pedpy pedpy/data pedpy/io pedpy/methods pedpy/plotting
+python3 -m pylint --recursive=y --extension-pkg-whitelist=scipy pedpy pedpy/data pedpy/io pedpy/methods pedpy/plotting pedpy/internal
 

@@ -1,6 +1,6 @@
 """Module containing functions to compute profiles."""
 from enum import Enum, auto
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -9,23 +9,35 @@ import shapely
 
 from pedpy.column_identifier import FRAME_COL
 from pedpy.data.geometry import WalkableArea
+from pedpy.internal.utils import alias
 
 
 class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
-    """Identifier for the method used to compute the mean speed."""
+    """Identifier for the method used to compute the speed profile."""
 
     ARITHMETIC = auto()
-    """arithmetic mean speed profile (see :func:`~speed_calculator.compute_mean_speed_per_frame`)"""
+    """arithmetic mean speed profile"""
     VORONOI = auto()
-    """Voronoi speed profile (see :func:`~speed_calculator.compute_voronoi_speed`)"""
+    """Voronoi speed profile"""
 
 
+class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
+    """Identifier for the method used to compute density profile."""
+
+    VORONOI = auto()
+    """Voronoi density profile"""
+
+
+@alias({"data": "individual_voronoi_speed_data"})
 def compute_profiles(
     *,
-    individual_voronoi_speed_data: pandas.DataFrame,
+    data: pandas.DataFrame = None,
     walkable_area: WalkableArea,
     grid_size: float,
     speed_method: SpeedMethod,
+    density_method: DensityMethod = DensityMethod.VORONOI,
+    # pylint: disable=unused-argument
+    **kwargs: Any,
 ) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
     """Computes the density and speed profiles.
 
@@ -42,31 +54,41 @@ def compute_profiles(
     :func:`~density_calculator.compute_voronoi_density`.
 
     The computation of the speed in each cell is either done with the Voronoi
-    speed computation as in :func:`~velocity_calculator.compute_voronoi_speed`
-    when using :data:`SpeedMethod.VORONOI`. Or as in
-    :func:`~velocity_calculator.compute_mean_speed_per_frame` when using
-    :data:`SpeedMethod.ARITHMETIC`.
+    speed computation as in :func:`~speed_calculator.compute_voronoi_speed`
+    when using :data:`SpeedMethod.VORONOI`. When using
+    :data:`SpeedMethod.ARITHMETIC` the mean speed of all pedestrians whose
+    Voronoi cells intersects with the grid cell is computed.
 
     .. note::
 
         As this is a quite compute heavy operation, it is suggested to reduce
-        the geometry to the important areas and limit the
-        :code:`individual_voronoi_speed_data` to the most relevant frame
-        interval.
+        the geometry to the important areas and limit the :code:`data` to the
+        most relevant frame interval.
 
     Args:
-        individual_voronoi_speed_data (pandas.DataFrame): individual Voronoi
-            and speed data, needs to contain a column 'polygon'
-            which holds a :class:`shapely.Polygon` and a column 'speed'
-            which holds a floating point value. This is usually the merged
-            result from :func:`method_utils.compute_individual_voronoi_polygons`
-            and :func:`velocity_calculator.compute_individual_speed`.
+        data (pandas.DataFrame): Data from which the profiles are computes.
+            The DataFrame must contain a `frame` and a `speed` (result from
+            :func:`~speed_calculator.compute_individual_speed`) column.
+            For computing density profiles, it must contain a `polygon` column
+            (from :func:`~method_utils.compute_individual_voronoi_polygons`)
+            when using the `DensityMethod.VORONOI`. Computing the speed
+            profiles needs a `polygon` column (from
+            :func:`~method_utils.compute_individual_voronoi_polygons`) when
+            using the `SpeedMethod.VORONOI` or `SpeedMethod.ARITHMETIC`.
+            For getting a DataFrame containing all the needed data, you can
+            merge the results of the different function on the 'id' and
+            'frame' columns (see :func:`pandas.DataFrame.merge` and
+            :func:`pandas.merge`).
         walkable_area (WalkableArea): geometry for which the profiles are
             computed
         grid_size (float): resolution of the grid used for computing the
             profiles
         speed_method (SpeedMethod): speed method used to compute the
-            speed
+            speed profile
+        density_method (DensityMethod): density method to compute the density
+            profile (default: DensityMethod.VORONOI)
+        individual_voronoi_speed_data (pandas.DataFrame): deprecated alias for
+            :code:`data`. Please use :code:`data` in the future.
 
     Returns:
         List of density profiles, List of speed profiles
@@ -77,7 +99,7 @@ def compute_profiles(
     density_profiles = []
     speed_profiles = []
 
-    for _, frame_data in individual_voronoi_speed_data.groupby(FRAME_COL):
+    for _, frame_data in data.groupby(FRAME_COL):
         grid_intersections_area = shapely.area(
             shapely.intersection(
                 np.array(grid_cells)[:, np.newaxis],
@@ -86,24 +108,24 @@ def compute_profiles(
         )
 
         # Compute density
-        density = (
-            np.sum(
-                grid_intersections_area
-                * (1 / shapely.area(frame_data.polygon.values)),
-                axis=1,
+        if density_method == DensityMethod.VORONOI:
+            density = _compute_voronoi_density_profile(
+                frame_data=frame_data,
+                grid_intersections_area=grid_intersections_area,
+                grid_area=grid_cells[0].area,
             )
-            / grid_cells[0].area
-        )
+        else:
+            raise ValueError("density method not accepted")
 
         # Compute speed
         if speed_method == SpeedMethod.VORONOI:
-            speed = _compute_voronoi_speed(
+            speed = _compute_voronoi_speed_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area,
                 grid_area=grid_cells[0].area,
             )
         elif speed_method == SpeedMethod.ARITHMETIC:
-            speed = _compute_arithmetic_speed(
+            speed = _compute_arithmetic_voronoi_speed_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area,
             )
@@ -116,7 +138,23 @@ def compute_profiles(
     return density_profiles, speed_profiles
 
 
-def _compute_arithmetic_speed(
+def _compute_voronoi_density_profile(
+    *,
+    frame_data: pandas.DataFrame,
+    grid_intersections_area: npt.NDArray[np.float64],
+    grid_area: float,
+) -> npt.NDArray[np.float64]:
+    return (
+        np.sum(
+            grid_intersections_area
+            * (1 / shapely.area(frame_data.polygon.values)),
+            axis=1,
+        )
+        / grid_area
+    )
+
+
+def _compute_arithmetic_voronoi_speed_profile(
     *,
     frame_data: pandas.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
@@ -138,16 +176,17 @@ def _compute_arithmetic_speed(
         cells_with_peds * frame_data.speed.values, axis=1
     )
     num_peds = np.count_nonzero(cells_with_peds, axis=1)
-
-    speed = np.where(
-        num_peds > 0,
-        accumulated_speed / num_peds,
-        0,
+    speed = np.divide(
+        accumulated_speed,
+        num_peds,
+        out=np.zeros_like(accumulated_speed),
+        where=num_peds != 0,
     )
+
     return speed
 
 
-def _compute_voronoi_speed(
+def _compute_voronoi_speed_profile(
     *,
     frame_data: pandas.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
@@ -172,7 +211,7 @@ def _compute_voronoi_speed(
 
 def _get_grid_cells(
     *, walkable_area: WalkableArea, grid_size: float
-) -> Tuple[npt.NDArray[np.float64], int, int]:
+) -> Tuple[npt.NDArray[shapely.Polygon], int, int]:
     """Creates a list of square grid cells covering the geometry.
 
     Args:

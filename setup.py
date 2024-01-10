@@ -31,6 +31,7 @@ setuptools.setup(
     packages=[
         "pedpy",
         "pedpy.data",
+        "pedpy.internal",
         "pedpy.io",
         "pedpy.methods",
         "pedpy.plotting",
