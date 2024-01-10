@@ -93,49 +93,65 @@ def compute_profiles(
     Returns:
         List of density profiles, List of speed profiles
     """
+    grid_cells, _, _ = _get_grid_cells(
+        walkable_area=walkable_area, grid_size=grid_size
+    )
+
+    grid_intersections_area, internal_data = _compute_grid_polygon_intersection(
+        data=data, grid_cells=grid_cells
+    )
+
+    density_profiles = _compute_density_profile(
+        data=internal_data,
+        grid_intersections_area=grid_intersections_area,
+        density_method=density_method,
+        walkable_area=walkable_area,
+        grid_size=grid_size,
+    )
+
+    speed_profiles = _compute_speed_profile(
+        data=internal_data,
+        grid_intersections_area=grid_intersections_area,
+        speed_method=speed_method,
+        walkable_area=walkable_area,
+        grid_size=grid_size,
+    )
+
+    return density_profiles, speed_profiles
+
+
+def _compute_density_profile(
+    *,
+    data: pandas.DataFrame,
+    walkable_area: WalkableArea,
+    grid_size: float,
+    density_method: DensityMethod,
+    grid_intersections_area: npt.NDArray[np.float64],
+) -> List[npt.NDArray[np.float64]]:
     grid_cells, rows, cols = _get_grid_cells(
         walkable_area=walkable_area, grid_size=grid_size
     )
+
+    data_grouped_by_frame = data.groupby(FRAME_COL)
+
     density_profiles = []
-    speed_profiles = []
+    for frame, frame_data in data_grouped_by_frame:
+        grid_intersections_area_frame = grid_intersections_area[
+            :, data_grouped_by_frame.indices[frame]
+        ]
 
-    for _, frame_data in data.groupby(FRAME_COL):
-        grid_intersections_area = shapely.area(
-            shapely.intersection(
-                np.array(grid_cells)[:, np.newaxis],
-                np.array(frame_data.polygon)[np.newaxis, :],
-            )
-        )
-
-        # Compute density
         if density_method == DensityMethod.VORONOI:
             density = _compute_voronoi_density_profile(
                 frame_data=frame_data,
-                grid_intersections_area=grid_intersections_area,
+                grid_intersections_area=grid_intersections_area_frame,
                 grid_area=grid_cells[0].area,
             )
         else:
             raise ValueError("density method not accepted")
 
-        # Compute speed
-        if speed_method == SpeedMethod.VORONOI:
-            speed = _compute_voronoi_speed_profile(
-                frame_data=frame_data,
-                grid_intersections_area=grid_intersections_area,
-                grid_area=grid_cells[0].area,
-            )
-        elif speed_method == SpeedMethod.ARITHMETIC:
-            speed = _compute_arithmetic_voronoi_speed_profile(
-                frame_data=frame_data,
-                grid_intersections_area=grid_intersections_area,
-            )
-        else:
-            raise ValueError("speed method not accepted")
-
         density_profiles.append(density.reshape(rows, cols))
-        speed_profiles.append(speed.reshape(rows, cols))
 
-    return density_profiles, speed_profiles
+    return density_profiles
 
 
 def _compute_voronoi_density_profile(
@@ -152,6 +168,45 @@ def _compute_voronoi_density_profile(
         )
         / grid_area
     )
+
+
+def _compute_speed_profile(
+    *,
+    data: pandas.DataFrame,
+    walkable_area: WalkableArea,
+    grid_size: float,
+    speed_method: SpeedMethod,
+    grid_intersections_area: npt.NDArray[np.float64],
+) -> List[npt.NDArray[np.float64]]:
+    grid_cells, rows, cols = _get_grid_cells(
+        walkable_area=walkable_area, grid_size=grid_size
+    )
+
+    data_grouped_by_frame = data.groupby(FRAME_COL)
+
+    speed_profiles = []
+
+    for frame, frame_data in data_grouped_by_frame:
+        grid_intersections_area_frame = grid_intersections_area[
+            :, data_grouped_by_frame.indices[frame]
+        ]
+        if speed_method == SpeedMethod.VORONOI:
+            speed = _compute_voronoi_speed_profile(
+                frame_data=frame_data,
+                grid_intersections_area=grid_intersections_area_frame,
+                grid_area=grid_cells[0].area,
+            )
+        elif speed_method == SpeedMethod.ARITHMETIC:
+            speed = _compute_arithmetic_voronoi_speed_profile(
+                frame_data=frame_data,
+                grid_intersections_area=grid_intersections_area_frame,
+            )
+        else:
+            raise ValueError("speed method not accepted")
+
+        speed_profiles.append(speed.reshape(rows, cols))
+
+    return speed_profiles
 
 
 def _compute_arithmetic_voronoi_speed_profile(
@@ -207,6 +262,24 @@ def _compute_voronoi_speed_profile(
     ) / grid_area
 
     return speed
+
+
+def _compute_grid_polygon_intersection(
+    *,
+    data,
+    grid_cells,
+):
+    internal_data = data.copy(deep=True)
+    internal_data = internal_data.sort_values(by=FRAME_COL)
+    internal_data = internal_data.reset_index(drop=True)
+
+    grid_intersections_area = shapely.area(
+        shapely.intersection(
+            np.array(grid_cells)[:, np.newaxis],
+            np.array(internal_data.polygon)[np.newaxis, :],
+        )
+    )
+    return grid_intersections_area, internal_data
 
 
 def _get_grid_cells(
