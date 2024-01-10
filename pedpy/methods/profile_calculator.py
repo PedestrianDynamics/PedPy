@@ -26,6 +26,8 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
 
     VORONOI = auto()
     """Voronoi density profile"""
+    CLASSIC = auto()
+    """Classic density profile"""
 
 
 @alias({"data": "individual_voronoi_speed_data"})
@@ -71,7 +73,9 @@ def compute_profiles(
             :func:`~speed_calculator.compute_individual_speed`) column.
             For computing density profiles, it must contain a `polygon` column
             (from :func:`~method_utils.compute_individual_voronoi_polygons`)
-            when using the `DensityMethod.VORONOI`. Computing the speed
+            when using the `DensityMethod.VORONOI`. When computing the classic
+            density profile (`DensityMethod.CLASSIC`) the DataFrame needs to
+            contain the columns 'x' and 'y'. Computing the speed
             profiles needs a `polygon` column (from
             :func:`~method_utils.compute_individual_voronoi_polygons`) when
             using the `SpeedMethod.VORONOI` or `SpeedMethod.ARITHMETIC`.
@@ -136,15 +140,21 @@ def _compute_density_profile(
 
     density_profiles = []
     for frame, frame_data in data_grouped_by_frame:
-        grid_intersections_area_frame = grid_intersections_area[
-            :, data_grouped_by_frame.indices[frame]
-        ]
-
         if density_method == DensityMethod.VORONOI:
+            grid_intersections_area_frame = grid_intersections_area[
+                :, data_grouped_by_frame.indices[frame]
+            ]
+
             density = _compute_voronoi_density_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
                 grid_area=grid_cells[0].area,
+            )
+        elif density_method == DensityMethod.CLASSIC:
+            density = _compute_classic_density_profile(
+                frame_data=frame_data,
+                walkable_area=walkable_area,
+                grid_size=grid_size,
             )
         else:
             raise ValueError("density method not accepted")
@@ -168,6 +178,29 @@ def _compute_voronoi_density_profile(
         )
         / grid_area
     )
+
+
+def _compute_classic_density_profile(
+    *,
+    frame_data: pandas.DataFrame,
+    walkable_area: WalkableArea,
+    grid_size: float,
+) -> npt.NDArray[np.float64]:
+    min_x, min_y, max_x, max_y = walkable_area.bounds
+
+    x_coords = np.arange(min_x, max_x + grid_size, grid_size)
+    y_coords = np.arange(min_y, max_y + grid_size, grid_size)
+
+    hist, _, _ = np.histogram2d(
+        x=frame_data.x, y=frame_data.y, bins=[x_coords, y_coords]
+    )
+    hist = hist / (grid_size**2)
+
+    # rotate the result, such that is displayed with imshow correctly and
+    # has the same orientation as the other results
+    hist = np.rot90(hist)
+
+    return hist
 
 
 def _compute_speed_profile(
