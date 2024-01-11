@@ -28,6 +28,8 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
     """Voronoi density profile"""
     CLASSIC = auto()
     """Classic density profile"""
+    GAUSSIAN = auto()
+    """Gaussian density profile"""
 
 
 @alias({"data": "individual_voronoi_speed_data"})
@@ -136,6 +138,10 @@ def _compute_density_profile(
         walkable_area=walkable_area, grid_size=grid_size
     )
 
+    grid_center = np.vectorize(shapely.centroid)(grid_cells)
+    x_center = shapely.get_x(grid_center[:cols])
+    y_center = shapely.get_y(grid_center[::cols])
+
     data_grouped_by_frame = data.groupby(FRAME_COL)
 
     density_profiles = []
@@ -155,6 +161,13 @@ def _compute_density_profile(
                 frame_data=frame_data,
                 walkable_area=walkable_area,
                 grid_size=grid_size,
+            )
+        elif density_method == DensityMethod.GAUSSIAN:
+            density = _compute_gaussian_density_profile(
+                frame_data=frame_data,
+                x_center=x_center,
+                y_center=y_center,
+                width=0.5,
             )
         else:
             raise ValueError("density method not accepted")
@@ -201,6 +214,38 @@ def _compute_classic_density_profile(
     hist = np.rot90(hist)
 
     return hist
+
+
+def _compute_gaussian_density_profile(
+    *,
+    frame_data: pandas.DataFrame,
+    x_center: npt.NDArray[np.float64],
+    y_center: npt.NDArray[np.float64],
+    width: float,
+) -> npt.NDArray[np.float64]:
+    def width_gaussian(fwhm: float) -> float:
+        """np.sqrt(2) / (2 * np.sqrt(2 * np.log(2)))"""
+
+        return fwhm * 0.6005612
+
+    def gauss(x: npt.NDArray[np.float64], a: float) -> npt.NDArray[np.float64]:
+        """1 / (np.sqrt(np.pi) * a) * np.e ** (-x ** 2 / a ** 2)"""
+
+        return 1 / (1.7724538 * a) * np.e ** (-(x**2) / a**2)
+
+    positions_x = frame_data.x.values
+    positions_y = frame_data.y.values
+
+    distance_x = np.add.outer(-x_center, positions_x)
+    distance_y = np.add.outer(-y_center, positions_y)
+
+    a = width_gaussian(width)
+
+    gauss_density_x = gauss(distance_x, a)
+    gauss_density_y = gauss(distance_y, a)
+
+    gauss_density = np.matmul(gauss_density_x, np.transpose(gauss_density_y))
+    return np.array(gauss_density.T)
 
 
 def _compute_speed_profile(
