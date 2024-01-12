@@ -1,6 +1,6 @@
 """Module containing functions to compute profiles."""
 from enum import Enum, auto
-from typing import List, Tuple, Any
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -41,6 +41,7 @@ def compute_profiles(
     speed_method: SpeedMethod,
     density_method: DensityMethod = DensityMethod.VORONOI,
     # pylint: disable=unused-argument
+    gaussian_width: Optional[float] = None,
     **kwargs: Any,
 ) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
     """Computes the density and speed profiles.
@@ -93,6 +94,8 @@ def compute_profiles(
             speed profile
         density_method (DensityMethod): density method to compute the density
             profile (default: DensityMethod.VORONOI)
+        gaussian_width (float): full width at half maximum for Gaussian
+            approximation of the density
         individual_voronoi_speed_data (pandas.DataFrame): deprecated alias for
             :code:`data`. Please use :code:`data` in the future.
 
@@ -113,6 +116,7 @@ def compute_profiles(
         density_method=density_method,
         walkable_area=walkable_area,
         grid_size=grid_size,
+        gaussian_width=gaussian_width,
     )
 
     speed_profiles = _compute_speed_profile(
@@ -133,6 +137,7 @@ def _compute_density_profile(
     grid_size: float,
     density_method: DensityMethod,
     grid_intersections_area: npt.NDArray[np.float64],
+    gaussian_width: Optional[float] = None,
 ) -> List[npt.NDArray[np.float64]]:
     grid_cells, rows, cols = _get_grid_cells(
         walkable_area=walkable_area, grid_size=grid_size
@@ -163,11 +168,15 @@ def _compute_density_profile(
                 grid_size=grid_size,
             )
         elif density_method == DensityMethod.GAUSSIAN:
+            if gaussian_width is None:
+                raise ValueError(
+                    "Computing a Gaussian density profile needs a parameter 'width'."
+                )
             density = _compute_gaussian_density_profile(
                 frame_data=frame_data,
-                x_center=x_center,
-                y_center=y_center,
-                width=0.5,
+                center_x=x_center,
+                center_y=y_center,
+                width=gaussian_width,
             )
         else:
             raise ValueError("density method not accepted")
@@ -219,30 +228,52 @@ def _compute_classic_density_profile(
 def _compute_gaussian_density_profile(
     *,
     frame_data: pandas.DataFrame,
-    x_center: npt.NDArray[np.float64],
-    y_center: npt.NDArray[np.float64],
+    center_x: npt.NDArray[np.float64],
+    center_y: npt.NDArray[np.float64],
     width: float,
 ) -> npt.NDArray[np.float64]:
-    def width_gaussian(fwhm: float) -> float:
-        """np.sqrt(2) / (2 * np.sqrt(2 * np.log(2)))"""
+    def _gaussian_full_width_half_maximum(width: float) -> float:
+        """Computes the full width at half maximum.
 
-        return fwhm * 0.6005612
+        Fast lookup for:
+            width * np.sqrt(2) / (2 * np.sqrt(2 * np.log(2)))
 
-    def gauss(x: npt.NDArray[np.float64], a: float) -> npt.NDArray[np.float64]:
-        """1 / (np.sqrt(np.pi) * a) * np.e ** (-x ** 2 / a ** 2)"""
+        Args:
+            width: width for which the half maximum should be computed
 
-        return 1 / (1.7724538 * a) * np.e ** (-(x**2) / a**2)
+        Returns:
+            Full width at half maximum of a gaussian.
+        """
+        return width * 0.6005612
+
+    def _compute_gaussian_density(
+        x: npt.NDArray[np.float64], fwhm: float
+    ) -> npt.NDArray[np.float64]:
+        """Computes the Gaussian density.
+
+        Gaussian density p(x, a) is defined as:
+            p(x,a) = 1 / (sqrt(pi) * a) * e^(-x^2 / a^2)
+        Args:
+            x: value(s) for which the Gaussian should be computed
+            fwhm: full width at half maximum
+
+        Returns:
+            Gaussian corresponding to the given values
+        """
+        #
+        return 1 / (1.7724538 * fwhm) * np.e ** (-(x**2) / fwhm**2)
 
     positions_x = frame_data.x.values
     positions_y = frame_data.y.values
 
-    distance_x = np.add.outer(-x_center, positions_x)
-    distance_y = np.add.outer(-y_center, positions_y)
+    # distance from each grid center x/y coordinates to the pedestrian positions
+    distance_x = np.add.outer(-center_x, positions_x)
+    distance_y = np.add.outer(-center_y, positions_y)
 
-    a = width_gaussian(width)
+    fwhm = _gaussian_full_width_half_maximum(width)
 
-    gauss_density_x = gauss(distance_x, a)
-    gauss_density_y = gauss(distance_y, a)
+    gauss_density_x = _compute_gaussian_density(distance_x, fwhm)
+    gauss_density_y = _compute_gaussian_density(distance_y, fwhm)
 
     gauss_density = np.matmul(gauss_density_x, np.transpose(gauss_density_y))
     return np.array(gauss_density.T)
