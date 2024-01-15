@@ -46,9 +46,10 @@ def _plot_series(  # pylint: disable=too-many-arguments
     color: str,
     x_label: str,
     y_label: str,
+    **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     axes.set_title(title)
-    axes.plot(x, y, color=color)
+    axes.plot(x, y, color=color, **kwargs)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
@@ -76,10 +77,10 @@ def plot_nt(
     if axes is None:
         axes = plt.gca()
 
-    color = kwargs.get("color", PEDPY_BLUE)
-    title = kwargs.get("title", "N-t")
-    x_label = kwargs.get("x_label", "t / s")
-    y_label = kwargs.get("y_label", "# pedestrians")
+    color = kwargs.pop("color", PEDPY_BLUE)
+    title = kwargs.pop("title", "N-t")
+    x_label = kwargs.pop("x_label", "t / s")
+    y_label = kwargs.pop("y_label", "# pedestrians")
     return _plot_series(
         axes=axes,
         title=title,
@@ -88,6 +89,7 @@ def plot_nt(
         color=color,
         x_label=x_label,
         y_label=y_label,
+        **kwargs,
     )
 
 
@@ -113,10 +115,10 @@ def plot_density(
     if axes is None:
         axes = plt.gca()
 
-    color = kwargs.get("color", PEDPY_BLUE)
-    title = kwargs.get("title", "density over time")
-    x_label = kwargs.get("x_label", "frame")
-    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
+    color = kwargs.pop("color", PEDPY_BLUE)
+    title = kwargs.pop("title", "density over time")
+    x_label = kwargs.pop("x_label", "frame")
+    y_label = kwargs.pop("y_label", "$\\rho$ / 1/$m^2$")
 
     return _plot_series(
         axes=axes,
@@ -126,6 +128,7 @@ def plot_density(
         color=color,
         x_label=x_label,
         y_label=y_label,
+        **kwargs,
     )
 
 
@@ -151,10 +154,10 @@ def plot_speed(
     if axes is None:
         axes = plt.gca()
 
-    color = kwargs.get("color", PEDPY_BLUE)
-    title = kwargs.get("title", "speed over time")
-    x_label = kwargs.get("x_label", "frame")
-    y_label = kwargs.get("y_label", "v / m/s")
+    color = kwargs.pop("color", PEDPY_BLUE)
+    title = kwargs.pop("title", "speed over time")
+    x_label = kwargs.pop("x_label", "frame")
+    y_label = kwargs.pop("y_label", "v / m/s")
 
     return _plot_series(
         axes=axes,
@@ -164,6 +167,7 @@ def plot_speed(
         color=color,
         x_label=x_label,
         y_label=y_label,
+        **kwargs,
     )
 
 
@@ -176,11 +180,11 @@ def _plot_violin_xy(
     if axes is None:
         axes = plt.gca()
 
-    facecolor = kwargs.get("facecolor", PEDPY_BLUE)
-    edgecolor = kwargs.get("edgecolor", PEDPY_RED)
-    title = kwargs.get("title", "")
-    x_label = kwargs.get("x_label", "")
-    y_label = kwargs.get("y_label", "")
+    facecolor = kwargs.pop("facecolor", PEDPY_BLUE)
+    edgecolor = kwargs.pop("edgecolor", PEDPY_RED)
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", "")
+    y_label = kwargs.pop("y_label", "")
 
     axes.set_title(title)
     violin_parts = axes.violinplot(
@@ -188,6 +192,7 @@ def _plot_violin_xy(
         showmeans=True,
         showextrema=True,
         showmedians=True,
+        **kwargs,
     )
     for parts in violin_parts["bodies"]:  # type: ignore[attr-defined]
         parts.set_facecolor(facecolor)
@@ -277,12 +282,12 @@ def plot_flow(
     if axes is None:
         axes = plt.gca()
 
-    color = kwargs.get("color", PEDPY_BLUE)
-    title = kwargs.get("title", "flow")
-    x_label = kwargs.get("x_label", "J / 1/s")
-    y_label = kwargs.get("y_label", "v / m/s")
+    color = kwargs.pop("color", PEDPY_BLUE)
+    title = kwargs.pop("title", "flow")
+    x_label = kwargs.pop("x_label", "J / 1/s")
+    y_label = kwargs.pop("y_label", "v / m/s")
     axes.set_title(title)
-    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color)
+    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color, **kwargs)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
@@ -314,10 +319,10 @@ def plot_neighborhood(
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
-    hole_color = kwargs.get("hole_color", "w")
-    base_color = kwargs.get("base_color", PEDPY_RED)
-    neighbor_color = kwargs.get("neighbor_color", PEDPY_GREEN)
-    default_color = kwargs.get("default_color", PEDPY_GREY)
+    hole_color = kwargs.pop("hole_color", "w")
+    base_color = kwargs.pop("base_color", PEDPY_RED)
+    neighbor_color = kwargs.pop("neighbor_color", PEDPY_GREEN)
+    default_color = kwargs.pop("default_color", PEDPY_GREY)
     voronoi_neighbors = pd.merge(
         voronoi_data[voronoi_data.frame == frame],
         neighbors[neighbors.frame == frame],
@@ -332,7 +337,9 @@ def plot_neighborhood(
     axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
 
     plot_walkable_area(
-        axes=axes, walkable_area=walkable_area, hole_color=hole_color
+        axes=axes,
+        walkable_area=walkable_area,
+        hole_color=hole_color,
     )
 
     for _, row in voronoi_neighbors.iterrows():
@@ -382,13 +389,13 @@ def plot_time_distance(
         matplotlib.axes.Axes instance where the distance is plotted
     """
     if axes is None:
-        axes = plt.gcf().add_subplot(111)
+        axes = plt.gca()
 
-    line_color = kwargs.get("line_color", PEDPY_GREY)
-    marker_color = kwargs.get("marker_color", PEDPY_GREY)
-    title = kwargs.get("title", "distance plot")
-    x_label = kwargs.get("x_label", "distance / m")
-    y_label = kwargs.get("y_label", "time / s")
+    line_color = kwargs.pop("line_color", PEDPY_GREY)
+    marker_color = kwargs.pop("marker_color", PEDPY_GREY)
+    title = kwargs.pop("title", "distance plot")
+    x_label = kwargs.pop("x_label", "distance / m")
+    y_label = kwargs.pop("y_label", "time / s")
 
     axes.set_title(title)
     for _, ped_data in time_distance.groupby(by=ID_COL):
@@ -442,13 +449,13 @@ def plot_profiles(
     mean_profiles = np.mean(profiles, axis=0)
     bounds = walkable_area.bounds
 
-    title = kwargs.get("title", "")
-    walkable_color = kwargs.get("walkable_color", "w")
-    hole_color = kwargs.get("hole_color", "w")
-    hole_alpha = kwargs.get("hole_alpha", 1.0)
-    vmin = kwargs.get("vmin", np.min(mean_profiles))
-    vmax = kwargs.get("vmax", np.max(mean_profiles))
-    label = kwargs.get("label", None)
+    title = kwargs.pop("title", "")
+    walkable_color = kwargs.pop("walkable_color", "w")
+    hole_color = kwargs.pop("hole_color", "w")
+    hole_alpha = kwargs.pop("hole_alpha", 1.0)
+    vmin = kwargs.pop("vmin", np.min(mean_profiles))
+    vmax = kwargs.pop("vmax", np.max(mean_profiles))
+    label = kwargs.pop("label", None)
 
     if axes is None:
         axes = plt.gca()
@@ -457,10 +464,10 @@ def plot_profiles(
     imshow = axes.imshow(
         mean_profiles,
         extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
-        interpolation="None",
-        cmap="jet",
+        cmap=kwargs.pop("cmap", "jet"),
         vmin=vmin,
         vmax=vmax,
+        **kwargs,
     )
     divider = make_axes_locatable(axes)
     cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -501,11 +508,11 @@ def plot_walkable_area(
     if axes is None:
         axes = plt.gca()
 
-    line_color = kwargs.get("line_color", PEDPY_GREY)
-    line_width = kwargs.get("line_width", 1.0)
+    line_color = kwargs.pop("line_color", PEDPY_GREY)
+    line_width = kwargs.pop("line_width", 1.0)
 
-    hole_color = kwargs.get("hole_color", "lightgrey")
-    hole_alpha = kwargs.get("hole_alpha", 1.0)
+    hole_color = kwargs.pop("hole_color", "lightgrey")
+    hole_alpha = kwargs.pop("hole_alpha", 1.0)
 
     axes.plot(
         *walkable_area.polygon.exterior.xy,
@@ -553,12 +560,12 @@ def plot_trajectories(
     Returns:
         matplotlib.axes.Axes instance where the trajectories are plotted
     """
-    traj_color = kwargs.get("traj_color", PEDPY_RED)
-    traj_width = kwargs.get("traj_width", 1.0)
-    traj_alpha = kwargs.get("traj_alpha", 1.0)
+    traj_color = kwargs.pop("traj_color", PEDPY_RED)
+    traj_width = kwargs.pop("traj_width", 1.0)
+    traj_alpha = kwargs.pop("traj_alpha", 1.0)
 
-    traj_start_marker = kwargs.get("traj_start_marker", "")
-    traj_end_marker = kwargs.get("traj_end_marker", "")
+    traj_start_marker = kwargs.pop("traj_start_marker", "")
+    traj_end_marker = kwargs.pop("traj_end_marker", "")
 
     if axes is None:
         axes = plt.gca()
@@ -635,13 +642,13 @@ def plot_measurement_setup(
     Returns:
         matplotlib.axes.Axes instance where the measurement setup is plotted
     """
-    ma_line_color = kwargs.get("ma_line_color", PEDPY_BLUE)
-    ma_line_width = kwargs.get("ma_line_width", 1.0)
-    ma_color = kwargs.get("ma_color", PEDPY_BLUE)
-    ma_alpha = kwargs.get("ma_alpha", 0.2)
+    ma_line_color = kwargs.pop("ma_line_color", PEDPY_BLUE)
+    ma_line_width = kwargs.pop("ma_line_width", 1.0)
+    ma_color = kwargs.pop("ma_color", PEDPY_BLUE)
+    ma_alpha = kwargs.pop("ma_alpha", 0.2)
 
-    ml_color = kwargs.get("ml_color", PEDPY_BLUE)
-    ml_width = kwargs.get("ml_width", 1.0)
+    ml_color = kwargs.pop("ml_color", PEDPY_BLUE)
+    ml_width = kwargs.pop("ml_width", 1.0)
 
     if axes is None:
         axes = plt.gca()
@@ -728,18 +735,18 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
     Returns:
         matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
-    ped_color = kwargs.get("ped_color", PEDPY_BLUE)
-    ped_size = kwargs.get("ped_size", 5)
-    voronoi_border_color = kwargs.get("voronoi_border_color", PEDPY_BLUE)
-    voronoi_inside_ma_alpha = kwargs.get("voronoi_inside_ma_alpha", 1)
-    voronoi_outside_ma_alpha = kwargs.get("voronoi_outside_ma_alpha", 1)
+    ped_color = kwargs.pop("ped_color", PEDPY_BLUE)
+    ped_size = kwargs.pop("ped_size", 5)
+    voronoi_border_color = kwargs.pop("voronoi_border_color", PEDPY_BLUE)
+    voronoi_inside_ma_alpha = kwargs.pop("voronoi_inside_ma_alpha", 1)
+    voronoi_outside_ma_alpha = kwargs.pop("voronoi_outside_ma_alpha", 1)
 
-    vmin = kwargs.get("vmin", None)
-    vmax = kwargs.get("vmax", None)
-    cb_location = kwargs.get("cb_location", "right")
-    show_colorbar = kwargs.get("show_colorbar", True)
-    color_by_column = kwargs.get("color_by_column", None)
-    voronoi_colormap = plt.get_cmap(kwargs.get("cmap", "YlGn"))
+    vmin = kwargs.pop("vmin", None)
+    vmax = kwargs.pop("vmax", None)
+    cb_location = kwargs.pop("cb_location", "right")
+    show_colorbar = kwargs.pop("show_colorbar", True)
+    color_by_column = kwargs.pop("color_by_column", None)
+    voronoi_colormap = plt.get_cmap(kwargs.pop("cmap", "YlGn"))
 
     if axes is None:
         axes = plt.gca()
