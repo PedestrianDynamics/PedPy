@@ -110,7 +110,7 @@ def compute_profiles(
         data=data, grid_cells=grid_cells
     )
 
-    density_profiles = _compute_density_profile(
+    density_profiles = compute_density_profile(
         data=internal_data,
         grid_intersections_area=grid_intersections_area,
         density_method=density_method,
@@ -119,7 +119,7 @@ def compute_profiles(
         gaussian_width=gaussian_width,
     )
 
-    speed_profiles = _compute_speed_profile(
+    speed_profiles = compute_speed_profile(
         data=internal_data,
         grid_intersections_area=grid_intersections_area,
         speed_method=speed_method,
@@ -130,13 +130,13 @@ def compute_profiles(
     return density_profiles, speed_profiles
 
 
-def _compute_density_profile(
+def compute_density_profile(
     *,
     data: pandas.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     density_method: DensityMethod,
-    grid_intersections_area: npt.NDArray[np.float64],
+    grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     gaussian_width: Optional[float] = None,
 ) -> List[npt.NDArray[np.float64]]:
     grid_cells, rows, cols = _get_grid_cells(
@@ -152,6 +152,12 @@ def _compute_density_profile(
     density_profiles = []
     for frame, frame_data in data_grouped_by_frame:
         if density_method == DensityMethod.VORONOI:
+            if grid_intersections_area is None:
+                raise RuntimeError(
+                    "Computing a Voronoi density profile needs the parameter "
+                    "`grid_intersections_area`."
+                )
+
             grid_intersections_area_frame = grid_intersections_area[
                 :, data_grouped_by_frame.indices[frame]
             ]
@@ -172,6 +178,7 @@ def _compute_density_profile(
                 raise ValueError(
                     "Computing a Gaussian density profile needs a parameter 'width'."
                 )
+
             density = _compute_gaussian_density_profile(
                 frame_data=frame_data,
                 center_x=x_center,
@@ -179,7 +186,7 @@ def _compute_density_profile(
                 width=gaussian_width,
             )
         else:
-            raise ValueError("density method not accepted")
+            raise ValueError("density method not accepted.")
 
         density_profiles.append(density.reshape(rows, cols))
 
@@ -279,13 +286,13 @@ def _compute_gaussian_density_profile(
     return np.array(gauss_density.T)
 
 
-def _compute_speed_profile(
+def compute_speed_profile(
     *,
     data: pandas.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     speed_method: SpeedMethod,
-    grid_intersections_area: npt.NDArray[np.float64],
+    grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
 ) -> List[npt.NDArray[np.float64]]:
     grid_cells, rows, cols = _get_grid_cells(
         walkable_area=walkable_area, grid_size=grid_size
@@ -296,16 +303,31 @@ def _compute_speed_profile(
     speed_profiles = []
 
     for frame, frame_data in data_grouped_by_frame:
-        grid_intersections_area_frame = grid_intersections_area[
-            :, data_grouped_by_frame.indices[frame]
-        ]
         if speed_method == SpeedMethod.VORONOI:
+            if grid_intersections_area is None:
+                raise RuntimeError(
+                    "Computing a Arithmetic speed profile needs the parameter "
+                    "`grid_intersections_area`."
+                )
+            grid_intersections_area_frame = grid_intersections_area[
+                :, data_grouped_by_frame.indices[frame]
+            ]
+
             speed = _compute_voronoi_speed_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
                 grid_area=grid_cells[0].area,
             )
         elif speed_method == SpeedMethod.ARITHMETIC:
+            if grid_intersections_area is None:
+                raise RuntimeError(
+                    "Computing a Arithmetic speed profile needs the parameter "
+                    "`grid_intersections_area`."
+                )
+            grid_intersections_area_frame = grid_intersections_area[
+                :, data_grouped_by_frame.indices[frame]
+            ]
+
             speed = _compute_arithmetic_voronoi_speed_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
@@ -371,6 +393,13 @@ def _compute_voronoi_speed_profile(
     ) / grid_area
 
     return speed
+
+
+def compute_grid_cell_polygon_intersection(*, data, grid_cells):
+    grid_intersections_area, _ = _compute_grid_polygon_intersection(
+        data=data, grid_cells=grid_cells
+    )
+    return grid_intersections_area
 
 
 def _compute_grid_polygon_intersection(
