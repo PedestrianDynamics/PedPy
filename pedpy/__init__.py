@@ -33,9 +33,10 @@ from .methods.profile_calculator import (
     DensityMethod,
     SpeedMethod,
     compute_density_profile,
-    compute_grid_cell_polygon_intersection,
+    compute_grid_cell_polygon_intersection_area,
     compute_profiles,
     compute_speed_profile,
+    get_grid_cells,
 )
 from .methods.speed_calculator import (
     SpeedCalculation,
@@ -97,9 +98,10 @@ __all__ = [
     "DensityMethod",
     "SpeedMethod",
     "compute_density_profile",
-    "compute_grid_cell_polygon_intersection",
+    "compute_grid_cell_polygon_intersection_area",
     "compute_profiles",
     "compute_speed_profile",
+    "get_grid_cells",
     "SpeedCalculation",
     "compute_individual_speed",
     "compute_mean_speed_per_frame",
