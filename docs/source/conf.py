@@ -39,7 +39,7 @@ nb_execution_excludepatterns = [
     "readthedocs.ipynb",
     "fundamental_diagram.ipynb",
 ]
-nb_execution_timeout = 60
+nb_execution_timeout = 300
 myst_enable_extensions = [
     "amsmath",
     "colon_fence",

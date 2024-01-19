@@ -29,7 +29,15 @@ from .methods.method_utils import (
     get_invalid_trajectory,
     is_trajectory_valid,
 )
-from .methods.profile_calculator import SpeedMethod, compute_profiles
+from .methods.profile_calculator import (
+    DensityMethod,
+    SpeedMethod,
+    compute_density_profile,
+    compute_grid_cell_polygon_intersection_area,
+    compute_profiles,
+    compute_speed_profile,
+    get_grid_cells,
+)
 from .methods.speed_calculator import (
     SpeedCalculation,
     compute_individual_speed,
@@ -87,8 +95,13 @@ __all__ = [
     "compute_time_distance_line",
     "get_invalid_trajectory",
     "is_trajectory_valid",
+    "DensityMethod",
     "SpeedMethod",
+    "compute_density_profile",
+    "compute_grid_cell_polygon_intersection_area",
     "compute_profiles",
+    "compute_speed_profile",
+    "get_grid_cells",
     "SpeedCalculation",
     "compute_individual_speed",
     "compute_mean_speed_per_frame",
