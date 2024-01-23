@@ -3,6 +3,7 @@ import pathlib
 import sqlite3
 from enum import Enum
 from typing import Any, Optional, Tuple
+from xml.etree import ElementTree
 
 import pandas as pd
 
@@ -439,8 +440,76 @@ def load_walkable_area_from_ped_data_archive_hdf5(
             )
 
         walkable_area = WalkableArea(
-            store._handle.get_node("/")._v_attrs["wkt_geometry"]
+            store._handle.get_node("/")._v_attrs[
+                "wkt_geometry"
+            ]  # pylint: enable=protected-access
         )
-        # pylint: enable=protected-access
 
     return walkable_area
+
+
+def load_trajectory_from_fcd_data(
+    trajectory_file: pathlib.Path,
+) -> TrajectoryData:
+    """Loads data from the fcd file as :class:`~trajectory_data.TrajectoryData`.
+
+    Loads trajectory data from the FCD (floating car data) export from SUMO, a
+    detailed description of the format can be found
+    `here <https://sumo.dlr.de/docs/Simulation/Output/FCDOutput.html>`_.
+
+    Args:
+        trajectory_file: trajectory file in fcd format
+
+    Returns:
+        :class:`~trajectory_data.TrajectoryData` representation of the file data
+    """
+    _validate_is_file(trajectory_file)
+
+    tree = ElementTree.parse(trajectory_file)
+    root = tree.getroot()
+
+    data = []
+    times = []
+
+    for timestep in root.findall("timestep"):
+        time = timestep.get("time")
+        times.append(time)
+        for person in timestep.findall("person"):
+            person_data = {
+                ID_COL: person.get("id"),
+                # Attention: Column named 'frame' but contains the time!
+                FRAME_COL: time,
+                X_COL: person.get("x"),
+                Y_COL: person.get("y"),
+            }
+            data.append(person_data)
+
+    fcd_data = pd.DataFrame(data)
+    fcd_data = fcd_data.astype(
+        {ID_COL: "int", FRAME_COL: "float", X_COL: "float", Y_COL: "float"}
+    )
+
+    # Need to convert the time information to frame, we assume that
+    # the frame rate does not change in the file.
+    frames = pd.Series(times, name="time_steps", dtype="float")
+    if frames.size < 2:
+        raise LoadTrajectoryError(
+            "Could not load fcd file. Need at least two time steps to compute the frame rate."
+        )
+
+    frames_diff = frames.diff().dropna()
+
+    if not frames_diff.eq(frames_diff.iloc[0]).all():
+        raise LoadTrajectoryError(
+            "Could not load fcd file. The time step seems to vary in the file."
+        )
+    frame_diff = frames_diff.iloc[0]
+
+    fcd_data[FRAME_COL] /= frame_diff
+
+    fcd_data = fcd_data.astype({FRAME_COL: "int32"})
+
+    return TrajectoryData(
+        data=fcd_data[[ID_COL, FRAME_COL, X_COL, Y_COL]],
+        frame_rate=1 / frame_diff,
+    )

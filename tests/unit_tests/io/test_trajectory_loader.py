@@ -22,6 +22,7 @@ from pedpy.io.trajectory_loader import (
     _load_trajectory_meta_data_from_txt,
     _validate_is_file,
     load_trajectory,
+    load_trajectory_from_fcd_data,
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
@@ -198,6 +199,44 @@ def write_data_archive_hdf5_file(
             ds_traj.attrs["frame"] = "frame number"
             ds_traj.attrs["x"] = "pedestrian x-coordinate (meter [m])"
             ds_traj.attrs["y"] = "pedestrian y-coordinate (meter [m])"
+
+
+def write_fcd_file(
+    *,
+    data: Optional[pd.DataFrame],
+    file: pathlib.Path,
+    frame_rate: Optional[float] = None,
+):
+    data.columns = ["id", "frame", "x", "y"]
+    print()
+    print(data)
+    with file.open("w") as f:
+        f.write("<fcd-export>")
+
+        for frame, frame_data in data.groupby(by=FRAME_COL):
+            if frame_rate is not None:
+                time = frame / frame_rate
+            else:
+                time = frame * frame
+                print(time)
+            if "x" in frame_data.columns:
+                f.write(f'  <timestep time="{time}">')
+                for _, row in frame_data.iterrows():
+                    f.write(
+                        f'      <person id="{row.id}" '
+                        f'x="{row.x}" '
+                        f'y="{row.y}" '
+                        f'angle="{0}" '
+                        f'type="{0}" '
+                        f'speed="{0}" '
+                        f'edge="{0}" '
+                        f'slope="{0}"/>'
+                    )
+                f.write("  </timestep>")
+            else:
+                f.write(f'  <timestep time="{time}"/>')
+
+        f.write("</fcd-export>")
 
 
 def test_validate_file_non_existing_file():
@@ -1205,5 +1244,108 @@ def test_load_walkable_area_from_ped_data_archive_hdf5_non_existing_file():
 def test_load_walkable_area_from_ped_data_archive_hdf5_non_file(tmp_path):
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=tmp_path)
+
+    assert "is not a file" in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "data, expected_frame_rate",
+    [
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            7.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            0.1,
+        ),
+    ],
+)
+def test_load_trajectory_from_fcd_success(
+    tmp_path: pathlib.Path,
+    data: List[npt.NDArray[np.float64]],
+    expected_frame_rate: float,
+) -> None:
+    trajectory_file_fcd = pathlib.Path(tmp_path / "trajectory.fcd")
+
+    expected_data = pd.DataFrame(data=data)
+
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_fcd_file(
+        file=trajectory_file_fcd,
+        frame_rate=expected_frame_rate,
+        data=written_data,
+    )
+
+    expected_data = prepare_data_frame(expected_data)
+    traj_data_from_file = load_trajectory_from_fcd_data(
+        trajectory_file=trajectory_file_fcd,
+    )
+
+    assert (
+        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
+        == expected_data.to_numpy()
+    ).all()
+    assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        (np.array([[0, 0, 5, 1], [0, 0, -5, -1]])),
+        (np.array([[0, 0, 5, 1], [0, 0, -5, -1]])),
+    ],
+)
+def test_load_trajectory_from_fcd_not_enough_frames(tmp_path, data):
+    trajectory_file_fcd = pathlib.Path(tmp_path / "trajectory.fcd")
+
+    expected_data = pd.DataFrame(data=data)
+
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_fcd_file(
+        file=trajectory_file_fcd,
+        frame_rate=10,
+        data=written_data,
+    )
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_fcd_data(trajectory_file=trajectory_file_fcd)
+    assert "Need at least two time steps to compute the frame rate" in str(
+        error_info.value
+    )
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        (np.array([[0, 0, 5, 1], [0, 1, -5, -1], [0, 2, -5, -1]])),
+        (np.array([[0, 0, 5, 1], [0, 1, -5, -1], [0, 2, -5, -1]])),
+    ],
+)
+def test_load_trajectory_from_fcd_changing_frame_rate(tmp_path, data):
+    trajectory_file_fcd = pathlib.Path(tmp_path / "trajectory.fcd")
+
+    expected_data = pd.DataFrame(data=data)
+
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_fcd_file(
+        file=trajectory_file_fcd,
+        data=written_data,
+    )
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_fcd_data(trajectory_file=trajectory_file_fcd)
+    assert "The time step seems to vary in the file" in str(error_info.value)
+
+
+def test_load_trajectory_from_fcd_non_existing_file():
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_fcd_data(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_trajectory_from_fcd_archive_hdf5_non_file(tmp_path):
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_fcd_data(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
