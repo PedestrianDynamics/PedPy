@@ -476,7 +476,7 @@ def load_trajectory_from_fcd_data(
         times.append(time)
         for person in timestep.findall("person"):
             person_data = {
-                ID_COL: person.get("id"),
+                ID_COL: abs(hash(person.get("id"))),
                 # Attention: Column named 'frame' but contains the time!
                 FRAME_COL: time,
                 X_COL: person.get("x"),
@@ -498,6 +498,8 @@ def load_trajectory_from_fcd_data(
         )
 
     frames_diff = frames.diff().dropna()
+
+    # TODO(TS): need to add scaling
 
     if not frames_diff.eq(frames_diff.iloc[0]).all():
         raise LoadTrajectoryError(
