@@ -4,6 +4,7 @@ import sqlite3
 from enum import Enum
 from typing import Any, Optional, Tuple
 
+import h5py  # type: ignore
 import pandas as pd
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
@@ -382,29 +383,37 @@ def load_trajectory_from_ped_data_archive_hdf5(
     """
     _validate_is_file(trajectory_file)
 
-    with pd.HDFStore(str(trajectory_file), mode="r") as store:
-        if store.get_node("trajectory") is None:
+    with h5py.File(trajectory_file, "r") as hdf5_file:
+        # with pd.HDFStore(str(trajectory_file), mode="r") as store:
+        dataset_name = "trajectory"
+        if dataset_name not in hdf5_file:
             raise LoadTrajectoryError(
                 f"{trajectory_file} seems to be not a supported hdf5 file, "
                 f"it does not contain a 'trajectory' dataset."
             )
-        df_trajectory = store["trajectory"]
 
-        if not (
-            [ID_COL, FRAME_COL, X_COL, Y_COL] == df_trajectory.columns[:4]
-        ).all():
+        trajectory_dataset = hdf5_file[dataset_name]
+
+        # pylint: disable-next=no-member
+        column_names = trajectory_dataset.dtype.names
+
+        if not {ID_COL, FRAME_COL, X_COL, Y_COL}.issubset(set(column_names)):
             raise LoadTrajectoryError(
                 f"{trajectory_file} seems to be not a supported hdf5 file, "
                 f"the 'trajectory' dataset does not contain the following columns: "
                 f"'{ID_COL}', '{FRAME_COL}', '{X_COL}', and '{Y_COL}'."
             )
 
-        if "fps" not in store.get_storer("trajectory").attrs:
+        if "fps" not in trajectory_dataset.attrs:
             raise LoadTrajectoryError(
                 f"{trajectory_file} seems to be not a supported hdf5 file, "
                 f"the 'trajectory' dataset does not contain a 'fps' attribute."
             )
-        fps = store.get_storer("trajectory").attrs.fps
+
+        df_trajectory = pd.DataFrame(
+            trajectory_dataset[:], columns=column_names
+        )
+        fps = trajectory_dataset.attrs["fps"]
 
     return TrajectoryData(data=df_trajectory, frame_rate=fps)
 
@@ -430,17 +439,13 @@ def load_walkable_area_from_ped_data_archive_hdf5(
     """
     _validate_is_file(trajectory_file)
 
-    with pd.HDFStore(str(trajectory_file), mode="r") as store:
-        # pylint: disable=protected-access
-        if "wkt_geometry" not in store._handle.get_node("/")._v_attrs:
+    with h5py.File(trajectory_file, "r") as hdf5_file:
+        if "wkt_geometry" not in hdf5_file.attrs:
             raise LoadTrajectoryError(
                 f"{trajectory_file} seems to be not a supported hdf5 file, "
                 f"it does not contain a 'wkt_geometry' attribute."
             )
 
-        walkable_area = WalkableArea(
-            store._handle.get_node("/")._v_attrs["wkt_geometry"]
-        )
-        # pylint: enable=protected-access
+        walkable_area = WalkableArea(hdf5_file.attrs["wkt_geometry"])
 
     return walkable_area
