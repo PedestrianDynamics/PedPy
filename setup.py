@@ -2,15 +2,12 @@
 # type: ignore
 import setuptools
 
-import versioneer
-
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="PedPy",
-    version=versioneer.get_version(),
-    cmdclass=versioneer.get_cmdclass(),
+    version="1.1.0",
     author="T. Schrödter",
     description="PedPy is a Python module for pedestrian movement analysis.",
     long_description=long_description,
@@ -43,6 +40,6 @@ setuptools.setup(
         "Shapely~=2.0",
         "scipy~=1.11",
         "matplotlib~=3.7",
-        "h5py==3.10.0",
+        "h5py~=3.10.0",
     ],
 )

@@ -40,9 +40,16 @@ To install the latest **stable** version of *PedPy* and its dependencies from Py
 python3 -m pip install pedpy
 ```
 
-If you want to install the current version in the repository which might be unstable, you can do so via:
+You can also install the latest version of *PedPy* directly from the repository, by following these steps:
+
+1. Uninstall an installed version of *PedPy*:
 ```bash
-python3 -m pip install --pre --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pedpy
+python3 -m pip uninstall pedpy
+```
+
+2. Install latest version of *PedPy* from repository:
+```
+python3 -m pip install git+https://github.com/PedestrianDynamics/PedPy.git
 ```
 
 ### Usage

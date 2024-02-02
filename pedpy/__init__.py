@@ -1,6 +1,7 @@
 # type: ignore
 """Top level imports, for easier usage."""
-from . import _version
+from importlib.metadata import version
+
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
 from .io.trajectory_loader import (
@@ -67,7 +68,7 @@ from .plotting.plotting import (
     plot_walkable_area,
 )
 
-__version__ = _version.get_versions()["version"]
+__version__ = version("PedPy")
 
 __all__ = [
     "MeasurementArea",

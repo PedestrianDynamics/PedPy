@@ -16,7 +16,3 @@ include_trailing_comma = true
 inherit = false
 match-dir = "(pedpy|data|io|methods|plotting)"
 convention = "google"
-
-[build-system]
-requires = ["setuptools>=42", "versioneer"]
-build-backend = "setuptools.build_meta"

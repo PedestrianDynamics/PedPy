@@ -3,14 +3,13 @@ pandas~=2.0
 Shapely~=2.0
 scipy~=1.11
 matplotlib~=3.7
-h5py==3.10.0
+h5py~=3.10.0
 
 # testing
 pytest~=7.4
 pytest-mock~=3.11
 
 # build tools
-versioneer==0.29
 setuptools>=65.5
 click~=8.1
 build==0.10
