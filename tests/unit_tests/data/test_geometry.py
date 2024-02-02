@@ -181,6 +181,49 @@ def test_create_walkable_area_from_polygon(reference_polygon):
 
 
 @pytest.mark.parametrize(
+    "geometry_collection",
+    [
+        shapely.GeometryCollection(
+            shapely.Polygon(
+                [(0, 3.1), (1.2, 5.4), (4.1, 7.9), (7.1, 3.0), (0, 3.1)],
+            )
+        ),
+        shapely.GeometryCollection(
+            [
+                shapely.Polygon(
+                    [(-1, 3), (-1, -7), (-13, -2), (-5, 3), (-1, 3)],
+                    [[(-6, 0), (-8, -2), (-5, -2)]],
+                ),
+                shapely.Polygon([(-1, 3), (11, 3), (11, -5), (-1, -7)]),
+            ]
+        ),
+        shapely.GeometryCollection(
+            shapely.GeometryCollection(
+                [
+                    shapely.Polygon(
+                        [(-1, 3), (-1, -7), (-13, -2), (-5, 3), (-1, 3)],
+                        [[(-6, 0), (-8, -2), (-5, -2)]],
+                    ),
+                    shapely.Polygon([(-1, 3), (11, 3), (11, -5), (-1, -7)]),
+                ]
+            )
+        ),
+    ],
+)
+def test_create_walkable_area_from_geometry_collection(geometry_collection):
+    reference_polygon = shapely.union_all(geometry_collection)
+
+    walkable_area = WalkableArea(geometry_collection)
+
+    assert walkable_area.polygon.equals_exact(
+        reference_polygon, tolerance=1e-20
+    )
+    assert walkable_area.area != 0
+    assert walkable_area.polygon.is_simple
+    assert shapely.is_prepared(walkable_area.polygon)
+
+
+@pytest.mark.parametrize(
     "wkt",
     [
         shapely.to_wkt(
@@ -216,11 +259,33 @@ def test_create_walkable_area_from_polygon(reference_polygon):
                 [(-1.1, -2.1), (-2.3, 3.1), (2.5, 4.2), (1.2, -3.4), (0.1, 1.1)]
             ),
         ),
+        shapely.to_wkt(
+            shapely.GeometryCollection(
+                shapely.Polygon(
+                    [
+                        (2.4, -1.3),
+                        (4.1, -5),
+                        (3, -7.2),
+                        (-1.3, -10.1),
+                        (-2, -3.1),
+                        (2.4, -1.3),
+                    ],
+                    [
+                        [(3.1, -3.5), (1.7, -2.3), (0.9, -4.1)],
+                        [(-1.2, -3.9), (-0.8, -6.1), (0.1, -5.9), (0.2, -4.3)],
+                        [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
+                    ],
+                )
+            )
+        ),
     ],
 )
 def test_create_walkable_area_from_wkt(wkt):
     reference_polygon = shapely.from_wkt(wkt)
     walkable_area = WalkableArea(wkt)
+
+    if isinstance(reference_polygon, shapely.GeometryCollection):
+        reference_polygon = shapely.union_all(reference_polygon)
 
     assert walkable_area.polygon.equals_exact(
         reference_polygon, tolerance=1e-20
@@ -437,7 +502,7 @@ def test_create_measurement_area_from_wkt(wkt):
             [
                 shapely.Point(2.4, -1.3),
             ],
-            "Could not create measurement area from the given coordinates:",
+            "Could not create measurement area from the given input:",
         ),
         (
             shapely.Polygon(
@@ -513,7 +578,7 @@ def test_create_measurement_area_from_wkt(wkt):
         ),
         (
             shapely.to_wkt(shapely.LineString([(0.0, 3.0), (1.0, -10.0)])),
-            "Could not create a polygon from the given WKT",
+            "Unexpected geometry type found in GeometryCollection",
         ),
     ],
 )
@@ -865,7 +930,7 @@ def test_create_polygon_from_wkt(wkt):
         (
             shapely.LineString([(0, 0), (1, 1)]).wkt,
             None,
-            "Could not create a polygon from the given WKT",
+            "Could not create polygon from the given WKT",
         ),
         (
             shapely.Polygon(
