@@ -1,7 +1,8 @@
 """Module handling the geometrical environment of the analysis."""
 
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from numbers import Number
+from typing import Any, List, Optional, Tuple
 
 import shapely
 
@@ -37,7 +38,7 @@ class WalkableArea:
         polygon: Any,
         obstacles: Optional[Any] = None,
     ):
-        """Creates a measurement area.
+        """Creates a walkable area.
 
         Args:
             polygon: A sequence of (x, y) numeric coordinate pairs, or
@@ -145,7 +146,7 @@ class MeasurementArea:
         except Exception as exc:
             raise GeometryError(
                 f"Could not create measurement area from the given "
-                f"coordinates: {exc}."
+                f"input: {exc}."
             ) from exc
 
         if self._polygon.interiors:
@@ -312,6 +313,110 @@ class MeasurementLine:
 ###############################################################################
 # Helper functions
 ###############################################################################
+def _polygon_from_wkt(wkt_input: str) -> shapely.Polygon:
+    try:
+        wkt_type = shapely.from_wkt(wkt_input)
+    except Exception as exc:
+        raise GeometryError(
+            f"Could not create geometry objects from the given WKT: "
+            f"{wkt_input}. See following error message:\n{exc}"
+        ) from exc
+
+    try:
+        polygon = _polygon_from_shapely(wkt_type)
+    except Exception as exc:
+        raise GeometryError(
+            f"Could not create a geometry collection from the given WKT: "
+            f"{wkt_input}. See following error message:\n{exc}"
+        ) from exc
+
+    return polygon
+
+
+def _polygon_from_shapely(
+    geometry_input: shapely.Polygon
+    | shapely.MultiPolygon
+    | shapely.GeometryCollection
+    | shapely.MultiPoint,
+) -> shapely.Polygon:
+    def _polygons_from_multi_polygon(
+        multi_polygon: shapely.MultiPolygon,
+    ) -> List[shapely.Polygon]:
+        result = []
+        for polygon in multi_polygon.geoms:
+            result += _polygons_from_polygon(polygon)
+        return result
+
+    def _polygons_from_linear_ring(
+        linear_ring: shapely.LinearRing,
+    ) -> List[shapely.Polygon]:
+        return _polygons_from_polygon(shapely.Polygon(linear_ring))
+
+    def _polygons_from_polygon(
+        polygon: shapely.Polygon,
+    ) -> List[shapely.Polygon]:
+        return [polygon]
+
+    def _polygons_from_geometry_collection(
+        geometry_collection: shapely.GeometryCollection,
+    ) -> List[shapely.Polygon]:
+        polygons = []
+        for geo in geometry_collection.geoms:
+            if (
+                shapely.get_type_id(geo)
+                == shapely.GeometryType.GEOMETRYCOLLECTION
+            ):
+                polygons += _polygons_from_geometry_collection(geo)
+            elif shapely.get_type_id(geo) == shapely.GeometryType.MULTIPOLYGON:
+                polygons += _polygons_from_multi_polygon(geo)
+            elif shapely.get_type_id(geo) == shapely.GeometryType.LINEARRING:
+                polygons += _polygons_from_linear_ring(geo)
+            elif shapely.get_type_id(geo) == shapely.GeometryType.POLYGON:
+                polygons += _polygons_from_polygon(geo)
+            else:
+                raise GeometryError(
+                    f"Unexpected geometry type found in GeometryCollection: "
+                    f"{geo.geom_type}. Only Polygon types are allowed."
+                )
+        return polygons
+
+    polygons = []
+    if (
+        shapely.get_type_id(geometry_input)
+        == shapely.GeometryType.GEOMETRYCOLLECTION
+    ):
+        polygons += _polygons_from_geometry_collection(geometry_input)
+    elif (
+        shapely.get_type_id(geometry_input) == shapely.GeometryType.MULTIPOLYGON
+    ):
+        polygons += _polygons_from_multi_polygon(geometry_input)
+    elif shapely.get_type_id(geometry_input) == shapely.GeometryType.LINEARRING:
+        polygons += _polygons_from_linear_ring(geometry_input)
+    elif shapely.get_type_id(geometry_input) == shapely.GeometryType.POLYGON:
+        polygons += _polygons_from_polygon(geometry_input)
+    else:
+        raise GeometryError(
+            f"Unexpected geometry type found in GeometryCollection: "
+            f"{geometry_input.geom_type}. Only Polygon types are allowed."
+        )
+
+    polygon = shapely.union_all(polygons)
+    if not isinstance(polygon, shapely.Polygon):
+        raise GeometryError(
+            "Input can not be combined to one single polygon. "
+            "Make sure, that parts of the input are connected."
+        )
+    return polygon
+
+
+def _polygon_from_coordinates(
+    coordinates: List[Tuple[Number]] | shapely.Point,
+    *,
+    holes: Optional[List[Tuple[Number]] | shapely.Point] = None,
+) -> shapely.Polygon:
+    return shapely.Polygon(coordinates, holes=holes)
+
+
 def _create_polygon_from_input(
     polygon_input: Any, holes: Optional[List[Any]] = None
 ) -> shapely.Polygon:
@@ -332,35 +437,35 @@ def _create_polygon_from_input(
     Returns:
         shapely.Polygon constructed by the input
     """
-    return_poly = None
-    if isinstance(polygon_input, shapely.Polygon):
+    if isinstance(
+        polygon_input,
+        (
+            shapely.GeometryCollection,
+            shapely.MultiPoint,
+            shapely.MultiPolygon,
+            shapely.Polygon,
+        ),
+    ):
         if holes is not None:
             raise GeometryError(
-                "If polygon is of type shapely.Polygon additional holes are not allowed"
+                "If polygon is of type shapely.Polygon additional holes are not allowed."
             )
-        return_poly = polygon_input
+        return_poly = _polygon_from_shapely(polygon_input)
     elif isinstance(polygon_input, str):
         if holes is not None:
             raise GeometryError(
-                "If polygon is of type WKT additional holes are not allowed"
+                "If polygon is of type WKT additional holes are not allowed."
             )
         try:
-            wkt_type = shapely.from_wkt(polygon_input)
+            return_poly = _polygon_from_wkt(polygon_input)
         except Exception as exc:
             raise GeometryError(
                 f"Could not create polygon from the given WKT: {polygon_input}."
                 f" See following error message:\n{exc}"
             ) from exc
-
-        if isinstance(wkt_type, shapely.Polygon):
-            return_poly = wkt_type
-        else:
-            raise GeometryError(
-                f"Could not create a polygon from the given WKT: {polygon_input}"
-            )
     else:
         try:
-            return_poly = shapely.Polygon(polygon_input, holes)
+            return_poly = _polygon_from_coordinates(polygon_input, holes=holes)
         except Exception as exc:
             raise GeometryError(
                 f"Could not create polygon from the given input: {polygon_input}."
@@ -372,4 +477,5 @@ def _create_polygon_from_input(
             "self-intersections area only allowed at boundary points."
         )
 
+    assert isinstance(return_poly, shapely.Polygon)
     return return_poly
