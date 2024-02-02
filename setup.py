@@ -39,10 +39,10 @@ setuptools.setup(
     python_requires=">=3.10",
     install_requires=[
         "numpy~=1.25,<2.0",
-        "pandas[hdf5]~=2.0",
+        "pandas~=2.0",
         "Shapely~=2.0",
         "scipy~=1.11",
         "matplotlib~=3.7",
-        "tables~=3.9.0",
+        "h5py==3.10.0",
     ],
 )
