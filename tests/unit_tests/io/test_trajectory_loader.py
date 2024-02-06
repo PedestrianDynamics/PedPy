@@ -208,17 +208,70 @@ def write_fcd_file(
     frame_rate: Optional[float] = None,
 ):
     data.columns = ["id", "frame", "x", "y"]
-    print()
-    print(data)
     with file.open("w") as f:
         f.write("<fcd-export>")
+        f.write(
+            textwrap.dedent(
+                f"""\
+            <!-- generated on 2024-01-17 15:38:01 by Eclipse SUMO GUI Version v1_19_0+0628-bfbfec39c30
+        <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
 
+            <input>
+            </input>
+
+            <output>
+                <precision.geo value="12"/>
+                <fcd-output.geo value="false"/>
+            </output>
+
+            <time>
+                <begin value="64800"/>
+                <end value="66200"/>
+                <step-length value="{1/frame_rate}"/>
+            </time>
+
+            <processing>
+                <threads value="12"/>
+                <no-internal-links value="true"/>
+                <ignore-route-errors value="true"/>
+                <scale value="1.00"/>
+                <pedestrian.model value="jupedsim"/>
+            </processing>
+
+            <routing>
+                <device.rerouting.adaptation-steps value="18"/>
+                <device.rerouting.adaptation-interval value="10"/>
+                <device.rerouting.threads value="12"/>
+            </routing>
+
+            <report>
+                <verbose value="true"/>
+                <duration-log.statistics value="true"/>
+                <no-step-log value="true"/>
+            </report>
+
+            <fcd_device>
+                <device.fcd.probability value="0.0"/>
+            </fcd_device>
+
+            <random_number>
+                <seed value="754345"/>
+            </random_number>
+
+            <gui_only>
+                <gui-settings-file value="/home/ronald/DLR_tmp/CroMa-PRO/Sim_EURO24/sumo/../osm-stadium/osm.view.xml"/>
+            </gui_only>
+
+        </configuration>
+        -->
+        """
+            )
+        )
         for frame, frame_data in data.groupby(by=FRAME_COL):
             if frame_rate is not None:
                 time = frame / frame_rate
             else:
                 time = frame * frame
-                print(time)
             if "x" in frame_data.columns:
                 f.write(f'  <timestep time="{time}">')
                 for _, row in frame_data.iterrows():
@@ -1204,7 +1257,6 @@ def test_load_walkable_area_from_data_archive_hdf5_reference_file():
     traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
         "test-data/ped_data_archive_hdf5.h5"
     )
-    print(traj_txt.absolute())
     load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=traj_txt)
 
 
@@ -1287,53 +1339,6 @@ def test_load_trajectory_from_fcd_success(
         == expected_data.to_numpy()
     ).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
-        (np.array([[0, 0, 5, 1], [0, 0, -5, -1]])),
-        (np.array([[0, 0, 5, 1], [0, 0, -5, -1]])),
-    ],
-)
-def test_load_trajectory_from_fcd_not_enough_frames(tmp_path, data):
-    trajectory_file_fcd = pathlib.Path(tmp_path / "trajectory.fcd")
-
-    expected_data = pd.DataFrame(data=data)
-
-    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
-    write_fcd_file(
-        file=trajectory_file_fcd,
-        frame_rate=10,
-        data=written_data,
-    )
-    with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_fcd_data(trajectory_file=trajectory_file_fcd)
-    assert "Need at least two time steps to compute the frame rate" in str(
-        error_info.value
-    )
-
-
-@pytest.mark.parametrize(
-    "data",
-    [
-        (np.array([[0, 0, 5, 1], [0, 1, -5, -1], [0, 2, -5, -1]])),
-        (np.array([[0, 0, 5, 1], [0, 1, -5, -1], [0, 2, -5, -1]])),
-    ],
-)
-def test_load_trajectory_from_fcd_changing_frame_rate(tmp_path, data):
-    trajectory_file_fcd = pathlib.Path(tmp_path / "trajectory.fcd")
-
-    expected_data = pd.DataFrame(data=data)
-
-    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
-    write_fcd_file(
-        file=trajectory_file_fcd,
-        data=written_data,
-    )
-    with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_fcd_data(trajectory_file=trajectory_file_fcd)
-    assert "The time step seems to vary in the file" in str(error_info.value)
 
 
 def test_load_trajectory_from_fcd_non_existing_file():

@@ -1,9 +1,10 @@
 """Load trajectories to the internal trajectory data format."""
 import pathlib
+import re
 import sqlite3
 from enum import Enum
+from textwrap import dedent
 from typing import Any, Optional, Tuple
-from xml.etree import ElementTree
 
 import pandas as pd
 
@@ -465,53 +466,96 @@ def load_trajectory_from_fcd_data(
     """
     _validate_is_file(trajectory_file)
 
-    tree = ElementTree.parse(trajectory_file)
-    root = tree.getroot()
+    fcd_content = trajectory_file.read_text()
+    # read frame step from comment in file
+    match = re.search(r'<step-length value="([^"]+)"', fcd_content)
 
-    data = []
-    times = []
-
-    for timestep in root.findall("timestep"):
-        time = timestep.get("time")
-        times.append(time)
-        for person in timestep.findall("person"):
-            person_data = {
-                ID_COL: abs(hash(person.get("id"))),
-                # Attention: Column named 'frame' but contains the time!
-                FRAME_COL: time,
-                X_COL: person.get("x"),
-                Y_COL: person.get("y"),
-            }
-            data.append(person_data)
-
-    fcd_data = pd.DataFrame(data)
-    fcd_data = fcd_data.astype(
-        {ID_COL: "int", FRAME_COL: "float", X_COL: "float", Y_COL: "float"}
-    )
-
-    # Need to convert the time information to frame, we assume that
-    # the frame rate does not change in the file.
-    frames = pd.Series(times, name="time_steps", dtype="float")
-    if frames.size < 2:
+    # Extract the value if found
+    if match:
+        step_length = float(match.group(1))
+        frame_rate = 1 / step_length
+    else:
         raise LoadTrajectoryError(
-            "Could not load fcd file. Need at least two time steps to compute the frame rate."
+            f"{trajectory_file} seems to be not a supported FCD file, "
+            f"it does not contain a 'time/step-length' attribute."
         )
 
-    frames_diff = frames.diff().dropna()
+    match = re.search(r'<fcd-output.geo value="([^"]+)"', fcd_content)
+
+    # Extract the value if found
+    use_geo = False
+    if match:
+        use_geo = _strtobool(match.group(1))
+
+    if use_geo:
+        raise LoadTrajectoryError(
+            f"{trajectory_file} seems to be not a supported FCD file, "
+            f"the coordinates are given in lon/lat, please convert to x,y."
+        )
+
+    stylesheet = dedent(
+        """\
+    <?xml version="1.0" encoding="UTF-8"?>
+    <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+        <xsl:output method="xml" indent="yes"/>
+        
+        <!-- Identity template to copy elements and attributes as-is -->
+        <xsl:template match="@*|node()">
+            <xsl:copy>
+                <xsl:apply-templates select="@*|node()"/>
+            </xsl:copy>
+        </xsl:template>
+        
+        <!-- Match the 'timestep' element and its 'person' children -->
+        <xsl:template match="timestep">
+            <xsl:variable name="time_step" select="@time"/>
+            <xsl:apply-templates select="person">
+                <xsl:with-param name="time_step" select="$time_step"/>
+            </xsl:apply-templates>
+        </xsl:template>
+        
+        <!-- Transform 'person' elements within 'timestep' -->
+        <xsl:template match="person">
+            <xsl:param name="time_step"/>
+            <person time="{$time_step}">
+                <xsl:apply-templates select="@*"/>
+            </person>
+        </xsl:template>
+    </xsl:stylesheet>
+    """
+    )
+    fcd_data = pd.read_xml(trajectory_file, stylesheet=stylesheet)
+
+    # hash the id, as it may contain string values
+    fcd_data["id"] = fcd_data["id"].apply(lambda x: abs(hash(x)))
+
+    # convert time to frame
+    fcd_data["time"] = fcd_data["time"].astype("float")
+    fcd_data["frame"] = round(fcd_data["time"] * frame_rate)
+
+    fcd_data = fcd_data.astype(
+        {"id": "int", "frame": "int", "x": "float", "y": "float"}
+    )
 
     # TODO(TS): need to add scaling
-
-    if not frames_diff.eq(frames_diff.iloc[0]).all():
-        raise LoadTrajectoryError(
-            "Could not load fcd file. The time step seems to vary in the file."
-        )
-    frame_diff = frames_diff.iloc[0]
-
-    fcd_data[FRAME_COL] /= frame_diff
-
-    fcd_data = fcd_data.astype({FRAME_COL: "int32"})
-
     return TrajectoryData(
-        data=fcd_data[[ID_COL, FRAME_COL, X_COL, Y_COL]],
-        frame_rate=1 / frame_diff,
+        data=fcd_data[[ID_COL, FRAME_COL, X_COL, Y_COL, "time"]],
+        frame_rate=frame_rate,
     )
+
+
+def _strtobool(val):
+    """Convert a string representation of truth to True or False.
+
+    - True values are 'y', 'yes', 't', 'true', 'on', and '1'
+    - False values are 'n', 'no', 'f', 'false', 'off', and '0'
+    Raises ValueError if 'val' is anything else.
+    """
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+
+    if val in ("n", "no", "f", "false", "off", "0"):
+        return False
+
+    raise ValueError(f"Invalid truth value {val}")
