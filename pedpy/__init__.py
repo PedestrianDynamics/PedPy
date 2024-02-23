@@ -91,6 +91,11 @@ from .methods.flow_calculator import (
     compute_line_flow,
     compute_n_t,
 )
+from .methods.foo_calculator import (
+    IntrusionMethod,
+    compute_avoidance,
+    compute_intrusion,
+)
 from .methods.method_utils import (
     AccelerationCalculation,
     Cutoff,
@@ -126,7 +131,6 @@ from .methods.speed_calculator import (
     compute_species,
     compute_voronoi_speed,
 )
-from .methods.foo_calculator import compute_intrusion, IntrusionMethod
 from .plotting.plotting import (
     PEDPY_BLUE,
     PEDPY_GREEN,
@@ -220,6 +224,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "correct_invalid_trajectories",
     "compute_intrusion",
     "IntrusionMethod",
+    "compute_avoidance",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
