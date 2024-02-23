@@ -55,6 +55,7 @@ from .methods.speed_calculator import (
     compute_passing_speed,
     compute_voronoi_speed,
 )
+from .methods.foo_calculator import compute_intrusion, IntrusionMethod
 from .plotting.plotting import (
     PEDPY_BLUE,
     PEDPY_GREEN,
@@ -116,6 +117,8 @@ __all__ = [
     "compute_mean_speed_per_frame",
     "compute_passing_speed",
     "compute_voronoi_speed",
+    "compute_intrusion",
+    "IntrusionMethod",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",

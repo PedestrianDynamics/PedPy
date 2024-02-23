@@ -29,3 +29,5 @@ CROSSING_FRAME_COL: Final = "crossing_frame"
 START_POSITION_COL: Final = "start_position"
 END_POSITION_COL: Final = "end_position"
 WINDOW_SIZE_COL: Final = "window_size"
+
+INTRUSION_COL: Final = "intrusion"
