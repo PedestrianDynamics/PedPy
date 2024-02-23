@@ -1295,3 +1295,23 @@ def is_individual_speed_valid(
         return DataValidationStatus.ENTRY_MISSING
 
     return DataValidationStatus.DATA_CORRECT
+
+
+def _compute_individual_distances(*, traj_data: TrajectoryData) -> pd.DataFrame:
+    matrix = pd.merge(
+        traj_data.data[["id", "frame", "point"]],
+        traj_data.data[["id", "frame", "point"]],
+        how="outer",
+        on="frame",
+        suffixes=("", "_neighbor"),
+    )
+    matrix = matrix[matrix.id != matrix.id_neighbor]
+    matrix["distance"] = np.linalg.norm(
+        shapely.get_coordinates(matrix.point)
+        - shapely.get_coordinates(matrix.point_neighbor),
+        axis=1,
+    )
+
+    matrix = matrix.drop(columns=["point", "point_neighbor"])
+    matrix = matrix.rename(columns={"id_neighbor": "neighbor"})
+    return matrix.reset_index(drop=True)

@@ -126,6 +126,7 @@ from .methods.speed_calculator import (
     compute_species,
     compute_voronoi_speed,
 )
+from .methods.foo_calculator import compute_intrusion, IntrusionMethod
 from .plotting.plotting import (
     PEDPY_BLUE,
     PEDPY_GREEN,
@@ -217,6 +218,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_mean_acceleration_per_frame",
     "compute_voronoi_acceleration",
     "correct_invalid_trajectories",
+    "compute_intrusion",
+    "IntrusionMethod",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
