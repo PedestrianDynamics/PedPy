@@ -31,3 +31,4 @@ END_POSITION_COL: Final = "end_position"
 WINDOW_SIZE_COL: Final = "window_size"
 
 INTRUSION_COL: Final = "intrusion"
+AVOIDANCE_COL: Final = "avoidance"
