@@ -1,5 +1,6 @@
 """Module containing plotting functionalities."""
 import logging
+import warnings
 from typing import Any, List, Optional
 
 import matplotlib as mpl
@@ -446,15 +447,18 @@ def plot_profiles(
     Returns:
          matplotlib.axes.Axes instance where the profiles are plotted
     """
-    mean_profiles = np.mean(profiles, axis=0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        mean_profiles = np.nanmean(profiles, axis=0)
+
     bounds = walkable_area.bounds
 
     title = kwargs.pop("title", "")
     walkable_color = kwargs.pop("walkable_color", "w")
     hole_color = kwargs.pop("hole_color", "w")
     hole_alpha = kwargs.pop("hole_alpha", 1.0)
-    vmin = kwargs.pop("vmin", np.min(mean_profiles))
-    vmax = kwargs.pop("vmax", np.max(mean_profiles))
+    vmin = kwargs.pop("vmin", np.nanmin(mean_profiles))
+    vmax = kwargs.pop("vmax", np.nanmax(mean_profiles))
     label = kwargs.pop("label", None)
 
     if axes is None:
