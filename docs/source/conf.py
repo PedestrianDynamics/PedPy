@@ -107,7 +107,6 @@ html_context = {"default_mode": "light"}
 
 html_theme_options = {
     "show_nav_level": 5,
-    "show_toc_level": 2,
     "use_fullscreen_button": False,
     "use_issues_button": False,
     "use_download_button": False,

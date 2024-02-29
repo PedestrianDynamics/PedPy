@@ -29,7 +29,7 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     ARITHMETIC = auto()
     r"""Compute arithmetic Voronoi speed profile.
     
-    In each cell the arithmetic Voronoi speed :math:`v_{arithmetic}` is defined as
+    In each cell :math:`M` the arithmetic Voronoi speed :math:`v_{arithmetic}` is defined as
 
     .. math::
 
@@ -44,15 +44,28 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     VORONOI = auto()
     r"""Compute Voronoi speed profile.
     
-    In each cell the Voronoi speed :math:`v_{voronoi}` is defined as
+    In each cell :math:`M` the Voronoi speed :math:`v_{voronoi}` is defined as
 
     .. math::
 
-        v_{voronoi}(t) = { \int\int v_{xy} dxdy \over A(M)},
+        v_{voronoi} = { \int\int v_{xy} dxdy \over A(M)},
         
     where :math:`v_{xy} = v_i` is the individual speed of
     each pedestrian, whose :math:`V_i \cap M` and :math:`A(M)` the area 
     the grid cell.
+    """
+
+    MEAN = auto()
+    r"""Compute mean speed profile.
+    
+    In each cell :math:`M` the mean speed :math:`v_{mean}` is defined as
+    
+    ..math::
+    
+        v_{mean} = \frac{1}{N} \sum_{i \in P_M} v_i,
+        
+    where :math:`P_M` are the pedestrians inside the grid cell. Then :math:`N`
+    is the number of pedestrians inside :math:`P_M` (:math:`|P_M|`).
     """
 
 
@@ -83,7 +96,7 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
         \rho_{classic} = {N \over A(M)},
     
     where :math:`N` is the number of pedestrians inside the grid cell :math:`M`
-    and the area of that grid cell (:math:`A(M)`).
+    and the area of that grid cell (:math:`A(M)`). 
     """
 
     GAUSSIAN = auto()
@@ -378,6 +391,7 @@ def compute_speed_profile(
     grid_size: float,
     speed_method: SpeedMethod,
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
+    fill_value: float = np.nan,
 ) -> List[npt.NDArray[np.float64]]:
     """Compute the speed profile.
 
@@ -406,6 +420,8 @@ def compute_speed_profile(
         grid_intersections_area: intersection of grid cells with the Voronoi
             polygons (result from
             :func:`compute_grid_cell_polygon_intersection_area`)
+        fill_value: fill value for cells with no pedestrians inside when using
+            `SpeedMethod.MEAN` (default = `np.nan`)
 
     Returns:
         List of speed profiles
@@ -447,6 +463,13 @@ def compute_speed_profile(
             speed = _compute_arithmetic_voronoi_speed_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
+            )
+        elif speed_method == SpeedMethod.MEAN:
+            speed = _compute_mean_speed_profile(
+                frame_data=frame_data,
+                walkable_area=walkable_area,
+                grid_size=grid_size,
+                fill_value=fill_value,
             )
         else:
             raise ValueError("speed method not accepted")
@@ -507,6 +530,41 @@ def _compute_voronoi_speed_profile(
     speed = (
         np.sum(grid_intersections_area * frame_data.speed.values, axis=1)
     ) / grid_area
+
+    return speed
+
+
+def _compute_mean_speed_profile(
+    *,
+    frame_data: pandas.DataFrame,
+    walkable_area: WalkableArea,
+    grid_size: float,
+    fill_value: float,
+) -> npt.NDArray[np.float64]:
+    min_x, min_y, max_x, max_y = walkable_area.bounds
+
+    x_coords = np.arange(min_x, max_x + grid_size, grid_size)
+    y_coords = np.arange(min_y, max_y + grid_size, grid_size)
+
+    hist, _, _ = np.histogram2d(
+        x=frame_data.x, y=frame_data.y, bins=[x_coords, y_coords]
+    )
+    hist_speed, _, _ = np.histogram2d(
+        x=frame_data.x,
+        y=frame_data.y,
+        bins=[x_coords, y_coords],
+        weights=frame_data.speed,
+    )
+    speed = np.divide(
+        hist_speed,
+        hist,
+        out=np.full(shape=hist.shape, fill_value=float(fill_value)),
+        where=hist != 0,
+    )
+
+    # rotate the result, such that is displayed with imshow correctly and
+    # has the same orientation as the other results
+    speed = np.rot90(speed)
 
     return speed
 
