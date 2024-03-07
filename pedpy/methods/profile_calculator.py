@@ -60,7 +60,7 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     
     In each cell :math:`M` the mean speed :math:`v_{mean}` is defined as
     
-    ..math::
+    .. math::
     
         v_{mean} = \frac{1}{N} \sum_{i \in P_M} v_i,
         
