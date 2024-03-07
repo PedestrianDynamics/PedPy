@@ -81,7 +81,10 @@ def plot_nt(
     color = kwargs.pop("color", PEDPY_BLUE)
     title = kwargs.pop("title", "N-t")
     x_label = kwargs.pop("x_label", "t / s")
-    y_label = kwargs.pop("y_label", "# pedestrians")
+    y_label = kwargs.pop(
+        "y_label",
+        r"\# pedestrians" if plt.rcParams["text.usetex"] else "# pedestrians",
+    )
     return _plot_series(
         axes=axes,
         title=title,
