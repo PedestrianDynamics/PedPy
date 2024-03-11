@@ -1,6 +1,51 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PedPy"
+version = "1.1.0"
+authors = [{ name = "T. Schrödter" }]
+description = "PedPy is a Python module for pedestrian movement analysis."
+readme = "README.md"
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "numpy~=1.25,<2.0",
+    "pandas~=2.0",
+    "Shapely~=2.0",
+    "scipy~=1.11",
+    "matplotlib~=3.7",
+    "h5py~=3.10.0",
+]
+requires-python = ">=3.10"
+
+[project.urls]
+homepage = "https://pedpy.readthedocs.io/"
+
+[tool.setuptools]
+packages = [
+    "pedpy", "pedpy.data", "pedpy.internal",
+    "pedpy.io",
+    "pedpy.methods",
+    "pedpy.plotting",
+]
+
 [tool.black]
 line-length = 80
-target-version = ['py38']
+target-version = ['py310']
 multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
@@ -16,7 +61,3 @@ include_trailing_comma = true
 inherit = false
 match-dir = "(pedpy|data|io|methods|plotting)"
 convention = "google"
-
-[build-system]
-requires = ["setuptools>=42"]
-build-backend = "setuptools.build_meta"
