@@ -134,7 +134,7 @@ jobs:
 
       - name: Test if install was successful
         run: |
-          python3 -c "import pedpy; print(pedpy.__version__)"
+          python3 -c "import pedpy; print(f'PedPy {pedpy.__version__} (SHA: {pedpy.__commit_hash__})')"
 
       - name: Run getting started notebook
         run: |

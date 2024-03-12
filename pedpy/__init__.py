@@ -1,6 +1,14 @@
 # type: ignore
 """Top level imports, for easier usage."""
-from importlib.metadata import version
+try:
+    from . import _version  # pylint: disable=import-self
+
+    __version__ = _version.__version__
+    __commit_hash__ = _version.__commit_hash__
+
+except ImportError:
+    __version__ = "unknown"
+    __commit_hash__ = "unknown"
 
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
@@ -67,8 +75,6 @@ from .plotting.plotting import (
     plot_voronoi_cells,
     plot_walkable_area,
 )
-
-__version__ = version("PedPy")
 
 __all__ = [
     "MeasurementArea",

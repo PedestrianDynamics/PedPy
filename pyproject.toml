@@ -1,10 +1,6 @@
-[build-system]
-requires = ["setuptools>=42", "wheel"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "PedPy"
-version = "1.1.0"
+dynamic = ['version']
 authors = [{ name = "T. Schrödter" }]
 description = "PedPy is a Python module for pedestrian movement analysis."
 readme = "README.md"
@@ -34,6 +30,22 @@ requires-python = ">=3.10"
 
 [project.urls]
 homepage = "https://pedpy.readthedocs.io/"
+
+[build-system]
+requires = ["setuptools>=42", "wheel", "versioningit"]
+build-backend = "setuptools.build_meta"
+
+[tool.versioningit.format]
+distance = "{next_version}.dev{distance}"
+dirty = "{next_version}.dev{distance}"
+distance-dirty = "{next_version}.dev{distance}"
+
+[tool.versioningit.write]
+file = "pedpy/_version.py"
+template = """
+__version__ = "{version}"
+__commit_hash__ = "{rev}"
+"""
 
 [tool.setuptools]
 packages = [
