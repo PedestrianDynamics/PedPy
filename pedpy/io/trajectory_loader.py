@@ -7,6 +7,7 @@ from typing import Any, Optional, Tuple
 
 import h5py  # type: ignore
 import pandas as pd
+import shapely
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
@@ -332,6 +333,11 @@ def load_walkable_area_from_jupedsim_sqlite(
 ) -> WalkableArea:
     """Loads the walkable area from the sqlite file as :class:`~geometry.WalkableArea`.
 
+    .. note::
+
+        When using a JuPedSim sqlite trajectory file with version 2, the walkable ware is the union
+        of all provided walkable areas in the file.
+
     Args:
         trajectory_file: trajectory file in JuPedSim sqlite format
 
@@ -340,25 +346,71 @@ def load_walkable_area_from_jupedsim_sqlite(
     """
     _validate_is_file(trajectory_file)
 
-    with sqlite3.connect(trajectory_file) as con:
-        try:
-            walkable_query_result = (
-                con.cursor().execute("select wkt from geometry").fetchone()
-            )
-        except Exception as exc:
-            raise LoadTrajectoryError(
-                "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
-                "contain a 'geometry' table. Please check your file."
-            ) from exc
+    with sqlite3.connect(trajectory_file) as connection:
+        db_version = _get_jupedsim_sqlite_version(connection)
 
-        if walkable_query_result is None:
-            raise LoadTrajectoryError(
-                "The given sqlite trajectory file seems not include a geometry. "
-                "Please check your file."
-            )
-        walkable_area = walkable_query_result[0]
+        if db_version == 1:
+            return _load_walkable_area_from_jupedsim_sqlite_v1(connection)
 
-    return WalkableArea(walkable_area)
+        if db_version == 2:
+            return _load_walkable_area_from_jupedsim_sqlite_v2(connection)
+
+        raise LoadTrajectoryError(
+            f"The given sqlite trajectory has unsupported db version {db_version}. "
+            f"Supported are versions: 1, 2."
+        )
+
+
+def _get_jupedsim_sqlite_version(connection: sqlite3.Connection) -> int:
+    cur = connection.cursor()
+    return int(
+        cur.execute(
+            "SELECT value FROM metadata WHERE key = ?", ("version",)
+        ).fetchone()[0]
+    )
+
+
+def _load_walkable_area_from_jupedsim_sqlite_v1(
+    con: sqlite3.Connection,
+) -> WalkableArea:
+    try:
+        walkable_query_result = (
+            con.cursor().execute("select wkt from geometry").fetchone()
+        )
+    except Exception as exc:
+        raise LoadTrajectoryError(
+            "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
+            "contain a 'geometry' table. Please check your file."
+        ) from exc
+
+    if walkable_query_result is None:
+        raise LoadTrajectoryError(
+            "The given sqlite trajectory file seems not include a geometry. "
+            "Please check your file."
+        )
+
+    return WalkableArea(walkable_query_result[0])
+
+
+def _load_walkable_area_from_jupedsim_sqlite_v2(
+    con: sqlite3.Connection,
+) -> WalkableArea:
+    try:
+        res = con.cursor().execute("SELECT wkt FROM geometry")
+        geometries = [shapely.from_wkt(s) for s in res.fetchall()]
+    except Exception as exc:
+        raise LoadTrajectoryError(
+            "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
+            "contain a 'geometry' table. Please check your file."
+        ) from exc
+
+    if not geometries:
+        raise LoadTrajectoryError(
+            "The given sqlite trajectory file seems not include a geometry. "
+            "Please check your file."
+        )
+
+    return WalkableArea(shapely.union_all(geometries))
 
 
 def load_trajectory_from_ped_data_archive_hdf5(
