@@ -13,7 +13,6 @@ build:
 
   jobs:
     pre_build:
-      - cp -r notebooks/* docs/source
       - pip install -e .
 
 
