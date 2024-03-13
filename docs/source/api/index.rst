@@ -13,6 +13,8 @@ API Reference
       - Analysis methods to compute: density, speed, flow, etc
     * - :doc:`Plotting <plotting>`
       - Plot methods for displaying the measurement setup and other computed results
+    * - :doc:`Column identifiers <column_identifiers>`
+      - Identifier of the data and result columns
 
 .. toctree::
     :maxdepth: 1
@@ -22,3 +24,4 @@ API Reference
     Load Trajectories <io>
     Analysis Methods <methods>
     Plotting <plotting>
+    Column identifiers <column_identifiers>
