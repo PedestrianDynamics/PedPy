@@ -10,6 +10,7 @@ is divided into square grid cells.
 Each of these grid cells is then used as a :class:`~geometry.MeasurementArea`
 in which the mean speed and density can be computed with different methods.
 """
+
 from enum import Enum, auto
 from typing import Any, List, Optional, Tuple
 
@@ -101,19 +102,21 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
 
     GAUSSIAN = auto()
     r"""Gaussian density profile.
-    
+
     In each cell the density :math:`\rho_{gaussian}` is defined by 
-    
+
     .. math::
      
         \rho_{gaussian} = \sum_{i=1}^{N}{\delta (\boldsymbol{r}_i - \boldsymbol{c})},
 
     where :math:`\boldsymbol{r}_i` is the position of a pedestrian and :math:`\boldsymbol{c}`
     is the center of the grid cell. Finally :math:`\delta(x)` is approximated by a Gaussian
-    
+
     .. math::
         
-        \delta(x) = \frac{1}{\sqrt{\pi}a}\exp[-x^2/a^2]
+        \delta(x) = \frac{1}{\sigma\sqrt{2\pi}}\exp[-x^2/2\sigma^2],
+
+    where :math:`\sigma` is the standard deviation.
     """
 
 
@@ -169,9 +172,7 @@ def compute_profiles(
     Returns:
         List of density profiles, List of speed profiles
     """
-    grid_cells, _, _ = get_grid_cells(
-        walkable_area=walkable_area, grid_size=grid_size
-    )
+    grid_cells, _, _ = get_grid_cells(walkable_area=walkable_area, grid_size=grid_size)
 
     grid_intersections_area, internal_data = _compute_grid_polygon_intersection(
         data=data, grid_cells=grid_cells
@@ -274,7 +275,7 @@ def compute_density_profile(
         elif density_method == DensityMethod.GAUSSIAN:
             if gaussian_width is None:
                 raise ValueError(
-                    "Computing a Gaussian density profile needs a parameter 'width'."
+                    "Computing a Gaussian density profile needs a parameter 'gaussian_width'."
                 )
 
             density = _compute_gaussian_density_profile(
@@ -299,8 +300,7 @@ def _compute_voronoi_density_profile(
 ) -> npt.NDArray[np.float64]:
     return (
         np.sum(
-            grid_intersections_area
-            * (1 / shapely.area(frame_data.polygon.values)),
+            grid_intersections_area * (1 / shapely.area(frame_data.polygon.values)),
             axis=1,
         )
         / grid_area
@@ -337,36 +337,26 @@ def _compute_gaussian_density_profile(
     center_y: npt.NDArray[np.float64],
     width: float,
 ) -> npt.NDArray[np.float64]:
-    def _gaussian_full_width_half_maximum(width: float) -> float:
-        """Computes the full width at half maximum.
-
-        Fast lookup for:
-            width * np.sqrt(2) / (2 * np.sqrt(2 * np.log(2)))
-
-        Args:
-            width: width for which the half maximum should be computed
-
-        Returns:
-            Full width at half maximum of a gaussian.
-        """
-        return width * 0.6005612
-
     def _compute_gaussian_density(
         x: npt.NDArray[np.float64], fwhm: float
     ) -> npt.NDArray[np.float64]:
-        """Computes the Gaussian density.
+        """Computes the Gaussian density for given values and FWHM.
 
-        Gaussian density p(x, a) is defined as:
-            p(x,a) = 1 / (sqrt(pi) * a) * e^(-x^2 / a^2)
+        The Gaussian density G(x) is defined as:
+            G(x) = 1 / (sigma * sqrt(2 * pi)) * e^(-x^2 / (2 * sigma^2))
+        where sigma is derived from FWHM as:
+            sigma = FWHM / (2 * sqrt(2 * ln(2)))
+
         Args:
-            x: value(s) for which the Gaussian should be computed
-            fwhm: full width at half maximum
+            x: Value(s) for which the Gaussian should be computed.
+            fwhm: Full width at half maximum, a measure of spread.
 
         Returns:
-            Gaussian corresponding to the given values
+            Gaussian corresponding to the given values and FWHM
         """
-        #
-        return 1 / (1.7724538 * fwhm) * np.e ** (-(x**2) / fwhm**2)
+        sigma = fwhm / 2.35482  # 2.35482 = 2*sqrt(2*log(2))
+        #  2.50662 = sqrt(2*pi)
+        return 1 / (2.50662 * sigma) * np.exp(-(x**2) / (2 * sigma**2))
 
     positions_x = frame_data.x.values
     positions_y = frame_data.y.values
@@ -375,10 +365,8 @@ def _compute_gaussian_density_profile(
     distance_x = np.add.outer(-center_x, positions_x)
     distance_y = np.add.outer(-center_y, positions_y)
 
-    fwhm = _gaussian_full_width_half_maximum(width)
-
-    gauss_density_x = _compute_gaussian_density(distance_x, fwhm)
-    gauss_density_y = _compute_gaussian_density(distance_y, fwhm)
+    gauss_density_x = _compute_gaussian_density(distance_x, width)
+    gauss_density_y = _compute_gaussian_density(distance_y, width)
 
     gauss_density = np.matmul(gauss_density_x, np.transpose(gauss_density_y))
     return np.array(gauss_density.T)
@@ -497,9 +485,7 @@ def _compute_arithmetic_voronoi_speed_profile(
     """
     cells_with_peds = np.where(grid_intersections_area > 1e-16, 1, 0)
 
-    accumulated_speed = np.sum(
-        cells_with_peds * frame_data.speed.values, axis=1
-    )
+    accumulated_speed = np.sum(cells_with_peds * frame_data.speed.values, axis=1)
     num_peds = np.count_nonzero(cells_with_peds, axis=1)
     speed = np.divide(
         accumulated_speed,
