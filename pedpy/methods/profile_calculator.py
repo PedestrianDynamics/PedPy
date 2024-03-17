@@ -510,14 +510,14 @@ def compute_speed_profile(
     Args:
         data: A pandas DataFrame containing `frame` and pedestrian `speed`
             (result from :func:`~speed_calculator.compute_individual_speed`).
-            Depending on `speed_method`, additional columns 'x', 'y', or 
-            'polygon' might be required. `polygon` column
+            Depending on `speed_method`, additional columns `x`, `y`, or 
+            `polygon` might be required. `polygon` column
             (from :func:`~method_utils.compute_individual_voronoi_polygons`) 
-            is required when using the `:attr:SpeedMethod.VORONOI` or
-            `:attr:`SpeedMethod.ARITHMETIC`.
+            is required when using the :attr:`SpeedMethod.VORONOI` or
+            :attr:`SpeedMethod.ARITHMETIC`.  
             For getting a DataFrame containing all the needed data, you can
-            merge the results of the different function on the 'id' and
-            'frame' columns (see :func:`pandas.DataFrame.merge` and
+            merge the results of the different function on the `id` and
+            `frame` columns (see :func:`pandas.DataFrame.merge` and
             :func:`pandas.merge`).
         walkable_area: The geometric area within which the speed profiles are
             computed.
