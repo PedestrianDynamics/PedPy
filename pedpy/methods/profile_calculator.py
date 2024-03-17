@@ -78,8 +78,10 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
      
         v_{c} = \frac{\sum_{i=1}^{N}{\big(w_i(\delta)\cdot v_i\big)}}{\sum_{i=1}^{N} w_i},
 
-    where :math:`v_i` is the speed of a pedestrian and :math:`w_i` are weights depending on
-    the pedestrian's distance :math:`\delta` from its position (:math:`\boldsymbol{r}_i`) to the center of the grid (:math:`\boldsymbol{c}`) cell:
+    where :math:`v_i` is the speed of a pedestrian and :math:`w_i` are weights 
+    depending on the pedestrian's distance :math:`\delta` from its position 
+    (:math:`\boldsymbol{r}_i`) to the center of the grid 
+    (:math:`\boldsymbol{c}`) cell:
 
     .. math::
         \delta =  \boldsymbol{r}_i - \boldsymbol{c}.
@@ -90,7 +92,9 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     
         w_i = \frac{1} {\sigma \cdot \sqrt{2\pi}} \exp\big(-\frac{\delta^2}{2\sigma^2}\big),
 
-    where :math:`\sigma` is derived from FWHM as: :math:`\sigma = \frac{FWHM}{2\sqrt{2\ln(2)}}`
+    where :math:`\sigma` is derived from FWHM as: 
+    ..math::
+       \sigma = \frac{FWHM}{2\sqrt{2\ln(2)}}.
     """
 
 
@@ -133,8 +137,10 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
      
         \rho_{gaussian} = \sum_{i=1}^{N}{\delta (\boldsymbol{r}_i - \boldsymbol{c})},
 
-    where :math:`\boldsymbol{r}_i` is the position of a pedestrian and :math:`\boldsymbol{c}`
-    is the center of the grid cell. Finally :math:`\delta(x)` is approximated by a Gaussian
+    where :math:`\boldsymbol{r}_i` is the position of a pedestrian and 
+    :math:`\boldsymbol{c}`
+    is the center of the grid cell. Finally :math:`\delta(x)` is approximated 
+    by a Gaussian
     
     .. math::
         
@@ -151,9 +157,9 @@ def compute_profiles(
     speed_method: SpeedMethod,
     density_method: DensityMethod = DensityMethod.VORONOI,
     gaussian_width: Optional[float] = None,
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument,too-many-arguments
     **kwargs: Any,
-) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
+) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]],]:
     """Computes the density and speed profiles.
 
     .. note::
@@ -194,12 +200,21 @@ def compute_profiles(
     Returns:
         List of density profiles, List of speed profiles
     """
-    grid_cells, _, _ = get_grid_cells(
-        walkable_area=walkable_area, grid_size=grid_size
+    (
+        grid_cells,
+        _,
+        _,
+    ) = get_grid_cells(
+        walkable_area=walkable_area,
+        grid_size=grid_size,
     )
 
-    grid_intersections_area, internal_data = _compute_grid_polygon_intersection(
-        data=data, grid_cells=grid_cells
+    (
+        grid_intersections_area,
+        internal_data,
+    ) = _compute_grid_polygon_intersection(
+        data=data,
+        grid_cells=grid_cells,
     )
 
     density_profiles = compute_density_profile(
@@ -219,7 +234,10 @@ def compute_profiles(
         grid_size=grid_size,
     )
 
-    return density_profiles, speed_profiles
+    return (
+        density_profiles,
+        speed_profiles,
+    )
 
 
 def compute_density_profile(
@@ -230,14 +248,14 @@ def compute_density_profile(
     density_method: DensityMethod,
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     gaussian_width: Optional[float] = None,
+    # pylint: disable=too-many-arguments
 ) -> List[npt.NDArray[np.float64]]:
     """Compute the density profile.
 
     Args:
         data: Data from which the profiles are computes.
             The DataFrame must contain a `frame` column. It must contain
-            a `polygon` column (from
-            :func:`~method_utils.compute_individual_voronoi_polygons`)
+            a `polygon` column (from :func:`~method_utils.compute_individual_voronoi_polygons`)
             when using the :attr:`DensityMethod.VORONOI`. When computing
             the classic density profile (:attr:`DensityMethod.CLASSIC`) or
             Gaussian density profile (:attr:`DensityMethod.GAUSSIAN`) the
@@ -262,8 +280,13 @@ def compute_density_profile(
     Returns:
         List of density profiles
     """
-    grid_cells, rows, cols = get_grid_cells(
-        walkable_area=walkable_area, grid_size=grid_size
+    (
+        grid_cells,
+        rows,
+        cols,
+    ) = get_grid_cells(
+        walkable_area=walkable_area,
+        grid_size=grid_size,
     )
 
     grid_center = np.vectorize(shapely.centroid)(grid_cells)
@@ -273,7 +296,10 @@ def compute_density_profile(
     data_grouped_by_frame = data.groupby(FRAME_COL)
 
     density_profiles = []
-    for frame, frame_data in data_grouped_by_frame:
+    for (
+        frame,
+        frame_data,
+    ) in data_grouped_by_frame:
         if density_method == DensityMethod.VORONOI:
             if grid_intersections_area is None:
                 raise RuntimeError(
@@ -282,7 +308,8 @@ def compute_density_profile(
                 )
 
             grid_intersections_area_frame = grid_intersections_area[
-                :, data_grouped_by_frame.indices[frame]
+                :,
+                data_grouped_by_frame.indices[frame],
             ]
 
             density = _compute_voronoi_density_profile(
@@ -311,7 +338,12 @@ def compute_density_profile(
         else:
             raise ValueError("density method not accepted.")
 
-        density_profiles.append(density.reshape(rows, cols))
+        density_profiles.append(
+            density.reshape(
+                rows,
+                cols,
+            )
+        )
 
     return density_profiles
 
@@ -338,13 +370,35 @@ def _compute_classic_density_profile(
     walkable_area: WalkableArea,
     grid_size: float,
 ) -> npt.NDArray[np.float64]:
-    min_x, min_y, max_x, max_y = walkable_area.bounds
+    (
+        min_x,
+        min_y,
+        max_x,
+        max_y,
+    ) = walkable_area.bounds
 
-    x_coords = np.arange(min_x, max_x + grid_size, grid_size)
-    y_coords = np.arange(min_y, max_y + grid_size, grid_size)
+    x_coords = np.arange(
+        min_x,
+        max_x + grid_size,
+        grid_size,
+    )
+    y_coords = np.arange(
+        min_y,
+        max_y + grid_size,
+        grid_size,
+    )
 
-    hist, _, _ = np.histogram2d(
-        x=frame_data.x, y=frame_data.y, bins=[x_coords, y_coords]
+    (
+        hist,
+        _,
+        _,
+    ) = np.histogram2d(
+        x=frame_data.x,
+        y=frame_data.y,
+        bins=[
+            x_coords,
+            y_coords,
+        ],
     )
     hist = hist / (grid_size**2)
 
@@ -362,7 +416,9 @@ def _compute_gaussian_density_profile(
     center_y: npt.NDArray[np.float64],
     width: float,
 ) -> npt.NDArray[np.float64]:
-    def _gaussian_full_width_half_maximum(width: float) -> float:
+    def _gaussian_full_width_half_maximum(
+        width: float,
+    ) -> float:
         """Computes the full width at half maximum.
 
         Fast lookup for:
@@ -377,7 +433,8 @@ def _compute_gaussian_density_profile(
         return width * 0.6005612
 
     def _compute_gaussian_density(
-        x: npt.NDArray[np.float64], fwhm: float
+        x: npt.NDArray[np.float64],
+        fwhm: float,
     ) -> npt.NDArray[np.float64]:
         """Computes the Gaussian density.
 
@@ -397,15 +454,30 @@ def _compute_gaussian_density_profile(
     positions_y = frame_data.y.values
 
     # distance from each grid center x/y coordinates to the pedestrian positions
-    distance_x = np.add.outer(-center_x, positions_x)
-    distance_y = np.add.outer(-center_y, positions_y)
+    distance_x = np.add.outer(
+        -center_x,
+        positions_x,
+    )
+    distance_y = np.add.outer(
+        -center_y,
+        positions_y,
+    )
 
     fwhm = _gaussian_full_width_half_maximum(width)
 
-    gauss_density_x = _compute_gaussian_density(distance_x, fwhm)
-    gauss_density_y = _compute_gaussian_density(distance_y, fwhm)
+    gauss_density_x = _compute_gaussian_density(
+        distance_x,
+        fwhm,
+    )
+    gauss_density_y = _compute_gaussian_density(
+        distance_y,
+        fwhm,
+    )
 
-    gauss_density = np.matmul(gauss_density_x, np.transpose(gauss_density_y))
+    gauss_density = np.matmul(
+        gauss_density_x,
+        np.transpose(gauss_density_y),
+    )
     return np.array(gauss_density.T)
 
 
@@ -418,50 +490,79 @@ def compute_speed_profile(
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     fill_value: float = np.nan,
     gaussian_width: float = 0.5,
+    # pylint: disable=too-many-arguments
 ) -> List[npt.NDArray[np.float64]]:
-    """Computes the speed profile for pedestrians within a specified walkable area using various methods.
+    """Computes the speed profile for pedestrians within a specified walkable
+    area using various methods.
 
-    This function calculates speed profiles based on pedestrian speed data across a grid within a walkable area.
-    The method of computation can be selected among several options, including classic (:attr:`SpeedMethod.CLASSIC`), Gaussian (:attr:`SpeedMethod.GAUSSIAN`), Voronoi (:attr:`SpeedMethod.VORONOI`),
-    and arithmetic mean methods (:attr:`SpeedMethod.ARITHMETIC`), each suitable for different analysis contexts.
+    This function calculates speed profiles based on pedestrian speed data
+    across a grid within a walkable area.
+    The method of computation can be selected among several options,
+    including classic (:attr:`SpeedMethod.CLASSIC`),
+    Gaussian (:attr:`SpeedMethod.GAUSSIAN`),
+    Voronoi (:attr:`SpeedMethod.VORONOI`),
+    and arithmetic mean methods (:attr:`SpeedMethod.ARITHMETIC`),
+    each suitable for different analysis contexts.
 
     Args:
-        data: A pandas DataFrame containing `frame` and pedestrian `speed`  (result from
-            :func:`~speed_calculator.compute_individual_speed`).
-    Depending on `speed_method`, additional columns 'x', 'y', or 'polygon' might be required.
-    When computing the classic speed profile (:attr:`SpeedMethod.CLASSIC`)) or Gaussian profile (:attr:`SpeedMethod.GAUSSIAN`)  the DataFrame needs to contain the columns 'x' and 'y'.
-    `polygon` column (from :func:`~method_utils.compute_individual_voronoi_polygons`) is required when
-    using the `:attr:SpeedMethod.VORONOI` or `:attr:`SpeedMethod.ARITHMETIC`.
+        data: A pandas DataFrame containing `frame` and pedestrian `speed`
+        (result from :func:`~speed_calculator.compute_individual_speed`).
+    Depending on `speed_method`, additional columns 'x', 'y', or 'polygon'
+    might be required.
+    When computing the classic speed profile (:attr:`SpeedMethod.CLASSIC`))
+    or Gaussian profile (:attr:`SpeedMethod.GAUSSIAN`)
+    the DataFrame needs to contain the columns 'x' and 'y'.
+    `polygon` column
+    (from :func:`~method_utils.compute_individual_voronoi_polygons`) is
+    required when using the `:attr:SpeedMethod.VORONOI` or
+    `:attr:`SpeedMethod.ARITHMETIC`.
     For getting a DataFrame containing all the needed data, you can
     merge the results of the different function on the 'id' and
-    'frame' columns (see :func:`pandas.DataFrame.merge` and :func:`pandas.merge`).
-        walkable_area: The geometric area within which the speed profiles are computed.
+    'frame' columns (see :func:`pandas.DataFrame.merge` and
+    :func:`pandas.merge`).
+        walkable_area: The geometric area within which the speed profiles are
+        computed.
         grid_size: The resolution of the grid used for computing the
             profiles, expressed in the same units as the `walkable_area`.
         speed_method: The speed method used to compute the
             speed profile
-        grid_intersections_area: (Optional) intersection areas of grid cells with Voronoi polygons, required for some speed methods.
-        polygons (result from :func:`compute_grid_cell_polygon_intersection_area`)
-        fill_value: fill value for cells with no pedestrians inside when using :attr:`SpeedMethod.MEAN` (default = `np.nan`)
-        gaussian_width: (Optional) The full width at half maximum (FWHM) for Gaussian weights, required when using
-            :attr:`SpeedMethod.GAUSSIAN` (default = 0.5).
+        grid_intersections_area: (Optional) intersection areas of grid cells
+        with Voronoi polygons, required for some speed methods.
+        polygons (result from
+        :func:`compute_grid_cell_polygon_intersection_area`)
+        fill_value: fill value for cells with no pedestrians inside when
+        using :attr:`SpeedMethod.MEAN` (default = `np.nan`)
+        gaussian_width: (Optional) The full width at half maximum (FWHM) for
+        Gaussian weights, required when using :attr:`SpeedMethod.GAUSSIAN`
+        (default = 0.5).
 
     Returns:
-        A list of NumPy arrays, each representing the speed profile for a different grid cell within the walkable area.
+        A list of NumPy arrays, each representing the speed profile for a
+        different grid cell within the walkable area.
 
     Note:
-        The choice of `speed_method` significantly impacts the required data format and the interpretation of results.
-        Refer to the documentation of `:attr:SpeedMethod` for details on each method's requirements and use cases.
+        The choice of `speed_method` significantly impacts the required data
+        format and the interpretation of results.
+        Refer to the documentation of `:attr:SpeedMethod` for details on each
+        method's requirements and use cases.
     """
-    grid_cells, rows, cols = get_grid_cells(
-        walkable_area=walkable_area, grid_size=grid_size
+    (
+        grid_cells,
+        rows,
+        cols,
+    ) = get_grid_cells(
+        walkable_area=walkable_area,
+        grid_size=grid_size,
     )
 
     data_grouped_by_frame = data.groupby(FRAME_COL)
 
     speed_profiles = []
 
-    for frame, frame_data in data_grouped_by_frame:
+    for (
+        frame,
+        frame_data,
+    ) in data_grouped_by_frame:
         if speed_method == SpeedMethod.VORONOI:
             if grid_intersections_area is None:
                 raise RuntimeError(
@@ -469,7 +570,8 @@ def compute_speed_profile(
                     "`grid_intersections_area`."
                 )
             grid_intersections_area_frame = grid_intersections_area[
-                :, data_grouped_by_frame.indices[frame]
+                :,
+                data_grouped_by_frame.indices[frame],
             ]
 
             speed = _compute_voronoi_speed_profile(
@@ -484,7 +586,8 @@ def compute_speed_profile(
                     "`grid_intersections_area`."
                 )
             grid_intersections_area_frame = grid_intersections_area[
-                :, data_grouped_by_frame.indices[frame]
+                :,
+                data_grouped_by_frame.indices[frame],
             ]
 
             speed = _compute_arithmetic_voronoi_speed_profile(
@@ -511,7 +614,12 @@ def compute_speed_profile(
         else:
             raise ValueError("speed method not accepted")
 
-        speed_profiles.append(speed.reshape(rows, cols))
+        speed_profiles.append(
+            speed.reshape(
+                rows,
+                cols,
+            )
+        )
 
     return speed_profiles
 
@@ -525,28 +633,36 @@ def _compute_gaussian_speed_profile(
 ) -> npt.NDArray[np.float64]:
     """Computes a Gaussian-weighted speed profile.
 
-    For a set of pedestrian positions and speeds relative to a grid defined by center_x and center_y coordinates,
-    this function calculates the Euclidean distance from each grid center to each pedestrian position,
-    applies a Gaussian kernel to these distances using the specified full width at half maximum (FWHM),
-    normalizes these weights so that the sum across all agents for each grid cell equals 1, and then
-    calculates the weighted average speed at each grid cell based on these normalized weights.
+    For a set of pedestrian positions and speeds relative to a grid defined by
+    center_x and center_y coordinates, this function calculates the Euclidean
+    distance from each grid center to each pedestrian position, applies a
+    Gaussian kernel to these distances using the specified full width at half
+    maximum (FWHM), normalizes these weights so that the sum across all agents
+    for each grid cell equals 1, and then calculates the weighted average
+    speed at each grid cell based on these normalized weights.
 
     Args:
-    - frame_data (pd.DataFrame): A pandas DataFrame containing the columns 'x', 'y', and 'speed',
-                                 representing the x and y positions of the pedestrians and their speeds, respectively.
-    - center_x (npt.NDArray[np.float64]): A NumPy array of x-coordinates for the grid centers.
-    - center_y (npt.NDArray[np.float64]): A NumPy array of y-coordinates for the grid centers.
-    - fwhm (float): The full width at half maximum (FWHM) parameter for the Gaussian kernel, controlling
-                    the spread of the Gaussian function.
+    - frame_data (pd.DataFrame): A pandas DataFrame containing the columns
+                                 'x', 'y', and 'speed', representing the x and
+                                 y positions of the pedestrians and their speeds
+                                 , respectively.
+    - center_x (npt.NDArray[np.float64]): A NumPy array of x-coordinates for the
+      grid centers.
+    - center_y (npt.NDArray[np.float64]): A NumPy array of y-coordinates for the
+      grid centers.
+    - fwhm (float): The full width at half maximum (FWHM) parameter for the
+      Gaussian kernel, controlling the spread of the Gaussian function.
 
     Returns:
-    - np.ndarray: A 2D NumPy array where each element represents the weighted average speed of pedestrians
-                  at each grid cell, with the shape (len(center_x), len(center_y)). The array is transposed
-                  to align with the expected grid orientation.
+    - np.ndarray: A 2D NumPy array where each element represents the weighted
+      average speed of pedestrians at each grid cell, with the shape
+        (len(center_x), len(center_y)). The array is transposed to align with
+          the expected grid orientation.
     """
 
     def _compute_gaussian_weights(
-        x: npt.NDArray[np.float64], fwhm: float
+        x: npt.NDArray[np.float64],
+        fwhm: float,
     ) -> npt.NDArray[np.float64]:
         """Computes the Gaussian density for given values and FWHM.
 
@@ -574,18 +690,44 @@ def _compute_gaussian_speed_profile(
     positions_y = frame_data.y.values
     speeds = frame_data.speed.values
     # distance from each grid center coordinates to the pedestrian positions
-    distance_x = np.subtract.outer(center_x, positions_x)
-    distance_y = np.subtract.outer(center_y, positions_y)
-    distance_x_expanded = np.expand_dims(distance_x, axis=1)
-    distance_y_expanded = np.expand_dims(distance_y, axis=0)
+    distance_x = np.subtract.outer(
+        center_x,
+        positions_x,
+    )
+    distance_y = np.subtract.outer(
+        center_y,
+        positions_y,
+    )
+    distance_x_expanded = np.expand_dims(
+        distance_x,
+        axis=1,
+    )
+    distance_y_expanded = np.expand_dims(
+        distance_y,
+        axis=0,
+    )
     # combine distances along x/y-axes into a single Euclidean distance
     distance = np.sqrt(distance_x_expanded**2 + distance_y_expanded**2)
     # calculate the Gaussian weights based on the distances and the given fwhm
-    weights = _compute_gaussian_weights(distance, fwhm)
+    weights = _compute_gaussian_weights(
+        distance,
+        fwhm,
+    )
     # ensure that weights sum to 1 across all agents for each grid cell.
-    normalized_weights = weights / np.sum(weights, axis=2, keepdims=True)
+    normalized_weights = weights / np.sum(
+        weights,
+        axis=2,
+        keepdims=True,
+    )
     # calculate the weighted speeds
-    weighted_speeds = np.tensordot(normalized_weights, speeds, axes=([2], [0]))
+    weighted_speeds = np.tensordot(
+        normalized_weights,
+        speeds,
+        axes=(
+            [2],
+            [0],
+        ),
+    )
     return np.array(weighted_speeds.T)
 
 
@@ -605,12 +747,20 @@ def _compute_arithmetic_voronoi_speed_profile(
     Returns:
         Arithmetic mean speed per grid cell
     """
-    cells_with_peds = np.where(grid_intersections_area > 1e-16, 1, 0)
+    cells_with_peds = np.where(
+        grid_intersections_area > 1e-16,
+        1,
+        0,
+    )
 
     accumulated_speed = np.sum(
-        cells_with_peds * frame_data.speed.values, axis=1
+        cells_with_peds * frame_data.speed.values,
+        axis=1,
     )
-    num_peds = np.count_nonzero(cells_with_peds, axis=1)
+    num_peds = np.count_nonzero(
+        cells_with_peds,
+        axis=1,
+    )
     speed = np.divide(
         accumulated_speed,
         num_peds,
@@ -638,7 +788,10 @@ def _compute_voronoi_speed_profile(
         Voronoi speed per grid cell
     """
     speed = (
-        np.sum(grid_intersections_area * frame_data.speed.values, axis=1)
+        np.sum(
+            grid_intersections_area * frame_data.speed.values,
+            axis=1,
+        )
     ) / grid_area
 
     return speed
@@ -651,24 +804,56 @@ def _compute_mean_speed_profile(
     grid_size: float,
     fill_value: float,
 ) -> npt.NDArray[np.float64]:
-    min_x, min_y, max_x, max_y = walkable_area.bounds
+    (
+        min_x,
+        min_y,
+        max_x,
+        max_y,
+    ) = walkable_area.bounds
 
-    x_coords = np.arange(min_x, max_x + grid_size, grid_size)
-    y_coords = np.arange(min_y, max_y + grid_size, grid_size)
-
-    hist, _, _ = np.histogram2d(
-        x=frame_data.x, y=frame_data.y, bins=[x_coords, y_coords]
+    x_coords = np.arange(
+        min_x,
+        max_x + grid_size,
+        grid_size,
     )
-    hist_speed, _, _ = np.histogram2d(
+    y_coords = np.arange(
+        min_y,
+        max_y + grid_size,
+        grid_size,
+    )
+
+    (
+        hist,
+        _,
+        _,
+    ) = np.histogram2d(
         x=frame_data.x,
         y=frame_data.y,
-        bins=[x_coords, y_coords],
+        bins=[
+            x_coords,
+            y_coords,
+        ],
+    )
+    (
+        hist_speed,
+        _,
+        _,
+    ) = np.histogram2d(
+        x=frame_data.x,
+        y=frame_data.y,
+        bins=[
+            x_coords,
+            y_coords,
+        ],
         weights=frame_data.speed,
     )
     speed = np.divide(
         hist_speed,
         hist,
-        out=np.full(shape=hist.shape, fill_value=float(fill_value)),
+        out=np.full(
+            shape=hist.shape,
+            fill_value=float(fill_value),
+        ),
         where=hist != 0,
     )
 
@@ -680,8 +865,10 @@ def _compute_mean_speed_profile(
 
 
 def compute_grid_cell_polygon_intersection_area(
-    *, data: pandas.DataFrame, grid_cells: npt.NDArray[shapely.Polygon]
-) -> Tuple[npt.NDArray[np.float64], pandas.DataFrame]:
+    *,
+    data: pandas.DataFrame,
+    grid_cells: npt.NDArray[shapely.Polygon],
+) -> Tuple[npt.NDArray[np.float64], pandas.DataFrame,]:
     """Computes the intersection area of the grid cells with the Voronoi polygons.
 
     .. note::
@@ -711,10 +898,17 @@ def compute_grid_cell_polygon_intersection_area(
         Tuple containing first the grid cell-polygon intersection areas, and second the reordered
         data by 'frame', which needs to be used in the next steps.
     """
-    grid_intersections_area, used_data = _compute_grid_polygon_intersection(
-        data=data, grid_cells=grid_cells
+    (
+        grid_intersections_area,
+        used_data,
+    ) = _compute_grid_polygon_intersection(
+        data=data,
+        grid_cells=grid_cells,
     )
-    return grid_intersections_area, used_data
+    return (
+        grid_intersections_area,
+        used_data,
+    )
 
 
 def _compute_grid_polygon_intersection(
@@ -728,16 +922,27 @@ def _compute_grid_polygon_intersection(
 
     grid_intersections_area = shapely.area(
         shapely.intersection(
-            np.array(grid_cells)[:, np.newaxis],
-            np.array(internal_data.polygon)[np.newaxis, :],
+            np.array(grid_cells)[
+                :,
+                np.newaxis,
+            ],
+            np.array(internal_data.polygon)[
+                np.newaxis,
+                :,
+            ],
         )
     )
-    return grid_intersections_area, internal_data
+    return (
+        grid_intersections_area,
+        internal_data,
+    )
 
 
 def get_grid_cells(
-    *, walkable_area: WalkableArea, grid_size: float
-) -> Tuple[npt.NDArray[shapely.Polygon], int, int]:
+    *,
+    walkable_area: WalkableArea,
+    grid_size: float,
+) -> Tuple[npt.NDArray[shapely.Polygon], int, int,]:
     """Creates a list of square grid cells covering the geometry.
 
     .. image:: /images/profile_grid.svg
@@ -759,15 +964,30 @@ def get_grid_cells(
     max_x = bounds[2]
     max_y = bounds[3]
 
-    x_coords = np.arange(min_x, max_x + grid_size, grid_size)
-    y_coords = np.arange(max_y, min_y - grid_size, -grid_size)
+    x_coords = np.arange(
+        min_x,
+        max_x + grid_size,
+        grid_size,
+    )
+    y_coords = np.arange(
+        max_y,
+        min_y - grid_size,
+        -grid_size,
+    )
 
     grid_cells = []
     for j in range(len(y_coords) - 1):
         for i in range(len(x_coords) - 1):
             grid_cell = shapely.box(
-                x_coords[i], y_coords[j], x_coords[i + 1], y_coords[j + 1]
+                x_coords[i],
+                y_coords[j],
+                x_coords[i + 1],
+                y_coords[j + 1],
             )
             grid_cells.append(grid_cell)
 
-    return np.array(grid_cells), len(y_coords) - 1, len(x_coords) - 1
+    return (
+        np.array(grid_cells),
+        len(y_coords) - 1,
+        len(x_coords) - 1,
+    )
