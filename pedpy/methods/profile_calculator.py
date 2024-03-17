@@ -92,8 +92,9 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     
         w_i = \frac{1} {\sigma \cdot \sqrt{2\pi}} \exp\big(-\frac{\delta^2}{2\sigma^2}\big),
 
-    where :math:`\sigma` is derived from FWHM as: 
-    ..math::
+    where :math:`\sigma` is derived from FWHM as:
+
+    .. math::
        \sigma = \frac{FWHM}{2\sqrt{2\ln(2)}}.
     """
 
@@ -498,43 +499,41 @@ def compute_speed_profile(
     This function calculates speed profiles based on pedestrian speed data
     across a grid within a walkable area.
     The method of computation can be selected among several options,
-    including classic (:attr:`SpeedMethod.CLASSIC`),
+    including mean (:attr:`SpeedMethod.MEAN`),
     Gaussian (:attr:`SpeedMethod.GAUSSIAN`),
     Voronoi (:attr:`SpeedMethod.VORONOI`),
     and arithmetic mean methods (:attr:`SpeedMethod.ARITHMETIC`),
     each suitable for different analysis contexts.
+    When computing the Gaussian profile (:attr:`SpeedMethod.GAUSSIAN`)
+    the DataFrame needs to contain the columns 'x' and 'y'.
 
     Args:
         data: A pandas DataFrame containing `frame` and pedestrian `speed`
-        (result from :func:`~speed_calculator.compute_individual_speed`).
-    Depending on `speed_method`, additional columns 'x', 'y', or 'polygon'
-    might be required.
-    When computing the classic speed profile (:attr:`SpeedMethod.CLASSIC`))
-    or Gaussian profile (:attr:`SpeedMethod.GAUSSIAN`)
-    the DataFrame needs to contain the columns 'x' and 'y'.
-    `polygon` column
-    (from :func:`~method_utils.compute_individual_voronoi_polygons`) is
-    required when using the `:attr:SpeedMethod.VORONOI` or
-    `:attr:`SpeedMethod.ARITHMETIC`.
-    For getting a DataFrame containing all the needed data, you can
-    merge the results of the different function on the 'id' and
-    'frame' columns (see :func:`pandas.DataFrame.merge` and
-    :func:`pandas.merge`).
+            (result from :func:`~speed_calculator.compute_individual_speed`).
+            Depending on `speed_method`, additional columns 'x', 'y', or 
+            'polygon' might be required. `polygon` column
+            (from :func:`~method_utils.compute_individual_voronoi_polygons`) 
+            is required when using the `:attr:SpeedMethod.VORONOI` or
+            `:attr:`SpeedMethod.ARITHMETIC`.
+            For getting a DataFrame containing all the needed data, you can
+            merge the results of the different function on the 'id' and
+            'frame' columns (see :func:`pandas.DataFrame.merge` and
+            :func:`pandas.merge`).
         walkable_area: The geometric area within which the speed profiles are
-        computed.
+            computed.
         grid_size: The resolution of the grid used for computing the
             profiles, expressed in the same units as the `walkable_area`.
         speed_method: The speed method used to compute the
             speed profile
         grid_intersections_area: (Optional) intersection areas of grid cells
-        with Voronoi polygons, required for some speed methods.
-        polygons (result from
-        :func:`compute_grid_cell_polygon_intersection_area`)
+            with Voronoi polygons, required for some speed methods.
+            polygons (result from 
+            :func:`compute_grid_cell_polygon_intersection_area`)
         fill_value: fill value for cells with no pedestrians inside when
-        using :attr:`SpeedMethod.MEAN` (default = `np.nan`)
+            using :attr:`SpeedMethod.MEAN` (default = `np.nan`)
         gaussian_width: (Optional) The full width at half maximum (FWHM) for
-        Gaussian weights, required when using :attr:`SpeedMethod.GAUSSIAN`
-        (default = 0.5).
+            Gaussian weights, required when using :attr:`SpeedMethod.GAUSSIAN`
+            (default = 0.5).
 
     Returns:
         A list of NumPy arrays, each representing the speed profile for a
@@ -543,7 +542,7 @@ def compute_speed_profile(
     Note:
         The choice of `speed_method` significantly impacts the required data
         format and the interpretation of results.
-        Refer to the documentation of `:attr:SpeedMethod` for details on each
+        Refer to the documentation of :attr:`SpeedMethod` for details on each
         method's requirements and use cases.
     """
     (
