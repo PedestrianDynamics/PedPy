@@ -76,7 +76,7 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     
     .. math::
      
-        v_{c} = \frac{\sum_{i=1}^{N}{\big(w_i(\delta)\cdot v_i\big)}}{\sum_{i=1}^{N} w_i},
+        v_{c} = \frac{\sum_{i=1}^{N}{\big(w_i\cdot v_i\big)}}{\sum_{i=1}^{N} w_i},
 
     where :math:`v_i` is the speed of a pedestrian and :math:`w_i` are weights 
     depending on the pedestrian's distance :math:`\delta` from its position 
@@ -504,8 +504,6 @@ def compute_speed_profile(
     Voronoi (:attr:`SpeedMethod.VORONOI`),
     and arithmetic mean methods (:attr:`SpeedMethod.ARITHMETIC`),
     each suitable for different analysis contexts.
-    When computing the Gaussian profile (:attr:`SpeedMethod.GAUSSIAN`)
-    the DataFrame needs to contain the columns 'x' and 'y'.
 
     Args:
         data: A pandas DataFrame containing `frame` and pedestrian `speed`
@@ -514,7 +512,9 @@ def compute_speed_profile(
             `polygon` might be required. `polygon` column
             (from :func:`~method_utils.compute_individual_voronoi_polygons`) 
             is required when using the :attr:`SpeedMethod.VORONOI` or
-            :attr:`SpeedMethod.ARITHMETIC`.  
+            :attr:`SpeedMethod.ARITHMETIC`.
+            When computing the Gaussian profile (:attr:`SpeedMethod.GAUSSIAN`)
+            the DataFrame needs to contain the columns `x` and `y`.  
             For getting a DataFrame containing all the needed data, you can
             merge the results of the different function on the `id` and
             `frame` columns (see :func:`pandas.DataFrame.merge` and
