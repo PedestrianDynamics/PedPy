@@ -42,6 +42,7 @@ distance-dirty = "{next_version}.dev{distance}"
 
 [tool.versioningit.write]
 file = "pedpy/_version.py"
+default-tag = "0.0.0"
 template = """
 __version__ = "{version}"
 __commit_hash__ = "{rev}"
