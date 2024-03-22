@@ -28,7 +28,7 @@ So don't hesitate to speak up - we appreciate your input and look forward to wor
 Enhancement requests
 ====================
 
-You can submit feature requests on our `GitHub issues page <https://github.com/PedestrianDynamics/PedPy/issues>`_.
+You can submit feature requests on our `GitHub discussions <https://github.com/PedestrianDynamics/PedPy/discussions>`_.
 When submitting a feature request, please provide a clear and detailed description of the feature you would like to see added, along with any relevant use cases or examples.
 
 We can't promise to implement every feature request, but we do carefully consider all requests and prioritize them based on their potential impact on the community and feasibility.
@@ -173,9 +173,16 @@ Now, after activating the virtual environment you can install all dependencies f
 .. code-block:: bash
 
   (pedpy-venv) $ cd PedPy
-  (pedpy-venv) $ python -m pip install -r requirements
+  (pedpy-venv) $ python -m pip install -r requirements.txt
 
 Now everything is setup for you to start developing in *PedPy*!
+
+One way to test your code locally is to install it *PedPy* from the root directory with:
+
+.. code-block:: bash
+
+  (pedpy-venv) $  python -m pip install -e .
+
 
 Structure of the code
 ---------------------
@@ -284,18 +291,32 @@ How to build the documentation
 ------------------------------
 
 To build the documentation locally, you need to setup a development environment.
-Then navigate to the ``docs/`` directory.
-Then install all the needed requirements via:
+As above, it is recommend to use a virtual environment for this.
+Also make sure that *PedPy* is installed in this environment:
 
 .. code:: bash
 
-    $ pip install -r requirements.txt
+    (pedpy-venv) $  python -m pip install -e .
+
+
+To install all the needed requirements for building the documentation use:
+
+.. code:: bash
+
+    (pedpy-venv) $ pip install -r docs/requirements.txt
 
 Afterwards you can build the documentation with:
 
 .. code:: bash
 
-    $ sphinx-build -a source build
+    (pedpy-venv) $ sphinx-build -T -b html -a docs/source docs/build
+
+This might take a while as the notebooks will be executed, to exclude every notebook you can run the following command:
+
+.. code:: bash
+
+    (pedpy-venv) $ sphinx-build -T -b html -a docs/source docs/build -D nb_execution_excludepatterns='**.ipynb'
+
 
 It will create a new folder ``build/`` in which the websites are built.
 To preview it locally, open ``build/index.html`` in any browser of your liking.
