@@ -39,6 +39,9 @@ from .methods.method_utils import (
     get_invalid_trajectory,
     is_trajectory_valid,
 )
+from .methods.pair_distribution_function_calculator import (
+    compute_pair_distibution_function,
+)
 from .methods.profile_calculator import (
     DensityMethod,
     SpeedMethod,
@@ -104,6 +107,7 @@ __all__ = [
     "compute_time_distance_line",
     "get_invalid_trajectory",
     "is_trajectory_valid",
+    "compute_pair_distibution_function",
     "DensityMethod",
     "SpeedMethod",
     "compute_density_profile",
