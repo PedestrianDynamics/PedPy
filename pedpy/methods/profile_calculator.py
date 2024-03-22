@@ -493,8 +493,7 @@ def compute_speed_profile(
     gaussian_width: float = 0.5,
     # pylint: disable=too-many-arguments
 ) -> List[npt.NDArray[np.float64]]:
-    """Computes the speed profile for pedestrians within a specified walkable
-    area using various methods.
+    """Computes the speed profile for pedestrians within an area.
 
     This function calculates speed profiles based on pedestrian speed data
     across a grid within a walkable area.
@@ -508,13 +507,13 @@ def compute_speed_profile(
     Args:
         data: A pandas DataFrame containing `frame` and pedestrian `speed`
             (result from :func:`~speed_calculator.compute_individual_speed`).
-            Depending on `speed_method`, additional columns `x`, `y`, or 
+            Depending on `speed_method`, additional columns `x`, `y`, or
             `polygon` might be required. `polygon` column
-            (from :func:`~method_utils.compute_individual_voronoi_polygons`) 
+            (from :func:`~method_utils.compute_individual_voronoi_polygons`)
             is required when using the :attr:`SpeedMethod.VORONOI` or
             :attr:`SpeedMethod.ARITHMETIC`.
             When computing the Gaussian profile (:attr:`SpeedMethod.GAUSSIAN`)
-            the DataFrame needs to contain the columns `x` and `y`.  
+            the DataFrame needs to contain the columns `x` and `y`.
             For getting a DataFrame containing all the needed data, you can
             merge the results of the different function on the `id` and
             `frame` columns (see :func:`pandas.DataFrame.merge` and
@@ -527,7 +526,7 @@ def compute_speed_profile(
             speed profile
         grid_intersections_area: (Optional) intersection areas of grid cells
             with Voronoi polygons, required for some speed methods.
-            polygons (result from 
+            polygons (result from
             :func:`compute_grid_cell_polygon_intersection_area`)
         fill_value: fill value for cells with no pedestrians inside when
             using :attr:`SpeedMethod.MEAN` (default = `np.nan`)
