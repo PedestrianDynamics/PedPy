@@ -152,8 +152,8 @@ def compute_profiles(
             :attr:`SpeedMethod.ARITHMETIC`. For getting a DataFrame containing
             all the needed data, you can merge the results of the different
             function on the 'id' and 'frame' columns (see
-            :func:`pandas.DataFrame.merge` and :func:`pandas.merge`).
-        walkable_area: geometry for which the profiles are computed
+            :meth:`pandas.DataFrame.merge` and :func:`pandas.merge`).
+        walkable_area (WalkableArea): geometry for which the profiles are computed
         grid_size: resolution of the grid used for computing the
             profiles
         speed_method: speed method used to compute the
@@ -209,7 +209,7 @@ def compute_density_profile(
     """Compute the density profile.
 
     Args:
-        data: Data from which the profiles are computes.
+        data (pandas.DataFrame): Data from which the profiles are computes.
             The DataFrame must contain a `frame` column. It must contain
             a `polygon` column (from
             :func:`~method_utils.compute_individual_voronoi_polygons`)
@@ -219,7 +219,7 @@ def compute_density_profile(
             DataFrame needs to contain the columns 'x' and 'y'. For getting
             a DataFrame containing all the needed data, you can merge the
             results of the different function on the 'id' and 'frame'
-            columns (see :func:`pandas.DataFrame.merge` and
+            columns (see :meth:`pandas.DataFrame.merge` and
             :func:`pandas.merge`).
         walkable_area (WalkableArea): geometry for which the profiles are
             computed
@@ -409,9 +409,9 @@ def compute_speed_profile(
             using the `SpeedMethod.VORONOI` or `SpeedMethod.ARITHMETIC`.
             For getting a DataFrame containing all the needed data, you can
             merge the results of the different function on the 'id' and
-            'frame' columns (see :func:`pandas.DataFrame.merge` and
+            'frame' columns (see :meth:`pandas.DataFrame.merge` and
             :func:`pandas.merge`).
-        walkable_area: geometry for which the profiles are
+        walkable_area (WalkableArea): geometry for which the profiles are
             computed
         grid_size: resolution of the grid used for computing the
             profiles
@@ -635,7 +635,7 @@ def get_grid_cells(
         :align: center
 
     Args:
-        walkable_area (shapely.Polygon): geometry for which the profiles are
+        walkable_area (WalkableArea): geometry for which the profiles are
             computed.
         grid_size (float): resolution of the grid used for computing the
             profiles.
