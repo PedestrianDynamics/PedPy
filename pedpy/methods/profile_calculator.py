@@ -172,7 +172,9 @@ def compute_profiles(
     Returns:
         List of density profiles, List of speed profiles
     """
-    grid_cells, _, _ = get_grid_cells(walkable_area=walkable_area, grid_size=grid_size)
+    grid_cells, _, _ = get_grid_cells(
+        walkable_area=walkable_area, grid_size=grid_size
+    )
 
     grid_intersections_area, internal_data = _compute_grid_polygon_intersection(
         data=data, grid_cells=grid_cells
@@ -300,7 +302,8 @@ def _compute_voronoi_density_profile(
 ) -> npt.NDArray[np.float64]:
     return (
         np.sum(
-            grid_intersections_area * (1 / shapely.area(frame_data.polygon.values)),
+            grid_intersections_area
+            * (1 / shapely.area(frame_data.polygon.values)),
             axis=1,
         )
         / grid_area
@@ -485,7 +488,9 @@ def _compute_arithmetic_voronoi_speed_profile(
     """
     cells_with_peds = np.where(grid_intersections_area > 1e-16, 1, 0)
 
-    accumulated_speed = np.sum(cells_with_peds * frame_data.speed.values, axis=1)
+    accumulated_speed = np.sum(
+        cells_with_peds * frame_data.speed.values, axis=1
+    )
     num_peds = np.count_nonzero(cells_with_peds, axis=1)
     speed = np.divide(
         accumulated_speed,
