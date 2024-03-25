@@ -40,6 +40,7 @@ def compute_intrusion(
     """_summary_.
 
     TODO add documentation here
+
     Args:
         traj_data (TrajectoryData): _description_
         r_soc (float): _description_
