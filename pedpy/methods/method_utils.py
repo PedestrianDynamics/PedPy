@@ -949,8 +949,10 @@ def _check_crossing_in_frame_range(
     return crossed
 
 
-def _compute_individual_distances(*, traj_data: TrajectoryData) -> pd.DataFrame:
-    matrix = pd.merge(
+def _compute_individual_distances(
+    *, traj_data: TrajectoryData
+) -> pandas.DataFrame:
+    matrix = pandas.merge(
         traj_data.data[["id", "frame", "point"]],
         traj_data.data[["id", "frame", "point"]],
         how="outer",
