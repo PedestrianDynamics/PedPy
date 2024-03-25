@@ -43,7 +43,7 @@ Utils
     :no-special-members:
 
 Other
-********
+*****
 
 .. autoapimodule:: foo_calculator
     :members:
