@@ -330,8 +330,6 @@ To view the built site:
 
 1. Wait for CI to finish the `docs/readthedocs.org:pedpy` job
 2. Click on `Details`
-3. Click on the small `View docs` (**not** the large green box!)
-
 
 Alternatively, you can find the documentation for a pull request, after the CI job has finished, under the following link.
 As each pull request has a unique number, you need to substitute for ``<#PR>`` in the link:
