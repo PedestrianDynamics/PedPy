@@ -56,7 +56,7 @@ Version control, Git, and GitHub
 
 If you're a new developer looking to contribute to `PedPy`, we have a streamlined process that utilizes Git and a fork-based approach on GitHub.
 For contributing you need to create a GitHub account first.
-We will try to explain the main git commands you will need to contribute to `PedPy`, but for a deeper understanding of Git and how it works we refer to the official documentation of `Git <https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F>`_ and `GitHub<https://docs.github.com/en/get-started/quickstart/hello-world>`_.
+We will try to explain the main git commands you will need to contribute to `PedPy`, but for a deeper understanding of Git and how it works we refer to the official documentation of `Git <https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F>`_ and `GitHub <https://docs.github.com/en/get-started/quickstart/hello-world>`_.
 
 **1. Fork the Repository:** Start by forking our project's repository on GitHub.
 This creates a personal copy of the project under your GitHub account, allowing you to freely make changes without affecting the original codebase.
