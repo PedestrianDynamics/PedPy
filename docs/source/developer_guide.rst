@@ -341,5 +341,21 @@ As each pull request has a unique number, you need to substitute for ``<#PR>`` i
 Contact
 =======
 
-If you need any help, please feel free to open issues on GitHub or join us in our RocketChat Channel: https://juchat.fz-juelich.de/channel/pedpy-usergroup
+If you need any help, please feel free to open discussions on GitHub or join us in our RocketChat Channel:
 
+.. grid:: 1 2 2 2
+    :gutter: 4
+    :padding: 2 2 0 0
+    :class-container: sd-text-center
+
+    .. grid-item-card:: GitHub Discussions
+        :img-top: _static/github_logo.svg
+        :class-card: intro-card
+        :link: https://github.com/PedestrianDynamics/PedPy/discussions
+        :link-alt: To the GitHub discussions
+
+    .. grid-item-card:: RocketChat User Group
+        :img-top: _static/rocketchat_logo.svg
+        :class-card: intro-card
+        :link: https://juchat.fz-juelich.de/channel/pedpy-usergroup
+        :link-alt: To the RocketChat User Group
