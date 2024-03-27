@@ -1,4 +1,4 @@
-"""Foo."""
+"""We need a proper name here ..."""
 
 
 from enum import Enum
