@@ -1,4 +1,5 @@
 """Module containing functions to compute flows."""
+
 from typing import Tuple
 
 import pandas as pd

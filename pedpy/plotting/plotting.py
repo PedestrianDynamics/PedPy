@@ -1,4 +1,5 @@
 """Module containing plotting functionalities."""
+
 import logging
 import warnings
 from typing import Any, List, Optional
