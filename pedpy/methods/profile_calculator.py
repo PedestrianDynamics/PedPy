@@ -131,9 +131,9 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
 
     GAUSSIAN = auto()
     r"""Gaussian density profile.
-    
+
     In each cell the density :math:`\rho_{gaussian}` is defined by 
-    
+
     .. math::
      
         \rho_{gaussian} = \sum_{i=1}^{N}{\delta (\boldsymbol{r}_i - \boldsymbol{c})},
@@ -145,7 +145,9 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
     
     .. math::
         
-        \delta(x) = \frac{1}{\sqrt{\pi}a}\exp[-x^2/a^2]
+        \delta(x) = \frac{1}{\sigma\sqrt{2\pi}}\exp[-x^2/2\sigma^2],
+
+    where :math:`\sigma` is the standard deviation.
     """
 
 
@@ -160,7 +162,10 @@ def compute_profiles(
     gaussian_width: Optional[float] = None,
     # pylint: disable=unused-argument,too-many-arguments
     **kwargs: Any,
-) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]],]:
+) -> Tuple[
+    List[npt.NDArray[np.float64]],
+    List[npt.NDArray[np.float64]],
+]:
     """Computes the density and speed profiles.
 
     .. note::
@@ -184,8 +189,8 @@ def compute_profiles(
             :attr:`SpeedMethod.ARITHMETIC`. For getting a DataFrame containing
             all the needed data, you can merge the results of the different
             function on the 'id' and 'frame' columns (see
-            :func:`pandas.DataFrame.merge` and :func:`pandas.merge`).
-        walkable_area: geometry for which the profiles are computed
+            :meth:`pandas.DataFrame.merge` and :func:`pandas.merge`).
+        walkable_area (WalkableArea): geometry for which the profiles are computed
         grid_size: resolution of the grid used for computing the
             profiles
         speed_method: speed method used to compute the
@@ -254,7 +259,7 @@ def compute_density_profile(
     """Compute the density profile.
 
     Args:
-        data: Data from which the profiles are computes.
+        data (pandas.DataFrame): Data from which the profiles are computes.
             The DataFrame must contain a `frame` column. It must contain
             a `polygon` column (from :func:`~method_utils.compute_individual_voronoi_polygons`)
             when using the :attr:`DensityMethod.VORONOI`. When computing
@@ -263,7 +268,7 @@ def compute_density_profile(
             DataFrame needs to contain the columns 'x' and 'y'. For getting
             a DataFrame containing all the needed data, you can merge the
             results of the different function on the 'id' and 'frame'
-            columns (see :func:`pandas.DataFrame.merge` and
+            columns (see :meth:`pandas.DataFrame.merge` and
             :func:`pandas.merge`).
         walkable_area (WalkableArea): geometry for which the profiles are
             computed
@@ -327,7 +332,7 @@ def compute_density_profile(
         elif density_method == DensityMethod.GAUSSIAN:
             if gaussian_width is None:
                 raise ValueError(
-                    "Computing a Gaussian density profile needs a parameter 'width'."
+                    "Computing a Gaussian density profile needs a parameter 'gaussian_width'."
                 )
 
             density = _compute_gaussian_density_profile(
@@ -417,39 +422,27 @@ def _compute_gaussian_density_profile(
     center_y: npt.NDArray[np.float64],
     width: float,
 ) -> npt.NDArray[np.float64]:
-    def _gaussian_full_width_half_maximum(
-        width: float,
-    ) -> float:
-        """Computes the full width at half maximum.
-
-        Fast lookup for:
-            width * np.sqrt(2) / (2 * np.sqrt(2 * np.log(2)))
-
-        Args:
-            width: width for which the half maximum should be computed
-
-        Returns:
-            Full width at half maximum of a gaussian.
-        """
-        return width * 0.6005612
-
     def _compute_gaussian_density(
         x: npt.NDArray[np.float64],
         fwhm: float,
     ) -> npt.NDArray[np.float64]:
-        """Computes the Gaussian density.
+        """Computes the Gaussian density for given values and FWHM.
 
-        Gaussian density p(x, a) is defined as:
-            p(x,a) = 1 / (sqrt(pi) * a) * e^(-x^2 / a^2)
+        The Gaussian density G(x) is defined as:
+            G(x) = 1 / (sigma * sqrt(2 * pi)) * e^(-x^2 / (2 * sigma^2))
+        where sigma is derived from FWHM as:
+            sigma = FWHM / (2 * sqrt(2 * ln(2)))
+
         Args:
-            x: value(s) for which the Gaussian should be computed
-            fwhm: full width at half maximum
+            x: Value(s) for which the Gaussian should be computed.
+            fwhm: Full width at half maximum, a measure of spread.
 
         Returns:
-            Gaussian corresponding to the given values
+            Gaussian corresponding to the given values and FWHM
         """
-        #
-        return 1 / (1.7724538 * fwhm) * np.e ** (-(x**2) / fwhm**2)
+        sigma = fwhm / 2.35482  # 2.35482 = 2*sqrt(2*log(2))
+        #  2.50662 = sqrt(2*pi)
+        return 1 / (2.50662 * sigma) * np.exp(-(x**2) / (2 * sigma**2))
 
     positions_x = frame_data.x.values
     positions_y = frame_data.y.values
@@ -464,16 +457,8 @@ def _compute_gaussian_density_profile(
         positions_y,
     )
 
-    fwhm = _gaussian_full_width_half_maximum(width)
-
-    gauss_density_x = _compute_gaussian_density(
-        distance_x,
-        fwhm,
-    )
-    gauss_density_y = _compute_gaussian_density(
-        distance_y,
-        fwhm,
-    )
+    gauss_density_x = _compute_gaussian_density(distance_x, width)
+    gauss_density_y = _compute_gaussian_density(distance_y, width)
 
     gauss_density = np.matmul(
         gauss_density_x,
@@ -518,7 +503,7 @@ def compute_speed_profile(
             merge the results of the different function on the `id` and
             `frame` columns (see :func:`pandas.DataFrame.merge` and
             :func:`pandas.merge`).
-        walkable_area: The geometric area within which the speed profiles are
+        walkable_area: geometry for which the speed profiles are
             computed.
         grid_size: The resolution of the grid used for computing the
             profiles, expressed in the same units as the `walkable_area`.
@@ -678,9 +663,7 @@ def _compute_gaussian_speed_profile(
         """
         sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))
         return (
-            1
-            / (sigma * np.sqrt(2 * np.pi))
-            * np.exp(-(x**2) / (2 * sigma**2))
+            1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(-(x**2) / (2 * sigma**2))
         )
 
     # pedestrians' position and speed
@@ -866,7 +849,10 @@ def compute_grid_cell_polygon_intersection_area(
     *,
     data: pandas.DataFrame,
     grid_cells: npt.NDArray[shapely.Polygon],
-) -> Tuple[npt.NDArray[np.float64], pandas.DataFrame,]:
+) -> Tuple[
+    npt.NDArray[np.float64],
+    pandas.DataFrame,
+]:
     """Computes the intersection area of the grid cells with the Voronoi polygons.
 
     .. note::
@@ -940,7 +926,11 @@ def get_grid_cells(
     *,
     walkable_area: WalkableArea,
     grid_size: float,
-) -> Tuple[npt.NDArray[shapely.Polygon], int, int,]:
+) -> Tuple[
+    npt.NDArray[shapely.Polygon],
+    int,
+    int,
+]:
     """Creates a list of square grid cells covering the geometry.
 
     .. image:: /images/profile_grid.svg
@@ -948,7 +938,7 @@ def get_grid_cells(
         :align: center
 
     Args:
-        walkable_area (shapely.Polygon): geometry for which the profiles are
+        walkable_area (WalkableArea): geometry for which the profiles are
             computed.
         grid_size (float): resolution of the grid used for computing the
             profiles.

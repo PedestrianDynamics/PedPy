@@ -1,4 +1,5 @@
 """Load trajectories to the internal trajectory data format."""
+
 import math
 import pathlib
 import sqlite3
@@ -75,7 +76,7 @@ def load_trajectory(
                 in the file, None if unit should be parsed from the file
 
     Returns:
-        :class:`~trajectory_data.TrajectoryData` representation of the file data
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
     """
     return load_trajectory_from_txt(
         trajectory_file=trajectory_file,
@@ -104,7 +105,7 @@ def load_trajectory_from_txt(
                 in the file, None if unit should be parsed from the file
 
     Returns:
-        :class:`~trajectory_data.TrajectoryData` representation of the file data
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
     """
     _validate_is_file(trajectory_file)
 
@@ -285,7 +286,7 @@ def load_trajectory_from_jupedsim_sqlite(
         trajectory_file: trajectory file in JuPedSim sqlite format
 
     Returns:
-        :class:`~trajectory_data.TrajectoryData` representation of the file data
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
     """
     _validate_is_file(trajectory_file)
 
@@ -335,14 +336,14 @@ def load_walkable_area_from_jupedsim_sqlite(
 
     .. note::
 
-        When using a JuPedSim sqlite trajectory file with version 2, the walkable ware is the union
+        When using a JuPedSim sqlite trajectory file with version 2, the walkable area is the union
         of all provided walkable areas in the file.
 
     Args:
         trajectory_file: trajectory file in JuPedSim sqlite format
 
     Returns:
-        :class:`~geometry.WalkableArea` used in the simulation
+        WalkableArea: :class:`~geometry.WalkableArea` used in the simulation
     """
     _validate_is_file(trajectory_file)
 
@@ -432,7 +433,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
         trajectory_file: trajectory file in Pedestrian Dynamics Data Archive HDF5 format
 
     Returns:
-        :class:`~trajectory_data.TrajectoryData` representation of the file data
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
     """
     _validate_is_file(trajectory_file)
 
@@ -488,7 +489,7 @@ def load_walkable_area_from_ped_data_archive_hdf5(
         trajectory_file: trajectory file in Pedestrian Dynamics Data Archive HDF5 format
 
     Returns:
-        :class:`~geometry.WalkableArea` used in the experiment
+        WalkableArea: :class:`~geometry.WalkableArea` used in the experiment
     """
     _validate_is_file(trajectory_file)
 
@@ -530,7 +531,7 @@ def load_trajectory_from_viswalk(
             Comment lines may start with a :code:`*` and will be ignored.
 
     Returns:
-        :class:`~trajectory_data.TrajectoryData` representation of the file data
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
 
     Raises:
         LoadTrajectoryError: If the provided path does not exist or is not a file.

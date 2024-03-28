@@ -1,4 +1,5 @@
 """Helper functions for the analysis methods."""
+
 import itertools
 import logging
 from collections import defaultdict
@@ -7,7 +8,7 @@ from enum import Enum, auto
 from typing import List, Optional, Tuple
 
 import numpy as np
-import pandas as pd
+import pandas
 import shapely
 from scipy.spatial import Voronoi
 
@@ -83,7 +84,7 @@ def is_trajectory_valid(
 
 def get_invalid_trajectory(
     *, traj_data: TrajectoryData, walkable_area: WalkableArea
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Returns all trajectory data points outside the given walkable area.
 
     Args:
@@ -104,7 +105,7 @@ def compute_frame_range_in_area(
     traj_data: TrajectoryData,
     measurement_line: MeasurementLine,
     width: float,
-) -> Tuple[pd.DataFrame, MeasurementArea]:
+) -> Tuple[pandas.DataFrame, MeasurementArea]:
     """Compute the frame ranges for each pedestrian inside the measurement area.
 
     The measurement area is virtually created by creating a second measurement
@@ -142,10 +143,10 @@ def compute_frame_range_in_area(
         width (float): distance to the second measurement line
 
     Returns:
-        DataFrame containing the columns 'id', 'entering_frame' describing the
-        frame the pedestrian crossed the first or second line, 'leaving_frame'
-        describing the frame the pedestrian crossed the second or first line,
-        and the created measurement area
+        Tuple[pandas.DataFrame, MeasurementArea]: DataFrame containing the columns
+        'id', 'entering_frame' describing the frame the pedestrian crossed the first
+        or second line, 'leaving_frame' describing the frame the pedestrian crossed
+        the second or first line, and the created measurement area
     """
     # Create the second measurement line with the given offset
     second_line = MeasurementLine(
@@ -234,7 +235,9 @@ def compute_frame_range_in_area(
     )
 
 
-def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
+def compute_neighbors(
+    individual_voronoi_data: pandas.DataFrame,
+) -> pandas.DataFrame:
     """Compute the neighbors of each pedestrian based on the Voronoi cells.
 
     Computation of the neighborhood of each pedestrian per frame. Every other
@@ -242,7 +245,7 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
     and some point. The threshold for touching is set to 1mm.
 
     Args:
-        individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
+        individual_voronoi_data (pandas.DataFrame): individual voronoi data, needs
             to contain a column 'polygon', which holds a
             :class:`shapely.Polygon` (result from
             :func:`~method_utils.compute_individual_voronoi_polygons`)
@@ -279,7 +282,7 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
             for neighbor in neighbors
         ]
 
-        frame_df = pd.DataFrame(
+        frame_df = pandas.DataFrame(
             zip(
                 frame_data[ID_COL].values,
                 itertools.repeat(frame),
@@ -289,12 +292,12 @@ def compute_neighbors(individual_voronoi_data: pd.DataFrame) -> pd.DataFrame:
         )
         neighbor_df.append(frame_df)
 
-    return pd.concat(neighbor_df)
+    return pandas.concat(neighbor_df)
 
 
 def compute_time_distance_line(
     *, traj_data: TrajectoryData, measurement_line: MeasurementLine
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Compute the time and distance to the measurement line.
 
     Compute the time (in frames) and distance to the first crossing of the
@@ -341,7 +344,7 @@ def compute_individual_voronoi_polygons(
     walkable_area: WalkableArea,
     cut_off: Optional[Cutoff] = None,
     use_blind_points: bool = True,
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Compute the individual Voronoi polygon for each person and frame.
 
     The Voronoi cell will be computed based on the Voronoi tesselation of the
@@ -472,15 +475,17 @@ def compute_individual_voronoi_polygons(
 
         dfs.append(voronoi_in_frame)
 
-    result = pd.concat(dfs)[[ID_COL, FRAME_COL, POLYGON_COL]]
+    result = pandas.concat(dfs)[[ID_COL, FRAME_COL, POLYGON_COL]]
     result[DENSITY_COL] = 1.0 / shapely.area(result.polygon)
 
     return result
 
 
 def compute_intersecting_polygons(
-    *, individual_voronoi_data: pd.DataFrame, measurement_area: MeasurementArea
-) -> pd.DataFrame:
+    *,
+    individual_voronoi_data: pandas.DataFrame,
+    measurement_area: MeasurementArea,
+) -> pandas.DataFrame:
     """Compute the intersection of the voronoi cells with the measurement area.
 
     .. image:: /images/voronoi_density.svg
@@ -488,7 +493,7 @@ def compute_intersecting_polygons(
         :align: center
 
     Args:
-        individual_voronoi_data (pd.DataFrame): individual voronoi data, needs
+        individual_voronoi_data (pandas.DataFrame): individual voronoi data, needs
                 to contain a column 'polygon' (:class:`shapely.Polygon`),
                 result from
                 :func:`~method_utils.compute_individual_voronoi_polygons`
@@ -509,7 +514,7 @@ def compute_intersecting_polygons(
 
 def compute_crossing_frames(
     *, traj_data: TrajectoryData, measurement_line: MeasurementLine
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
     As crossing we define a movement that moves across the measurement line.
@@ -528,7 +533,7 @@ def compute_crossing_frames(
         measurement line multiple times in a small-time interval.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (pandas.DataFrame): trajectory data
         measurement_line (MeasurementLine): measurement line which is crossed
 
     Returns:
@@ -635,7 +640,7 @@ def _compute_individual_movement(
     frame_step: int,
     bidirectional: bool = True,
     speed_border_method: SpeedCalculation = SpeedCalculation.BORDER_ADAPTIVE,
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     if speed_border_method == SpeedCalculation.BORDER_EXCLUDE:
         return _compute_movement_exclude_border(
             traj_data, frame_step, bidirectional
@@ -656,7 +661,7 @@ def _compute_movement_exclude_border(
     traj_data: TrajectoryData,
     frame_step: int,
     bidirectional: bool,
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
@@ -664,7 +669,7 @@ def _compute_movement_exclude_border(
     frame these points will not be considered.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (pandas.DataFrame): trajectory data
         frame_step (int): how many frames back and forwards are used to compute
             the movement.
         bidirectional (bool): if True also the future frame_step points will
@@ -714,7 +719,7 @@ def _compute_movement_single_sided_border(
     traj_data: TrajectoryData,
     frame_step: int,
     bidirectional: bool,
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
@@ -723,7 +728,7 @@ def _compute_movement_single_sided_border(
     frame + frame_step], or [frame - frame_step, frame] respectively.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (pandas.DataFrame): trajectory data
         frame_step (int): how many frames back and forwards are used to compute
             the movement.
         bidirectional (bool): if True also the future frame_step points will
@@ -781,7 +786,7 @@ def _compute_movememnt_adaptive_border(
     traj_data: TrajectoryData,
     frame_step: int,
     bidirectional: bool,
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
     The movement is computed for the interval [frame - frame_step: frame +
@@ -790,7 +795,7 @@ def _compute_movememnt_adaptive_border(
     number of frames also on the other side.
 
     Args:
-        traj_data (pd.DataFrame): trajectory data
+        traj_data (pandas.DataFrame): trajectory data
         frame_step (int): how many frames back and forwards are used to compute
             the movement.
         bidirectional (bool): if True also the future frame_step points will
@@ -825,7 +830,7 @@ def _compute_movememnt_adaptive_border(
     df_movement["end_frame"] = df_movement.frame + df_movement.window_size
 
     start = (
-        pd.merge(
+        pandas.merge(
             df_movement[[ID_COL, FRAME_COL, "start_frame", WINDOW_SIZE_COL]],
             df_movement[[ID_COL, FRAME_COL, POINT_COL]],
             left_on=[ID_COL, "start_frame"],
@@ -838,7 +843,7 @@ def _compute_movememnt_adaptive_border(
 
     if bidirectional:
         end = (
-            pd.merge(
+            pandas.merge(
                 df_movement[[ID_COL, FRAME_COL, "end_frame"]],
                 df_movement[[ID_COL, FRAME_COL, POINT_COL]],
                 left_on=[ID_COL, "end_frame"],
@@ -855,7 +860,7 @@ def _compute_movememnt_adaptive_border(
         df_movement[END_POSITION_COL] = df_movement[POINT_COL]
         end = df_movement[[ID_COL, FRAME_COL, END_POSITION_COL]].copy(deep=True)
 
-    result = pd.merge(start, end, on=[ID_COL, FRAME_COL])[
+    result = pandas.merge(start, end, on=[ID_COL, FRAME_COL])[
         [
             ID_COL,
             FRAME_COL,
@@ -869,7 +874,7 @@ def _compute_movememnt_adaptive_border(
 
 def _get_continuous_parts_in_area(
     *, traj_data: TrajectoryData, measurement_area: MeasurementArea
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Compute the time-continuous parts of each pedestrian in the area.
 
     Compute the time-continuous parts in which the pedestrians are inside
@@ -907,17 +912,17 @@ def _get_continuous_parts_in_area(
 
 def _check_crossing_in_frame_range(
     *,
-    inside_range: pd.DataFrame,
-    crossing_frames: pd.DataFrame,
+    inside_range: pandas.DataFrame,
+    crossing_frames: pandas.DataFrame,
     check_column: str,
     column_name: str,
-) -> pd.DataFrame:
+) -> pandas.DataFrame:
     """Returns rows of inside_range which are also in crossing_frames.
 
     Args:
-        inside_range (pd.DataFrame): DataFrame containing the columns 'ID'
+        inside_range (pandas.DataFrame): DataFrame containing the columns 'ID'
             and check_column
-        crossing_frames (pd.DataFrame): DataFrame containing the columns 'ID'
+        crossing_frames (pandas.DataFrame): DataFrame containing the columns 'ID'
             and 'frame'
         check_column (str): name of the column in inside_range which represents
             a frame value. Needs to be 'frame_start' or 'frame_end'
@@ -932,7 +937,7 @@ def _check_crossing_in_frame_range(
         LAST_FRAME_COL,
     ), f"check_column needs to be '{FIRST_FRAME_COL}' or '{LAST_FRAME_COL}'"
 
-    crossed = pd.merge(
+    crossed = pandas.merge(
         inside_range,
         crossing_frames,
         left_on=[ID_COL, check_column],
