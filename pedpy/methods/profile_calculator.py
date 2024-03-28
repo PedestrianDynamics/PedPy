@@ -162,10 +162,7 @@ def compute_profiles(
     gaussian_width: Optional[float] = None,
     # pylint: disable=unused-argument,too-many-arguments
     **kwargs: Any,
-) -> Tuple[
-    List[npt.NDArray[np.float64]],
-    List[npt.NDArray[np.float64]],
-]:
+) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]],]:
     """Computes the density and speed profiles.
 
     .. note::
@@ -663,7 +660,9 @@ def _compute_gaussian_speed_profile(
         """
         sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))
         return (
-            1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(-(x**2) / (2 * sigma**2))
+            1
+            / (sigma * np.sqrt(2 * np.pi))
+            * np.exp(-(x**2) / (2 * sigma**2))
         )
 
     # pedestrians' position and speed
@@ -849,10 +848,7 @@ def compute_grid_cell_polygon_intersection_area(
     *,
     data: pandas.DataFrame,
     grid_cells: npt.NDArray[shapely.Polygon],
-) -> Tuple[
-    npt.NDArray[np.float64],
-    pandas.DataFrame,
-]:
+) -> Tuple[npt.NDArray[np.float64], pandas.DataFrame,]:
     """Computes the intersection area of the grid cells with the Voronoi polygons.
 
     .. note::
@@ -926,11 +922,7 @@ def get_grid_cells(
     *,
     walkable_area: WalkableArea,
     grid_size: float,
-) -> Tuple[
-    npt.NDArray[shapely.Polygon],
-    int,
-    int,
-]:
+) -> Tuple[npt.NDArray[shapely.Polygon], int, int,]:
     """Creates a list of square grid cells covering the geometry.
 
     .. image:: /images/profile_grid.svg
