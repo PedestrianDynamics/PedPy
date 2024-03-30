@@ -58,9 +58,14 @@ def compute_pair_distibution_function(
         pd_ni_bins.value_counts().sort_index().to_numpy()
     ) / Nb_dist
 
-    pair_distibution = pd_bins_normalised / pd_ni_bins_normalised
-
-    return radius_bins[1:], pair_distibution
+    # pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
+    pair_distribution = np.divide(
+        pd_bins_normalised,
+        pd_ni_bins_normalised,
+        out=np.zeros_like(pd_bins_normalised),
+        where=pd_ni_bins_normalised != 0,
+    )
+    return radius_bins[1:], pair_distribution
 
 
 def calculate_data_frame_pair_dist(
@@ -72,9 +77,9 @@ def calculate_data_frame_pair_dist(
         unique_ids = frame_df[ID_COL].unique()
         N_ids = len(unique_ids)
         if N_ids > 1:
-            coordinates = np.array(
-                frame_df[X_COL].values, frame_df[Y_COL].values
-            )
+            x_values = frame_df[X_COL].values
+            y_values = frame_df[Y_COL].values
+            coordinates = np.stack((x_values, y_values), axis=-1)
             # Calculate pairwise distances for the current frame using cdist
             frame_distances = cdist(
                 coordinates, coordinates, metric="euclidean"
