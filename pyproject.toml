@@ -70,7 +70,35 @@ line_length = 80
 multi_line_output = 3
 include_trailing_comma = true
 
-[tool.pydocstyle]
-inherit = false
-match-dir = "(pedpy|data|io|methods|plotting)"
+[tool.ruff.lint.isort]
+case-sensitive = true
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "W", "I", "D", "PL", "NPY"]
+ignore = []
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.pylint]
+# Maximum number of arguments for function / method.
+max-args=5
+# Maximum number of boolean expressions in an if statement (see R0916).
+max-bool-expr=5
+# Maximum number of branch for function / method body.
+max-branches=15
+# Maximum number of locals for function / method body.
+max-locals=20
+# Maximum number of public methods for a class (see R0904).
+max-public-methods=20
+# Maximum number of return / yield for function / method body.
+max-returns=6
+# Maximum number of statements in function / method body.
+max-statements=50
+# Constant types to ignore when used as "magic values" (see: PLR2004).
+allow-magic-value-types = ["int"]
