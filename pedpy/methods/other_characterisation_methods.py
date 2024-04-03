@@ -1,6 +1,7 @@
 """Module containing functions to compute pair distribution function."""
 
 from typing import Tuple
+import warnings
 
 import numpy as np
 import numpy.typing as npt
@@ -58,13 +59,19 @@ def compute_pair_distibution_function(
         pd_ni_bins.value_counts().sort_index().to_numpy()
     ) / Nb_dist
 
-    # pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
-    pair_distribution = np.divide(
-        pd_bins_normalised,
-        pd_ni_bins_normalised,
-        out=np.zeros_like(pd_bins_normalised),
-        where=pd_ni_bins_normalised != 0,
-    )
+    # Suppress warnings
+    warnings.filterwarnings("ignore")
+
+    try:
+        with np.errstate(divide='raise'):
+            pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
+        warnings.filterwarnings("default") # reset wrnings values
+    except FloatingPointError :
+        warnings.filterwarnings("default") # reset wrnings values
+        pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
+        warning_message = 'Random probability distribution contains null values, try using larger dx or more randomization cycles.'
+        warnings.warn(warning_message)
+
     return radius_bins[1:], pair_distribution
 
 
