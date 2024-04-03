@@ -315,6 +315,6 @@ cython_debug/
 *.code-workspace
 
 docs/build
-
+pedpy/_version.py
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,pycharm,jupyternotebooks
 .vscode/launch.json
