@@ -38,13 +38,12 @@ def compute_pair_distibution_function(
     """
     df = traj_data.data
 
-    # Create Dataframe with all mutual distances
+    # Create Dataframe with all pairwise distances
     dist_pd_array = calculate_data_frame_pair_dist(df)
-    Nb_dist = len(dist_pd_array) # number of pairwise distances in the dataframe
 
     # Concatenate the working dataframe df  to match the number of randomization cycles
     concatenated_random_df = pandas.concat([df] * randomization_cycles, ignore_index=True)
-    # Scramble time-information to mitigate finite-size effects and calculate mutual distances of scrambled dataset
+    # Scramble time-information to mitigate finite-size effects and calculate pairwise distances of scrambled dataset
     concatenated_random_df.frame = concatenated_random_df.frame.sample(frac=1).reset_index(drop=True)
     dist_pd_ni_array = calculate_data_frame_pair_dist(concatenated_random_df)
 
@@ -56,12 +55,12 @@ def compute_pair_distibution_function(
     pd_bins = pandas.cut(dist_pd_array, radius_bins)
     pd_bins_normalised = (
         pd_bins.value_counts().sort_index().to_numpy()
-    ) / Nb_dist
+    ) / len(dist_pd_array) # Normalising by the number of pairwise distances in the dataframe
     ## Scrambled distribution
     pd_ni_bins = pandas.cut(dist_pd_ni_array, radius_bins)
     pd_ni_bins_normalised = (
         pd_ni_bins.value_counts().sort_index().to_numpy()
-    ) / Nb_dist*randomization_cycles
+    ) / len(dist_pd_ni_array) # Normalising by the number of pairwise distances in the dataframe
 
     # Suppress warnings
     warnings.filterwarnings("ignore")
@@ -70,6 +69,7 @@ def compute_pair_distibution_function(
         with np.errstate(divide='raise'):
             pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
         warnings.filterwarnings("default") # reset wrnings values
+
     except FloatingPointError :
         warnings.filterwarnings("default") # reset wrnings values
         pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
