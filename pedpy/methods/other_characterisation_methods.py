@@ -13,7 +13,7 @@ from pedpy.data.trajectory_data import TrajectoryData
 
 
 def compute_pair_distibution_function(
-    *, traj_data: TrajectoryData, radius_bin_size: float
+    *, traj_data: TrajectoryData, radius_bin_size: float, randomization_cycles: int = 1
 ) -> Tuple[npt.NDArray[np.float16], npt.NDArray[np.float16]]:
     """
     Computes the pair distribution function g(r) for a given set of trajectory data.
@@ -29,6 +29,8 @@ def compute_pair_distibution_function(
     Args:
     - traj_data: TrajectoryData, an object containing the trajectories.
     - radius_bin_size: float, the size of the bins for the radial distribution function in the same units as the positions.
+    - randomization_cycles: int, Number of time the dataset is randomly shuffled to exact distances of non-interacting pedestrians. Default is 1.
+
 
     Returns:
     - Tuple[np.ndarray, np.ndarray]: A tuple of two numpy arrays. The first array contains the bin edges (excluding the first bin edge),
@@ -38,16 +40,18 @@ def compute_pair_distibution_function(
 
     # Create Dataframe with all mutual distances
     dist_pd_array = calculate_data_frame_pair_dist(df)
+    Nb_dist = len(dist_pd_array) # number of pairwise distances in the dataframe
 
+    # Concatenate the working dataframe df  to match the number of randomization cycles
+    concatenated_random_df = pandas.concat([df] * randomization_cycles, ignore_index=True)
     # Scramble time-information to mitigate finite-size effects and calculate mutual distances of scrambled dataset
-    df.frame = df.frame.sample(frac=1).reset_index(drop=True)
-    dist_pd_ni_array = calculate_data_frame_pair_dist(df)
+    concatenated_random_df.frame = concatenated_random_df.frame.sample(frac=1).reset_index(drop=True)
+    dist_pd_ni_array = calculate_data_frame_pair_dist(concatenated_random_df)
 
     ## Create the bin for data
     radius_bins = np.arange(0, dist_pd_array.max(), radius_bin_size)
 
     # Calculate pair distibution: g(r)
-    Nb_dist = len(dist_pd_array)
     ## Actual distribution
     pd_bins = pandas.cut(dist_pd_array, radius_bins)
     pd_bins_normalised = (
@@ -57,7 +61,7 @@ def compute_pair_distibution_function(
     pd_ni_bins = pandas.cut(dist_pd_ni_array, radius_bins)
     pd_ni_bins_normalised = (
         pd_ni_bins.value_counts().sort_index().to_numpy()
-    ) / Nb_dist
+    ) / Nb_dist*randomization_cycles
 
     # Suppress warnings
     warnings.filterwarnings("ignore")
