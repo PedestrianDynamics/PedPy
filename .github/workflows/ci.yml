@@ -7,11 +7,13 @@ on:
   push:
     branches:
       - main
+      - rls-*
     tags:
       - '**'
   pull_request:
     branches:
       - main
+      - rls-*
 
 jobs:
   pre-build-checks:
@@ -52,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, macos-14, windows-latest ]
+        os: [ ubuntu-latest, macos-12, macos-14, windows-latest ]
         python-version: [ '3.10' ]
     runs-on: ${{ matrix.os }}
 
@@ -105,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, macos-14, windows-latest ]
+        os: [ ubuntu-latest, macos-12, macos-14, windows-latest ]
         python-version: [ '3.10', '3.11' , '3.12']
     runs-on: ${{ matrix.os }}
 
