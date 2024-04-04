@@ -507,8 +507,7 @@ def compute_speed_profile(
         speed_method: The speed method used to compute the
             speed profile
         grid_intersections_area: (Optional) intersection areas of grid cells
-            with Voronoi polygons, required for some speed methods.
-            polygons (result from
+            with Voronoi polygons (result from
             :func:`compute_grid_cell_polygon_intersection_area`)
         fill_value: fill value for cells with no pedestrians inside when
             using :attr:`SpeedMethod.MEAN` (default = `np.nan`)
