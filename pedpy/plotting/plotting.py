@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import shapely
-from matplotlib import cm
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -448,12 +447,12 @@ def _plot_with_speed_colors(
     norm = Normalize(
         vmin=time_distance.speed.min(), vmax=time_distance.speed.max()
     )
-    cmap = cm.jet  # type: ignore
-    for _, ped_data in time_distance.groupby(ID_COL):
-        _plot_colored_line(axes, ped_data, norm, cmap=cmap)
 
-    _scatter_min_data_with_color(axes, time_distance, norm, cmap=cmap)
-    _add_colorbar(axes, cmap, norm)
+    for _, ped_data in time_distance.groupby(ID_COL):
+        _plot_colored_line(axes, ped_data, norm)
+
+    _scatter_min_data_with_color(axes, time_distance, norm)
+    _add_colorbar(axes, norm)
 
 
 def _plot_without_colors(
@@ -503,7 +502,6 @@ def _scatter_min_data_with_color(
     axes: matplotlib.axes.Axes,
     ped_data: pd.DataFrame,
     norm: Normalize,
-    cmap: Any,
 ) -> None:
     """Adds a scatter plot marker at the start of a pedestrian's line.
 
@@ -520,7 +518,7 @@ def _scatter_min_data_with_color(
         min_data.distance,
         min_data.time_seconds,
         c=min_data.speed,
-        cmap=cmap,
+        cmap="jet",
         norm=norm,
         s=5,
         marker="o",
@@ -552,7 +550,6 @@ def _plot_colored_line(
     axes: matplotlib.axes.Axes,
     ped_data: pd.DataFrame,
     norm: Normalize,
-    cmap: Any,
 ) -> None:
     """Plots a line for a single pedestrian's data with color indicating speed.
 
@@ -571,15 +568,13 @@ def _plot_colored_line(
         ]
         for i in range(len(points) - 1)
     ]
-    line_collection = LineCollection(segments, cmap=cmap, alpha=0.7, norm=norm)
+    line_collection = LineCollection(segments, cmap="jet", alpha=0.7, norm=norm)
     line_collection.set_array(speed_id)
     line_collection.set_linewidth(0.5)
     axes.add_collection(line_collection)
 
 
-def _add_colorbar(
-    axes: matplotlib.axes.Axes, cmap: Any, norm: Normalize
-) -> None:
+def _add_colorbar(axes: matplotlib.axes.Axes, norm: Normalize) -> None:
     """Adds a colorbar to the plot, indicating the mapping of colors to speed values.
 
     Args:
@@ -587,7 +582,7 @@ def _add_colorbar(
         cmap: The colormap used for the plot.
         norm: Normalization used for the colormap.
     """
-    scalar_map = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    scalar_map = plt.cm.ScalarMappable(cmap="jet", norm=norm)
     scalar_map.set_array([])
     cbar = plt.colorbar(scalar_map, ax=axes)
     cbar.set_label("Speed / m/s")
