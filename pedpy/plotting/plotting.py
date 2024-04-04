@@ -405,11 +405,11 @@ def plot_time_distance(
     _setup_plot(axes, **kwargs)
     time_distance["time_seconds"] = time_distance.time / frame_rate
     if speed is not None:
-        _plot_with_speed_colors(axes, time_distance, speed, frame_rate, **kwargs)  # type: ignore
+        _plot_with_speed_colors(axes, time_distance, speed)  # type: ignore
     else:
-        _plot_without_colors(axes, time_distance, frame_rate, **kwargs)  # type: ignore
+        _plot_without_colors(axes, time_distance, **kwargs)  # type: ignore
 
-    _finalize_plot(axes, **kwargs)
+    _finalize_plot(axes)
 
     return axes
 
@@ -444,14 +444,16 @@ def _plot_with_speed_colors(
         speed: DataFrame containing speed calculations.
         frame_rate: Frame rate used to adjust time values.
     """
-    time_distance = time_distance.merge(speed, on=["ID_COL", "FRAME_COL"])
+    time_distance = time_distance.merge(speed, on=[ID_COL, FRAME_COL])
     norm = Normalize(
         vmin=time_distance.speed.min(), vmax=time_distance.speed.max()
     )
     cmap = cm.jet  # type: ignore
-    for _, ped_data in time_distance.groupby(by="ID_COL"):
+    for _, ped_data in time_distance.groupby(ID_COL):
         _plot_colored_line(axes, ped_data, norm, cmap=cmap)
-        _scatter_min_data_with_color(axes, ped_data, norm, cmap=cmap)
+
+    _scatter_min_data_with_color(axes, time_distance, norm, cmap=cmap)
+    _add_colorbar(axes, cmap, norm)
 
 
 def _plot_without_colors(
@@ -469,10 +471,10 @@ def _plot_without_colors(
     """
     line_color = kwargs.pop("line_color", PEDPY_GREY)
     marker_color = kwargs.pop("marker_color", PEDPY_GREY)
-
-    for _, ped_data in time_distance.groupby(by="ID_COL"):
+    for _, ped_data in time_distance.groupby(ID_COL):
         _plot_line(axes, ped_data, line_color)
-        _scatter_min_data(axes, ped_data, marker_color)
+
+    _scatter_min_data(axes, time_distance, marker_color)
 
 
 def _scatter_min_data(
@@ -517,7 +519,7 @@ def _scatter_min_data_with_color(
     axes.scatter(
         min_data.distance,
         min_data.time_seconds,
-        color=min_data["speed"],
+        c=min_data.speed,
         cmap=cmap,
         norm=norm,
         s=5,
