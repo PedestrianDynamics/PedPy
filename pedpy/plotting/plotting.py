@@ -1,5 +1,7 @@
 """Module containing plotting functionalities."""
 
+# pylint: disable=C0302
+
 import logging
 import warnings
 from typing import Any, List, Optional
