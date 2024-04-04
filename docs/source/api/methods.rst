@@ -1,9 +1,12 @@
-****************
+*****************
 Analysis Methods
-****************
+*****************
+
+Core measurements
+-----------------
 
 Density
-*******
+^^^^^^
 
 .. autoapimodule:: density_calculator
     :members:
@@ -11,7 +14,7 @@ Density
     :no-special-members:
 
 Speed
-*****
+^^^^^^
 
 .. autoapimodule:: speed_calculator
     :members:
@@ -19,23 +22,35 @@ Speed
     :no-special-members:
 
 Flow
-****
+^^^^
 
 .. autoapimodule:: flow_calculator
     :members:
     :no-private-members:
     :no-special-members:
 
-Profiles
-********
+
+Pedestrian Dynamics
+------------------
+
+Spatial Analysis
+^^^^^^^^^^^^^^
+
+.. note::
+
+   Waiting for PR #320
+
+
+Motion profiles
+^^^^^^^^^^^^^
 
 .. autoapimodule:: profile_calculator
     :members:
     :no-private-members:
     :no-special-members:
 
-Utils
-*****
+Utilities
+------
 
 .. autoapimodule:: method_utils
     :members:
