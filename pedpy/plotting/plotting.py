@@ -405,9 +405,9 @@ def plot_time_distance(
     _setup_plot(axes, **kwargs)
     time_distance["time_seconds"] = time_distance.time / frame_rate
     if speed is not None:
-        _plot_with_speed_colors(axes, time_distance, speed)  # type: ignore
+        _plot_with_speed_colors(axes, time_distance, speed)
     else:
-        _plot_without_colors(axes, time_distance, **kwargs)  # type: ignore
+        _plot_without_colors(axes, time_distance, **kwargs)
 
     _finalize_plot(axes)
 
@@ -571,10 +571,10 @@ def _plot_colored_line(
         ]
         for i in range(len(points) - 1)
     ]
-    lc = LineCollection(segments, cmap=cmap, alpha=0.7, norm=norm)
-    lc.set_array(speed_id)
-    lc.set_linewidth(0.5)
-    line = axes.add_collection(lc)
+    line_collection = LineCollection(segments, cmap=cmap, alpha=0.7, norm=norm)
+    line_collection.set_array(speed_id)
+    line_collection.set_linewidth(0.5)
+    axes.add_collection(line_collection)
 
 
 def _add_colorbar(
@@ -587,9 +587,9 @@ def _add_colorbar(
         cmap: The colormap used for the plot.
         norm: Normalization used for the colormap.
     """
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])
-    cbar = plt.colorbar(sm, ax=axes)
+    scalar_map = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    scalar_map.set_array([])
+    cbar = plt.colorbar(scalar_map, ax=axes)
     cbar.set_label("Speed / m/s")
 
 
