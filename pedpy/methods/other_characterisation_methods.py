@@ -1,7 +1,7 @@
 """Module containing functions to compute pair distribution function."""
 
-from typing import Tuple
 import warnings
+from typing import Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -13,7 +13,10 @@ from pedpy.data.trajectory_data import TrajectoryData
 
 
 def compute_pair_distibution_function(
-    *, traj_data: TrajectoryData, radius_bin_size: float, randomization_cycles: int = 1
+    *,
+    traj_data: TrajectoryData,
+    radius_bin_size: float,
+    randomisation_stacking: int = 1,
 ) -> Tuple[npt.NDArray[np.float16], npt.NDArray[np.float16]]:
     """
     Computes the pair distribution function g(r) for a given set of trajectory data.
@@ -29,7 +32,7 @@ def compute_pair_distibution_function(
     Args:
     - traj_data: TrajectoryData, an object containing the trajectories.
     - radius_bin_size: float, the size of the bins for the radial distribution function in the same units as the positions.
-    - randomization_cycles: int, Number of time the dataset is randomly shuffled to exact distances of non-interacting pedestrians. Default is 1.
+    - randomisation_stacking: int, Number of time the dataset will be stacked before being randomly shuffled to exact distances of non-interacting pedestrians. Larger stacking number will lead to closer approximation of true pairwise distribution of non-interacting pedestrians but with also increase computation cost.
 
 
     Returns:
@@ -42,9 +45,13 @@ def compute_pair_distibution_function(
     dist_pd_array = calculate_data_frame_pair_dist(df)
 
     # Concatenate the working dataframe df  to match the number of randomization cycles
-    concatenated_random_df = pandas.concat([df] * randomization_cycles, ignore_index=True)
+    concatenated_random_df = pandas.concat(
+        [df] * randomisation_stacking, ignore_index=True
+    )
     # Scramble time-information to mitigate finite-size effects and calculate pairwise distances of scrambled dataset
-    concatenated_random_df.frame = concatenated_random_df.frame.sample(frac=1).reset_index(drop=True)
+    concatenated_random_df.frame = concatenated_random_df.frame.sample(
+        frac=1
+    ).reset_index(drop=True)
     dist_pd_ni_array = calculate_data_frame_pair_dist(concatenated_random_df)
 
     ## Create the bin for data
@@ -53,27 +60,29 @@ def compute_pair_distibution_function(
     # Calculate pair distibution: g(r)
     ## Actual distribution
     pd_bins = pandas.cut(dist_pd_array, radius_bins)
-    pd_bins_normalised = (
-        pd_bins.value_counts().sort_index().to_numpy()
-    ) / len(dist_pd_array) # Normalising by the number of pairwise distances in the dataframe
+    pd_bins_normalised = (pd_bins.value_counts().sort_index().to_numpy()) / len(
+        dist_pd_array
+    )  # Normalising by the number of pairwise distances in the dataframe
     ## Scrambled distribution
     pd_ni_bins = pandas.cut(dist_pd_ni_array, radius_bins)
     pd_ni_bins_normalised = (
         pd_ni_bins.value_counts().sort_index().to_numpy()
-    ) / len(dist_pd_ni_array) # Normalising by the number of pairwise distances in the dataframe
+    ) / len(
+        dist_pd_ni_array
+    )  # Normalising by the number of pairwise distances in the dataframe
 
     # Suppress warnings
     warnings.filterwarnings("ignore")
 
     try:
-        with np.errstate(divide='raise'):
+        with np.errstate(divide="raise"):
             pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
-        warnings.filterwarnings("default") # reset wrnings values
+        warnings.filterwarnings("default")  # reset wrnings values
 
-    except FloatingPointError :
-        warnings.filterwarnings("default") # reset wrnings values
+    except FloatingPointError:
+        warnings.filterwarnings("default")  # reset wrnings values
         pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
-        warning_message = 'Random probability distribution contains null values, try using larger dx or more randomization cycles.'
+        warning_message = "Random probability distribution contains null values, try using larger dx or more randomization cycles."
         warnings.warn(warning_message)
 
     return radius_bins[1:], pair_distribution
