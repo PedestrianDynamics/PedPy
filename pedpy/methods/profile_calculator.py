@@ -498,9 +498,9 @@ def compute_speed_profile(
             the DataFrame needs to contain the columns `x` and `y`.
             For getting a DataFrame containing all the needed data, you can
             merge the results of the different function on the `id` and
-            `frame` columns (see :func:`pandas.DataFrame.merge` and
+            `frame` columns (see :meth:`pandas.DataFrame.merge` and
             :func:`pandas.merge`).
-        walkable_area: geometry for which the speed profiles are
+        walkable_area (WalkableArea): geometry for which the speed profiles are
             computed.
         grid_size: The resolution of the grid used for computing the
             profiles, expressed in the same units as the `walkable_area`.
@@ -517,8 +517,7 @@ def compute_speed_profile(
             (default = 0.5).
 
     Returns:
-        A list of NumPy arrays, each representing the speed profile for a
-        different grid cell within the walkable area.
+        A list of NumPy arrays, each representing the speed profile per frame.
 
     Note:
         The choice of `speed_method` significantly impacts the required data
@@ -592,7 +591,7 @@ def compute_speed_profile(
                 fwhm=gaussian_width,
             )
         else:
-            raise ValueError("speed method not accepted")
+            raise ValueError("Speed method not accepted.")
 
         speed_profiles.append(
             speed.reshape(
