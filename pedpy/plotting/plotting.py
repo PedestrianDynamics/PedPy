@@ -437,7 +437,6 @@ def _plot_with_speed_colors(
     axes: matplotlib.axes.Axes,
     time_distance: pd.DataFrame,
     speed: pd.DataFrame,
-    frame_rate: float,
     **kwargs: Any,
 ) -> None:
     """
@@ -455,17 +454,15 @@ def _plot_with_speed_colors(
         vmin=time_distance.speed.min(), vmax=time_distance.speed.max()
     )
     cmap = plt.cm.jet
-    marker_color = kwargs.pop("marker_color", PEDPY_GREY)
 
     for _, ped_data in time_distance.groupby(by="ID_COL"):
         _plot_colored_line(axes, ped_data, norm, cmap)
-        _scatter_min_data(axes, ped_data, frame_rate, marker_color)
+        _scatter_min_data_with_color(axes, ped_data, norm, cmap)
 
 
 def _plot_without_colors(
     axes: matplotlib.axes.Axes,
     time_distance: pd.DataFrame,
-    frame_rate: float,
     **kwargs: Any,
 ) -> None:
     """
@@ -481,14 +478,13 @@ def _plot_without_colors(
     marker_color = kwargs.pop("marker_color", PEDPY_GREY)
 
     for _, ped_data in time_distance.groupby(by="ID_COL"):
-        _plot_line(axes, ped_data, frame_rate, line_color)
-        _scatter_min_data(axes, ped_data, frame_rate, marker_color)
+        _plot_line(axes, ped_data, line_color)
+        _scatter_min_data(axes, ped_data, marker_color)
 
 
 def _scatter_min_data(
     axes: matplotlib.axes.Axes,
     ped_data: pd.DataFrame,
-    frame_rate: float,
     color: str,
 ) -> None:
     """
@@ -497,13 +493,12 @@ def _scatter_min_data(
     Args:
         axes: The matplotlib axes to plot on.
         ped_data: DataFrame containing a single pedestrian's data.
-        frame_rate: Frame rate used to adjust time values.
         color: Color of the scatter plot marker.
     """
     min_data = ped_data[ped_data.frame == ped_data.frame.min()]
     axes.scatter(
         min_data.distance,
-        min_data.time / frame_rate,
+        min_data.time_seconds,
         color=color,
         s=5,
         marker="o",
@@ -513,7 +508,6 @@ def _scatter_min_data(
 def _scatter_min_data_with_color(
     axes: matplotlib.axes.Axes,
     ped_data: pd.DataFrame,
-    frame_rate: float,
     norm: Normalize,
     cmap: Any,
 ) -> None:
@@ -529,7 +523,7 @@ def _scatter_min_data_with_color(
     min_data = ped_data[ped_data.frame == ped_data.frame.min()]
     axes.scatter(
         min_data.distance,
-        min_data.time / frame_rate,
+        min_data.time_seconds,
         color=min_data["speed"],
         cmap=cmap,
         norm=norm,
@@ -550,12 +544,11 @@ def _plot_line(
     Args:
         axes: The matplotlib axes to plot on.
         ped_data: DataFrame containing a single pedestrian's distance and time data.
-        frame_rate: Frame rate used to adjust time values.
         color: Color of the line.
     """
     axes.plot(
         ped_data.distance,
-        ped_data.time / frame_rate,
+        ped_data.time_seconds,
         color=color,
         alpha=0.7,
         lw=0.25,
