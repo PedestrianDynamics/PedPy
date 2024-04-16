@@ -1,4 +1,5 @@
 """Module containing functions to compute densities."""
+
 from typing import Tuple
 
 import numpy as np
