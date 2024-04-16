@@ -22,7 +22,8 @@ def compute_pair_distibution_function(
     Computes the pair distribution function g(r) for a given set of trajectory data.
 
     This function calculates the spatial distribution of positions :math:`g(r)`
-    For a variable :math:`r`, the pdf is given by the probability that two pedestrians are separated
+    :math:`g(r)` here referred to the Euclidean distance between agents.
+    The pdf is given by the probability that two pedestrians are separated
     by :math:`r` normalized by the probability :math:`PNI(r)` that two non-interacting pedestrians
     are separated by :math:`r`, specifically
 
@@ -42,7 +43,7 @@ def compute_pair_distibution_function(
     df = traj_data.data
 
     # Create Dataframe with all pairwise distances
-    dist_pd_array = calculate_data_frame_pair_dist(df)
+    pairwise_dist_array = calculate_data_frame_pair_dist(df)
 
     # Concatenate the working dataframe df  to match the number of randomization cycles
     concatenated_random_df = pandas.concat(
@@ -52,23 +53,25 @@ def compute_pair_distibution_function(
     concatenated_random_df.frame = concatenated_random_df.frame.sample(
         frac=1
     ).reset_index(drop=True)
-    dist_pd_ni_array = calculate_data_frame_pair_dist(concatenated_random_df)
+    pairwise_dist_ni_array = calculate_data_frame_pair_dist(
+        concatenated_random_df
+    )
 
     ## Create the bin for data
-    radius_bins = np.arange(0, dist_pd_array.max(), radius_bin_size)
+    radius_bins = np.arange(0, pairwise_dist_array.max(), radius_bin_size)
 
     # Calculate pair distibution: g(r)
     ## Actual distribution
-    pd_bins = pandas.cut(dist_pd_array, radius_bins)
+    pd_bins = pandas.cut(pairwise_dist_array, radius_bins)
     pd_bins_normalised = (pd_bins.value_counts().sort_index().to_numpy()) / len(
-        dist_pd_array
+        pairwise_dist_array
     )  # Normalising by the number of pairwise distances in the dataframe
     ## Scrambled distribution
-    pd_ni_bins = pandas.cut(dist_pd_ni_array, radius_bins)
+    pd_ni_bins = pandas.cut(pairwise_dist_ni_array, radius_bins)
     pd_ni_bins_normalised = (
         pd_ni_bins.value_counts().sort_index().to_numpy()
     ) / len(
-        dist_pd_ni_array
+        pairwise_dist_ni_array
     )  # Normalising by the number of pairwise distances in the dataframe
 
     # Suppress warnings
