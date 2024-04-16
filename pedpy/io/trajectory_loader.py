@@ -1,4 +1,5 @@
 """Load trajectories to the internal trajectory data format."""
+
 import math
 import pathlib
 import sqlite3

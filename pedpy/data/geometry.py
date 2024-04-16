@@ -334,10 +334,12 @@ def _polygon_from_wkt(wkt_input: str) -> shapely.Polygon:
 
 
 def _polygon_from_shapely(
-    geometry_input: shapely.Polygon
-    | shapely.MultiPolygon
-    | shapely.GeometryCollection
-    | shapely.MultiPoint,
+    geometry_input: (
+        shapely.Polygon
+        | shapely.MultiPolygon
+        | shapely.GeometryCollection
+        | shapely.MultiPoint
+    ),
 ) -> shapely.Polygon:
     def _polygons_from_multi_polygon(
         multi_polygon: shapely.MultiPolygon,
