@@ -22,7 +22,6 @@ from pedpy.column_identifier import (
     ID_COL,
     INTERSECTION_COL,
     LAST_FRAME_COL,
-    MID_FRAME_COL,
     MID_POSITION_COL,
     NEIGHBORS_COL,
     POINT_COL,
@@ -892,8 +891,8 @@ def _compute_individual_movement_acceleration(
         )
 
     raise ValueError("speed border method not accepted")
-    
-    
+
+
 def _compute_movement_acceleration_exclude_border(
     traj_data: TrajectoryData,
     frame_step: int,
@@ -927,7 +926,7 @@ def _compute_movement_acceleration_exclude_border(
         2*frame_step
     )
 
-    df_movement[MID_POSITION_COl] = df_movement.groupby(
+    df_movement[MID_POSITION_COL] = df_movement.groupby(
         by=ID_COL
     ).point.shift(frame_step)
     df_movement["mid_frame"] = df_movement.groupby(
@@ -935,7 +934,7 @@ def _compute_movement_acceleration_exclude_border(
     ).frame.shift(
         frame_step
     )
-    
+
     df_movement[END_POSITION_COL] = df_movement.point
     df_movement["end_frame"] = df_movement.frame
 
@@ -952,7 +951,7 @@ def _compute_movement_acceleration_exclude_border(
             WINDOW_SIZE_COL,
         ]
     ].dropna()
-    
+
 
 def _get_continuous_parts_in_area(
     *, traj_data: TrajectoryData, measurement_area: MeasurementArea

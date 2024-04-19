@@ -1,4 +1,4 @@
-""" Module containing functions to compute velocities. """
+""" Module containing functions to compute accelerations. """
 
 from typing import Optional, Tuple
 
@@ -17,7 +17,7 @@ from pedpy.column_identifier import (
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
-    AccelerationCalculation, 
+    AccelerationCalculation,
     _compute_individual_movement_acceleration,
 )
 
@@ -32,7 +32,7 @@ class AccelerationError(Exception):
             message: Error message
         """
         self.message = message
- 
+
 def compute_individual_acceleration(
     *,
     traj_data: TrajectoryData,
@@ -59,7 +59,8 @@ def compute_individual_acceleration(
     These positions are called :math:`X_{future}`, :math:`X_{past}`
     respectively.
 
-    # die Beschreibung und das Bild muss noch neu, denn wir brauchen für die Berechnung von a(t) eigentlich 2DeltaT:
+    # die Beschreibung und das Bild muss noch neu, 
+    # denn wir brauchen für die Berechnung von a(t) eigentlich 2DeltaT:
     |
 
     .. image:: /images/speed_both.svg
@@ -334,46 +335,6 @@ def compute_voronoi_acceleration(
     return pandas.DataFrame(df_voronoi_acceleration)
 
 
-#def compute_passing_acceleration(
-#    *, frames_in_area: pandas.DataFrame, frame_rate: float, distance: float
-#) -> pandas.DataFrame:
-#    r"""Compute the individual acceleration of the pedestrian who passes the area.
-#
-#    Compute the individual acceleration :math:`a^i_{passing}` at which the pedestrian
-#    traveled the given distance :math:`d`, which is defined as:
-#
-#    .. math::
-#
-#        a^i_{passing} = {{d} \over{ \Delta t}},
-#
-#    where :math:`\Delta t = (f_{out} - f_{in}) / fps` is the time the
-#    pedestrian needed to cross the area, where :math:`f_{in}` and
-#    :math:`f_{out}` are the frames where the pedestrian crossed the first line,
-#    and the second line respectively. For details on the computation of the
-#    crossing frames, see :func:`~method_utils.compute_frame_range_in_area`.
-#    And :math:`fps` is the :attr:`~trajectory_data.TrajectoryData.frame_rate`
-#    of the trajectory data.
-#
-#    Args:
-#        frames_in_area (pandas.DataFrame): information for each pedestrian when
-#            they were in the area, result from
-#            :func:`~method_utils.compute_frame_range_in_area`
-#        frame_rate (float): frame rate of the trajectory
-#        distance (float): distance between the two measurement lines
-#
-#    Returns:
-#        DataFrame containing the columns 'id' and 'acceleration' in :math:m/s^2
-#    """
-#    acceleration = pandas.DataFrame(frames_in_area.id, columns=[ID_COL, ACC_COL])
-#    ## diese Formel muss geprüft werden, ob es für acc. überhaupt Sinn macht eine passing acc. zu berechnen
-#    acceleration[ACC_COL] = (
-#        frame_rate
-#        * distance
-#        / (np.abs(frames_in_area.leaving_frame - frames_in_area.entering_frame))
-#    )
-#    return acceleration
-
-
 def _compute_individual_acceleration(
     *,
     movement_data: pandas.DataFrame,
@@ -402,7 +363,7 @@ def _compute_individual_acceleration(
 
     # Compute displacements in x and y direction
     movement_data[["dd_x", "dd_y"]] = (
-        shapely.get_coordinates(movement_data.end_position) 
+        shapely.get_coordinates(movement_data.end_position)
         - shapely.get_coordinates(movement_data.mid_position)
         ) - (
         shapely.get_coordinates(movement_data.mid_position)
