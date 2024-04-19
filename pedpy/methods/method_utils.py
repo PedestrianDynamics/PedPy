@@ -22,6 +22,8 @@ from pedpy.column_identifier import (
     ID_COL,
     INTERSECTION_COL,
     LAST_FRAME_COL,
+    MID_FRAME_COL,
+    MID_POSITION_COL,
     NEIGHBORS_COL,
     POINT_COL,
     POLYGON_COL,
@@ -43,6 +45,12 @@ class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
     BORDER_EXCLUDE = auto()
     BORDER_ADAPTIVE = auto()
     BORDER_SINGLE_SIDED = auto()
+
+
+class AccelerationCalculation(Enum):  # pylint: disable=too-few-public-methods
+    """Identifier for the method used to compute the movement at traj borders."""
+
+    BORDER_EXCLUDE = auto()
 
 
 @dataclass(
@@ -871,6 +879,80 @@ def _compute_movememnt_adaptive_border(
     ]
     return result[result.window_size > 0]
 
+
+def _compute_individual_movement_acceleration(
+    *,
+    traj_data: TrajectoryData,
+    frame_step: int,
+    acceleration_border_method: AccelerationCalculation = AccelerationCalculation.BORDER_EXCLUDE,
+) -> pandas.DataFrame:
+    if acceleration_border_method == AccelerationCalculation.BORDER_EXCLUDE:
+        return _compute_movement_acceleration_exclude_border(
+            traj_data, frame_step
+        )
+
+    raise ValueError("speed border method not accepted")
+    
+    
+def _compute_movement_acceleration_exclude_border(
+    traj_data: TrajectoryData,
+    frame_step: int,
+    #bidirectional: bool,
+) -> pandas.DataFrame:
+    """Compute the individual movement in the time interval frame_step.
+
+    The movement is computed for the interval [frame - frame_step: frame +
+    frame_step], if one of the boundaries is not contained in the trajectory
+    frame these points will not be considered.
+
+    Args:
+        traj_data (pandas.DataFrame): trajectory data
+        frame_step (int): how many frames back and forwards are used to compute
+            the movement.
+        bidirectional (bool): if True also the future frame_step points will
+            be used to determine the movement
+
+    Returns:
+        DataFrame containing the columns: 'id', 'frame', 'start_position', 'mid_position',
+        'end_position', 'window_size'. Where 'start_position'/'end_position' are
+        the points where the movement start/ends, and 'window_size' is the
+        number of frames between the movement start and end.
+    """
+    df_movement = traj_data.data.copy(deep=True)
+
+    df_movement[START_POSITION_COL] = df_movement.groupby(
+        by=ID_COL
+    ).point.shift(2*frame_step)
+    df_movement["start_frame"] = df_movement.groupby(by=ID_COL).frame.shift(
+        2*frame_step
+    )
+
+    df_movement[MID_POSITION_COl] = df_movement.groupby(
+        by=ID_COL
+    ).point.shift(frame_step)
+    df_movement["mid_frame"] = df_movement.groupby(
+        by=ID_COL
+    ).frame.shift(
+        frame_step
+    )
+    
+    df_movement[END_POSITION_COL] = df_movement.point
+    df_movement["end_frame"] = df_movement.frame
+
+    df_movement[WINDOW_SIZE_COL] = (
+        df_movement.end_frame - df_movement.mid_frame
+    )
+    return df_movement[
+        [
+            ID_COL,
+            FRAME_COL,
+            START_POSITION_COL,
+            MID_POSITION_COL,
+            END_POSITION_COL,
+            WINDOW_SIZE_COL,
+        ]
+    ].dropna()
+    
 
 def _get_continuous_parts_in_area(
     *, traj_data: TrajectoryData, measurement_area: MeasurementArea
