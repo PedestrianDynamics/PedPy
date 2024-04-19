@@ -43,7 +43,7 @@ def compute_individual_acceleration(
 ) -> pandas.DataFrame:
     r"""Compute the individual acceleration for each pedestrian.
 
-    For computing the individuals' acceleration at a specific frame :math:`a_i(t)`,
+    For computing the individuals' acceleration at a specific frame :math:`a_i(t_k)`,
     a specific frame step (:math:`n`) is needed.
     Together with the
     :attr:`~trajectory_data.TrajectoryData.frame_rate` of
@@ -55,36 +55,40 @@ def compute_individual_acceleration(
         \Delta t = 2 n / fps
 
     This time step describes how many frames before and after the current
-    position :math:`X_{current}` are used to compute the movement.
-    These positions are called :math:`X_{future}`, :math:`X_{past}`
+    position :math:`X(t_k)` are used to compute the movement.
+    These positions are called :math:`X(t_{k+n})`, :math:`X(t_{k-n})`
     respectively.
 
-    # die Beschreibung und das Bild muss noch neu, 
-    # denn wir brauchen für die Berechnung von a(t) eigentlich 2DeltaT:
-    |
-
-    .. image:: /images/speed_both.svg
-        :width: 80 %
-        :align: center
-
-    |
 
     First computing the displacement between these positions :math:`\bar{X}`.
     This then can be used to compute the speed with:
+    In order to compute the acceleration at time 't_k', we first calculate the 
+    displacements around 't_{k+n}' and 't_{k-n}':
 
     .. math::
 
-        \bar{X} = X_{future} - X_{past}
+        \bar{X}(t_{k+n}) = X(t_{k+2n}) - X(t_{k})
+        \bar{X}(t_{k-n}) = X(t_{k}) - X(t_{k-2n})
+
+    The acceleration is then calculated from the difference of the displacements
+
+    .. math::
+
+        \Delta\bar{X}(t_k) = \bar{X}(t_{k+n}) - \bar{X}(t_{k-n})
+
+    divided by the square of the time interval '\Delta t':
+
+    .. math::
+
+        a_i(t_k) = \Delta\bar{X}(t_k) / \Delta t**2
 
 
     When getting closer to the start, or end of the trajectory data, it is not
     possible to use the full range of the frame interval for computing the
-    speed. For these cases *PedPy* offers three different methods to compute
-    the speed:
+    acceleration. For these cases *PedPy* offers one methods to compute
+    the acceleration:
 
     #. exclude these parts.
-    #. adaptively shrink the window in which the speed is computed.
-    #. switch to one-sided window.
 
     **Exclude border:**
 
@@ -92,67 +96,17 @@ def compute_individual_acceleration(
     these parts no speed can be computed and they are ignored. Use
     :code:`speed_calculation=SpeedCalculation.BORDER_EXCLUDE`.
 
-    **Adaptive border window:**
-
-    In the adaptive approach, it is checked how many frames :math:`n` are
-    available to from :math:`X_{current}` to the end of the trajectory. This
-    number is then used on both sides to create a smaller symmetric window,
-    which yields :math:`X_{past}` and :math:`X_{future}`. Now with the same
-    principles as before the individual speed :math:`a_i(t)` can be computed.
-
-    .. image:: /images/speed_border_adaptive_future.svg
-        :width: 46 %
-
-    .. image:: /images/speed_border_adaptive_past.svg
-        :width: 46 %
-
-    Use :code:`speed_calculation=SpeedCalculation.BORDER_ADAPTIVE`.
-
-    .. important::
-
-        As the time interval gets smaller to the ends of the individual
-        trajectories, the oscillations in the speed increase here.
-
-
-    **Single sided border window:**
-
-    In these cases, one of the end points to compute the movement becomes the
-    current position :math:`X_{current}`. When getting too close to the start
-    of the trajectory, the movement is computed from :math:`X_{current}` to
-    :math:`X_{future}`. In the other case the movement is from :math:`X_{past}`
-    to :math:`X_{current}`.
-
-    .. math::
-
-        v_i(t) = {|{X_{future} - X_{current}|}\over{ \frac{1}{2} \Delta t}}
-        \text{, or }
-        v_i(t) = {|{X_{current} - X_{past}|}\over{ \frac{1}{2} \Delta t}}
-
-    .. image:: /images/speed_border_single_sided_future.svg
-        :width: 46 %
-
-    .. image:: /images/speed_border_single_sided_past.svg
-        :width: 46 %
-
-    |
-    Use :code:`speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED`.
-
-    .. important::
-
-        As at the edges of the trajectories the time interval gets halved,
-        there may occur some jumps computed speeds at this point.
-
 
     **With movement direction:**
 
     It is also possible to compute the individual speed in a specific direction
-    :math:`d`, for this the movement :math:`\bar{X}` is projected onto the
-    desired movement direction. :math:`\bar{X}` and :math:`\Delta t` are
+    :math:`d`, for this the movement :math:`\Delta\bar{X}` is projected onto the
+    desired movement direction. :math:`\Delta\bar{X}` and :math:`\Delta t` are
     computed as described above. Hence, the speed then becomes:
 
     .. math::
 
-        v_i(t) = {{|\boldsymbol{proj}_d\; \bar{X}|} \over {\Delta t}}
+        a_i(t) = {{|\boldsymbol{proj}_d\; \Delta\bar{X}|} \over {\Delta t**2}}
 
     |
 
@@ -162,11 +116,8 @@ def compute_individual_acceleration(
 
     |
 
-    .. important::
 
-        Using a movement direction may lead to negative speeds!
-
-    If :code:`compute_velocity` is `True` also :math:`\bar{X}` is returned.
+    If :code:`compute_acceleration_components` is `True` also :math:`\Delta\bar{X}` is returned.
 
     Args:
         traj_data (TrajectoryData): trajectory data
@@ -175,14 +126,14 @@ def compute_individual_acceleration(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-        compute_velocity (bool): compute the x and y components of the velocity
-        speed_calculation (method_utils.SpeedCalculation): method used to
-            compute the speed at the borders of the individual trajectories
+        compute_acceleration_components (bool): compute the x and y components of the acceleration
+        acceleration_calculation (method_utils.AccelerationCalculation): method used to
+            compute the acceleration at the borders of the individual trajectories
 
     Returns:
-        DataFrame containing the columns 'id', 'frame', and 'acceleration' in m/s,
+        DataFrame containing the columns 'id', 'frame', and 'acceleration' in 'm/s^2',
         'a_x' and 'a_y' with the speed components in x and y direction if
-        :code:`compute_acceleration` is True
+        :code:`compute_acceleration_components` is True
     """
     df_movement = _compute_individual_movement_acceleration(
         traj_data=traj_data,
