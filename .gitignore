@@ -316,5 +316,6 @@ cython_debug/
 
 docs/build
 pedpy/_version.py
+docs/source/ZENODO.rst
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,pycharm,jupyternotebooks
 .vscode
