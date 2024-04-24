@@ -158,6 +158,8 @@ select = [
     "SLOT",
     # flake8-raise
     "RSE",
+    # pandas-vet
+    "PD",
 ]
 ignore = []
 # Allow unused variables when underscore-prefixed.

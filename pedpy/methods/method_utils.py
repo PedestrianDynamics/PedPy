@@ -271,7 +271,7 @@ def compute_neighbors(
         # create matrix with ped IDs
         ids = np.outer(
             np.ones_like(frame_data[ID_COL].values),
-            frame_data[ID_COL].values.reshape(1, -1),
+            frame_data[ID_COL].to_numpy().reshape(1, -1),
         )
 
         neighbors = np.where(touching, ids, np.nan)
@@ -423,7 +423,7 @@ def compute_individual_voronoi_polygons(
     )
 
     for frame, peds_in_frame in traj_data.data.groupby(traj_data.data.frame):
-        points = peds_in_frame[[X_COL, Y_COL]].values
+        points = peds_in_frame[[X_COL, Y_COL]].to_numpy()
         points = np.concatenate([points, blind_points])
 
         # only skip analysis if less than 4 peds are in the frame and blind
@@ -833,8 +833,8 @@ def _compute_movememnt_adaptive_border(
     df_movement["end_frame"] = df_movement.frame + df_movement.window_size
 
     start = (
-        pd.merge(
-            df_movement[[ID_COL, FRAME_COL, "start_frame", WINDOW_SIZE_COL]],
+        df_movement[[ID_COL, FRAME_COL, "start_frame", WINDOW_SIZE_COL]]
+        .merge(
             df_movement[[ID_COL, FRAME_COL, POINT_COL]],
             left_on=[ID_COL, "start_frame"],
             right_on=[ID_COL, FRAME_COL],
@@ -846,8 +846,8 @@ def _compute_movememnt_adaptive_border(
 
     if bidirectional:
         end = (
-            pd.merge(
-                df_movement[[ID_COL, FRAME_COL, "end_frame"]],
+            df_movement[[ID_COL, FRAME_COL, "end_frame"]]
+            .merge(
                 df_movement[[ID_COL, FRAME_COL, POINT_COL]],
                 left_on=[ID_COL, "end_frame"],
                 right_on=[ID_COL, FRAME_COL],
@@ -863,7 +863,7 @@ def _compute_movememnt_adaptive_border(
         df_movement[END_POSITION_COL] = df_movement[POINT_COL]
         end = df_movement[[ID_COL, FRAME_COL, END_POSITION_COL]].copy(deep=True)
 
-    result = pd.merge(start, end, on=[ID_COL, FRAME_COL])[
+    result = start.merge(end, on=[ID_COL, FRAME_COL])[
         [
             ID_COL,
             FRAME_COL,
@@ -940,8 +940,7 @@ def _check_crossing_in_frame_range(
         LAST_FRAME_COL,
     ), f"check_column needs to be '{FIRST_FRAME_COL}' or '{LAST_FRAME_COL}'"
 
-    crossed = pd.merge(
-        inside_range,
+    crossed = inside_range.merge(
         crossing_frames,
         left_on=[ID_COL, check_column],
         right_on=[ID_COL, FRAME_COL],

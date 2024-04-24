@@ -315,8 +315,7 @@ def compute_voronoi_speed(
             f"computing the individual speed."
         )
 
-    df_voronoi = pd.merge(
-        individual_voronoi_intersection,
+    df_voronoi = individual_voronoi_intersection.merge(
         individual_speed,
         on=[ID_COL, FRAME_COL],
     )
@@ -424,8 +423,8 @@ def _compute_individual_speed(
         )
 
     if compute_velocity:
-        movement_data[V_X_COL] = movement_data["d_x"].values / time_interval
-        movement_data[V_Y_COL] = movement_data["d_y"].values / time_interval
+        movement_data[V_X_COL] = movement_data["d_x"].to_numpy() / time_interval
+        movement_data[V_Y_COL] = movement_data["d_y"].to_numpy() / time_interval
         columns.append(V_X_COL)
         columns.append(V_Y_COL)
 
