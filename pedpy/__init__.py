@@ -1,4 +1,3 @@
-# type: ignore
 """Top level imports, for easier usage."""
 
 try:
@@ -39,6 +38,7 @@ from .methods.method_utils import (
     compute_time_distance_line,
     get_invalid_trajectory,
     is_trajectory_valid,
+    SpeedCalculation
 )
 from .methods.profile_calculator import (
     DensityMethod,
@@ -50,7 +50,6 @@ from .methods.profile_calculator import (
     get_grid_cells,
 )
 from .methods.speed_calculator import (
-    SpeedCalculation,
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,

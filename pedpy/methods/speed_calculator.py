@@ -6,7 +6,6 @@ import numpy as np
 import numpy.typing as npt
 import pandas
 import shapely
-
 from pedpy.column_identifier import (
     FRAME_COL,
     ID_COL,
@@ -241,8 +240,8 @@ def compute_mean_speed_per_frame(
             f"space but has no speed at some frames."
             f"To resolve this either edit your trajectory data, s.th. it only "
             f"contains the data that is also contained in the speed data. Or "
-            f"use a different speed border method when computing the individual "
-            f"speed."
+            f"use a different speed border method when computing the "
+            f"individual speed."
         )
 
     combined = traj_data.data.merge(individual_speed, on=[ID_COL, FRAME_COL])
@@ -309,10 +308,10 @@ def compute_voronoi_speed(
             f"data (rows={len(individual_speed)}) than Voronoi intersection "
             f"data (rows={len(individual_voronoi_intersection.index)}). This "
             f"means a person occupies space but has no speed at some frames."
-            f"To resolve this either edit your Voronoi intersection data, s.th. "
-            f"it only contains the data that is also contained in the speed "
-            f"data. Or use a different speed border method when computing the "
-            f"individual speed."
+            f"To resolve this either edit your Voronoi intersection data, "
+            f"s.th. it only contains the data that is also contained in the "
+            f"speed data. Or use a different speed border method when "
+            f"computing the individual speed."
         )
 
     df_voronoi = pandas.merge(
@@ -321,7 +320,9 @@ def compute_voronoi_speed(
         on=[ID_COL, FRAME_COL],
     )
     df_voronoi[SPEED_COL] = (
-        shapely.area(df_voronoi.intersection) * df_voronoi.speed / measurement_area.area
+        shapely.area(df_voronoi.intersection)
+        * df_voronoi.speed
+        / measurement_area.area
     )
     df_voronoi_speed = df_voronoi.groupby(by=df_voronoi.frame).speed.sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
@@ -401,13 +402,17 @@ def _compute_individual_speed(
         movement_data.end_position
     ) - shapely.get_coordinates(movement_data.start_position)
 
-    movement_data[SPEED_COL] = np.linalg.norm(movement_data[["d_x", "d_y"]], axis=1) / time_interval
+    movement_data[SPEED_COL] = (
+        np.linalg.norm(movement_data[["d_x", "d_y"]], axis=1) / time_interval
+    )
 
     if movement_direction is not None:
         # Projection of the displacement onto the movement direction
         norm_movement_direction = np.dot(movement_direction, movement_direction)
         movement_data[["d_x", "d_y"]] = (
-            np.dot(movement_data[["d_x", "d_y"]].values, movement_direction)[:, None]
+            np.dot(movement_data[["d_x", "d_y"]].values, movement_direction)[
+                :, None
+            ]
             * movement_direction
             * norm_movement_direction
         )

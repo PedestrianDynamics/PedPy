@@ -86,7 +86,7 @@ exclude = [
     "venv",
 ]
 
-line-length = 100
+line-length = 80
 src = ["pedpy"]
 extend-include = ["*.ipynb"]
 target-version = "py310"
@@ -103,7 +103,61 @@ docstring-code-line-length = "dynamic"
 case-sensitive = true
 
 [tool.ruff.lint]
-select = ["E", "W", "I", "D", "PL", "NPY"]
+#select = ["E", "W", "I", "D", "PL", "NPY"]
+select = [
+  # pyflakes
+  "F",
+  # pycodestyle
+  "E", "W",
+  # flake8-2020
+  "YTT",
+  # flake8-bugbear
+  "B",
+  # flake8-quotes
+  "Q",
+  # flake8-debugger
+  "T10",
+  # flake8-gettext
+  "INT",
+  # pylint
+  "PL",
+  # flake8-pytest-style
+  "PT",
+  # misc lints
+  "PIE",
+  # flake8-pyi
+  "PYI",
+  # tidy imports
+  "TID",
+  # implicit string concatenation
+  "ISC",
+  # type-checking imports
+  "TCH",
+  # comprehensions
+  "C4",
+  # pygrep-hooks
+  "PGH",
+  # Ruff-specific rules
+  "RUF",
+  # flake8-bandit: exec-builtin
+  "S102",
+  # numpy-legacy-random
+  "NPY002",
+  # Perflint
+  "PERF",
+  # flynt
+  "FLY",
+  # flake8-logging-format
+  "G",
+  # flake8-future-annotations
+  "FA",
+  # unconventional-import-alias
+  "ICN001",
+  # flake8-slots
+  "SLOT",
+  # flake8-raise
+  "RSE"
+]
 ignore = []
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
@@ -111,20 +165,13 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-#[tool.ruff.lint.pylint]
-## Maximum number of arguments for function / method.
-#max-args=5
-## Maximum number of boolean expressions in an if statement (see R0916).
-#max-bool-expr=5
+[tool.ruff.lint.pylint]
+max-args=10
 ## Maximum number of branch for function / method body.
-#max-branches=15
+max-branches=15
 ## Maximum number of locals for function / method body.
-#max-locals=20
-## Maximum number of public methods for a class (see R0904).
-#max-public-methods=20
-## Maximum number of return / yield for function / method body.
-#max-returns=6
+max-locals=20
 ## Maximum number of statements in function / method body.
-#max-statements=50
+max-statements=50
 ## Constant types to ignore when used as "magic values" (see: PLR2004).
-#allow-magic-value-types = ["int"]
+allow-magic-value-types = ["int", "str"]

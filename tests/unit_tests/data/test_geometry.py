@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import shapely
-
 from pedpy.data.geometry import (
     GeometryError,
     MeasurementArea,

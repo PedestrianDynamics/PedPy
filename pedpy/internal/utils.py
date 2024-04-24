@@ -1,4 +1,4 @@
-"""Module containing internal utilities"""
+"""Module containing internal utilities."""
 
 import functools
 
