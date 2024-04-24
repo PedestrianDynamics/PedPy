@@ -114,9 +114,7 @@ def load_trajectory_from_txt(
         default_frame_rate=default_frame_rate,
         default_unit=default_unit,
     )
-    traj_dataframe = _load_trajectory_data_from_txt(
-        trajectory_file=trajectory_file, unit=traj_unit
-    )
+    traj_dataframe = _load_trajectory_data_from_txt(trajectory_file=trajectory_file, unit=traj_unit)
 
     return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
@@ -225,10 +223,7 @@ def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
     frame_rate = parsed_frame_rate
     if parsed_frame_rate is None and default_frame_rate is not None:
         if default_frame_rate <= 0:
-            raise ValueError(
-                f"Default frame needs to be positive but is "
-                f"{default_frame_rate}"
-            )
+            raise ValueError(f"Default frame needs to be positive but is " f"{default_frame_rate}")
 
         frame_rate = default_frame_rate
 
@@ -303,15 +298,12 @@ def load_trajectory_from_jupedsim_sqlite(
             ) from exc
         if data.empty:
             raise LoadTrajectoryError(
-                "The given sqlite trajectory file seems to be empty. "
-                "Please check your file."
+                "The given sqlite trajectory file seems to be empty. " "Please check your file."
             )
 
         try:
             fps_query_result = (
-                con.cursor()
-                .execute("select value from metadata where key = 'fps'")
-                .fetchone()
+                con.cursor().execute("select value from metadata where key = 'fps'").fetchone()
             )
         except Exception as exc:
             raise LoadTrajectoryError(
@@ -364,20 +356,14 @@ def load_walkable_area_from_jupedsim_sqlite(
 
 def _get_jupedsim_sqlite_version(connection: sqlite3.Connection) -> int:
     cur = connection.cursor()
-    return int(
-        cur.execute(
-            "SELECT value FROM metadata WHERE key = ?", ("version",)
-        ).fetchone()[0]
-    )
+    return int(cur.execute("SELECT value FROM metadata WHERE key = ?", ("version",)).fetchone()[0])
 
 
 def _load_walkable_area_from_jupedsim_sqlite_v1(
     con: sqlite3.Connection,
 ) -> WalkableArea:
     try:
-        walkable_query_result = (
-            con.cursor().execute("select wkt from geometry").fetchone()
-        )
+        walkable_query_result = con.cursor().execute("select wkt from geometry").fetchone()
     except Exception as exc:
         raise LoadTrajectoryError(
             "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
@@ -464,9 +450,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
                 f"the 'trajectory' dataset does not contain a 'fps' attribute."
             )
 
-        df_trajectory = pd.DataFrame(
-            trajectory_dataset[:], columns=column_names
-        )
+        df_trajectory = pd.DataFrame(trajectory_dataset[:], columns=column_names)
         fps = trajectory_dataset.attrs["fps"]
 
     return TrajectoryData(data=df_trajectory, frame_rate=fps)
@@ -538,12 +522,8 @@ def load_trajectory_from_viswalk(
     """
     _validate_is_file(trajectory_file)
 
-    traj_dataframe = _load_trajectory_data_from_viswalk(
-        trajectory_file=trajectory_file
-    )
-    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
-        traj_dataframe
-    )
+    traj_dataframe = _load_trajectory_data_from_viswalk(trajectory_file=trajectory_file)
+    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(traj_dataframe)
 
     return TrajectoryData(
         data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
@@ -568,9 +548,7 @@ def _calculate_frames_and_fps(
     return frames, fps
 
 
-def _load_trajectory_data_from_viswalk(
-    *, trajectory_file: pathlib.Path
-) -> pd.DataFrame:
+def _load_trajectory_data_from_viswalk(*, trajectory_file: pathlib.Path) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
@@ -612,16 +590,13 @@ def _load_trajectory_data_from_viswalk(
             encoding="utf-8-sig",
         )
         got_columns = data.columns
-        cleaned_columns = got_columns.map(
-            lambda x: x.replace("$PEDESTRIAN:", "")
-        )
+        cleaned_columns = got_columns.map(lambda x: x.replace("$PEDESTRIAN:", ""))
         set_columns_to_keep = set(columns_to_keep)
         set_cleaned_columns = set(cleaned_columns)
         missing_columns = set_columns_to_keep - set_cleaned_columns
         if missing_columns:
             raise LoadTrajectoryError(
-                f"{common_error_message}"
-                f"Missing columns: {', '.join(missing_columns)}."
+                f"{common_error_message}" f"Missing columns: {', '.join(missing_columns)}."
             )
 
         data.columns = cleaned_columns

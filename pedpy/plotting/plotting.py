@@ -334,9 +334,9 @@ def plot_neighborhood(
         on=[ID_COL, FRAME_COL],
     )
 
-    base_neighbors = voronoi_neighbors[
-        voronoi_neighbors[ID_COL] == pedestrian_id
-    ]["neighbors"].values[0]
+    base_neighbors = voronoi_neighbors[voronoi_neighbors[ID_COL] == pedestrian_id][
+        "neighbors"
+    ].values[0]
     if axes is None:
         axes = plt.gca()
     axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
@@ -579,9 +579,7 @@ def plot_trajectories(
         axes = plt.gca()
 
     if walkable_area is not None:
-        axes = plot_walkable_area(
-            walkable_area=walkable_area, axes=axes, **kwargs
-        )
+        axes = plot_walkable_area(walkable_area=walkable_area, axes=axes, **kwargs)
 
     for _, ped in traj.data.groupby(ID_COL):
         axes.plot(
@@ -760,9 +758,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
         axes = plt.gca()
 
     if measurement_area is not None:
-        plot_measurement_setup(
-            measurement_areas=[measurement_area], axes=axes, **kwargs
-        )
+        plot_measurement_setup(measurement_areas=[measurement_area], axes=axes, **kwargs)
 
     if traj_data:
         data = pd.merge(
@@ -782,9 +778,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
             if not vmax:
                 vmax = voronoi_data[color_by_column].max()
             norm = mpl.colors.Normalize(vmin, vmax)
-            scalar_mappable = mpl.cm.ScalarMappable(
-                norm=norm, cmap=voronoi_colormap
-            )
+            scalar_mappable = mpl.cm.ScalarMappable(norm=norm, cmap=voronoi_colormap)
             color_mapper = scalar_mappable.to_rgba
         elif typ == "int64":
             voronoi_colormap = plt.get_cmap("tab20c")
@@ -796,9 +790,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
                 return forward(values)
 
             norm = mpl.colors.FuncNorm((forward, inverse), 0, 19)
-            scalar_mappable = mpl.cm.ScalarMappable(
-                norm=norm, cmap=voronoi_colormap
-            )
+            scalar_mappable = mpl.cm.ScalarMappable(norm=norm, cmap=voronoi_colormap)
             color_mapper = scalar_mappable.to_rgba
         else:
             pass
@@ -812,9 +804,7 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
             color = np.array([1, 1, 1])
 
         axes.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
-        axes.fill(
-            *poly.exterior.xy, facecolor=color, alpha=voronoi_outside_ma_alpha
-        )
+        axes.fill(*poly.exterior.xy, facecolor=color, alpha=voronoi_outside_ma_alpha)
 
         if INTERSECTION_COL in data.columns:
             if not shapely.is_empty(row[INTERSECTION_COL]):

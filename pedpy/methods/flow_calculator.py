@@ -49,31 +49,17 @@ def compute_n_t(
         traj_data=traj_data, measurement_line=measurement_line
     )
     crossing_frames = (
-        crossing_frames.groupby(by=ID_COL)[FRAME_COL]
-        .min()
-        .sort_values()
-        .reset_index()
+        crossing_frames.groupby(by=ID_COL)[FRAME_COL].min().sort_values().reset_index()
     )
 
-    n_t = (
-        crossing_frames.groupby(by=FRAME_COL)[FRAME_COL]
-        .size()
-        .cumsum()
-        .rename(CUMULATED_COL)
-    )
+    n_t = crossing_frames.groupby(by=FRAME_COL)[FRAME_COL].size().cumsum().rename(CUMULATED_COL)
 
     # add missing values, to get values for each frame. First fill everything
     # with the previous valid value (fillna('ffill')). When this is done only
     # the frame at the beginning where no one has passed the line yet area
     # missing (fillna(0)).
     n_t = (
-        n_t.reindex(
-            list(
-                range(
-                    traj_data.data.frame.min(), traj_data.data.frame.max() + 1
-                )
-            )
-        )
+        n_t.reindex(list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)))
         .ffill()
         .fillna(0)
     )
@@ -156,9 +142,7 @@ def compute_flow(
     Returns:
         DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
     """
-    crossing_speeds = pd.merge(
-        crossing_frames, individual_speed, on=[ID_COL, FRAME_COL]
-    )
+    crossing_speeds = pd.merge(crossing_frames, individual_speed, on=[ID_COL, FRAME_COL])
 
     # Get frame where the first person passes the line
     num_passed_before = 0
@@ -166,9 +150,7 @@ def compute_flow(
 
     rows = []
 
-    for frame in range(
-        passed_frame_before + delta_frame, nt.index.max(), delta_frame
-    ):
+    for frame in range(passed_frame_before + delta_frame, nt.index.max(), delta_frame):
         passed_num_peds = nt.loc[frame][CUMULATED_COL]
         passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].index.min() + 1
 
@@ -178,9 +160,7 @@ def compute_flow(
 
             flow_rate = num_passing_peds / time_range * frame_rate
             velocity = crossing_speeds[
-                crossing_speeds.frame.between(
-                    passed_frame_before, passed_frame, inclusive="both"
-                )
+                crossing_speeds.frame.between(passed_frame_before, passed_frame, inclusive="both")
             ][SPEED_COL].mean()
 
             num_passed_before = passed_num_peds

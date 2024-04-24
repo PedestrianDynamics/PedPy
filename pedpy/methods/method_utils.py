@@ -64,9 +64,7 @@ class Cutoff:
     quad_segments: int = 3
 
 
-def is_trajectory_valid(
-    *, traj_data: TrajectoryData, walkable_area: WalkableArea
-) -> bool:
+def is_trajectory_valid(*, traj_data: TrajectoryData, walkable_area: WalkableArea) -> bool:
     """Checks if all trajectory data points lie within the given walkable area.
 
     Args:
@@ -77,9 +75,7 @@ def is_trajectory_valid(
     Returns:
         All points lie within walkable area
     """
-    return get_invalid_trajectory(
-        traj_data=traj_data, walkable_area=walkable_area
-    ).empty
+    return get_invalid_trajectory(traj_data=traj_data, walkable_area=walkable_area).empty
 
 
 def get_invalid_trajectory(
@@ -95,9 +91,7 @@ def get_invalid_trajectory(
     Returns:
         DataFrame showing all data points outside the given walkable area
     """
-    return traj_data.data.loc[
-        ~shapely.within(traj_data.data.point, walkable_area.polygon)
-    ]
+    return traj_data.data.loc[~shapely.within(traj_data.data.point, walkable_area.polygon)]
 
 
 def compute_frame_range_in_area(
@@ -149,9 +143,7 @@ def compute_frame_range_in_area(
         the second or first line, and the created measurement area
     """
     # Create the second measurement line with the given offset
-    second_line = MeasurementLine(
-        shapely.offset_curve(measurement_line.line, distance=width)
-    )
+    second_line = MeasurementLine(shapely.offset_curve(measurement_line.line, distance=width))
 
     # Reverse the order of the coordinates for the second line string to
     # create a rectangular area between the lines
@@ -217,20 +209,12 @@ def compute_frame_range_in_area(
     )
 
     frame_range_between_lines = frame_range_between_lines[
-        (
-            frame_range_between_lines.start_crossed_1
-            & frame_range_between_lines.end_crossed_2
-        )
-        | (
-            frame_range_between_lines.start_crossed_2
-            & frame_range_between_lines.end_crossed_1
-        )
+        (frame_range_between_lines.start_crossed_1 & frame_range_between_lines.end_crossed_2)
+        | (frame_range_between_lines.start_crossed_2 & frame_range_between_lines.end_crossed_1)
     ]
 
     return (
-        frame_range_between_lines.loc[
-            :, (ID_COL, FIRST_FRAME_COL, LAST_FRAME_COL)
-        ],
+        frame_range_between_lines.loc[:, (ID_COL, FIRST_FRAME_COL, LAST_FRAME_COL)],
         measurement_area,
     )
 
@@ -276,9 +260,7 @@ def compute_neighbors(
         neighbors = np.where(touching, ids, np.nan)
 
         neighbors_list = [
-            np.array(neighbor)[~np.isnan(np.array(neighbor))]
-            .astype(int)
-            .tolist()
+            np.array(neighbor)[~np.isnan(np.array(neighbor))].astype(int).tolist()
             for neighbor in neighbors
         ]
 
@@ -314,9 +296,7 @@ def compute_time_distance_line(
         DataFrame containing 'id', 'frame', 'time' (seconds until
         crossing),  and 'distance' (meters to measurement line)
     """
-    df_distance_time = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]].copy(
-        deep=True
-    )
+    df_distance_time = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]].copy(deep=True)
 
     # Compute distance to measurement line
     df_distance_time[DISTANCE_COL] = shapely.distance(
@@ -464,9 +444,7 @@ def compute_individual_voronoi_polygons(
         voronoi_in_frame.loc[
             shapely.get_type_id(voronoi_in_frame.polygon) != 3,
             POLYGON_COL,
-        ] = voronoi_in_frame.loc[
-            shapely.get_type_id(voronoi_in_frame.polygon) != 3, :
-        ].apply(
+        ] = voronoi_in_frame.loc[shapely.get_type_id(voronoi_in_frame.polygon) != 3, :].apply(
             lambda row: shapely.get_parts(row[POLYGON_COL])[
                 shapely.within(row.point, shapely.get_parts(row.polygon))
             ][0],
@@ -628,9 +606,7 @@ def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
                 voronoi.vertices[k] + dir_k * length,
             ]
         )
-        polygons.append(
-            shapely.polygons(np.concatenate((finite_part, extra_edge)))
-        )
+        polygons.append(shapely.polygons(np.concatenate((finite_part, extra_edge))))
     return polygons
 
 
@@ -642,17 +618,11 @@ def _compute_individual_movement(
     speed_border_method: SpeedCalculation = SpeedCalculation.BORDER_ADAPTIVE,
 ) -> pandas.DataFrame:
     if speed_border_method == SpeedCalculation.BORDER_EXCLUDE:
-        return _compute_movement_exclude_border(
-            traj_data, frame_step, bidirectional
-        )
+        return _compute_movement_exclude_border(traj_data, frame_step, bidirectional)
     if speed_border_method == SpeedCalculation.BORDER_SINGLE_SIDED:
-        return _compute_movement_single_sided_border(
-            traj_data, frame_step, bidirectional
-        )
+        return _compute_movement_single_sided_border(traj_data, frame_step, bidirectional)
     if speed_border_method == SpeedCalculation.BORDER_ADAPTIVE:
-        return _compute_movememnt_adaptive_border(
-            traj_data, frame_step, bidirectional
-        )
+        return _compute_movememnt_adaptive_border(traj_data, frame_step, bidirectional)
 
     raise ValueError("speed border method not accepted")
 
@@ -683,27 +653,17 @@ def _compute_movement_exclude_border(
     """
     df_movement = traj_data.data.copy(deep=True)
 
-    df_movement[START_POSITION_COL] = df_movement.groupby(
-        by=ID_COL
-    ).point.shift(frame_step)
-    df_movement["start_frame"] = df_movement.groupby(by=ID_COL).frame.shift(
-        frame_step
-    )
+    df_movement[START_POSITION_COL] = df_movement.groupby(by=ID_COL).point.shift(frame_step)
+    df_movement["start_frame"] = df_movement.groupby(by=ID_COL).frame.shift(frame_step)
 
     if bidirectional:
-        df_movement[END_POSITION_COL] = df_movement.groupby(
-            df_movement.id
-        ).point.shift(-frame_step)
-        df_movement["end_frame"] = df_movement.groupby(
-            df_movement.id
-        ).frame.shift(-frame_step)
+        df_movement[END_POSITION_COL] = df_movement.groupby(df_movement.id).point.shift(-frame_step)
+        df_movement["end_frame"] = df_movement.groupby(df_movement.id).frame.shift(-frame_step)
     else:
         df_movement[END_POSITION_COL] = df_movement.point
         df_movement["end_frame"] = df_movement.frame
 
-    df_movement[WINDOW_SIZE_COL] = (
-        df_movement.end_frame - df_movement.start_frame
-    )
+    df_movement[WINDOW_SIZE_COL] = df_movement.end_frame - df_movement.start_frame
     return df_movement[
         [
             ID_COL,
@@ -743,34 +703,24 @@ def _compute_movement_single_sided_border(
     df_movement = traj_data.data.copy(deep=True)
 
     df_movement[START_POSITION_COL] = (
-        df_movement.groupby(by=ID_COL)
-        .point.shift(frame_step)
-        .fillna(df_movement.point)
+        df_movement.groupby(by=ID_COL).point.shift(frame_step).fillna(df_movement.point)
     )
     df_movement["start_frame"] = (
-        df_movement.groupby(by=ID_COL)
-        .frame.shift(frame_step)
-        .fillna(df_movement.frame)
+        df_movement.groupby(by=ID_COL).frame.shift(frame_step).fillna(df_movement.frame)
     )
 
     if bidirectional:
         df_movement[END_POSITION_COL] = (
-            df_movement.groupby(df_movement.id)
-            .point.shift(-frame_step)
-            .fillna(df_movement.point)
+            df_movement.groupby(df_movement.id).point.shift(-frame_step).fillna(df_movement.point)
         )
         df_movement["end_frame"] = (
-            df_movement.groupby(df_movement.id)
-            .frame.shift(-frame_step)
-            .fillna(df_movement.frame)
+            df_movement.groupby(df_movement.id).frame.shift(-frame_step).fillna(df_movement.frame)
         )
     else:
         df_movement[END_POSITION_COL] = df_movement.point
         df_movement["end_frame"] = df_movement.frame
 
-    df_movement[WINDOW_SIZE_COL] = (
-        df_movement.end_frame - df_movement.start_frame
-    )
+    df_movement[WINDOW_SIZE_COL] = df_movement.end_frame - df_movement.start_frame
     return df_movement[
         [
             ID_COL,
@@ -814,17 +764,11 @@ def _compute_movememnt_adaptive_border(
     )
     df_movement = df_movement.merge(frame_infos, on=ID_COL)
 
-    df_movement["distance_min"] = np.abs(
-        df_movement.frame - df_movement["frame_min"]
-    )
-    df_movement["distance_max"] = np.abs(
-        df_movement.frame - df_movement["frame_max"]
-    )
+    df_movement["distance_min"] = np.abs(df_movement.frame - df_movement["frame_min"])
+    df_movement["distance_max"] = np.abs(df_movement.frame - df_movement["frame_max"])
     df_movement[WINDOW_SIZE_COL] = np.minimum(
         frame_step,
-        np.minimum(
-            df_movement.distance_min.values, df_movement.distance_max.values
-        ),
+        np.minimum(df_movement.distance_min.values, df_movement.distance_max.values),
     )
     df_movement["start_frame"] = df_movement.frame - df_movement.window_size
     df_movement["end_frame"] = df_movement.frame + df_movement.window_size
@@ -894,9 +838,9 @@ def _get_continuous_parts_in_area(
     inside = traj_data.data.loc[
         shapely.within(traj_data.data.point, measurement_area.polygon), :
     ].copy()
-    inside.loc[:, "g"] = inside.groupby(
-        by=ID_COL, group_keys=False
-    ).frame.apply(lambda x: x.diff().ge(2).cumsum())
+    inside.loc[:, "g"] = inside.groupby(by=ID_COL, group_keys=False).frame.apply(
+        lambda x: x.diff().ge(2).cumsum()
+    )
     inside_range = (
         inside.groupby([ID_COL, "g"])
         .agg(

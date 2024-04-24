@@ -43,9 +43,7 @@ def compute_classic_density(
         DataFrame containing the columns 'frame' and 'density' in :math:`1/m^2`
     """
     peds_in_area = TrajectoryData(
-        traj_data.data[
-            shapely.contains(measurement_area.polygon, traj_data.data.point)
-        ],
+        traj_data.data[shapely.contains(measurement_area.polygon, traj_data.data.point)],
         traj_data.frame_rate,
     )
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
@@ -117,13 +115,12 @@ def compute_voronoi_density(
     )
 
     relation_col = "relation"
-    df_combined[relation_col] = shapely.area(
-        df_combined.intersection
-    ) / shapely.area(df_combined.polygon)
+    df_combined[relation_col] = shapely.area(df_combined.intersection) / shapely.area(
+        df_combined.polygon
+    )
 
     df_voronoi_density = (
-        df_combined.groupby(df_combined.frame).relation.sum()
-        / measurement_area.area
+        df_combined.groupby(df_combined.frame).relation.sum() / measurement_area.area
     ).to_frame()
 
     # Rename column and add missing zero values
