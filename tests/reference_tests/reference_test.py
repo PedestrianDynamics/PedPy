@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import shapely
+
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData

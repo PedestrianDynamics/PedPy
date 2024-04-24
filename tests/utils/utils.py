@@ -6,6 +6,7 @@ import numpy.typing as npt
 import pandas as pd
 import shapely
 from helper.create_trajectories import get_grid_trajectory
+
 from pedpy.column_identifier import X_COL, Y_COL
 from pedpy.data.trajectory_data import TrajectoryData
 

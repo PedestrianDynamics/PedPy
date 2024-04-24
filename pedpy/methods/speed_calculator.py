@@ -4,8 +4,9 @@ from typing import Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas
+import pandas as pd
 import shapely
+
 from pedpy.column_identifier import (
     FRAME_COL,
     ID_COL,
@@ -40,7 +41,7 @@ def compute_individual_speed(
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_velocity: bool = False,
     speed_calculation: SpeedCalculation = SpeedCalculation.BORDER_EXCLUDE,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     r"""Compute the individual speed for each pedestrian.
 
     For computing the individuals speed at a specific frame :math:`v_i(t)`,
@@ -200,9 +201,9 @@ def compute_individual_speed(
 def compute_mean_speed_per_frame(
     *,
     traj_data: TrajectoryData,
-    individual_speed: pandas.DataFrame,
+    individual_speed: pd.DataFrame,
     measurement_area: MeasurementArea,
-) -> Tuple[pandas.DataFrame, pandas.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     r"""Compute mean speed per frame inside a given measurement area.
 
     Computes the mean speed :math:`v_{mean}(t)` inside the measurement area from
@@ -260,10 +261,10 @@ def compute_mean_speed_per_frame(
 def compute_voronoi_speed(
     *,
     traj_data: TrajectoryData,
-    individual_speed: pandas.DataFrame,
-    individual_voronoi_intersection: pandas.DataFrame,
+    individual_speed: pd.DataFrame,
+    individual_voronoi_intersection: pd.DataFrame,
     measurement_area: MeasurementArea,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     r"""Compute the Voronoi speed per frame inside the measurement area.
 
     Computes the Voronoi speed :math:`v_{voronoi}(t)` inside the measurement
@@ -314,7 +315,7 @@ def compute_voronoi_speed(
             f"computing the individual speed."
         )
 
-    df_voronoi = pandas.merge(
+    df_voronoi = pd.merge(
         individual_voronoi_intersection,
         individual_speed,
         on=[ID_COL, FRAME_COL],
@@ -329,12 +330,12 @@ def compute_voronoi_speed(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
-    return pandas.DataFrame(df_voronoi_speed)
+    return pd.DataFrame(df_voronoi_speed)
 
 
 def compute_passing_speed(
-    *, frames_in_area: pandas.DataFrame, frame_rate: float, distance: float
-) -> pandas.DataFrame:
+    *, frames_in_area: pd.DataFrame, frame_rate: float, distance: float
+) -> pd.DataFrame:
     r"""Compute the individual speed of the pedestrian who pass the area.
 
     Compute the individual speed :math:`v^i_{passing}` at which the pedestrian
@@ -362,7 +363,7 @@ def compute_passing_speed(
     Returns:
         DataFrame containing the columns 'id' and 'speed' in m/s
     """
-    speed = pandas.DataFrame(frames_in_area.id, columns=[ID_COL, SPEED_COL])
+    speed = pd.DataFrame(frames_in_area.id, columns=[ID_COL, SPEED_COL])
     speed[SPEED_COL] = (
         frame_rate
         * distance
@@ -373,11 +374,11 @@ def compute_passing_speed(
 
 def _compute_individual_speed(
     *,
-    movement_data: pandas.DataFrame,
+    movement_data: pd.DataFrame,
     frame_rate: float,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_velocity: bool = True,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """Compute the instantaneous speed of each pedestrian.
 
     Args:

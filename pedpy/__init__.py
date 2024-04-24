@@ -1,7 +1,7 @@
 """Top level imports, for easier usage."""
 
 try:
-    from . import _version  # pylint: disable=import-self
+    from . import _version
 
     __version__ = _version.__version__
     __commit_hash__ = _version.__commit_hash__
@@ -31,6 +31,7 @@ from .methods.density_calculator import (
 from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
     Cutoff,
+    SpeedCalculation,
     compute_frame_range_in_area,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
@@ -38,7 +39,6 @@ from .methods.method_utils import (
     compute_time_distance_line,
     get_invalid_trajectory,
     is_trajectory_valid,
-    SpeedCalculation
 )
 from .methods.profile_calculator import (
     DensityMethod,

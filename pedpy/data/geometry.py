@@ -74,7 +74,7 @@ class WalkableArea:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Walkable area can not be changed after construction!"
             )
@@ -173,7 +173,7 @@ class MeasurementArea:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Measurement area can not be changed after construction!"
             )
@@ -269,7 +269,7 @@ class MeasurementLine:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Measurement line can not be changed after construction!"
             )
@@ -294,7 +294,7 @@ class MeasurementLine:
         return self._line.length
 
     @property
-    def xy(self):  # pylint: disable=invalid-name
+    def xy(self):
         """Separate arrays of X and Y coordinate values.
 
         Returns:

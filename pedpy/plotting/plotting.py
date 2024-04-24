@@ -12,6 +12,7 @@ import pandas as pd
 import shapely
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.typing import NDArray
+
 from pedpy.column_identifier import (
     CUMULATED_COL,
     DENSITY_COL,
@@ -39,7 +40,7 @@ PEDPY_GREY = (114 / 255, 125 / 255, 139 / 255)
 PEDPY_RED = (233 / 255, 117 / 255, 134 / 255)
 
 
-def _plot_series(  # pylint: disable=too-many-arguments
+def _plot_series(
     axes: matplotlib.axes.Axes,
     title: str,
     x: pd.Series,
@@ -748,7 +749,7 @@ def plot_measurement_setup(
     return axes
 
 
-def plot_voronoi_cells(  # noqa: PLR0915,PLR0912,PLR0913
+def plot_voronoi_cells(  # noqa: PLR0915, PLR0912
     *,
     voronoi_data: pd.DataFrame,
     frame: int,

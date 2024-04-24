@@ -9,6 +9,7 @@ from typing import Any, List, TextIO
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 
 

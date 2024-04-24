@@ -3,6 +3,7 @@
 from typing import Tuple
 
 import pandas as pd
+
 from pedpy.column_identifier import (
     CUMULATED_COL,
     FLOW_COL,

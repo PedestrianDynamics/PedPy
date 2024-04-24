@@ -3,6 +3,7 @@ from dataclasses import FrozenInstanceError
 
 import pandas as pd
 import pytest
+
 from pedpy.data.trajectory_data import TrajectoryData
 
 

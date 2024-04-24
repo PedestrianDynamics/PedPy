@@ -16,14 +16,15 @@ from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas
+import pandas as pd
 import shapely
+
 from pedpy.column_identifier import FRAME_COL
 from pedpy.data.geometry import WalkableArea
 from pedpy.internal.utils import alias
 
 
-class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
+class SpeedMethod(Enum):
     """Method used to compute the speed profile."""
 
     ARITHMETIC = auto()
@@ -102,7 +103,7 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
     """
 
 
-class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
+class DensityMethod(Enum):
     """Method used to compute the density profile."""
 
     VORONOI = auto()
@@ -157,9 +158,9 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
 
 
 @alias({"data": "individual_voronoi_speed_data"})
-def compute_profiles(  # noqa: D417
+def compute_profiles(
     *,
-    data: pandas.DataFrame = None,
+    data: pd.DataFrame = None,
     walkable_area: WalkableArea,
     grid_size: float,
     speed_method: SpeedMethod,
@@ -207,7 +208,7 @@ def compute_profiles(  # noqa: D417
             :attr:`DensityMethod.GAUSSIAN`.
         individual_voronoi_speed_data: deprecated alias for
             :code:`data`. Please use :code:`data` in the future.
-
+        kwargs: for allowing usage of deprecated keyword arguments
     Returns:
         List of density profiles, List of speed profiles
     """
@@ -253,13 +254,12 @@ def compute_profiles(  # noqa: D417
 
 def compute_density_profile(
     *,
-    data: pandas.DataFrame,
+    data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     density_method: DensityMethod,
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     gaussian_width: Optional[float] = None,
-    # pylint: disable=too-many-arguments
 ) -> List[npt.NDArray[np.float64]]:
     """Compute the density profile.
 
@@ -363,7 +363,7 @@ def compute_density_profile(
 
 def _compute_voronoi_density_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
 ) -> npt.NDArray[np.float64]:
@@ -379,7 +379,7 @@ def _compute_voronoi_density_profile(
 
 def _compute_classic_density_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
 ) -> npt.NDArray[np.float64]:
@@ -424,7 +424,7 @@ def _compute_classic_density_profile(
 
 def _compute_gaussian_density_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     center_x: npt.NDArray[np.float64],
     center_y: npt.NDArray[np.float64],
     width: float,
@@ -476,14 +476,13 @@ def _compute_gaussian_density_profile(
 
 def compute_speed_profile(
     *,
-    data: pandas.DataFrame,
+    data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     speed_method: SpeedMethod,
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     fill_value: float = np.nan,
     gaussian_width: float = 0.5,
-    # pylint: disable=too-many-arguments
 ) -> List[npt.NDArray[np.float64]]:
     """Computes the speed profile for pedestrians within an area.
 
@@ -614,7 +613,7 @@ def compute_speed_profile(
 
 def _compute_gaussian_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     center_x: npt.NDArray[np.float64],
     center_y: npt.NDArray[np.float64],
     fwhm: float,
@@ -718,7 +717,7 @@ def _compute_gaussian_speed_profile(
 
 def _compute_arithmetic_voronoi_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
     """Compute the arithmetic mean speed per grid cell.
@@ -759,7 +758,7 @@ def _compute_arithmetic_voronoi_speed_profile(
 
 def _compute_voronoi_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
 ) -> npt.NDArray[np.float64]:
@@ -786,7 +785,7 @@ def _compute_voronoi_speed_profile(
 
 def _compute_mean_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     fill_value: float,
@@ -853,11 +852,11 @@ def _compute_mean_speed_profile(
 
 def compute_grid_cell_polygon_intersection_area(
     *,
-    data: pandas.DataFrame,
+    data: pd.DataFrame,
     grid_cells: npt.NDArray[shapely.Polygon],
 ) -> Tuple[
     npt.NDArray[np.float64],
-    pandas.DataFrame,
+    pd.DataFrame,
 ]:
     """Compute intersection area of the grid cells with the Voronoi polygons.
 

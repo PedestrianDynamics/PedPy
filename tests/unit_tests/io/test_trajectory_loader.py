@@ -12,6 +12,7 @@ import pandas as pd
 import pytest
 import shapely
 from numpy import dtype
+
 from pedpy.column_identifier import *
 from pedpy.data.geometry import WalkableArea
 from pedpy.io.trajectory_loader import (

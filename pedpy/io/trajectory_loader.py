@@ -6,9 +6,10 @@ import sqlite3
 from enum import Enum
 from typing import Any, Optional, Tuple
 
-import h5py  # type: ignore
+import h5py
 import pandas as pd
 import shapely
+
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
@@ -26,7 +27,7 @@ class LoadTrajectoryError(Exception):
         self.message = message
 
 
-class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
+class TrajectoryUnit(Enum):
     """Identifier of the unit of the trajectory coordinates."""
 
     METER = 1
@@ -176,7 +177,7 @@ def _load_trajectory_data_from_txt(
         ) from exc
 
 
-def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
+def _load_trajectory_meta_data_from_txt(
     *,
     trajectory_file: pathlib.Path,
     default_frame_rate: Optional[float],
@@ -214,7 +215,7 @@ def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
                     try:
                         if parsed_frame_rate is None:
                             parsed_frame_rate = float(substring)
-                    except ValueError:
+                    except ValueError:  # noqa: PERF203
                         continue
 
             if "x/cm" in line.lower() or "in cm" in line.lower():
@@ -455,7 +456,6 @@ def load_trajectory_from_ped_data_archive_hdf5(
 
         trajectory_dataset = hdf5_file[dataset_name]
 
-        # pylint: disable-next=no-member
         column_names = trajectory_dataset.dtype.names
 
         if not {ID_COL, FRAME_COL, X_COL, Y_COL}.issubset(set(column_names)):

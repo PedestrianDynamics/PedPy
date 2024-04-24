@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 import shapely
+from shapely.geometry import Point
+from tests.utils.utils import get_trajectory, get_trajectory_data
+
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
@@ -9,8 +12,6 @@ from pedpy.methods.density_calculator import (
     _get_num_peds_per_frame,
     compute_classic_density,
 )
-from shapely.geometry import Point
-from tests.utils.utils import get_trajectory, get_trajectory_data
 
 
 @pytest.mark.parametrize(

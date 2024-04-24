@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-import pandas
 import shapely
+
+if TYPE_CHECKING:
+    import pandas as pd
 from pedpy.column_identifier import FRAME_COL, POINT_COL
 
 
@@ -29,7 +32,7 @@ class TrajectoryData:
         frame_rate (float): frame rate of the trajectory data
     """
 
-    data: pandas.DataFrame
+    data: pd.DataFrame
     frame_rate: float
 
     def __post_init__(self):
