@@ -142,8 +142,8 @@ select = [
     "RUF",
     # flake8-bandit: exec-builtin
     "S102",
-    # numpy-legacy-random
-    "NPY002",
+    # numpy
+    "NPY",
     # Perflint
     "PERF",
     # flynt
@@ -160,6 +160,7 @@ select = [
     "RSE",
     # pandas-vet
     "PD",
+    "RUF"
 ]
 ignore = []
 # Allow unused variables when underscore-prefixed.
@@ -169,6 +170,7 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 convention = "google"
 
 [tool.ruff.lint.pylint]
+## Maximum number of arguments for function / method
 max-args = 10
 ## Maximum number of branch for function / method body.
 max-branches = 15
