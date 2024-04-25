@@ -146,18 +146,18 @@ def compute_flow(
             'cumulative_pedestrians', and 'time' (see result from
             :func:`~flow_calculator.compute_n_t`)
         crossing_frames (pd.DataFrame): DataFrame containing the columns
-            'ID',  and 'frame' (see result from
+            'id',  and 'frame' (see result from
             :func:`~flow_calculator.compute_n_t`)
         individual_speed (pd.DataFrame): DataFrame containing the columns
-            'ID', 'frame', and 'speed'
+            'id', 'frame', and 'speed'
         delta_frame (int): size of the frame interval to compute the flow
         frame_rate (float): frame rate of the trajectories
 
     Returns:
         DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
     """
-    crossing_speeds = pd.merge(
-        crossing_frames, individual_speed, on=[ID_COL, FRAME_COL]
+    crossing_speeds = crossing_frames.merge(
+        individual_speed, on=[ID_COL, FRAME_COL]
     )
 
     # Get frame where the first person passes the line

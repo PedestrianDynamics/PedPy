@@ -25,7 +25,8 @@ class WalkableArea:
 
     The walkable area is the area in which the pedestrians can walk, only
     pedestrians inside this area are considered in the analysis. Parts which
-    are obstructed and/or can not be reached by the pedestrians can be excluded.
+    are obstructed and/or can not be reached by the pedestrians can be
+    excluded.
 
     Walkable area need to be simple and cover a non-zero area.
     """
@@ -54,8 +55,8 @@ class WalkableArea:
             self._polygon = _create_polygon_from_input(polygon, obstacles)
         except Exception as exc:
             raise GeometryError(
-                f"Could not create walkable area from the given "
-                f"coordinates: {polygon}. Following exception was raised: {exc}"
+                f"Could not create walkable area from the given coordinates:"
+                f" {polygon}. Following exception was raised: {exc}"
             ) from exc
 
         for hole in self._polygon.interiors:
@@ -73,7 +74,7 @@ class WalkableArea:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Walkable area can not be changed after construction!"
             )
@@ -172,7 +173,7 @@ class MeasurementArea:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Measurement area can not be changed after construction!"
             )
@@ -240,7 +241,8 @@ class MeasurementLine:
                 self._line = shapely.LineString(coordinates)
         except Exception as exc:
             raise GeometryError(
-                f"Could not create measurement line from the given coordinates: {exc}."
+                f"Could not create measurement line from the given "
+                f"coordinates: {exc}."
             ) from exc
 
         if not isinstance(self._line, shapely.LineString):
@@ -267,7 +269,7 @@ class MeasurementLine:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Measurement line can not be changed after construction!"
             )
@@ -292,7 +294,7 @@ class MeasurementLine:
         return self._line.length
 
     @property
-    def xy(self):  # pylint: disable=invalid-name
+    def xy(self):
         """Separate arrays of X and Y coordinate values.
 
         Returns:
@@ -450,7 +452,8 @@ def _create_polygon_from_input(
     ):
         if holes is not None:
             raise GeometryError(
-                "If polygon is of type shapely.Polygon additional holes are not allowed."
+                "If polygon is of type shapely.Polygon additional holes are "
+                "not allowed."
             )
         return_poly = _polygon_from_shapely(polygon_input)
     elif isinstance(polygon_input, str):
@@ -462,15 +465,16 @@ def _create_polygon_from_input(
             return_poly = _polygon_from_wkt(polygon_input)
         except Exception as exc:
             raise GeometryError(
-                f"Could not create polygon from the given WKT: {polygon_input}."
-                f" See following error message:\n{exc}"
+                f"Could not create polygon from the given WKT: "
+                f"{polygon_input}. See following error message:\n{exc}"
             ) from exc
     else:
         try:
             return_poly = _polygon_from_coordinates(polygon_input, holes=holes)
         except Exception as exc:
             raise GeometryError(
-                f"Could not create polygon from the given input: {polygon_input}."
+                f"Could not create polygon from the given input: "
+                f"{polygon_input}."
             ) from exc
 
     if not return_poly.is_simple or return_poly.area == 0:
