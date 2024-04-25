@@ -156,7 +156,7 @@ def _load_trajectory_data_from_txt(
         if data.empty:
             raise ValueError(
                 "The given trajectory file seem to be empty. It should "
-                "contain at least 5 columns: ID, frame, X, Y, Z. The values "
+                "contain at least 5 columns: id, frame, X, Y, Z. The values "
                 "should be separated by any white space. Comment line may "
                 "start with a '#' and will be ignored. "
                 f"Please check your trajectory file: {trajectory_file}."
@@ -170,7 +170,7 @@ def _load_trajectory_data_from_txt(
     except pd.errors.ParserError as exc:
         raise ValueError(
             "The given trajectory file could not be parsed. It should "
-            "contain at least 5 columns: ID, frame, X, Y, Z. The values "
+            "contain at least 5 columns: id, frame, X, Y, Z. The values "
             "should be separated by any white space. Comment line may start "
             "with a '#' and will be ignored. "
             f"Please check your trajectory file: {trajectory_file}."
@@ -462,7 +462,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
             raise LoadTrajectoryError(
                 f"{trajectory_file} seems to be not a supported hdf5 file, "
                 f"the 'trajectory' dataset does not contain the following "
-                f"columns: {ID_COL}', '{FRAME_COL}', '{X_COL}', and "
+                f"columns: '{ID_COL}', '{FRAME_COL}', '{X_COL}', and "
                 f"'{Y_COL}'."
             )
 

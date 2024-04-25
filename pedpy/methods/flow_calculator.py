@@ -146,10 +146,10 @@ def compute_flow(
             'cumulative_pedestrians', and 'time' (see result from
             :func:`~flow_calculator.compute_n_t`)
         crossing_frames (pd.DataFrame): DataFrame containing the columns
-            'ID',  and 'frame' (see result from
+            'id',  and 'frame' (see result from
             :func:`~flow_calculator.compute_n_t`)
         individual_speed (pd.DataFrame): DataFrame containing the columns
-            'ID', 'frame', and 'speed'
+            'id', 'frame', and 'speed'
         delta_frame (int): size of the frame interval to compute the flow
         frame_rate (float): frame rate of the trajectories
 
