@@ -371,7 +371,7 @@ def plot_neighborhood(
 
     base_neighbors = voronoi_neighbors[
         voronoi_neighbors[ID_COL] == pedestrian_id
-    ]["neighbors"].to_numpy[0]
+    ]["neighbors"].to_numpy()[0]
     if axes is None:
         axes = plt.gca()
     axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
