@@ -34,15 +34,15 @@ def compute_pair_distibution_function(
         radius_bin_size: float, the size of the bins for the radial distribution function in the
             same units as the positions.
         randomisation_stacking: int, Number of time the dataset will be stacked before being
-            randomly shuffled to exact distances of non-interacting pedestrians. Larger stacking number
-            will lead to closer approximation of true pairwise distribution of non-interacting pedestrians
-            but with also increase computation cost.
+            randomly shuffled to exact distances of non-interacting pedestrians. Larger stacking
+            number will lead to closer approximation of true pairwise distribution of non-
+            interacting pedestrians but with also increase computation cost.
 
 
     Returns:
         Tuple[np.ndarray, np.ndarray]: A tuple of two numpy arrays. The first array contains the
-            bin edges (excluding the first bin edge), and the second array contains the values of the pair-
-            distribution function :math:`g(r)` for each bin.
+            bin edges (excluding the first bin edge), and the second array contains the values of
+            the pair-distribution function :math:`g(r)` for each bin.
     """
     data_df = traj_data.data
 
@@ -118,8 +118,8 @@ def calculate_data_frame_pair_dist(
     distances_list = []
 
     for _, frame_df in data_df.groupby(FRAME_COL):
-        N_unique_ids = len(frame_df[ID_COL].unique())
-        if N_unique_ids > 1:
+        Nb_unique_ids = len(frame_df[ID_COL].unique())
+        if Nb_unique_ids > 1:
             x_values = frame_df[X_COL].values
             y_values = frame_df[Y_COL].values
             coordinates = np.stack((x_values, y_values), axis=-1)
