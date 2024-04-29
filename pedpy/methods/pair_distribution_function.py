@@ -118,8 +118,8 @@ def calculate_data_frame_pair_dist(
     distances_list = []
 
     for _, frame_df in data_df.groupby(FRAME_COL):
-        Nb_unique_ids = len(frame_df[ID_COL].unique())
-        if Nb_unique_ids > 1:
+        number_pedestrians = len(frame_df[ID_COL].unique())
+        if number_pedestrians > 1:
             x_values = frame_df[X_COL].values
             y_values = frame_df[Y_COL].values
             coordinates = np.stack((x_values, y_values), axis=-1)
