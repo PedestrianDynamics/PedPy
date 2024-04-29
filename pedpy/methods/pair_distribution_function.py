@@ -117,7 +117,6 @@ def calculate_data_frame_pair_dist(
     Returns:
     - npt.NDArray[np.float16]: A 1D numpy array of pairwise distances.
     """
-
     distances_list = []
 
     for _, frame_df in data_df.groupby(FRAME_COL):
