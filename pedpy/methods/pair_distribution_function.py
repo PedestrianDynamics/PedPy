@@ -85,10 +85,10 @@ def compute_pair_distibution_function(
     try:
         with np.errstate(divide="raise"):
             pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
-        warnings.filterwarnings("default")  # reset wrnings values
+        warnings.filterwarnings("default")  # reset warning-values
 
     except FloatingPointError:
-        warnings.filterwarnings("default")  # reset wrnings values
+        warnings.filterwarnings("default")  # reset warning-values
         pair_distribution = pd_bins_normalised / pd_ni_bins_normalised
         warning_message = (
             "Random probability distribution contains null values,"
