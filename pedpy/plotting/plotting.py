@@ -402,6 +402,188 @@ def plot_time_distance(
     Returns:
         matplotlib.axes.Axes instance where the distance is plotted
     """
+
+    def _setup_plot(axes: matplotlib.axes.Axes, **kwargs: Any) -> None:
+        """Configures the initial settings of the plot, including title and axis labels.
+
+        Args:
+        axes: The matplotlib axes to configure.
+        **kwargs: Keyword arguments containing
+        'title', 'x_label' and 'y_label'.
+        """
+        title = kwargs.get("title", "Distance Plot")
+        x_label = kwargs.get("x_label", "Distance / m")
+        y_label = kwargs.get("y_label", "Time / s")
+
+        axes.set_title(title)
+        axes.set_xlabel(x_label)
+        axes.set_ylabel(y_label)
+
+    def _scatter_min_data(
+        axes: matplotlib.axes.Axes,
+        ped_data: pd.DataFrame,
+        color: str,
+    ) -> None:
+        """Adds a scatter plot marker at the start of a pedestrian's line.
+
+        Args:
+        axes: The matplotlib axes to plot on.
+        ped_data: DataFrame containing a single pedestrian's data.
+        color: Color of the scatter plot marker.
+        """
+        min_data = ped_data[ped_data.frame == ped_data.frame.min()]
+        axes.scatter(
+            min_data.distance,
+            min_data.time_seconds,
+            color=color,
+            s=5,
+            marker="o",
+        )
+
+    def _scatter_min_data_with_color(
+        axes: matplotlib.axes.Axes,
+        ped_data: pd.DataFrame,
+        norm: Normalize,
+    ) -> None:
+        """Adds a scatter plot marker at the start of a pedestrian's line.
+
+        Args:
+        axes: The matplotlib axes to plot on.
+        ped_data: DataFrame containing a single pedestrian's data.
+        norm: Normalization for the colormap based on speed.
+        cmap: The colormap to use for coloring the line based on speed.
+        frame_rate: Frame rate used to adjust time values.
+        color: Color of the scatter plot marker.
+        """
+        min_data = ped_data[ped_data.frame == ped_data.frame.min()]
+        axes.scatter(
+            min_data.distance,
+            min_data.time_seconds,
+            c=min_data.speed,
+            cmap="jet",
+            norm=norm,
+            s=5,
+            marker="o",
+        )
+
+    def _plot_line(
+        axes: matplotlib.axes.Axes,
+        ped_data: pd.DataFrame,
+        color: str,
+    ) -> None:
+        """Plots a line for a single pedestrian's data.
+
+        Args:
+        axes: The matplotlib axes to plot on.
+        ped_data: DataFrame containing a single pedestrian's distance and time data.
+        color: Color of the line.
+        """
+        axes.plot(
+            ped_data.distance,
+            ped_data.time_seconds,
+            color=color,
+            alpha=0.7,
+            lw=0.25,
+        )
+
+    def _plot_colored_line(
+        axes: matplotlib.axes.Axes,
+        ped_data: pd.DataFrame,
+        norm: Normalize,
+    ) -> None:
+        """Plots a line for a single pedestrian's data with color indicating speed.
+
+        Args:
+        axes: The matplotlib axes to plot on.
+        ped_data: DataFrame containing a single pedestrian's distance and time data.
+        norm: Normalization for the colormap based on speed.
+        cmap: The colormap to use for coloring the line based on speed.
+        """
+        points = ped_data[["distance", "time_seconds"]].to_numpy()
+        speed_id = ped_data.speed.to_numpy()
+        segments = [
+            [
+                (points[i, 0], points[i, 1]),
+                (points[i + 1, 0], points[i + 1, 1]),
+            ]
+            for i in range(len(points) - 1)
+        ]
+        line_collection = LineCollection(
+            segments, cmap="jet", alpha=0.7, norm=norm
+        )
+        line_collection.set_array(speed_id)
+        line_collection.set_linewidth(0.5)
+        axes.add_collection(line_collection)
+
+    def _add_colorbar(axes: matplotlib.axes.Axes, norm: Normalize) -> None:
+        """Adds a colorbar to the plot, indicating the mapping of colors to speed values.
+
+        Args:
+        axes: The matplotlib axes to plot on.
+        cmap: The colormap used for the plot.
+        norm: Normalization used for the colormap.
+        """
+        scalar_map = plt.cm.ScalarMappable(cmap="jet", norm=norm)
+        scalar_map.set_array([])
+        cbar = plt.colorbar(scalar_map, ax=axes)
+        cbar.set_label("Speed / m/s")
+
+    def _finalize_plot(axes: matplotlib.axes.Axes) -> None:
+        """Applies final adjustments to the plot, including autoscaling and setting margins.
+
+        Args:
+        axes: The matplotlib axes to adjust.
+        """
+        axes.autoscale()
+        axes.margins(0.1)
+        axes.grid(alpha=0.3)
+        axes.set_xlim(0, None)
+        axes.set_ylim(0, None)
+
+    def _plot_with_speed_colors(
+        axes: matplotlib.axes.Axes,
+        time_distance: pd.DataFrame,
+        speed: pd.DataFrame,
+    ) -> None:
+        """Plots pedestrian data with lines colored according to speed.
+
+        Args:
+        axes: The matplotlib axes to plot on.
+        time_distance: DataFrame containing the pedestrian data.
+        speed: DataFrame containing speed calculations.
+        frame_rate: Frame rate used to adjust time values.
+        """
+        time_distance = time_distance.merge(speed, on=[ID_COL, FRAME_COL])
+        norm = Normalize(
+            vmin=time_distance.speed.min(), vmax=time_distance.speed.max()
+        )
+
+        for _, ped_data in time_distance.groupby(ID_COL):
+            _plot_colored_line(axes, ped_data, norm)
+
+        _scatter_min_data_with_color(axes, time_distance, norm)
+        _add_colorbar(axes, norm)
+
+    def _plot_without_colors(
+        axes: matplotlib.axes.Axes,
+        time_distance: pd.DataFrame,
+        **kwargs: Any,
+    ) -> None:
+        """Plots pedestrian data without using speed colors.
+
+        Args:
+        axes: The matplotlib axes to plot on.
+        time_distance: DataFrame containing the pedestrian data.
+        frame_rate: Frame rate used to adjust time values.
+        **kwargs: Additional customization options (line_color, marker_color).
+        """
+        line_color = kwargs.pop("line_color", PEDPY_GREY)
+        marker_color = kwargs.pop("marker_color", PEDPY_GREY)
+        for _, ped_data in time_distance.groupby(ID_COL):
+            _plot_line(axes, ped_data, line_color)
+
+        _scatter_min_data(axes, time_distance, marker_color)
+
     axes = axes or plt.gca()
     _setup_plot(axes, **kwargs)
     time_distance["time_seconds"] = time_distance.time / frame_rate
@@ -413,194 +595,6 @@ def plot_time_distance(
     _finalize_plot(axes)
 
     return axes
-
-
-def _setup_plot(axes: matplotlib.axes.Axes, **kwargs: Any) -> None:
-    """Configures the initial settings of the plot, including title and axis labels.
-
-    Args:
-        axes: The matplotlib axes to configure.
-        **kwargs: Keyword arguments containing
-        'title', 'x_label' and 'y_label'.
-    """
-    title = kwargs.get("title", "Distance Plot")
-    x_label = kwargs.get("x_label", "Distance / m")
-    y_label = kwargs.get("y_label", "Time / s")
-
-    axes.set_title(title)
-    axes.set_xlabel(x_label)
-    axes.set_ylabel(y_label)
-
-
-def _plot_with_speed_colors(
-    axes: matplotlib.axes.Axes,
-    time_distance: pd.DataFrame,
-    speed: pd.DataFrame,
-) -> None:
-    """Plots pedestrian data with lines colored according to speed.
-
-    Args:
-        axes: The matplotlib axes to plot on.
-        time_distance: DataFrame containing the pedestrian data.
-        speed: DataFrame containing speed calculations.
-        frame_rate: Frame rate used to adjust time values.
-    """
-    time_distance = time_distance.merge(speed, on=[ID_COL, FRAME_COL])
-    norm = Normalize(
-        vmin=time_distance.speed.min(), vmax=time_distance.speed.max()
-    )
-
-    for _, ped_data in time_distance.groupby(ID_COL):
-        _plot_colored_line(axes, ped_data, norm)
-
-    _scatter_min_data_with_color(axes, time_distance, norm)
-    _add_colorbar(axes, norm)
-
-
-def _plot_without_colors(
-    axes: matplotlib.axes.Axes,
-    time_distance: pd.DataFrame,
-    **kwargs: Any,
-) -> None:
-    """Plots pedestrian data without using speed colors.
-
-    Args:
-        axes: The matplotlib axes to plot on.
-        time_distance: DataFrame containing the pedestrian data.
-        frame_rate: Frame rate used to adjust time values.
-        **kwargs: Additional customization options (line_color, marker_color).
-    """
-    line_color = kwargs.pop("line_color", PEDPY_GREY)
-    marker_color = kwargs.pop("marker_color", PEDPY_GREY)
-    for _, ped_data in time_distance.groupby(ID_COL):
-        _plot_line(axes, ped_data, line_color)
-
-    _scatter_min_data(axes, time_distance, marker_color)
-
-
-def _scatter_min_data(
-    axes: matplotlib.axes.Axes,
-    ped_data: pd.DataFrame,
-    color: str,
-) -> None:
-    """Adds a scatter plot marker at the start of a pedestrian's line.
-
-    Args:
-        axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's data.
-        color: Color of the scatter plot marker.
-    """
-    min_data = ped_data[ped_data.frame == ped_data.frame.min()]
-    axes.scatter(
-        min_data.distance,
-        min_data.time_seconds,
-        color=color,
-        s=5,
-        marker="o",
-    )
-
-
-def _scatter_min_data_with_color(
-    axes: matplotlib.axes.Axes,
-    ped_data: pd.DataFrame,
-    norm: Normalize,
-) -> None:
-    """Adds a scatter plot marker at the start of a pedestrian's line.
-
-    Args:
-        axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's data.
-        norm: Normalization for the colormap based on speed.
-        cmap: The colormap to use for coloring the line based on speed.
-        frame_rate: Frame rate used to adjust time values.
-        color: Color of the scatter plot marker.
-    """
-    min_data = ped_data[ped_data.frame == ped_data.frame.min()]
-    axes.scatter(
-        min_data.distance,
-        min_data.time_seconds,
-        c=min_data.speed,
-        cmap="jet",
-        norm=norm,
-        s=5,
-        marker="o",
-    )
-
-
-def _plot_line(
-    axes: matplotlib.axes.Axes,
-    ped_data: pd.DataFrame,
-    color: str,
-) -> None:
-    """Plots a line for a single pedestrian's data.
-
-    Args:
-        axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's distance and time data.
-        color: Color of the line.
-    """
-    axes.plot(
-        ped_data.distance,
-        ped_data.time_seconds,
-        color=color,
-        alpha=0.7,
-        lw=0.25,
-    )
-
-
-def _plot_colored_line(
-    axes: matplotlib.axes.Axes,
-    ped_data: pd.DataFrame,
-    norm: Normalize,
-) -> None:
-    """Plots a line for a single pedestrian's data with color indicating speed.
-
-    Args:
-        axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's distance and time data.
-        norm: Normalization for the colormap based on speed.
-        cmap: The colormap to use for coloring the line based on speed.
-    """
-    points = ped_data[["distance", "time_seconds"]].to_numpy()
-    speed_id = ped_data.speed.to_numpy()
-    segments = [
-        [
-            (points[i, 0], points[i, 1]),
-            (points[i + 1, 0], points[i + 1, 1]),
-        ]
-        for i in range(len(points) - 1)
-    ]
-    line_collection = LineCollection(segments, cmap="jet", alpha=0.7, norm=norm)
-    line_collection.set_array(speed_id)
-    line_collection.set_linewidth(0.5)
-    axes.add_collection(line_collection)
-
-
-def _add_colorbar(axes: matplotlib.axes.Axes, norm: Normalize) -> None:
-    """Adds a colorbar to the plot, indicating the mapping of colors to speed values.
-
-    Args:
-        axes: The matplotlib axes to plot on.
-        cmap: The colormap used for the plot.
-        norm: Normalization used for the colormap.
-    """
-    scalar_map = plt.cm.ScalarMappable(cmap="jet", norm=norm)
-    scalar_map.set_array([])
-    cbar = plt.colorbar(scalar_map, ax=axes)
-    cbar.set_label("Speed / m/s")
-
-
-def _finalize_plot(axes: matplotlib.axes.Axes) -> None:
-    """Applies final adjustments to the plot, including autoscaling and setting margins.
-
-    Args:
-        axes: The matplotlib axes to adjust.
-    """
-    axes.autoscale()
-    axes.margins(0.1)
-    axes.grid(alpha=0.3)
-    axes.set_xlim(0, None)
-    axes.set_ylim(0, None)
 
 
 def plot_profiles(
