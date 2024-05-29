@@ -1,19 +1,23 @@
-import requests
-import textwrap
 import pathlib
-import warnings
-import pedpy
+import textwrap
 import time
+import warnings
+
+import requests
+
+import pedpy
 
 zenodo_path = pathlib.Path("docs/source/ZENODO.rst")
 
 search_query = "PedPy"
-# version = f"v{pedpy.__version__}"
-version = "v1.1.0"
+version = f"v{pedpy.__version__}"
 record_id = None
 zenodo_record = "If you use *PedPy* in your work, please cite it with the following information from Zenodo.\n\n"
 
-def fetch_data_with_retries(url, params=None, headers=None, max_retries=10, wait_time=2):
+
+def fetch_data_with_retries(
+    url, params=None, headers=None, max_retries=10, wait_time=2
+):
     for attempt in range(max_retries):
         try:
             response = requests.get(url, params=params, headers=headers)
@@ -23,6 +27,7 @@ def fetch_data_with_retries(url, params=None, headers=None, max_retries=10, wait
             warnings.warn(f"Attempt {attempt + 1} failed: {e}")
             time.sleep(wait_time)
     raise RuntimeError("All attempts to fetch data failed.")
+
 
 try:
     response = fetch_data_with_retries(
