@@ -39,9 +39,6 @@ from .methods.method_utils import (
     get_invalid_trajectory,
     is_trajectory_valid,
 )
-from .methods.spatial_analysis import (
-    compute_pair_distibution_function,
-)
 from .methods.profile_calculator import (
     DensityMethod,
     SpeedMethod,
@@ -51,6 +48,7 @@ from .methods.profile_calculator import (
     compute_speed_profile,
     get_grid_cells,
 )
+from .methods.spatial_analysis import compute_pair_distibution_function
 from .methods.speed_calculator import (
     SpeedCalculation,
     compute_individual_speed,
