@@ -34,6 +34,15 @@ Profiles
     :no-private-members:
     :no-special-members:
 
+Spacial Analysis
+*****
+
+.. autoapimodule:: spatial_analysis
+    :members:
+    :no-private-members:
+    :no-special-members:
+
+
 Utils
 *****
 

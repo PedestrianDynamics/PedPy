@@ -39,7 +39,7 @@ from .methods.method_utils import (
     get_invalid_trajectory,
     is_trajectory_valid,
 )
-from .methods.pair_distribution_function import (
+from .methods.spatial_analysis import (
     compute_pair_distibution_function,
 )
 from .methods.profile_calculator import (
