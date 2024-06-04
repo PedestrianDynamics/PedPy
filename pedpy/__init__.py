@@ -48,6 +48,7 @@ from .methods.profile_calculator import (
     compute_speed_profile,
     get_grid_cells,
 )
+from .methods.spatial_analysis import compute_pair_distibution_function
 from .methods.speed_calculator import (
     SpeedCalculation,
     compute_individual_speed,
@@ -104,6 +105,7 @@ __all__ = [
     "compute_time_distance_line",
     "get_invalid_trajectory",
     "is_trajectory_valid",
+    "compute_pair_distibution_function",
     "DensityMethod",
     "SpeedMethod",
     "compute_density_profile",
