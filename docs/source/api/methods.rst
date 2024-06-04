@@ -2,7 +2,8 @@
 Analysis Methods
 *****************
 
-Fundamental measurements
+
+Core measurements
 -----------------
 
 Density
@@ -30,8 +31,9 @@ Flow
     :no-special-members:
 
 
-Further methods
---------------
+
+Pedestrian Dynamics
+------------------
 
 Spatial Analysis
 ^^^^^^^^^^^^^^
@@ -49,6 +51,7 @@ Motion profiles
     :members:
     :no-private-members:
     :no-special-members:
+
 
 Utilities
 ------
