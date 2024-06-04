@@ -36,9 +36,10 @@ Further methods
 Spatial Analysis
 ^^^^^^^^^^^^^^
 
-.. note::
-
-   Waiting for PR #320
+.. autoapimodule:: spatial_analysis
+    :members:
+    :no-private-members:
+    :no-special-members:
 
 
 Motion profiles

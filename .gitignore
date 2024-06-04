@@ -317,3 +317,4 @@ cython_debug/
 docs/build
 pedpy/_version.py
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,pycharm,jupyternotebooks
+.vscode
