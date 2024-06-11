@@ -1,4 +1,7 @@
-"""Module containing functions to compute spatial analysis methods e.g. the pair distribution function."""
+"""Module containing functions to compute spatial analysis methods.
+
+For example: the pair distribution function.
+"""
 
 import warnings
 from typing import Tuple
