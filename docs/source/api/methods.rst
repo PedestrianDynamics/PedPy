@@ -1,6 +1,6 @@
-*****************
+****************
 Analysis Methods
-*****************
+****************
 
 
 Core measurements
@@ -32,8 +32,8 @@ Flow
 
 
 
-Pedestrian Dynamics
-------------------
+Further measurements
+--------------------
 
 Spatial Analysis
 ^^^^^^^^^^^^^^
