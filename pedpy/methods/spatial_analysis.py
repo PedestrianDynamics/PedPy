@@ -1,4 +1,4 @@
-"""Module containing functions to compute pair distribution function."""
+"""Module containing functions to compute spatial analysis methods e.g. the pair distribution function."""
 
 import warnings
 from typing import Tuple
@@ -47,7 +47,7 @@ def compute_pair_distibution_function(
     data_df = traj_data.data
 
     # Create Dataframe with all pairwise distances
-    pairwise_dist_array = calculate_data_frame_pair_dist(data_df)
+    pairwise_dist_array = _calculate_pair_distances(data_df)
 
     # Concatenate the working dataframe (data_df) to match the number of randomization cycles
     concatenated_random_df = pandas.concat(
@@ -58,9 +58,7 @@ def compute_pair_distibution_function(
     concatenated_random_df.frame = concatenated_random_df.frame.sample(
         frac=1
     ).reset_index(drop=True)
-    pairwise_dist_ni_array = calculate_data_frame_pair_dist(
-        concatenated_random_df
-    )
+    pairwise_dist_ni_array = _calculate_pair_distances(concatenated_random_df)
 
     ## Create the bin for data
     radius_bins = np.arange(0, pairwise_dist_array.max(), radius_bin_size)
@@ -99,7 +97,7 @@ def compute_pair_distibution_function(
     return radius_bins[1:], pair_distribution
 
 
-def calculate_data_frame_pair_dist(
+def _calculate_pair_distances(
     data_df: pandas.DataFrame,
 ) -> npt.NDArray[np.float16]:
     """Calculates the pairwise distances for a given pandas DataFrame of pedestrian positions.
