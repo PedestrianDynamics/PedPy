@@ -14,6 +14,7 @@ import pandas as pd
 import shapely
 from matplotlib.collections import LineCollection
 from matplotlib.colors import Normalize
+from matplotlib.patches import Polygon
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.typing import NDArray
 
@@ -42,6 +43,87 @@ PEDPY_GREEN = (108 / 255, 190 / 255, 167 / 255)
 PEDPY_PETROL = (98 / 255, 190 / 255, 190 / 255)
 PEDPY_GREY = (114 / 255, 125 / 255, 139 / 255)
 PEDPY_RED = (233 / 255, 117 / 255, 134 / 255)
+
+
+def _plot_polygon(
+    *,
+    axes: matplotlib.axes.Axes,
+    polygon: shapely.Polygon,
+    polygon_color: Any,
+    polygon_alpha: float = 1,
+    line_color: Any = PEDPY_GREY,
+    line_width: float = 1,
+    hole_color: Any = "lightgrey",
+    hole_alpha: float = 1,
+) -> matplotlib.axes.Axes:
+    """Plot the shapely polygon (including holes).
+
+    Args:
+        polygon (shapely.Polygon): polygon to plot
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        polygon_color (Any): background color of the polygon
+        polygon_alpha (float): alpha of the background for the polygon
+        line_color (Any): color of the borders
+        line_width (float): line width of the borders
+        hole_color (Any): background color of holes
+        hole_alpha (float): alpha of background color for holes
+
+    Returns:
+        matplotlib.axes.Axes instance where the polygon is plotted
+
+    """
+    # Plot the boundary of the polygon/holes separately to get the same color
+    # as the outside as alpha modifies all colors
+
+    # Plot the exterior of the polygon
+    exterior_coords = list(polygon.exterior.coords)
+    exterior_polygon_border = Polygon(
+        exterior_coords,
+        edgecolor=line_color,
+        facecolor="none",
+        linewidth=line_width,
+        closed=True,
+        zorder=1000,
+    )
+    axes.add_patch(exterior_polygon_border)
+
+    exterior_polygon_fill = Polygon(
+        exterior_coords,
+        edgecolor="none",
+        facecolor=polygon_color,
+        linewidth=line_width,
+        alpha=polygon_alpha,
+        closed=True,
+        zorder=1000,
+    )
+    axes.add_patch(exterior_polygon_fill)
+
+    # Plot the interiors (holes) of the polygon
+    for interior in polygon.interiors:
+        interior_coords = list(interior.coords)
+        interior_polygon_border = Polygon(
+            interior_coords,
+            edgecolor=line_color,
+            facecolor="none",
+            linewidth=line_width,
+            alpha=1,
+            closed=True,
+            zorder=1000,
+        )
+        axes.add_patch(interior_polygon_border)
+
+        interior_polygon_fill = Polygon(
+            interior_coords,
+            edgecolor="none",
+            facecolor=hole_color,
+            linewidth=line_width,
+            alpha=hole_alpha,
+            closed=True,
+            zorder=1000,
+        )
+        axes.add_patch(interior_polygon_fill)
+
+    return axes
 
 
 def _plot_series(  # pylint: disable=too-many-arguments
@@ -367,8 +449,13 @@ def plot_neighborhood(
             color = neighbor_color
             alpha = 0.5
 
-        axes.plot(*poly.exterior.xy, alpha=1, color=color)
-        axes.fill(*poly.exterior.xy, alpha=alpha, color=color)
+        _plot_polygon(
+            axes=axes,
+            polygon=poly,
+            line_color=color,
+            polygon_color=color,
+            polygon_alpha=alpha,
+        )
         axes.set_aspect("equal")
 
     return axes
@@ -689,20 +776,20 @@ def plot_walkable_area(
     hole_color = kwargs.pop("hole_color", "lightgrey")
     hole_alpha = kwargs.pop("hole_alpha", 1.0)
 
-    axes.plot(
-        *walkable_area.polygon.exterior.xy,
-        color=line_color,
-        linewidth=line_width,
+    axes = _plot_polygon(
+        polygon=walkable_area.polygon,
+        polygon_color="none",
+        line_color=line_color,
+        line_width=line_width,
+        hole_color=hole_color,
+        hole_alpha=hole_alpha,
+        axes=axes,
     )
-
-    for hole in walkable_area.polygon.interiors:
-        axes.plot(*hole.xy, color=line_color, linewidth=line_width)
-        # Paint all holes first white, then with the desired color
-        axes.fill(*hole.xy, color="w", alpha=1)
-        axes.fill(*hole.xy, color=hole_color, alpha=hole_alpha)
 
     axes.set_xlabel(r"x/m")
     axes.set_ylabel(r"y/m")
+
+    axes.autoscale_view()
 
     return axes
 
@@ -828,24 +915,22 @@ def plot_measurement_setup(
     if axes is None:
         axes = plt.gca()
 
+    if measurement_areas is not None:
+        for measurement_area in measurement_areas:
+            _plot_polygon(
+                axes=axes,
+                polygon=measurement_area.polygon,
+                line_color=ma_line_color,
+                line_width=ma_line_width,
+                polygon_alpha=ma_alpha,
+                polygon_color=ma_color,
+            )
+
     if walkable_area is not None:
         plot_walkable_area(walkable_area=walkable_area, axes=axes, **kwargs)
 
     if traj is not None:
         plot_trajectories(traj=traj, walkable_area=None, axes=axes, **kwargs)
-
-    if measurement_areas is not None:
-        for measurement_area in measurement_areas:
-            axes.plot(
-                *measurement_area.polygon.exterior.xy,
-                color=ma_line_color,
-                linewidth=ma_line_width,
-            )
-            axes.fill(
-                *measurement_area.polygon.exterior.xy,
-                color=ma_color,
-                alpha=ma_alpha,
-            )
 
     if measurement_lines is not None:
         for measurement_line in measurement_lines:
@@ -978,18 +1063,23 @@ def plot_voronoi_cells(  # pylint: disable=too-many-statements,too-many-branches
         else:
             color = np.array([1, 1, 1])
 
-        axes.plot(*poly.exterior.xy, alpha=1, color=voronoi_border_color)
-        axes.fill(
-            *poly.exterior.xy, facecolor=color, alpha=voronoi_outside_ma_alpha
+        _plot_polygon(
+            axes=axes,
+            polygon=poly,
+            line_color=voronoi_border_color,
+            polygon_color=color,
+            polygon_alpha=voronoi_outside_ma_alpha,
         )
 
         if INTERSECTION_COL in data.columns:
             if not shapely.is_empty(row[INTERSECTION_COL]):
                 intersection_poly = row[INTERSECTION_COL]
-                axes.fill(
-                    *intersection_poly.exterior.xy,
-                    facecolor=color,
-                    alpha=voronoi_inside_ma_alpha,
+                _plot_polygon(
+                    axes=axes,
+                    polygon=intersection_poly,
+                    line_color="none",
+                    polygon_color=color,
+                    polygon_alpha=voronoi_inside_ma_alpha,
                 )
 
         if traj_data:
