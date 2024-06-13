@@ -59,11 +59,8 @@ def compute_individual_acceleration(
     These positions are called :math:`X(t_{k+n})`, :math:`X(t_{k-n})`
     respectively.
 
-
-    First computing the displacement between these positions :math:`\bar{X}`.
-    This then can be used to compute the speed with:
     In order to compute the acceleration at time 't_k', we first calculate the 
-    displacements around 't_{k+n}' and 't_{k-n}':
+    displacements :math:`\bar{X}` around 't_{k+n}' and 't_{k-n}':
 
     .. math::
 
@@ -85,36 +82,26 @@ def compute_individual_acceleration(
 
     When getting closer to the start, or end of the trajectory data, it is not
     possible to use the full range of the frame interval for computing the
-    acceleration. For these cases *PedPy* offers one methods to compute
+    acceleration. For these cases *PedPy* offers a method to compute
     the acceleration:
-
-    #. exclude these parts.
 
     **Exclude border:**
 
     When not enough frames available to compute the speed at the borders, for
-    these parts no speed can be computed and they are ignored. Use
-    :code:`speed_calculation=SpeedCalculation.BORDER_EXCLUDE`.
+    these parts no acceleration can be computed and they are ignored. Use
+    :code:`acceleration_calculation=AccelerationCalculation.BORDER_EXCLUDE`.
 
 
     **With movement direction:**
 
-    It is also possible to compute the individual speed in a specific direction
+    It is also possible to compute the individual acceleration in a specific direction
     :math:`d`, for this the movement :math:`\Delta\bar{X}` is projected onto the
     desired movement direction. :math:`\Delta\bar{X}` and :math:`\Delta t` are
-    computed as described above. Hence, the speed then becomes:
+    computed as described above. Hence, the acceleration then becomes:
 
     .. math::
 
         a_i(t) = {{|\boldsymbol{proj}_d\; \Delta\bar{X}|} \over {\Delta t**2}}
-
-    |
-
-    .. image:: /images/speed_movement_direction.svg
-        :width: 80 %
-        :align: center
-
-    |
 
 
     If :code:`compute_acceleration_components` is `True` also :math:`\Delta\bar{X}` is returned.
@@ -229,7 +216,7 @@ def compute_voronoi_acceleration(
     :math:`V_i` and the intersection with the measurement area
     :math:`V_i \cap M`.
 
-    The Voronoi speed :math:`a_{voronoi}(t)` is defined as
+    The Voronoi acceleration :math:`a_{voronoi}(t)` is defined as
 
     .. math::
 
