@@ -297,6 +297,7 @@ def plot_flow(
     axes.set_ylabel(y_label)
     return axes
 
+
 def plot_acceleration(
     *,
     acceleration: pd.Series,
@@ -322,7 +323,7 @@ def plot_acceleration(
     color = kwargs.pop("color", PEDPY_BLUE)
     title = kwargs.pop("title", "acceleration over time")
     x_label = kwargs.pop("x_label", "frame")
-    y_label = kwargs.pop("y_label", "v / m/s")
+    y_label = kwargs.pop("y_label", "a / $m/s^2$")
 
     return _plot_series(
         axes=axes,
