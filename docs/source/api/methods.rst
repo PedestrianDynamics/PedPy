@@ -26,6 +26,14 @@ Flow
     :no-private-members:
     :no-special-members:
 
+Acceleration
+************
+
+.. autoapimodule:: acceleration_calculator
+    :members:
+    :no-private-members:
+    :no-special-members:
+
 Profiles
 ********
 
