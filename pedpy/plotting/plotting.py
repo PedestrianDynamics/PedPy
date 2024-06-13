@@ -297,6 +297,44 @@ def plot_flow(
     axes.set_ylabel(y_label)
     return axes
 
+def plot_acceleration(
+    *,
+    acceleration: pd.Series,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the acceleration over time.
+
+    Args:
+        acceleration(pd.Series): acceleration per frame
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        color (optional): color of the plot
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
+    Returns:
+        matplotlib.axes.Axes instance where the density is plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color = kwargs.pop("color", PEDPY_BLUE)
+    title = kwargs.pop("title", "acceleration over time")
+    x_label = kwargs.pop("x_label", "frame")
+    y_label = kwargs.pop("y_label", "v / m/s")
+
+    return _plot_series(
+        axes=axes,
+        title=title,
+        x=acceleration.index,
+        y=acceleration,
+        color=color,
+        x_label=x_label,
+        y_label=y_label,
+        **kwargs,
+    )
+
 
 def plot_neighborhood(
     *,
