@@ -1,4 +1,5 @@
 """Helper functions for the analysis methods."""
+# pylint: disable=C0302
 
 import itertools
 import logging
