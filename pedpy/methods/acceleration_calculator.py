@@ -7,13 +7,7 @@ import numpy.typing as npt
 import pandas
 import shapely
 
-from pedpy.column_identifier import (
-    FRAME_COL,
-    ID_COL,
-    ACC_COL,
-    A_X_COL,
-    A_Y_COL,
-)
+from pedpy.column_identifier import A_X_COL, A_Y_COL, ACC_COL, FRAME_COL, ID_COL
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
@@ -32,6 +26,7 @@ class AccelerationError(Exception):
             message: Error message
         """
         self.message = message
+
 
 def compute_individual_acceleration(
     *,
@@ -59,7 +54,7 @@ def compute_individual_acceleration(
     These positions are called :math:`X(t_{k+n})`, :math:`X(t_{k-n})`
     respectively.
 
-    In order to compute the acceleration at time 't_k', we first calculate the 
+    In order to compute the acceleration at time 't_k', we first calculate the
     displacements :math:`\bar{X}` around 't_{k+n}' and 't_{k-n}':
 
     .. math::
@@ -127,7 +122,7 @@ def compute_individual_acceleration(
         frame_step=frame_step,
         acceleration_border_method=acceleration_calculation,
     )
-    
+
     df_acceleration = _compute_individual_acceleration(
         movement_data=df_movement,
         frame_rate=traj_data.frame_rate,
@@ -185,7 +180,9 @@ def compute_mean_acceleration_per_frame(
             f"acceleration."
         )
 
-    combined = traj_data.data.merge(individual_acceleration, on=[ID_COL, FRAME_COL])
+    combined = traj_data.data.merge(
+        individual_acceleration, on=[ID_COL, FRAME_COL]
+    )
     df_mean = (
         combined[shapely.within(combined.point, measurement_area.polygon)]
         .groupby(by=FRAME_COL)
@@ -243,7 +240,9 @@ def compute_voronoi_acceleration(
     Returns:
         DataFrame containing the columns 'frame' and 'acceleration' in 'm/s^2'
     """
-    if len(individual_acceleration.index) < len(individual_voronoi_intersection.index):
+    if len(individual_acceleration.index) < len(
+        individual_voronoi_intersection.index
+    ):
         raise AccelerationError(
             f"Can not compute the Voronoi acceleration, as the there are less acceleration "
             f"data (rows={len(individual_acceleration)}) than Voronoi intersection "
@@ -265,7 +264,9 @@ def compute_voronoi_acceleration(
         * df_voronoi.acceleration
         / measurement_area.area
     )
-    df_voronoi_acceleration = df_voronoi.groupby(by=df_voronoi.frame).acceleration.sum()
+    df_voronoi_acceleration = df_voronoi.groupby(
+        by=df_voronoi.frame
+    ).acceleration.sum()
     df_voronoi_acceleration = df_voronoi_acceleration.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
@@ -303,13 +304,14 @@ def _compute_individual_acceleration(
     movement_data[["dd_x", "dd_y"]] = (
         shapely.get_coordinates(movement_data.end_position)
         - shapely.get_coordinates(movement_data.mid_position)
-        ) - (
+    ) - (
         shapely.get_coordinates(movement_data.mid_position)
         - shapely.get_coordinates(movement_data.start_position)
-        )
+    )
 
     movement_data[ACC_COL] = (
-        np.linalg.norm(movement_data[["dd_x", "dd_y"]], axis=1) / time_interval**2
+        np.linalg.norm(movement_data[["dd_x", "dd_y"]], axis=1)
+        / time_interval ** 2
     )
 
     if movement_direction is not None:
@@ -325,12 +327,16 @@ def _compute_individual_acceleration(
         movement_data[ACC_COL] = (
             np.dot(movement_data[["dd_x", "dd_y"]].values, movement_direction)
             / np.linalg.norm(movement_direction)
-            / time_interval**2
+            / time_interval ** 2
         )
 
     if compute_acceleration_components:
-        movement_data[A_X_COL] = movement_data["dd_x"].values / time_interval**2
-        movement_data[A_Y_COL] = movement_data["dd_y"].values / time_interval**2
+        movement_data[A_X_COL] = (
+            movement_data["dd_x"].values / time_interval ** 2
+        )
+        movement_data[A_Y_COL] = (
+            movement_data["dd_y"].values / time_interval ** 2
+        )
         columns.append(A_X_COL)
         columns.append(A_Y_COL)
 

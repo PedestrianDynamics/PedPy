@@ -203,11 +203,7 @@ def compute_profiles(
     Returns:
         List of density profiles, List of speed profiles
     """
-    (
-        grid_cells,
-        _,
-        _,
-    ) = get_grid_cells(
+    (grid_cells, _, _,) = get_grid_cells(
         walkable_area=walkable_area,
         grid_size=grid_size,
     )
@@ -283,11 +279,7 @@ def compute_density_profile(
     Returns:
         List of density profiles
     """
-    (
-        grid_cells,
-        rows,
-        cols,
-    ) = get_grid_cells(
+    (grid_cells, rows, cols,) = get_grid_cells(
         walkable_area=walkable_area,
         grid_size=grid_size,
     )
@@ -391,11 +383,7 @@ def _compute_classic_density_profile(
         grid_size,
     )
 
-    (
-        hist,
-        _,
-        _,
-    ) = np.histogram2d(
+    (hist, _, _,) = np.histogram2d(
         x=frame_data.x,
         y=frame_data.y,
         bins=[
@@ -403,7 +391,7 @@ def _compute_classic_density_profile(
             y_coords,
         ],
     )
-    hist = hist / (grid_size**2)
+    hist = hist / (grid_size ** 2)
 
     # rotate the result, such that is displayed with imshow correctly and
     # has the same orientation as the other results
@@ -439,7 +427,7 @@ def _compute_gaussian_density_profile(
         """
         sigma = fwhm / 2.35482  # 2.35482 = 2*sqrt(2*log(2))
         #  2.50662 = sqrt(2*pi)
-        return 1 / (2.50662 * sigma) * np.exp(-(x**2) / (2 * sigma**2))
+        return 1 / (2.50662 * sigma) * np.exp(-(x ** 2) / (2 * sigma ** 2))
 
     positions_x = frame_data.x.values
     positions_y = frame_data.y.values
@@ -524,11 +512,7 @@ def compute_speed_profile(
         Refer to the documentation of :attr:`SpeedMethod` for details on each
         method's requirements and use cases.
     """
-    (
-        grid_cells,
-        rows,
-        cols,
-    ) = get_grid_cells(
+    (grid_cells, rows, cols,) = get_grid_cells(
         walkable_area=walkable_area,
         grid_size=grid_size,
     )
@@ -660,7 +644,7 @@ def _compute_gaussian_speed_profile(
         return (
             1
             / (sigma * np.sqrt(2 * np.pi))
-            * np.exp(-(x**2) / (2 * sigma**2))
+            * np.exp(-(x ** 2) / (2 * sigma ** 2))
         )
 
     # pedestrians' position and speed
@@ -685,7 +669,7 @@ def _compute_gaussian_speed_profile(
         axis=0,
     )
     # combine distances along x/y-axes into a single Euclidean distance
-    distance = np.sqrt(distance_x_expanded**2 + distance_y_expanded**2)
+    distance = np.sqrt(distance_x_expanded ** 2 + distance_y_expanded ** 2)
     # calculate the Gaussian weights based on the distances and the given fwhm
     weights = _compute_gaussian_weights(
         distance,
@@ -800,11 +784,7 @@ def _compute_mean_speed_profile(
         grid_size,
     )
 
-    (
-        hist,
-        _,
-        _,
-    ) = np.histogram2d(
+    (hist, _, _,) = np.histogram2d(
         x=frame_data.x,
         y=frame_data.y,
         bins=[
@@ -812,11 +792,7 @@ def _compute_mean_speed_profile(
             y_coords,
         ],
     )
-    (
-        hist_speed,
-        _,
-        _,
-    ) = np.histogram2d(
+    (hist_speed, _, _,) = np.histogram2d(
         x=frame_data.x,
         y=frame_data.y,
         bins=[
@@ -876,10 +852,7 @@ def compute_grid_cell_polygon_intersection_area(
         Tuple containing first the grid cell-polygon intersection areas, and second the reordered
         data by 'frame', which needs to be used in the next steps.
     """
-    (
-        grid_intersections_area,
-        used_data,
-    ) = _compute_grid_polygon_intersection(
+    (grid_intersections_area, used_data,) = _compute_grid_polygon_intersection(
         data=data,
         grid_cells=grid_cells,
     )

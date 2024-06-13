@@ -897,7 +897,7 @@ def _compute_individual_movement_acceleration(
 def _compute_movement_acceleration_exclude_border(
     traj_data: TrajectoryData,
     frame_step: int,
-    #bidirectional: bool,
+    # bidirectional: bool,
 ) -> pandas.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
@@ -922,26 +922,22 @@ def _compute_movement_acceleration_exclude_border(
 
     df_movement[START_POSITION_COL] = df_movement.groupby(
         by=ID_COL
-    ).point.shift(2*frame_step)
+    ).point.shift(2 * frame_step)
     df_movement["start_frame"] = df_movement.groupby(by=ID_COL).frame.shift(
-        2*frame_step
+        2 * frame_step
     )
 
-    df_movement[MID_POSITION_COL] = df_movement.groupby(
-        by=ID_COL
-    ).point.shift(frame_step)
-    df_movement["mid_frame"] = df_movement.groupby(
-        by=ID_COL
-    ).frame.shift(
+    df_movement[MID_POSITION_COL] = df_movement.groupby(by=ID_COL).point.shift(
+        frame_step
+    )
+    df_movement["mid_frame"] = df_movement.groupby(by=ID_COL).frame.shift(
         frame_step
     )
 
     df_movement[END_POSITION_COL] = df_movement.point
     df_movement["end_frame"] = df_movement.frame
 
-    df_movement[WINDOW_SIZE_COL] = (
-        df_movement.end_frame - df_movement.mid_frame
-    )
+    df_movement[WINDOW_SIZE_COL] = df_movement.end_frame - df_movement.mid_frame
     return df_movement[
         [
             ID_COL,
