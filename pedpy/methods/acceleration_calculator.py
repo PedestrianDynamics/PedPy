@@ -60,6 +60,9 @@ def compute_individual_acceleration(
     .. math::
 
         \bar{X}(t_{k+n}) = X(t_{k+2n}) - X(t_{k})
+
+    .. math::
+
         \bar{X}(t_{k-n}) = X(t_{k}) - X(t_{k-2n})
 
     The acceleration is then calculated from the difference of the displacements
