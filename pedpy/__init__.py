@@ -23,6 +23,12 @@ from .io.trajectory_loader import (
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
 )
+from .methods.acceleration_calculator import (
+    AccelerationCalculation,
+    compute_individual_acceleration,
+    compute_mean_acceleration_per_frame,
+    compute_voronoi_acceleration,
+)
 from .methods.density_calculator import (
     compute_classic_density,
     compute_passing_density,
@@ -55,12 +61,6 @@ from .methods.speed_calculator import (
     compute_mean_speed_per_frame,
     compute_passing_speed,
     compute_voronoi_speed,
-)
-from .methods.acceleration_calculator import (
-    AccelerationCalculation,
-    compute_individual_acceleration,
-    compute_mean_acceleration_per_frame,
-    compute_voronoi_acceleration,
 )
 from .plotting.plotting import (
     PEDPY_BLUE,

@@ -314,7 +314,7 @@ def _compute_individual_acceleration(
 
     movement_data[ACC_COL] = (
         np.linalg.norm(movement_data[["dd_x", "dd_y"]], axis=1)
-        / time_interval ** 2
+        / time_interval**2
     )
 
     if movement_direction is not None:
@@ -330,15 +330,15 @@ def _compute_individual_acceleration(
         movement_data[ACC_COL] = (
             np.dot(movement_data[["dd_x", "dd_y"]].values, movement_direction)
             / np.linalg.norm(movement_direction)
-            / time_interval ** 2
+            / time_interval**2
         )
 
     if compute_acceleration_components:
         movement_data[A_X_COL] = (
-            movement_data["dd_x"].values / time_interval ** 2
+            movement_data["dd_x"].values / time_interval**2
         )
         movement_data[A_Y_COL] = (
-            movement_data["dd_y"].values / time_interval ** 2
+            movement_data["dd_y"].values / time_interval**2
         )
         columns.append(A_X_COL)
         columns.append(A_Y_COL)
