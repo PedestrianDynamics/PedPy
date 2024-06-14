@@ -68,6 +68,7 @@ from .plotting.plotting import (
     PEDPY_ORANGE,
     PEDPY_PETROL,
     PEDPY_RED,
+    plot_acceleration,
     plot_density,
     plot_density_distribution,
     plot_flow,
