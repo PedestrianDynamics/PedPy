@@ -1,4 +1,4 @@
-""" Module containing functions to compute accelerations. """
+"""Module containing functions to compute accelerations."""
 
 from typing import Optional, Tuple
 
