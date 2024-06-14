@@ -55,6 +55,12 @@ from .methods.speed_calculator import (
     compute_passing_speed,
     compute_voronoi_speed,
 )
+from .methods.acceleration_calculator import (
+    AccelerationCalculation,
+    compute_individual_acceleration,
+    compute_mean_acceleration_per_frame,
+    compute_voronoi_acceleration,
+)
 from .plotting.plotting import (
     PEDPY_BLUE,
     PEDPY_GREEN,
