@@ -34,6 +34,9 @@ Acceleration
 ^^^^^^^^^^^^
 
 .. autoapimodule:: acceleration_calculator
+    :members:
+    :no-private-members:
+    :no-special-members:
 
 
 Further measurements
