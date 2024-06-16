@@ -2,6 +2,13 @@
 Changelog
 *********
 
+Version 1.1.2 (2024-06-16)
+==========================
+
+**Fixes:**
+
+- Improve documentation: Show BibTeX for citation from Zenodo metadata (also for stable)
+
 Version 1.1.1 (2024-06-12)
 ==========================
 
