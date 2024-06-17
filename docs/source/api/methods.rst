@@ -60,3 +60,11 @@ Utilities
     :members:
     :no-private-members:
     :no-special-members:
+
+Other
+*****
+
+.. autoapimodule:: foo_calculator
+    :members:
+    :no-private-members:
+    :no-special-members:

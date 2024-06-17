@@ -29,6 +29,11 @@ from .methods.density_calculator import (
     compute_voronoi_density,
 )
 from .methods.flow_calculator import compute_flow, compute_n_t
+from .methods.foo_calculator import (
+    IntrusionMethod,
+    compute_avoidance,
+    compute_intrusion,
+)
 from .methods.method_utils import (
     Cutoff,
     compute_frame_range_in_area,
@@ -118,6 +123,9 @@ __all__ = [
     "compute_mean_speed_per_frame",
     "compute_passing_speed",
     "compute_voronoi_speed",
+    "compute_intrusion",
+    "IntrusionMethod",
+    "compute_avoidance",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
