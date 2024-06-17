@@ -53,7 +53,7 @@ def compute_individual_speed(
 
     .. math::
 
-        \Delta t = 2 n / fps
+        \Delta t = 2 n / fps.
 
     This time step describes how many frames before and after the current
     position :math:`X_{current}` are used to compute the movement.
@@ -73,7 +73,7 @@ def compute_individual_speed(
 
     .. math::
 
-        \bar{X} = X_{future} - X_{past}
+        \bar{X} = X_{future} - X_{past}.
 
 
     When getting closer to the start, or end of the trajectory data, it is not
@@ -123,9 +123,9 @@ def compute_individual_speed(
 
     .. math::
 
-        v_i(t) = {|{X_{future} - X_{current}|}\over{ \frac{1}{2} \Delta t}}
+        v_i(t) = {|{X_{future} - X_{current}|}\over{ \frac{1}{2} \Delta t}},
         \text{, or }
-        v_i(t) = {|{X_{current} - X_{past}|}\over{ \frac{1}{2} \Delta t}}
+        v_i(t) = {|{X_{current} - X_{past}|}\over{ \frac{1}{2} \Delta t}}.
 
     .. image:: /images/speed_border_single_sided_future.svg
         :width: 46 %
@@ -151,7 +151,7 @@ def compute_individual_speed(
 
     .. math::
 
-        v_i(t) = {{|\boldsymbol{proj}_d\; \bar{X}|} \over {\Delta t}}
+        v_i(t) = {{|\boldsymbol{proj}_d\; \bar{X}|} \over {\Delta t}}.
 
     |
 
