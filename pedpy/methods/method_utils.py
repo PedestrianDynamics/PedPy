@@ -891,7 +891,7 @@ def _compute_individual_movement_acceleration(
             traj_data, frame_step
         )
 
-    raise ValueError("speed border method not accepted")
+    raise ValueError("acceleration border method not accepted")
 
 
 def _compute_movement_acceleration_exclude_border(
