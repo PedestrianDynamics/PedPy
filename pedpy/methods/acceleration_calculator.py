@@ -75,7 +75,7 @@ def compute_individual_acceleration(
 
     .. math::
 
-        a_i(t_k) = \Delta\bar{X}(t_k) / \Delta t**2
+        a_i(t_k) = \Delta\bar{X}(t_k) / \Delta t^{2}
 
 
     When getting closer to the start, or end of the trajectory data, it is not
@@ -99,7 +99,7 @@ def compute_individual_acceleration(
 
     .. math::
 
-        a_i(t) = {{|\boldsymbol{proj}_d\; \Delta\bar{X}|} \over {\Delta t**2}}
+        a_i(t) = {{|\boldsymbol{proj}_d\; \Delta\bar{X}|} \over {\Delta t^{2}}}
 
 
     If :code:`compute_acceleration_components` is `True` also :math:`\Delta\bar{X}` is returned.
@@ -107,7 +107,7 @@ def compute_individual_acceleration(
     Args:
         traj_data (TrajectoryData): trajectory data
         frame_step (int): gives the size of time interval for calculating the
-            velocity.
+            acceleration.
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
@@ -205,9 +205,7 @@ def compute_voronoi_acceleration(
     individual_voronoi_intersection: pandas.DataFrame,
     measurement_area: MeasurementArea,
 ) -> pandas.DataFrame:
-    r"""Compute the Voronoi acceleration per frame inside the measurement area.
-
-    Computes the Voronoi acceleration :math:`a_{voronoi}(t)` inside the measurement
+    r"""Computes the Voronoi acceleration :math:`a_{voronoi}(t)` inside the measurement
     area :math:`M` from the given individual acceleration data :math:`a_i(t)` (see
     :func:`~acceleration_calculator.compute_individual_acceleration` for
     details of the computation) and their individual Voronoi intersection data
@@ -293,7 +291,7 @@ def _compute_individual_acceleration(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-        compute_acceleration_components (bool): compute the x and y components of the velocity
+        compute_acceleration_components (bool): compute the x and y components of the acceleration
 
     Returns:
         DataFrame containing the columns: 'id', 'frame', 'acceleration' with the
