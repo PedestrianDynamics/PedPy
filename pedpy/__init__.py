@@ -125,6 +125,10 @@ __all__ = [
     "compute_mean_speed_per_frame",
     "compute_passing_speed",
     "compute_voronoi_speed",
+    "AccelerationCalculation",
+    "compute_individual_acceleration",
+    "compute_mean_acceleration_per_frame",
+    "compute_voronoi_acceleration",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
@@ -144,5 +148,6 @@ __all__ = [
     "plot_trajectories",
     "plot_voronoi_cells",
     "plot_walkable_area",
+    "plot_acceleration",
     "__version__",
 ]
