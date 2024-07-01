@@ -897,7 +897,6 @@ def _compute_individual_movement_acceleration(
 def _compute_movement_acceleration_exclude_border(
     traj_data: TrajectoryData,
     frame_step: int,
-    # bidirectional: bool,
 ) -> pandas.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
