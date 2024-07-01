@@ -205,7 +205,9 @@ def compute_voronoi_acceleration(
     individual_voronoi_intersection: pandas.DataFrame,
     measurement_area: MeasurementArea,
 ) -> pandas.DataFrame:
-    r"""Computes the Voronoi acceleration :math:`a_{voronoi}(t)` inside the measurement
+    r"""Computes the Voronoi acceleration.
+
+    Computes the Voronoi acceleration :math:`a_{voronoi}(t)` inside the measurement
     area :math:`M` from the given individual acceleration data :math:`a_i(t)` (see
     :func:`~acceleration_calculator.compute_individual_acceleration` for
     details of the computation) and their individual Voronoi intersection data
