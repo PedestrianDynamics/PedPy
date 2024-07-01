@@ -2,6 +2,24 @@
 Changelog
 *********
 
+Version 1.1.2 (2024-06-16)
+==========================
+
+**Fixes:**
+
+- Improve documentation: Show BibTeX for citation from Zenodo metadata (also for stable)
+
+Version 1.1.1 (2024-06-12)
+==========================
+
+**Fixes:**
+
+- Improve plotting of polygons:
+    * Fill color of polygons does not show outside of the borders when using narraw :code:`line_width`
+    * No gaps at the last point of the polygon boundary
+- Improve documentation: Show BibTeX for citation from Zenodo metadata
+
+
 Version 1.1.0 (2024-03-13)
 ==========================
 
