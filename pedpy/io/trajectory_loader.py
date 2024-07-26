@@ -1,5 +1,5 @@
 """Load trajectories to the internal trajectory data format."""
-
+import logging
 import math
 import pathlib
 import sqlite3
@@ -7,12 +7,15 @@ from enum import Enum
 from typing import Any, Optional, Tuple
 
 import h5py  # type: ignore
+import numpy as np
 import pandas as pd
 import shapely
 
-from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL, TIME_COL
 from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+
+_log = logging.getLogger(__name__)
 
 
 class LoadTrajectoryError(Exception):
@@ -634,3 +637,239 @@ def _load_trajectory_data_from_viswalk(
         return data
     except pd.errors.ParserError as exc:
         raise LoadTrajectoryError(common_error_message) from exc
+
+
+def load_trajectory_from_vadere(
+    *,
+    trajectory_file: pathlib.Path,
+    frame_rate: float = 24,
+) -> TrajectoryData:
+    """Loads trajectory data from Vadere-traj file as :class:`~trajectory_data.TrajectoryData`.
+
+    This function reads a traj file containing trajectory data from Vadere simulations and
+    converts it into a :class:`~trajectory_data.TrajectoryData` object which can be used for
+    further analysis and processing in the *PedPy* framework.
+
+    Args:
+        trajectory_file: The full path of the trajectory file containing the Vadere
+            trajectory data. The expected format is a traj file with space character as delimiter,
+            and it should contain the following columns: pedestrianId, simTime (in sec),
+            startX (in m), startY (in m). Additional columns (e.g. endTime, endX, endY, targetId)
+            will be ignored.
+        frame_rate: Frame rate in frames per second.
+
+    Returns:
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
+
+    Raises:
+        LoadTrajectoryError: If the provided path does not exist or is not a file.
+    """
+
+    _validate_is_file(trajectory_file)
+
+    traj_dataframe = _load_trajectory_data_from_vadere(
+        trajectory_file=trajectory_file
+    )
+
+    traj_dataframe = _event_driven_traj_to_const_frame_rate(
+        traj_dataframe=traj_dataframe,
+        frame_rate=frame_rate
+    )
+
+    return TrajectoryData(
+        data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
+        frame_rate=frame_rate,
+    )
+
+
+def _load_trajectory_data_from_vadere(
+    *, trajectory_file: pathlib.Path
+) -> pd.DataFrame:
+    """Parse the trajectory file for trajectory data.
+
+    Args:
+        trajectory_file (pathlib.Path): The full path of the trajectory file containing the Vadere
+            trajectory data. The expected format is a traj file with space character as delimiter,
+            and it should contain the following columns: pedestrianId, simTime (in sec),
+            startX (in m), startY (in m). Additional columns (e.g. endTime, endX, endY, targetId)
+            will be ignored.
+
+    Returns:
+        The trajectory data as :class:`DataFrame`, the coordinates are in meter (m).
+    """
+
+    VADERE_KEY_ID = "pedestrianId"
+    VADERE_KEY_TIME = "simTime"
+    VADERE_KEY_X = "startX"
+    VADERE_KEY_Y = "startY"
+    columns_to_keep = [VADERE_KEY_ID, VADERE_KEY_TIME, VADERE_KEY_X, VADERE_KEY_Y]
+    name_mapping = {
+        VADERE_KEY_ID: ID_COL,
+        VADERE_KEY_TIME: TIME_COL,
+        VADERE_KEY_X: X_COL,
+        VADERE_KEY_Y: Y_COL,
+    }
+
+    common_error_message = (
+        "The given trajectory file seems to be incorrect or empty. "
+        "It should contain the following columns, which should be "
+        f"uniquely identifiably by: {', '.join(columns_to_keep)}. "
+        f"Columns should be separated by a space character. "
+        "Comment lines may start with '#' and will be ignored. "
+        f"Please check your trajectory file: {trajectory_file}."
+    )
+    try:
+        vadere_cols = list(pd.read_csv(trajectory_file, comment="#", delimiter=" ", nrows=1).columns)
+        use_vadere_cols = list()
+        non_unique_cols = list()
+        missing_cols = list()
+        rename_mapping = dict()
+
+        for col in columns_to_keep:
+            matching = [vc for vc in vadere_cols if col in vc]
+            if len(matching) == 1:
+                use_vadere_cols += matching
+                rename_mapping[matching[0]] = name_mapping[col]
+            elif len(matching) > 1:
+                non_unique_cols += [col]
+            elif len(matching) == 0:
+                missing_cols += [col]
+
+        if non_unique_cols:
+            raise LoadTrajectoryError(
+                f"{common_error_message}"
+                f"Non-unique columns: {', '.join(non_unique_cols)}"
+            )
+
+        if missing_cols:
+            raise LoadTrajectoryError(
+                f"{common_error_message}"
+                f"Missing column: {', '.join(missing_cols)}."
+            )
+
+        data = pd.read_csv(
+            trajectory_file,
+            delimiter=" ",
+            usecols=use_vadere_cols,
+            comment="#",
+            dtype={
+                VADERE_KEY_ID: "int64",
+                VADERE_KEY_TIME: "float64",
+                VADERE_KEY_X: "float64",
+                VADERE_KEY_Y: "float64",
+            },
+            encoding="utf-8-sig",
+        )
+
+        data.rename(columns=rename_mapping, inplace=True)
+
+        if data.empty:
+            raise LoadTrajectoryError(common_error_message)
+
+        return data
+    except pd.errors.ParserError as exc:
+        raise LoadTrajectoryError(common_error_message) from exc
+
+
+def _event_driven_traj_to_const_frame_rate(
+        traj_dataframe, frame_rate):
+    """Interpolate trajectory data linearly for non-equidistant time steps.
+
+    Args:
+        traj_dataframe: trajectory data as :class:`DataFrame`
+        frame_rate: Frame rate in frames per second.
+
+    Returns:
+        The trajectory data as :class:`DataFrame` with positions x and y being
+        linearly interpolated for frames between two recorded time steps.
+    """
+
+    frame_duration = 1 / frame_rate
+
+    _calc_deviation_vadere_pedpy_traj_transform(traj_dataframe, frame_rate)
+
+    traj_dataframe.set_index(TIME_COL, inplace=True)
+    traj_by_ped = traj_dataframe.groupby(ID_COL)
+    traj_dataframe_interpolated = pd.DataFrame()
+    for ped_id, traj in traj_by_ped:
+
+        t = traj.index
+        t_start = traj.index.values.min()
+        t_stop = traj.index.values.max()
+
+        # Round t_start up / t_stop down to nearest multiple of
+        # frame_duration to avoid extrapolation of trajectories to
+        # times before / after fist / last pedestrian step.
+        t_start_ = math.ceil(t_start * frame_rate) / frame_rate
+        t_stop_ = math.floor(t_stop * frame_rate) / frame_rate
+
+        if t_start == t_stop:
+            _log.warning(
+                f"Trajectory of pedestrian {str(ped_id)} is too short "
+                f"(in time) to be captured by the chosen frame rate. "
+                f"Therefore, this trajectory will be ignored."
+            )
+        else:
+            equidist_time_steps = np.arange(
+                start=t_start_,
+                stop=t_stop_ + 1 / frame_rate,
+                step=1 / frame_rate,
+            )
+            r = pd.Index(equidist_time_steps, name=t.name)
+            traj = traj.reindex(t.union(r)).interpolate(method='index').loc[r]
+
+            traj[ID_COL] = traj[ID_COL].astype(int)
+
+            traj_dataframe_interpolated = pd.concat([traj_dataframe_interpolated, traj])
+
+    traj_dataframe_interpolated.reset_index(inplace=True)
+
+    traj_dataframe_interpolated[FRAME_COL] = (traj_dataframe_interpolated[TIME_COL] * frame_rate) \
+        .round(decimals=0) \
+        .astype(int)
+    traj_dataframe_interpolated.drop(labels=TIME_COL, axis="columns", inplace=True)
+
+    traj_dataframe_interpolated.sort_values(
+        by=[FRAME_COL, ID_COL],
+        ignore_index=True,
+        inplace=True
+    )
+    return traj_dataframe_interpolated
+
+
+def _calc_deviation_vadere_pedpy_traj_transform(traj_dataframe, frame_rate):
+    """Calculates the maximum deviation between event-based vadere trajectories
+    and their interpolated version with fixed frames.
+
+    Max difference occurs when first/last step of a trajectory happens just
+    after/before the last/next frame.
+    Example for an agent that moves with s = 2.2 m/s (equivalent to typical
+    cut-off in Vadere):
+        First frame at t_f1, second frame at t_f2 = t_f1 + 1 / frame_rate
+        First step at t_s1 = t_f1 + t_offset
+        Distance walked between t_s1 and t_f2 will not be captured:
+        x_s1f2 =  s * (1 / frame_rate - t_offset)
+        with t_offset --> 0s: x_s1f2 = s / frame_rate
+
+    Args:
+        traj_dataframe: trajectory data as :class:`DataFrame`
+        frame_rate: Frame rate in frames per second.
+    """
+    ACCEPT_DIFF = 0.01  # threshold difference in meter (m), otherwise log warning
+
+    traj_groups = traj_dataframe.groupby(ID_COL)
+    max_speed = 0
+    for _, traj in traj_groups:
+        diff = traj.diff().dropna()
+        dx_dt = (np.sqrt(diff[[X_COL, Y_COL]].pow(2).sum(axis=1))).divide(diff[TIME_COL])
+        max_speed = max([max_speed, round(max(dx_dt), 2)])
+
+    max_diff = round(max_speed / frame_rate, 2)
+    if max_diff > ACCEPT_DIFF:
+        _log.warning(
+            f"For fastest step with approx. {str(max_speed)} "
+            f"m/s, interpolated trajectory could deviate up "
+            f"to {str(max_diff)} m from Vadere trajectory. "
+            f"If smaller deviation required, choose higher "
+            f"frame rate."
+        )
