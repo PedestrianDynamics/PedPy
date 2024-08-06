@@ -640,9 +640,9 @@ def _load_trajectory_data_from_viswalk(
 
 
 def load_trajectory_from_vadere(
-        *,
-        trajectory_file: pathlib.Path,
-        frame_rate: float = 24.0,
+    *,
+    trajectory_file: pathlib.Path,
+    frame_rate: float = 24.0,
 ) -> TrajectoryData:
     """Loads trajectory data from Vadere-traj file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -672,8 +672,7 @@ def load_trajectory_from_vadere(
     )
 
     traj_dataframe = _event_driven_traj_to_const_frame_rate(
-        traj_dataframe=traj_dataframe,
-        frame_rate=frame_rate
+        traj_dataframe=traj_dataframe, frame_rate=frame_rate
     )
 
     return TrajectoryData(
@@ -683,7 +682,7 @@ def load_trajectory_from_vadere(
 
 
 def _load_trajectory_data_from_vadere(
-        *, trajectory_file: pathlib.Path
+    *, trajectory_file: pathlib.Path
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
@@ -698,12 +697,17 @@ def _load_trajectory_data_from_vadere(
         The trajectory data as :class:`DataFrame`, the coordinates are in meter (m).
     """
 
-    VADERE_COMMENT = "#"    # Comment identifier in Vadere trajectory files
+    VADERE_COMMENT = "#"  # Comment identifier in Vadere trajectory files
     VADERE_KEY_ID = "pedestrianId"
     VADERE_KEY_TIME = "simTime"
     VADERE_KEY_X = "startX"
     VADERE_KEY_Y = "startY"
-    columns_to_keep = [VADERE_KEY_ID, VADERE_KEY_TIME, VADERE_KEY_X, VADERE_KEY_Y]
+    columns_to_keep = [
+        VADERE_KEY_ID,
+        VADERE_KEY_TIME,
+        VADERE_KEY_X,
+        VADERE_KEY_Y,
+    ]
     name_mapping = {
         VADERE_KEY_ID: ID_COL,
         VADERE_KEY_TIME: TIME_COL,
@@ -721,8 +725,9 @@ def _load_trajectory_data_from_vadere(
     )
     try:
         vadere_cols = list(
-            pd.read_csv(trajectory_file, comment=VADERE_COMMENT, delimiter=" ", nrows=1)
-            .columns
+            pd.read_csv(
+                trajectory_file, comment=VADERE_COMMENT, delimiter=" ", nrows=1
+            ).columns
         )
         use_vadere_cols = list()
         non_unique_cols = list()
@@ -776,8 +781,8 @@ def _load_trajectory_data_from_vadere(
 
 
 def _event_driven_traj_to_const_frame_rate(
-        traj_dataframe: pd.DataFrame,
-        frame_rate: float,
+    traj_dataframe: pd.DataFrame,
+    frame_rate: float,
 ) -> pd.DataFrame:
     """Interpolate trajectory data linearly for non-equidistant time steps.
 
@@ -790,13 +795,14 @@ def _event_driven_traj_to_const_frame_rate(
         for frames between two recorded time steps.
     """
 
-    _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(traj_dataframe, frame_rate)
+    _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
+        traj_dataframe, frame_rate
+    )
 
     traj_dataframe.set_index(TIME_COL, inplace=True)
     traj_by_ped = traj_dataframe.groupby(ID_COL)
     traj_dataframe_interpolated = pd.DataFrame()
     for ped_id, traj in traj_by_ped:
-
         t = traj.index
         t_start = traj.index.values.min()
         t_stop = traj.index.values.max()
@@ -819,31 +825,35 @@ def _event_driven_traj_to_const_frame_rate(
                 step=1 / frame_rate,
             )
             r = pd.Index(equidist_time_steps, name=t.name)
-            traj = traj.reindex(t.union(r)).interpolate(method='index').loc[r]
+            traj = traj.reindex(t.union(r)).interpolate(method="index").loc[r]
 
             traj[ID_COL] = traj[ID_COL].astype(int)
 
-            traj_dataframe_interpolated = pd.concat([traj_dataframe_interpolated, traj])
+            traj_dataframe_interpolated = pd.concat(
+                [traj_dataframe_interpolated, traj]
+            )
 
     traj_dataframe_interpolated.reset_index(inplace=True)
 
-    traj_dataframe_interpolated[FRAME_COL] = (traj_dataframe_interpolated[TIME_COL] * frame_rate) \
-        .round(decimals=0) \
+    traj_dataframe_interpolated[FRAME_COL] = (
+        (traj_dataframe_interpolated[TIME_COL] * frame_rate)
+        .round(decimals=0)
         .astype(int)
-    traj_dataframe_interpolated.drop(labels=TIME_COL, axis="columns", inplace=True)
+    )
+    traj_dataframe_interpolated.drop(
+        labels=TIME_COL, axis="columns", inplace=True
+    )
 
     traj_dataframe_interpolated.sort_values(
-        by=[FRAME_COL, ID_COL],
-        ignore_index=True,
-        inplace=True
+        by=[FRAME_COL, ID_COL], ignore_index=True, inplace=True
     )
     return traj_dataframe_interpolated
 
 
 def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
-        traj_dataframe: pd.DataFrame,
-        frame_rate: float,
-        deviation_threshold: float = 0.1,
+    traj_dataframe: pd.DataFrame,
+    frame_rate: float,
+    deviation_threshold: float = 0.1,
 ) -> None:
     """Validates whether the maximum deviation between event-based vadere trajectories and their
     interpolated version with fixed frames is below given threshold.
@@ -867,7 +877,9 @@ def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
     max_speed = 0  # max pedestrian speed that actually reads from the traj file
     for _, traj in traj_groups:
         diff = traj.diff().dropna()
-        dx_dt = (np.sqrt(diff[[X_COL, Y_COL]].pow(2).sum(axis=1))).divide(diff[TIME_COL])
+        dx_dt = (np.sqrt(diff[[X_COL, Y_COL]].pow(2).sum(axis=1))).divide(
+            diff[TIME_COL]
+        )
         max_speed = max([max_speed, round(max(dx_dt), 2)])
 
     max_deviation = round(max_speed / frame_rate, 2)
