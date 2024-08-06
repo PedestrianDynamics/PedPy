@@ -60,10 +60,10 @@ def _validate_is_file(file: pathlib.Path) -> None:
 
 
 def load_trajectory(
-    *,
-    trajectory_file: pathlib.Path,
-    default_frame_rate: Optional[float] = None,
-    default_unit: Optional[TrajectoryUnit] = None,
+        *,
+        trajectory_file: pathlib.Path,
+        default_frame_rate: Optional[float] = None,
+        default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
     """Loads the trajectory file in the internal :class:`~trajectory_data.TrajectoryData` format.
 
@@ -89,10 +89,10 @@ def load_trajectory(
 
 
 def load_trajectory_from_txt(
-    *,
-    trajectory_file: pathlib.Path,
-    default_frame_rate: Optional[float] = None,
-    default_unit: Optional[TrajectoryUnit] = None,
+        *,
+        trajectory_file: pathlib.Path,
+        default_frame_rate: Optional[float] = None,
+        default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
     """Loads the trajectory file in the internal :class:`~trajectory_data.TrajectoryData` format.
 
@@ -125,7 +125,7 @@ def load_trajectory_from_txt(
 
 
 def _load_trajectory_data_from_txt(
-    *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
+        *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
@@ -179,10 +179,10 @@ def _load_trajectory_data_from_txt(
 
 
 def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
-    *,
-    trajectory_file: pathlib.Path,
-    default_frame_rate: Optional[float],
-    default_unit: Optional[TrajectoryUnit],
+        *,
+        trajectory_file: pathlib.Path,
+        default_frame_rate: Optional[float],
+        default_unit: Optional[TrajectoryUnit],
 ) -> Tuple[float, TrajectoryUnit]:
     """Extract the trajectory metadata from file, use defaults if none found.
 
@@ -281,7 +281,7 @@ def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
 
 
 def load_trajectory_from_jupedsim_sqlite(
-    trajectory_file: pathlib.Path,
+        trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
     """Loads data from the sqlite file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -333,7 +333,7 @@ def load_trajectory_from_jupedsim_sqlite(
 
 
 def load_walkable_area_from_jupedsim_sqlite(
-    trajectory_file: pathlib.Path,
+        trajectory_file: pathlib.Path,
 ) -> WalkableArea:
     """Loads the walkable area from the sqlite file as :class:`~geometry.WalkableArea`.
 
@@ -375,7 +375,7 @@ def _get_jupedsim_sqlite_version(connection: sqlite3.Connection) -> int:
 
 
 def _load_walkable_area_from_jupedsim_sqlite_v1(
-    con: sqlite3.Connection,
+        con: sqlite3.Connection,
 ) -> WalkableArea:
     try:
         walkable_query_result = (
@@ -397,7 +397,7 @@ def _load_walkable_area_from_jupedsim_sqlite_v1(
 
 
 def _load_walkable_area_from_jupedsim_sqlite_v2(
-    con: sqlite3.Connection,
+        con: sqlite3.Connection,
 ) -> WalkableArea:
     try:
         res = con.cursor().execute("SELECT wkt FROM geometry")
@@ -418,7 +418,7 @@ def _load_walkable_area_from_jupedsim_sqlite_v2(
 
 
 def load_trajectory_from_ped_data_archive_hdf5(
-    trajectory_file: pathlib.Path,
+        trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
     """Loads data from the hdf5 file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -476,7 +476,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
 
 
 def load_walkable_area_from_ped_data_archive_hdf5(
-    trajectory_file: pathlib.Path,
+        trajectory_file: pathlib.Path,
 ) -> WalkableArea:
     """Loads the walkable area from the hdf5 file as :class:`~geometry.WalkableArea`.
 
@@ -509,8 +509,8 @@ def load_walkable_area_from_ped_data_archive_hdf5(
 
 
 def load_trajectory_from_viswalk(
-    *,
-    trajectory_file: pathlib.Path,
+        *,
+        trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
     """Loads data from Viswalk-csv file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -555,7 +555,7 @@ def load_trajectory_from_viswalk(
 
 
 def _calculate_frames_and_fps(
-    traj_dataframe: pd.DataFrame,
+        traj_dataframe: pd.DataFrame,
 ) -> Tuple[pd.Series, int]:
     """Calculates fps and frames based on the time column of the dataframe."""
     mean_diff = traj_dataframe.groupby(ID_COL)["time"].diff().dropna().mean()
@@ -572,7 +572,7 @@ def _calculate_frames_and_fps(
 
 
 def _load_trajectory_data_from_viswalk(
-    *, trajectory_file: pathlib.Path
+        *, trajectory_file: pathlib.Path
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
@@ -640,9 +640,9 @@ def _load_trajectory_data_from_viswalk(
 
 
 def load_trajectory_from_vadere(
-    *,
-    trajectory_file: pathlib.Path,
-    frame_rate: float = 24,
+        *,
+        trajectory_file: pathlib.Path,
+        frame_rate: float = 24.0,
 ) -> TrajectoryData:
     """Loads trajectory data from Vadere-traj file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -683,7 +683,7 @@ def load_trajectory_from_vadere(
 
 
 def _load_trajectory_data_from_vadere(
-    *, trajectory_file: pathlib.Path
+        *, trajectory_file: pathlib.Path
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
@@ -698,6 +698,7 @@ def _load_trajectory_data_from_vadere(
         The trajectory data as :class:`DataFrame`, the coordinates are in meter (m).
     """
 
+    VADERE_COMMENT = "#"    # Comment identifier in Vadere trajectory files
     VADERE_KEY_ID = "pedestrianId"
     VADERE_KEY_TIME = "simTime"
     VADERE_KEY_X = "startX"
@@ -715,11 +716,14 @@ def _load_trajectory_data_from_vadere(
         "It should contain the following columns, which should be "
         f"uniquely identifiably by: {', '.join(columns_to_keep)}. "
         f"Columns should be separated by a space character. "
-        "Comment lines may start with '#' and will be ignored. "
+        f"Comment lines may start with '{VADERE_COMMENT}' and will be ignored. "
         f"Please check your trajectory file: {trajectory_file}."
     )
     try:
-        vadere_cols = list(pd.read_csv(trajectory_file, comment="#", delimiter=" ", nrows=1).columns)
+        vadere_cols = list(
+            pd.read_csv(trajectory_file, comment=VADERE_COMMENT, delimiter=" ", nrows=1)
+            .columns
+        )
         use_vadere_cols = list()
         non_unique_cols = list()
         missing_cols = list()
@@ -772,7 +776,9 @@ def _load_trajectory_data_from_vadere(
 
 
 def _event_driven_traj_to_const_frame_rate(
-        traj_dataframe, frame_rate):
+        traj_dataframe: pd.DataFrame,
+        frame_rate: float,
+) -> pd.DataFrame:
     """Interpolate trajectory data linearly for non-equidistant time steps.
 
     Args:
@@ -780,13 +786,11 @@ def _event_driven_traj_to_const_frame_rate(
         frame_rate: Frame rate in frames per second.
 
     Returns:
-        The trajectory data as :class:`DataFrame` with positions x and y being
-        linearly interpolated for frames between two recorded time steps.
+        The trajectory data as :class:`DataFrame` with positions x and y being linearly interpolated
+        for frames between two recorded time steps.
     """
 
-    frame_duration = 1 / frame_rate
-
-    _calc_deviation_vadere_pedpy_traj_transform(traj_dataframe, frame_rate)
+    _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(traj_dataframe, frame_rate)
 
     traj_dataframe.set_index(TIME_COL, inplace=True)
     traj_by_ped = traj_dataframe.groupby(ID_COL)
@@ -797,16 +801,15 @@ def _event_driven_traj_to_const_frame_rate(
         t_start = traj.index.values.min()
         t_stop = traj.index.values.max()
 
-        # Round t_start up / t_stop down to nearest multiple of
-        # frame_duration to avoid extrapolation of trajectories to
-        # times before / after fist / last pedestrian step.
+        # Round t_start up (t_stop down) to nearest multiple of frame period (= 1/frame_rate) to
+        # avoid extrapolation of trajectories to times before first (after last) pedestrian step.
         t_start_ = math.ceil(t_start * frame_rate) / frame_rate
         t_stop_ = math.floor(t_stop * frame_rate) / frame_rate
 
         if t_start == t_stop:
             _log.warning(
-                f"Trajectory of pedestrian {str(ped_id)} is too short "
-                f"(in time) to be captured by the chosen frame rate. "
+                f"Trajectory of pedestrian {str(ped_id)} is too short in time "
+                f"to be captured by the chosen frame rate of {str(frame_rate)}. "
                 f"Therefore, this trajectory will be ignored."
             )
         else:
@@ -837,14 +840,16 @@ def _event_driven_traj_to_const_frame_rate(
     return traj_dataframe_interpolated
 
 
-def _calc_deviation_vadere_pedpy_traj_transform(traj_dataframe, frame_rate):
-    """Calculates the maximum deviation between event-based vadere trajectories
-    and their interpolated version with fixed frames.
+def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
+        traj_dataframe: pd.DataFrame,
+        frame_rate: float,
+        deviation_threshold: float = 0.1,
+) -> None:
+    """Validates whether the maximum deviation between event-based vadere trajectories and their
+    interpolated version with fixed frames is below given threshold.
 
-    Max difference occurs when first/last step of a trajectory happens just
-    after/before the last/next frame.
-    Example for an agent that moves with s = 2.2 m/s (equivalent to typical
-    cut-off in Vadere):
+    Max difference occurs when first (last) step of a trajectory happens just after (before) the
+    last (next) frame. Example for an agent that moves with a certain speed, s:
         First frame at t_f1, second frame at t_f2 = t_f1 + 1 / frame_rate
         First step at t_s1 = t_f1 + t_offset
         Distance walked between t_s1 and t_f2 will not be captured:
@@ -854,22 +859,23 @@ def _calc_deviation_vadere_pedpy_traj_transform(traj_dataframe, frame_rate):
     Args:
         traj_dataframe: trajectory data as :class:`DataFrame`
         frame_rate: Frame rate in frames per second.
+        deviation_threshold: acceptable max. difference in meter (m), otherwise log warning
     """
-    ACCEPT_DIFF = 0.01  # threshold difference in meter (m), otherwise log warning
 
     traj_groups = traj_dataframe.groupby(ID_COL)
-    max_speed = 0
+
+    max_speed = 0  # max pedestrian speed that actually reads from the traj file
     for _, traj in traj_groups:
         diff = traj.diff().dropna()
         dx_dt = (np.sqrt(diff[[X_COL, Y_COL]].pow(2).sum(axis=1))).divide(diff[TIME_COL])
         max_speed = max([max_speed, round(max(dx_dt), 2)])
 
-    max_diff = round(max_speed / frame_rate, 2)
-    if max_diff > ACCEPT_DIFF:
+    max_deviation = round(max_speed / frame_rate, 2)
+    if max_deviation > deviation_threshold:
         _log.warning(
-            f"For fastest step with approx. {str(max_speed)} "
-            f"m/s, interpolated trajectory could deviate up "
-            f"to {str(max_diff)} m from Vadere trajectory. "
-            f"If smaller deviation required, choose higher "
-            f"frame rate."
+            f"The interpolated trajectory potentially deviates up to "
+            f"{str(max_deviation)} m from the original trajectory, at least "
+            f"for the fastest pedestrian with max. speed of {str(max_speed)} m/s. "
+            f"If smaller deviations are required, choose a higher frame rate. "
+            f"The current frame rate is {str(frame_rate)} fps."
         )
