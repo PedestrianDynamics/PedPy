@@ -809,8 +809,9 @@ def _event_driven_traj_to_const_frame_rate(
 
         # Round t_start up (t_stop down) to nearest multiple of frame period (= 1/frame_rate) to
         # avoid extrapolation of trajectories to times before first (after last) pedestrian step.
-        t_start_ = math.ceil(t_start * frame_rate) / frame_rate
-        t_stop_ = math.floor(t_stop * frame_rate) / frame_rate
+        precision = 14
+        t_start_ = math.ceil(np.round(t_start * frame_rate, precision)) / frame_rate
+        t_stop_ = math.floor(np.round(t_stop * frame_rate, precision)) / frame_rate
 
         if t_start == t_stop:
             _log.warning(
@@ -819,11 +820,17 @@ def _event_driven_traj_to_const_frame_rate(
                 f"Therefore, this trajectory will be ignored."
             )
         else:
-            equidist_time_steps = np.arange(
+            equidist_time_steps = np.linspace(
                 start=t_start_,
-                stop=t_stop_ + 1 / frame_rate,
-                step=1 / frame_rate,
+                stop=t_stop_,
+                num=int(np.round((t_stop_ - t_start_) * frame_rate, 0)) + 1,
+                endpoint=True
             )
+            # np.arange(
+            #    start=t_start_,
+            #    stop=math.ceil(t_stop_ * 10**precision) / 10**precision,
+            #    step=1 / frame_rate,
+            #)
             r = pd.Index(equidist_time_steps, name=t.name)
             traj = traj.reindex(t.union(r)).interpolate(method="index").loc[r]
 
