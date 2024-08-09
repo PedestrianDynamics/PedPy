@@ -839,11 +839,7 @@ def _event_driven_traj_to_const_frame_rate(
                 num=int(np.round((t_stop_ - t_start_) * frame_rate, 0)) + 1,
                 endpoint=True,
             )
-            # np.arange(
-            #    start=t_start_,
-            #    stop=math.ceil(t_stop_ * 10**precision) / 10**precision,
-            #    step=1 / frame_rate,
-            # )
+
             r = pd.Index(equidist_time_steps, name=t.name)
             traj = traj.reindex(t.union(r)).interpolate(method="index").loc[r]
 
