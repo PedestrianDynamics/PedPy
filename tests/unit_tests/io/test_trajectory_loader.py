@@ -27,7 +27,7 @@ from pedpy.io.trajectory_loader import (
     load_trajectory_from_txt,
     load_trajectory_from_viswalk,
     load_walkable_area_from_jupedsim_sqlite,
-    load_walkable_area_from_ped_data_archive_hdf5,
+    load_walkable_area_from_ped_data_archive_hdf5, load_trajectory_from_vadere,
 )
 
 
@@ -1686,6 +1686,13 @@ def test_load_trajectory_from_viswalk_no_data(
     assert "The given trajectory file seems to be incorrect or empty." in str(
         error_info.value
     )
+
+
+def test_load_trajectory_from_vadere_reference_file():
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/vadere_postvis.traj"
+    )
+    load_trajectory_from_vadere(trajectory_file=traj_txt)
 
 
 def test_load_trajectory_from_vadere_no_data(
