@@ -21,13 +21,13 @@ from pedpy.io.trajectory_loader import (
     _load_trajectory_data_from_txt,
     _load_trajectory_meta_data_from_txt,
     _validate_is_file,
-    load_trajectory,
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
+    load_trajectory_from_vadere,
     load_trajectory_from_viswalk,
     load_walkable_area_from_jupedsim_sqlite,
-    load_walkable_area_from_ped_data_archive_hdf5, load_trajectory_from_vadere,
+    load_walkable_area_from_ped_data_archive_hdf5,
 )
 
 
@@ -1861,3 +1861,57 @@ def test_load_trajectory_from_vadere_success(
     assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
             == expected_data.to_numpy()).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+def test_load_trajectory_from_vadere_columns_missing(
+    tmp_path: pathlib.Path,
+):
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    data_with_missing_column = pd.DataFrame(
+        data=np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+        columns=[ID_COL, FRAME_COL, X_COL, "FOO!"],
+    )
+
+    written_data = get_data_frame_to_write(
+        data_with_missing_column, TrajectoryUnit.METER
+    )
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        data=written_data,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_vadere(
+            trajectory_file=trajectory_vadere,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
+
+
+def test_load_trajectory_from_vadere_columns_non_unique(
+    tmp_path: pathlib.Path,
+):
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    data_with_missing_column = pd.DataFrame(
+        data=np.array([[0, 0, 5, 5, 1], [0, 1, -5, -5, -1]]),
+        columns=[ID_COL, FRAME_COL, X_COL, "startX-PID2", Y_COL],
+    )
+
+    written_data = get_data_frame_to_write(
+        data_with_missing_column, TrajectoryUnit.METER
+    )
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        data=written_data,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_vadere(
+            trajectory_file=trajectory_vadere,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )

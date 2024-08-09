@@ -730,7 +730,7 @@ def _load_trajectory_data_from_vadere(
             ).columns
         )
         use_vadere_cols = list()
-        non_unique_cols = list()
+        non_unique_cols = dict()
         missing_cols = list()
         rename_mapping = dict()
 
@@ -740,20 +740,24 @@ def _load_trajectory_data_from_vadere(
                 use_vadere_cols += matching
                 rename_mapping[matching[0]] = name_mapping[col]
             elif len(matching) > 1:
-                non_unique_cols += [col]
+                non_unique_cols[col] = matching
             elif len(matching) == 0:
                 missing_cols += [col]
 
         if non_unique_cols:
             raise LoadTrajectoryError(
-                f"{common_error_message}"
-                f"Non-unique columns: {', '.join(non_unique_cols)}"
+                f"{common_error_message} " +
+                ". ".join(
+                    ["The identifier '{0}' is non-unique. "
+                     "It is contained in the columns: {1}".format(k, ", ".join(v))
+                     for k, v in non_unique_cols.items()]) +
+                "."
             )
 
         if missing_cols:
             raise LoadTrajectoryError(
-                f"{common_error_message}"
-                f"Missing column: {', '.join(missing_cols)}."
+                f"{common_error_message} "
+                f"Missing columns: {', '.join(missing_cols)}."
             )
 
         data = pd.read_csv(
