@@ -361,6 +361,29 @@ def write_viswalk_csv_file(
     data.to_csv(file, sep=";", index=False, mode="a", encoding="utf-8-sig")
 
 
+def write_vadere_csv_file(*,
+    data: Optional[pd.DataFrame] = None,
+    file: pathlib.Path,
+    frame_rate: float = 0,
+):
+    data = data.rename(
+        columns={
+            ID_COL: "pedestrianId",
+            FRAME_COL: "simTime",
+            X_COL: "startX-PID1",   # "-PID1" stands for processor id 1 and is used in Vadere
+                                    # outputs as extension of the generic column name startX
+            Y_COL: "startY-PID1",   # "-PID1" see comment above
+        }
+    )
+    data["simTime"] = data["simTime"] / frame_rate
+
+    vadere_traj_header = "#IDXCOL=2,DATACOL=2,SEP=' '\n"
+    with open(file, "w", encoding="utf-8-sig") as writer:
+        writer.write(vadere_traj_header)
+
+    data.to_csv(file, sep=" ", index=False, mode="a", encoding="utf-8-sig")
+
+
 def write_header_viswalk(file, data):
     column_description = {
         "$PEDESTRIAN:NO": "No, Number (Unique pedestrian number)",
@@ -1659,6 +1682,29 @@ def test_load_trajectory_from_viswalk_no_data(
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_viswalk(
             trajectory_file=trajectory_viswalk,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
+
+
+def test_load_trajectory_from_vadere_no_data(
+    tmp_path: pathlib.Path,
+):
+    data_empty = pd.DataFrame(
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    written_data = get_data_frame_to_write(data_empty, TrajectoryUnit.METER)
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        data=written_data,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_viswalk(
+            trajectory_file=trajectory_vadere,
         )
     assert "The given trajectory file seems to be incorrect or empty." in str(
         error_info.value
