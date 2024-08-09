@@ -361,7 +361,8 @@ def write_viswalk_csv_file(
     data.to_csv(file, sep=";", index=False, mode="a", encoding="utf-8-sig")
 
 
-def write_vadere_csv_file(*,
+def write_vadere_csv_file(
+    *,
     data: Optional[pd.DataFrame] = None,
     file: pathlib.Path,
     frame_rate: float = 0,
@@ -370,9 +371,9 @@ def write_vadere_csv_file(*,
         columns={
             ID_COL: "pedestrianId",
             FRAME_COL: "simTime",
-            X_COL: "startX-PID1",   # "-PID1" stands for processor id 1 and is used in Vadere
-                                    # outputs as extension of the generic column name startX
-            Y_COL: "startY-PID1",   # "-PID1" see comment above
+            X_COL: "startX-PID1",  # "-PID1" stands for processor id 1 and is used in Vadere
+            # outputs as extension of the generic column name startX
+            Y_COL: "startY-PID1",  # "-PID1" see comment above
         }
     )
     data["simTime"] = data["simTime"] / frame_rate
@@ -1858,8 +1859,10 @@ def test_load_trajectory_from_vadere_success(
         frame_rate=expected_frame_rate,
     )
 
-    assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
-            == expected_data.to_numpy()).all()
+    assert (
+        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
+        == expected_data.to_numpy()
+    ).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 

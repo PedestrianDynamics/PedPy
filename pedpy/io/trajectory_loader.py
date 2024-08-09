@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import shapely
 
-from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL, TIME_COL
+from pedpy.column_identifier import FRAME_COL, ID_COL, TIME_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
@@ -60,10 +60,10 @@ def _validate_is_file(file: pathlib.Path) -> None:
 
 
 def load_trajectory(
-        *,
-        trajectory_file: pathlib.Path,
-        default_frame_rate: Optional[float] = None,
-        default_unit: Optional[TrajectoryUnit] = None,
+    *,
+    trajectory_file: pathlib.Path,
+    default_frame_rate: Optional[float] = None,
+    default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
     """Loads the trajectory file in the internal :class:`~trajectory_data.TrajectoryData` format.
 
@@ -89,10 +89,10 @@ def load_trajectory(
 
 
 def load_trajectory_from_txt(
-        *,
-        trajectory_file: pathlib.Path,
-        default_frame_rate: Optional[float] = None,
-        default_unit: Optional[TrajectoryUnit] = None,
+    *,
+    trajectory_file: pathlib.Path,
+    default_frame_rate: Optional[float] = None,
+    default_unit: Optional[TrajectoryUnit] = None,
 ) -> TrajectoryData:
     """Loads the trajectory file in the internal :class:`~trajectory_data.TrajectoryData` format.
 
@@ -125,7 +125,7 @@ def load_trajectory_from_txt(
 
 
 def _load_trajectory_data_from_txt(
-        *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
+    *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
@@ -179,10 +179,10 @@ def _load_trajectory_data_from_txt(
 
 
 def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
-        *,
-        trajectory_file: pathlib.Path,
-        default_frame_rate: Optional[float],
-        default_unit: Optional[TrajectoryUnit],
+    *,
+    trajectory_file: pathlib.Path,
+    default_frame_rate: Optional[float],
+    default_unit: Optional[TrajectoryUnit],
 ) -> Tuple[float, TrajectoryUnit]:
     """Extract the trajectory metadata from file, use defaults if none found.
 
@@ -281,7 +281,7 @@ def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
 
 
 def load_trajectory_from_jupedsim_sqlite(
-        trajectory_file: pathlib.Path,
+    trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
     """Loads data from the sqlite file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -333,7 +333,7 @@ def load_trajectory_from_jupedsim_sqlite(
 
 
 def load_walkable_area_from_jupedsim_sqlite(
-        trajectory_file: pathlib.Path,
+    trajectory_file: pathlib.Path,
 ) -> WalkableArea:
     """Loads the walkable area from the sqlite file as :class:`~geometry.WalkableArea`.
 
@@ -375,7 +375,7 @@ def _get_jupedsim_sqlite_version(connection: sqlite3.Connection) -> int:
 
 
 def _load_walkable_area_from_jupedsim_sqlite_v1(
-        con: sqlite3.Connection,
+    con: sqlite3.Connection,
 ) -> WalkableArea:
     try:
         walkable_query_result = (
@@ -397,7 +397,7 @@ def _load_walkable_area_from_jupedsim_sqlite_v1(
 
 
 def _load_walkable_area_from_jupedsim_sqlite_v2(
-        con: sqlite3.Connection,
+    con: sqlite3.Connection,
 ) -> WalkableArea:
     try:
         res = con.cursor().execute("SELECT wkt FROM geometry")
@@ -418,7 +418,7 @@ def _load_walkable_area_from_jupedsim_sqlite_v2(
 
 
 def load_trajectory_from_ped_data_archive_hdf5(
-        trajectory_file: pathlib.Path,
+    trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
     """Loads data from the hdf5 file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -476,7 +476,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
 
 
 def load_walkable_area_from_ped_data_archive_hdf5(
-        trajectory_file: pathlib.Path,
+    trajectory_file: pathlib.Path,
 ) -> WalkableArea:
     """Loads the walkable area from the hdf5 file as :class:`~geometry.WalkableArea`.
 
@@ -509,8 +509,8 @@ def load_walkable_area_from_ped_data_archive_hdf5(
 
 
 def load_trajectory_from_viswalk(
-        *,
-        trajectory_file: pathlib.Path,
+    *,
+    trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
     """Loads data from Viswalk-csv file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -555,7 +555,7 @@ def load_trajectory_from_viswalk(
 
 
 def _calculate_frames_and_fps(
-        traj_dataframe: pd.DataFrame,
+    traj_dataframe: pd.DataFrame,
 ) -> Tuple[pd.Series, int]:
     """Calculates fps and frames based on the time column of the dataframe."""
     mean_diff = traj_dataframe.groupby(ID_COL)["time"].diff().dropna().mean()
@@ -572,7 +572,7 @@ def _calculate_frames_and_fps(
 
 
 def _load_trajectory_data_from_viswalk(
-        *, trajectory_file: pathlib.Path
+    *, trajectory_file: pathlib.Path
 ) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
@@ -746,12 +746,17 @@ def _load_trajectory_data_from_vadere(
 
         if non_unique_cols:
             raise LoadTrajectoryError(
-                f"{common_error_message} " +
-                ". ".join(
-                    ["The identifier '{0}' is non-unique. "
-                     "It is contained in the columns: {1}".format(k, ", ".join(v))
-                     for k, v in non_unique_cols.items()]) +
-                "."
+                f"{common_error_message} "
+                + ". ".join(
+                    [
+                        "The identifier '{0}' is non-unique. "
+                        "It is contained in the columns: {1}".format(
+                            k, ", ".join(v)
+                        )
+                        for k, v in non_unique_cols.items()
+                    ]
+                )
+                + "."
             )
 
         if missing_cols:
@@ -814,8 +819,12 @@ def _event_driven_traj_to_const_frame_rate(
         # Round t_start up (t_stop down) to nearest multiple of frame period (= 1/frame_rate) to
         # avoid extrapolation of trajectories to times before first (after last) pedestrian step.
         precision = 14
-        t_start_ = math.ceil(np.round(t_start * frame_rate, precision)) / frame_rate
-        t_stop_ = math.floor(np.round(t_stop * frame_rate, precision)) / frame_rate
+        t_start_ = (
+            math.ceil(np.round(t_start * frame_rate, precision)) / frame_rate
+        )
+        t_stop_ = (
+            math.floor(np.round(t_stop * frame_rate, precision)) / frame_rate
+        )
 
         if t_start == t_stop:
             _log.warning(
@@ -828,13 +837,13 @@ def _event_driven_traj_to_const_frame_rate(
                 start=t_start_,
                 stop=t_stop_,
                 num=int(np.round((t_stop_ - t_start_) * frame_rate, 0)) + 1,
-                endpoint=True
+                endpoint=True,
             )
             # np.arange(
             #    start=t_start_,
             #    stop=math.ceil(t_stop_ * 10**precision) / 10**precision,
             #    step=1 / frame_rate,
-            #)
+            # )
             r = pd.Index(equidist_time_steps, name=t.name)
             traj = traj.reindex(t.union(r)).interpolate(method="index").loc[r]
 
