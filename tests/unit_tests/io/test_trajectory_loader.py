@@ -1688,36 +1688,6 @@ def test_load_trajectory_from_viswalk_no_data(
     )
 
 
-def test_load_trajectory_from_vadere_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/vadere_postvis.traj"
-    )
-    load_trajectory_from_vadere(trajectory_file=traj_txt)
-
-
-def test_load_trajectory_from_vadere_no_data(
-    tmp_path: pathlib.Path,
-):
-    data_empty = pd.DataFrame(
-        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
-    )
-    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
-
-    written_data = get_data_frame_to_write(data_empty, TrajectoryUnit.METER)
-    write_vadere_csv_file(
-        file=trajectory_vadere,
-        data=written_data,
-    )
-
-    with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_viswalk(
-            trajectory_file=trajectory_vadere,
-        )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
-
-
 def test_load_trajectory_from_viswalk_frame_rate_zero(
     tmp_path: pathlib.Path,
 ):
@@ -1815,6 +1785,36 @@ def test_load_trajectory_from_viswalk_non_file(tmp_path):
         load_trajectory_from_viswalk(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
+
+
+def test_load_trajectory_from_vadere_reference_file():
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/vadere_postvis.traj"
+    )
+    load_trajectory_from_vadere(trajectory_file=traj_txt)
+
+
+def test_load_trajectory_from_vadere_no_data(
+    tmp_path: pathlib.Path,
+):
+    data_empty = pd.DataFrame(
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    written_data = get_data_frame_to_write(data_empty, TrajectoryUnit.METER)
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        data=written_data,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_viswalk(
+            trajectory_file=trajectory_vadere,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
 
 
 @pytest.mark.parametrize(
