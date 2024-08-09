@@ -1815,3 +1815,49 @@ def test_load_trajectory_from_viswalk_non_file(tmp_path):
         load_trajectory_from_viswalk(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
+
+
+@pytest.mark.parametrize(
+    "data, expected_frame_rate",
+    [
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            7.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            15.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            50.0,
+        ),
+    ],
+)
+def test_load_trajectory_from_vadere_success(
+    tmp_path: pathlib.Path,
+    data: List[npt.NDArray[np.float64]],
+    expected_frame_rate: float,
+):
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    expected_data = pd.DataFrame(
+        data=data,
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        frame_rate=expected_frame_rate,
+        data=written_data,
+    )
+    expected_data = prepare_data_frame(expected_data)
+
+    traj_data_from_file = load_trajectory_from_vadere(
+        trajectory_file=trajectory_vadere,
+        frame_rate=expected_frame_rate,
+    )
+
+    assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
+            == expected_data.to_numpy()).all()
+    assert traj_data_from_file.frame_rate == expected_frame_rate
