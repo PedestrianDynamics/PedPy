@@ -1,4 +1,5 @@
 """Load trajectories to the internal trajectory data format."""
+import json
 import logging
 import math
 import pathlib
@@ -907,3 +908,154 @@ def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
             f"If smaller deviations are required, choose a higher frame rate. "
             f"The current frame rate is {str(frame_rate)} fps."
         )
+
+
+def load_walkable_area_from_vadere_scenario(
+        vadere_scenario_file: pathlib.Path,
+        bounding_box: bool = False,
+        margin: float = 1e-9,
+) -> WalkableArea:
+    """Loads the walkable area from the Vadere scenario file as :class:`~geometry.WalkableArea`.
+
+    .. note::
+        Obstacles in the scenario files are not allowed to overlap with other obstacles or the
+        bounding box. Merge overlapping obstacles in Vadere before loading the scenario into PedPy.
+
+    Args:
+        vadere_scenario_file: Vadere scenario file (json format)
+        bounding_box: Indicates whether the bounding box should be included as obstacle or not.
+                      Note that the bounding box obstacle will not be an exact representation
+                      of the original bounding box but slightly tighter.
+        margin: If bounding_box == False, increases the walkable area to prevent the topography
+                bound to coincide with obstacles that originally coincide with the topography bound.
+                If bounding_box == True, narrows down the outer and inner side of the bounding box
+                by the value of margin to prevent the bounding box to coincide with the topography
+                bound or obstacles that originally coincide with the bounding box.
+
+    Returns:
+        WalkableArea: :class:`~geometry.WalkableArea` used in the simulation
+    """
+    _validate_is_file(vadere_scenario_file)
+
+    with open(vadere_scenario_file, 'r') as f:
+        data = json.load(f)
+        topography = data["scenario"]["topography"]
+        scenario_attributes = topography["attributes"]
+
+        obstacles = topography["obstacles"]
+        obstacles_ = list()
+        for obstacle in obstacles:
+            obstacles_ += [_vadere_shape_to_point_list(obstacle["shape"])]
+
+        # bound
+        complete_area = scenario_attributes["bounds"]
+        bounding_box_with = scenario_attributes["boundingBoxWidth"]
+
+        if bounding_box:
+            bounding_box = _vadere_bounding_box_to_point_list(
+                scenario_attributes["bounds"],
+                box_with=bounding_box_with,
+                margin=margin,
+            )
+            obstacles_ += [bounding_box]
+        else:
+            complete_area["x"] = complete_area["x"] - margin + bounding_box_with
+            complete_area["y"] = complete_area["y"] - margin + bounding_box_with
+            complete_area["width"] = complete_area["width"] + 2 * (margin - bounding_box_with)
+            complete_area["height"] = complete_area["height"] + 2 * (margin - bounding_box_with)
+
+        complete_area["type"] = "RECTANGLE"
+        complete_area_points = _vadere_shape_to_point_list(complete_area)
+
+    return WalkableArea(polygon=complete_area_points, obstacles=obstacles_)
+
+
+def _vadere_shape_to_point_list(shape):
+    """Transforms dictionary describing a rectangle or polygon into a list of points (polygon).
+
+    Args:
+        shape: Dict containing the shape as RECTANGLE or POLYGON
+               * 'shape' RECTANGLE requires key value pairs for 'x', 'y', 'width', 'height'
+               * 'shape' POLYGON requires key value pair for 'points': [{'x': ..., 'y': ...},
+               {'x': ..., 'y': ...}, ...]
+
+    Returns:
+        list
+
+    """
+    _supported_types = ["RECTANGLE", "POLYGON"]
+
+    shape_type = shape["type"]
+    if shape_type not in _supported_types:
+        raise LoadTrajectoryError(
+            f"The given Vadere scenario contains an unsupported obstacle shape '{shape_type}'. "
+        )
+
+    if shape_type == "RECTANGLE":
+        # lower left corner (x1, y1)
+        x1 = shape["x"]
+        y1 = shape["y"]
+
+        # upper right corner (x2, y2)
+        x2 = x1 + shape["width"]
+        y2 = y1 + shape["height"]
+
+        points = [
+            shapely.Point(x1, y1),
+            shapely.Point(x2, y1),
+            shapely.Point(x2, y2),
+            shapely.Point(x1, y2),
+        ]
+
+    elif shape_type == "POLYGON":
+        points = [shapely.Point(p["x"], p["y"]) for p in shape["points"]]
+
+    return points
+
+
+def _vadere_bounding_box_to_point_list(
+        bounds: dict,
+        box_with: float,
+        margin: float,
+) -> list:
+    """
+    Creates a polygon (list of shapely.Point), which describes the bounding box of Vadere scenarios
+    from topography attributes.
+
+    Args:
+        bounds: dict containing a description of the outer border of the bounding box with keys
+                'x', 'y', 'width', 'height'. Keys 'x' and 'y' refer to the lower left corner of the
+                bounding box. Units are in m.
+        box_with: width of the bounding box (in m)
+        margin: prevents the resulting bounding box to coincide with the topography bound and to
+                produce overlapping areas within the bounding box
+
+    Returns:
+        list
+    """
+    # lower left corner (x1, y1)
+    x1_outer = bounds["x"] + margin
+    y1_outer = bounds["y"] + margin
+    x1_inner = bounds["x"] + box_with - margin
+    y1_inner = bounds["y"] + box_with - margin
+
+    # upper right corner (x2, y2)
+    x2_outer = bounds["x"] + bounds["width"] - margin
+    y2_outer = bounds["y"] + bounds["height"] - margin
+    x2_inner = bounds["x"] + bounds["width"] - box_with + margin
+    y2_inner = bounds["y"] + bounds["height"] - box_with + margin
+
+    points = [
+        shapely.Point(x1_outer, y1_outer),
+        shapely.Point(x2_outer, y1_outer),
+        shapely.Point(x2_outer, y2_outer),
+        shapely.Point(x1_outer, y2_outer),
+        shapely.Point(x1_outer, y1_inner + margin),
+        shapely.Point(x1_inner, y1_inner + margin),
+        shapely.Point(x1_inner, y2_inner),
+        shapely.Point(x2_inner, y2_inner),
+        shapely.Point(x2_inner, y1_inner),
+        shapely.Point(x1_outer, y1_inner),
+    ]
+
+    return points

@@ -23,6 +23,7 @@ from .io.trajectory_loader import (
     load_trajectory_from_vadere,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
+    load_walkable_area_from_vadere_scenario,
 )
 from .methods.acceleration_calculator import (
     AccelerationCalculation,
@@ -101,6 +102,7 @@ __all__ = [
     "load_trajectory_from_vadere",
     "load_walkable_area_from_jupedsim_sqlite",
     "load_walkable_area_from_ped_data_archive_hdf5",
+    "load_walkable_area_from_vadere_scenario",
     "compute_classic_density",
     "compute_passing_density",
     "compute_voronoi_density",
