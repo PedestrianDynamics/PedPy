@@ -20,6 +20,7 @@ from .io.trajectory_loader import (
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
     load_trajectory_from_viswalk,
+    load_trajectory_from_vadere,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
 )
@@ -97,6 +98,7 @@ __all__ = [
     "load_trajectory_from_ped_data_archive_hdf5",
     "load_trajectory_from_txt",
     "load_trajectory_from_viswalk",
+    "load_trajectory_from_vadere",
     "load_walkable_area_from_jupedsim_sqlite",
     "load_walkable_area_from_ped_data_archive_hdf5",
     "compute_classic_density",
