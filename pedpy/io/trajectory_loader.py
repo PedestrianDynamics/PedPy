@@ -912,8 +912,7 @@ def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
 
 def load_walkable_area_from_vadere_scenario(
         vadere_scenario_file: pathlib.Path,
-        bounding_box: bool = False,
-        margin: float = 1e-9,
+        margin: float = 0,
 ) -> WalkableArea:
     """Loads the walkable area from the Vadere scenario file as :class:`~geometry.WalkableArea`.
 
@@ -923,14 +922,13 @@ def load_walkable_area_from_vadere_scenario(
 
     Args:
         vadere_scenario_file: Vadere scenario file (json format)
-        bounding_box: Indicates whether the bounding box should be included as obstacle or not.
-                      Note that the bounding box obstacle will not be an exact representation
-                      of the original bounding box but slightly tighter.
-        margin: If bounding_box == False, increases the walkable area to prevent the topography
-                bound to coincide with obstacles that originally coincide with the topography bound.
-                If bounding_box == True, narrows down the outer and inner side of the bounding box
-                by the value of margin to prevent the bounding box to coincide with the topography
-                bound or obstacles that originally coincide with the bounding box.
+        margin: Increases the walkable area by the value of margin to avoid that the topography
+                bound touches obstacles because shapely Polygons used in PedPy do not allow this.
+                By default (margin = .0), the bound of the walkable area in PedPy coincides with the
+                inner bound of the bounding box (obstacle) in Vadere. PedPy cannot process the case
+                where obstacles touch the bounding box defined in Vadere. To avoid errors, either
+                increase the value of margin (e.g. to 1e-9) or make sure that the obstacles in
+                Vadere do not touch the bounding box.
 
     Returns:
         WalkableArea: :class:`~geometry.WalkableArea` used in the simulation
@@ -942,30 +940,36 @@ def load_walkable_area_from_vadere_scenario(
         topography = data["scenario"]["topography"]
         scenario_attributes = topography["attributes"]
 
-        obstacles = topography["obstacles"]
-        obstacles_ = list()
-        for obstacle in obstacles:
-            obstacles_ += [_vadere_shape_to_point_list(obstacle["shape"])]
-
         # bound
         complete_area = scenario_attributes["bounds"]
         bounding_box_with = scenario_attributes["boundingBoxWidth"]
-
-        if bounding_box:
-            bounding_box = _vadere_bounding_box_to_point_list(
-                scenario_attributes["bounds"],
-                box_with=bounding_box_with,
-                margin=margin,
-            )
-            obstacles_ += [bounding_box]
-        else:
-            complete_area["x"] = complete_area["x"] - margin + bounding_box_with
-            complete_area["y"] = complete_area["y"] - margin + bounding_box_with
-            complete_area["width"] = complete_area["width"] + 2 * (margin - bounding_box_with)
-            complete_area["height"] = complete_area["height"] + 2 * (margin - bounding_box_with)
-
+        complete_area["x"] = complete_area["x"] + bounding_box_with - margin
+        complete_area["y"] = complete_area["y"] + bounding_box_with - margin
+        complete_area["width"] = complete_area["width"] - 2 * (bounding_box_with - margin)
+        complete_area["height"] = complete_area["height"] - 2 * (bounding_box_with - margin)
         complete_area["type"] = "RECTANGLE"
         complete_area_points = _vadere_shape_to_point_list(complete_area)
+        area_poly = shapely.Polygon(complete_area_points)
+
+        # obstacles
+        obstacles = topography["obstacles"]
+        obstacles_ = list()
+        error_obst_ids = list()
+        for obstacle in obstacles:
+            obst_points = _vadere_shape_to_point_list(obstacle["shape"])
+            if area_poly.contains_properly(shapely.Polygon(obst_points)):
+                obstacles_ += [obst_points]
+            else:
+                error_obst_ids += [str(obstacle["id"])]
+
+        if error_obst_ids:
+            error_obst_ids = {", ".join(error_obst_ids)}
+            raise LoadTrajectoryError(
+                f"Cannot convert obstacles with IDs {error_obst_ids} because they touch the bound "
+                f"of the walkable area (inner bound of the bounding box in Vadere). Increase "
+                f"the walkable area or adapt the scenario file to make sure that obstacles have "
+                f"no common points with the bounding box."
+            )
 
     return WalkableArea(polygon=complete_area_points, obstacles=obstacles_)
 
@@ -1009,53 +1013,5 @@ def _vadere_shape_to_point_list(shape):
 
     elif shape_type == "POLYGON":
         points = [shapely.Point(p["x"], p["y"]) for p in shape["points"]]
-
-    return points
-
-
-def _vadere_bounding_box_to_point_list(
-        bounds: dict,
-        box_with: float,
-        margin: float,
-) -> list:
-    """
-    Creates a polygon (list of shapely.Point), which describes the bounding box of Vadere scenarios
-    from topography attributes.
-
-    Args:
-        bounds: dict containing a description of the outer border of the bounding box with keys
-                'x', 'y', 'width', 'height'. Keys 'x' and 'y' refer to the lower left corner of the
-                bounding box. Units are in m.
-        box_with: width of the bounding box (in m)
-        margin: prevents the resulting bounding box to coincide with the topography bound and to
-                produce overlapping areas within the bounding box
-
-    Returns:
-        list
-    """
-    # lower left corner (x1, y1)
-    x1_outer = bounds["x"] + margin
-    y1_outer = bounds["y"] + margin
-    x1_inner = bounds["x"] + box_with - margin
-    y1_inner = bounds["y"] + box_with - margin
-
-    # upper right corner (x2, y2)
-    x2_outer = bounds["x"] + bounds["width"] - margin
-    y2_outer = bounds["y"] + bounds["height"] - margin
-    x2_inner = bounds["x"] + bounds["width"] - box_with + margin
-    y2_inner = bounds["y"] + bounds["height"] - box_with + margin
-
-    points = [
-        shapely.Point(x1_outer, y1_outer),
-        shapely.Point(x2_outer, y1_outer),
-        shapely.Point(x2_outer, y2_outer),
-        shapely.Point(x1_outer, y2_outer),
-        shapely.Point(x1_outer, y1_inner + margin),
-        shapely.Point(x1_inner, y1_inner + margin),
-        shapely.Point(x1_inner, y2_inner),
-        shapely.Point(x2_inner, y2_inner),
-        shapely.Point(x2_inner, y1_inner),
-        shapely.Point(x1_outer, y1_inner),
-    ]
 
     return points
