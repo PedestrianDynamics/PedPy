@@ -1,3 +1,5 @@
+import json
+import math
 import pathlib
 import re
 import sqlite3
@@ -28,6 +30,7 @@ from pedpy.io.trajectory_loader import (
     load_trajectory_from_viswalk,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
+    load_walkable_area_from_vadere_scenario,
 )
 
 
@@ -383,6 +386,75 @@ def write_vadere_csv_file(
         writer.write(vadere_traj_header)
 
     data.to_csv(file, sep=" ", index=False, mode="a", encoding="utf-8-sig")
+
+
+def is_rectangular(poly: shapely.Polygon):
+    return math.isclose(
+            a=poly.area,
+            b=poly.minimum_rotated_rectangle.area,
+            abs_tol=0,
+        )
+
+
+def write_vadere_scenario_file(
+        file,
+        complete_area,
+        obstacles,
+        bounding_box_width,
+):
+    obstacles_ = list()
+
+    for obstacle in obstacles:
+        obst_coords = list(obstacle.coords)
+
+        if is_rectangular(shapely.Polygon(obstacle)):
+            obstacles_ += [
+                {
+                    "shape": {
+                        "type": "RECTANGLE",
+                        "x": obst_coords[0][0],
+                        "y": obst_coords[0][1],
+                        "width": abs(obst_coords[0][0] - obst_coords[2][0]),
+                        "height": abs(obst_coords[0][1] - obst_coords[2][1]),
+                    }
+                }
+            ]
+        else:  # is polygon
+            obstacles_ += [
+                {
+                    "shape": {
+                        "type": "POLYGON",
+                        "points": [{"x": p[0], "y": p[1]} for p in obst_coords]
+                    }
+                }
+            ]
+
+    if is_rectangular(shapely.Polygon(complete_area)):
+        scenario = {
+            "name": "vadere_test",
+            "release": str(),
+            "scenario": {
+                "topography": {
+                    "attributes": {
+                        "bounds": {
+                            "x": complete_area.bounds[0],
+                            "y": complete_area.bounds[1],
+                            "width": abs(complete_area.bounds[2] - complete_area.bounds[0]),
+                            "height": abs(complete_area.bounds[3] - complete_area.bounds[1]),
+                        },
+                        "boundingBoxWidth": bounding_box_width,
+                    },
+                    "obstacles": obstacles_,
+                }
+            }
+        }
+    else:
+        raise RuntimeError("Internal Error: Trying to write non-rectangular shape as Vadere "
+                           "scenario bound.")
+
+    # Convert and write JSON object to file
+    with open(file, "w") as f:
+        json.dump(scenario, f, indent=2)
 
 
 def write_header_viswalk(file, data):
@@ -1918,3 +1990,106 @@ def test_load_trajectory_from_vadere_columns_non_unique(
     assert "The given trajectory file seems to be incorrect or empty." in str(
         error_info.value
     )
+
+
+@pytest.mark.parametrize(
+    "area_poly, margin, bounding_box",
+    [
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            0,
+            0,
+        ),
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            1e-6,
+            0,
+        ),
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            0,
+            0.5,
+        ),
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            1e-6,
+            0.5,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+            0,
+            0,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+            1e-6,
+            0,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+            0,
+            0.5,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 0), (1, 1), (0, 1)]],  # rectangular hole
+            ),
+            1e-6,
+            0.5,
+        ),
+    ],
+)
+def test_load_walkable_area_from_vadere_scenario_success(
+        tmp_path: pathlib.Path,
+        area_poly: shapely.Polygon,
+        margin: bool,
+        bounding_box: float,
+):
+    file_path = pathlib.Path(tmp_path / "vadere_test.scenario")
+    decimals = 6
+
+    complete_area = area_poly.exterior
+    if len(area_poly.interiors) > 0:
+        obstacles = area_poly.interiors
+    else:
+        obstacles = []
+
+    write_vadere_scenario_file(
+        file=file_path,
+        complete_area=complete_area,
+        obstacles=obstacles,
+        bounding_box_width=bounding_box,
+    )
+    walkable_area_from_file = load_walkable_area_from_vadere_scenario(
+        file_path,
+        margin=margin,
+        decimals=decimals,
+    )
+
+    # convert test input to expected WalkableArea
+    # 1) shrink expected walkable area to area without bounding box
+    expected_shell = shapely.Polygon(area_poly.exterior)
+    expected_shell = expected_shell.buffer(
+        distance=-bounding_box + margin,
+        single_sided=True,
+        join_style="mitre",
+    )
+    # convert polygon shell to points to use it as input to WalkableArea
+    expected_shell_points = list(expected_shell.exterior.coords)
+    # handle floating point errors
+    expected_shell_points = np.round(expected_shell_points, decimals)
+    # 2) treat holes separately to avoid buffering of holes
+    expected_holes = [list(p.coords) for p in area_poly.interiors]
+    expected_walkable_area = WalkableArea(expected_shell_points, obstacles=expected_holes)
+
+    assert expected_walkable_area.polygon.equals(walkable_area_from_file.polygon)
