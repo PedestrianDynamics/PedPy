@@ -913,6 +913,7 @@ def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
 def load_walkable_area_from_vadere_scenario(
         vadere_scenario_file: pathlib.Path,
         margin: float = 0,
+        decimals: int = 6,
 ) -> WalkableArea:
     """Loads the walkable area from the Vadere scenario file as :class:`~geometry.WalkableArea`.
 
@@ -927,13 +928,17 @@ def load_walkable_area_from_vadere_scenario(
                 By default (margin = .0), the bound of the walkable area in PedPy coincides with the
                 inner bound of the bounding box (obstacle) in Vadere. PedPy cannot process the case
                 where obstacles touch the bounding box defined in Vadere. To avoid errors, either
-                increase the value of margin (e.g. to 1e-9) or make sure that the obstacles in
+                increase the value of margin (e.g. to 1e-3) or make sure that the obstacles in
                 Vadere do not touch the bounding box.
+        decimals: Integer defining the decimals of the coordinates of the walkable area
 
     Returns:
         WalkableArea: :class:`~geometry.WalkableArea` used in the simulation
     """
     _validate_is_file(vadere_scenario_file)
+
+    if margin is not 0 and margin < 10 ** -decimals:
+        raise LoadTrajectoryError("Margin should be greater than 10 ** (-decimals).")
 
     with open(vadere_scenario_file, 'r') as f:
         data = json.load(f)
@@ -948,7 +953,7 @@ def load_walkable_area_from_vadere_scenario(
         complete_area["width"] = complete_area["width"] - 2 * (bounding_box_with - margin)
         complete_area["height"] = complete_area["height"] - 2 * (bounding_box_with - margin)
         complete_area["type"] = "RECTANGLE"
-        complete_area_points = _vadere_shape_to_point_list(complete_area)
+        complete_area_points = _vadere_shape_to_point_list(complete_area, decimals=decimals)
         area_poly = shapely.Polygon(complete_area_points)
 
         # obstacles
@@ -956,7 +961,7 @@ def load_walkable_area_from_vadere_scenario(
         obstacles_ = list()
         error_obst_ids = list()
         for obstacle in obstacles:
-            obst_points = _vadere_shape_to_point_list(obstacle["shape"])
+            obst_points = _vadere_shape_to_point_list(obstacle["shape"], decimals=decimals)
             if area_poly.contains_properly(shapely.Polygon(obst_points)):
                 obstacles_ += [obst_points]
             else:
@@ -974,7 +979,7 @@ def load_walkable_area_from_vadere_scenario(
     return WalkableArea(polygon=complete_area_points, obstacles=obstacles_)
 
 
-def _vadere_shape_to_point_list(shape):
+def _vadere_shape_to_point_list(shape: dict, decimals: int):
     """Transforms dictionary describing a rectangle or polygon into a list of points (polygon).
 
     Args:
@@ -982,6 +987,8 @@ def _vadere_shape_to_point_list(shape):
                * 'shape' RECTANGLE requires key value pairs for 'x', 'y', 'width', 'height'
                * 'shape' POLYGON requires key value pair for 'points': [{'x': ..., 'y': ...},
                {'x': ..., 'y': ...}, ...]
+
+        decimals: Integer defining the decimals of the returned coordinates
 
     Returns:
         list
@@ -1014,4 +1021,6 @@ def _vadere_shape_to_point_list(shape):
     elif shape_type == "POLYGON":
         points = [shapely.Point(p["x"], p["y"]) for p in shape["points"]]
 
+    # handle floating point errors
+    points = [shapely.Point(np.round(p.x, decimals), np.round(p.y, decimals)) for p in points]
     return points
