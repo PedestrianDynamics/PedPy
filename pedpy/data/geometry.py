@@ -43,8 +43,8 @@ class WalkableArea:
         Args:
             polygon: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                :class:`shapely.Point` objects. Passing a wkt representation of
-                a polygon is also allowed.
+                :class:`shapely.Point` objects. Passing a `str` sequence containing a
+                Well-Known Text (wkt) format representation of a polygon is also allowed.
             obstacles (Optional): list of sequences of (x, y) numeric
                 coordinate pairs, or an array-like with shape (N, 2). Also, can
                 be a sequence of :class:`shapely.Point` objects.
@@ -138,8 +138,8 @@ class MeasurementArea:
         Args:
             coordinates: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                shapely.Point objects. Passing a wkt representation of a polygon
-                is also allowed.
+                :class:`shapely.Point` objects. Passing a `str` sequence containing a
+                Well-Known Text (wkt) format representation of a polygon is also allowed.
         """
         try:
             self._polygon = _create_polygon_from_input(coordinates)
@@ -228,8 +228,9 @@ class MeasurementLine:
         Args:
             coordinates: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                shapely.Point objects. Passing a wkt representation of a
-                LineString is also allowed.
+                shapely.Point objects. Passing a `str` sequence containing a
+                Well-Known Text (wkt) format representation of a LineString is also allowed.
+
         """
         try:
             if isinstance(coordinates, shapely.LineString):
