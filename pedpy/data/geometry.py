@@ -228,7 +228,7 @@ class MeasurementLine:
         Args:
             coordinates: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                shapely.Point objects. Passing a `str` sequence containing a
+                :class:`shapely.Point` objects. Passing a `str` sequence containing a
                 Well-Known Text (wkt) format representation of a LineString is also allowed.
 
         """
