@@ -560,7 +560,7 @@ def plot_time_distance(
         min_data = ped_data[ped_data.frame == ped_data.frame.min()]
         axes.scatter(
             min_data.distance,
-            min_data.time_seconds,
+            min_data.time,
             color=color,
             s=5,
             marker="o",
@@ -584,7 +584,7 @@ def plot_time_distance(
         min_data = ped_data[ped_data.frame == ped_data.frame.min()]
         axes.scatter(
             min_data.distance,
-            min_data.time_seconds,
+            min_data.time,
             c=min_data.speed,
             cmap="jet",
             norm=norm,
@@ -606,7 +606,7 @@ def plot_time_distance(
         """
         axes.plot(
             ped_data.distance,
-            ped_data.time_seconds,
+            ped_data.time,
             color=color,
             alpha=0.7,
             lw=0.25,
@@ -625,7 +625,7 @@ def plot_time_distance(
         norm: Normalization for the colormap based on speed.
         cmap: The colormap to use for coloring the line based on speed.
         """
-        points = ped_data[["distance", "time_seconds"]].to_numpy()
+        points = ped_data[["distance", "time"]].to_numpy()
         speed_id = ped_data.speed.to_numpy()
         segments = [
             [
@@ -712,7 +712,6 @@ def plot_time_distance(
 
     axes = axes or plt.gca()
     _setup_plot(axes, **kwargs)
-    time_distance["time_seconds"] = time_distance.time / frame_rate
     if speed is not None:
         _plot_with_speed_colors(axes, time_distance, speed)
     else:
