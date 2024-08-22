@@ -335,6 +335,10 @@ def compute_time_distance_line(
     crossing_frame = compute_crossing_frames(
         traj_data=traj_data, measurement_line=measurement_line
     ).rename(columns={FRAME_COL: CROSSING_FRAME_COL})
+    crossing_frame = (
+        crossing_frame.groupby(ID_COL)[CROSSING_FRAME_COL].max().reset_index()
+    )
+
     df_distance_time = df_distance_time.merge(crossing_frame, on=ID_COL)
     df_distance_time[TIME_COL] = (
         df_distance_time[CROSSING_FRAME_COL] - df_distance_time[FRAME_COL]
