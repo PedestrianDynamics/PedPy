@@ -459,7 +459,6 @@ def plot_neighborhood(
 def plot_time_distance(
     *,
     time_distance: pd.DataFrame,
-    frame_rate: float,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -468,7 +467,6 @@ def plot_time_distance(
     Args:
         time_distance(pd.DataFrame): DataFrame containing information on time and
             distance to some target
-        frame_rate(float): frame_rate of the trajectory
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
         marker_color (optional): color of the markers on the plot
         line_color (optional): color of the lines on the plot
@@ -492,7 +490,7 @@ def plot_time_distance(
     for _, ped_data in time_distance.groupby(by=ID_COL):
         axes.plot(
             ped_data.distance,
-            ped_data.time / frame_rate,
+            ped_data.time,
             color=line_color,
             alpha=0.7,
             lw=0.25,
@@ -500,7 +498,7 @@ def plot_time_distance(
         min_data = ped_data[ped_data.frame == ped_data.frame.min()]
         axes.scatter(
             min_data.distance,
-            min_data.time / frame_rate,
+            min_data.time,
             color=marker_color,
             s=5,
             marker="o",
