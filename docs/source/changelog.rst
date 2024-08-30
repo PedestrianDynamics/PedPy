@@ -2,6 +2,14 @@
 Changelog
 *********
 
+Version 1.1.3 (2024-08-30)
+==========================
+
+**Fixes:**
+
+- Distance to time plot, now show the correct time
+
+
 Version 1.1.2 (2024-06-16)
 ==========================
 
