@@ -15,7 +15,7 @@ from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 from pedpy.data.trajectory_data import TrajectoryData
 
 
-def compute_pair_distibution_function(
+def compute_pair_distribution_function(
     *,
     traj_data: TrajectoryData,
     radius_bin_size: float,
@@ -66,7 +66,7 @@ def compute_pair_distibution_function(
     ## Create the bin for data
     radius_bins = np.arange(0, pairwise_dist_array.max(), radius_bin_size)
 
-    # Calculate pair distibution: g(r)
+    # Calculate pair distribution: g(r)
     ## Actual distribution
     pd_bins = pandas.cut(pairwise_dist_array, radius_bins)
     pd_bins_normalised = (pd_bins.value_counts().sort_index().to_numpy()) / len(
