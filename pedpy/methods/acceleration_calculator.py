@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas
+import pandas as pd
 import shapely
 
 from pedpy.column_identifier import ACC_COL, A_X_COL, A_Y_COL, FRAME_COL, ID_COL
@@ -34,16 +34,18 @@ def compute_individual_acceleration(
     frame_step: int,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_acceleration_components: bool = False,
-    acceleration_calculation: AccelerationCalculation = AccelerationCalculation.BORDER_EXCLUDE,
-) -> pandas.DataFrame:
+    acceleration_calculation: AccelerationCalculation = (
+        AccelerationCalculation.BORDER_EXCLUDE
+    ),
+) -> pd.DataFrame:
     r"""Compute the individual acceleration for each pedestrian.
 
-    For computing the individuals' acceleration at a specific frame :math:`a_i(t_k)`,
-    a specific frame step (:math:`n`) is needed.
+    For computing the individuals' acceleration at a specific frame
+    :math:`a_i(t_k)`, a specific frame step (:math:`n`) is needed.
     Together with the
-    :attr:`~trajectory_data.TrajectoryData.frame_rate` of
-    the trajectory data :math:`fps` the time frame :math:`\Delta t` for
-    computing the speed becomes:
+    :attr:`~trajectory_data.TrajectoryData.frame_rate` of the trajectory data
+    :math:`fps` the time frame :math:`\Delta t` for computing the speed
+    becomes:
 
     .. math::
 
@@ -65,7 +67,8 @@ def compute_individual_acceleration(
 
         \bar{X}(t_{k-n}) = X(t_{k}) - X(t_{k-2n})
 
-    The acceleration is then calculated from the difference of the displacements
+    The acceleration is then calculated from the difference of the
+    displacements
 
     .. math::
 
@@ -89,20 +92,21 @@ def compute_individual_acceleration(
     these parts no acceleration can be computed and they are ignored. Use
     :code:`acceleration_calculation=AccelerationCalculation.BORDER_EXCLUDE`.
 
-
     **With movement direction:**
 
-    It is also possible to compute the individual acceleration in a specific direction
-    :math:`d`, for this the movement :math:`\Delta\bar{X}` is projected onto the
-    desired movement direction. :math:`\Delta\bar{X}` and :math:`\Delta t` are
-    computed as described above. Hence, the acceleration then becomes:
+    It is also possible to compute the individual acceleration in a specific
+    direction :math:`d`, for this the movement :math:`\Delta\bar{X}` is
+    projected onto the desired movement direction. :math:`\Delta\bar{X}` and
+    :math:`\Delta t` are computed as described above. Hence, the acceleration
+    then becomes:
 
     .. math::
 
         a_i(t) = {{|\boldsymbol{proj}_d\; \Delta\bar{X}|} \over {\Delta t^{2}}}
 
 
-    If :code:`compute_acceleration_components` is `True` also :math:`\Delta\bar{X}` is returned.
+    If :code:`compute_acceleration_components` is `True` also
+    :math:`\Delta\bar{X}` is returned.
 
     Args:
         traj_data (TrajectoryData): trajectory data
@@ -111,14 +115,16 @@ def compute_individual_acceleration(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-        compute_acceleration_components (bool): compute the x and y components of the acceleration
-        acceleration_calculation (method_utils.AccelerationCalculation): method used to
-            compute the acceleration at the borders of the individual trajectories
+        compute_acceleration_components (bool): compute the x and y components
+            of the acceleration
+        acceleration_calculation (method_utils.AccelerationCalculation): method
+            used to compute the acceleration at the borders of the individual
+            trajectories
 
     Returns:
-        DataFrame containing the columns 'id', 'frame', and 'acceleration' in 'm/s^2',
-        'a_x' and 'a_y' with the speed components in x and y direction if
-        :code:`compute_acceleration_components` is True
+        DataFrame containing the columns 'id', 'frame', and 'acceleration' in
+        'm/s^2', 'a_x' and 'a_y' with the speed components in x and y direction
+        if :code:`compute_acceleration_components` is True
     """
     df_movement = _compute_individual_movement_acceleration(
         traj_data=traj_data,
@@ -139,15 +145,16 @@ def compute_individual_acceleration(
 def compute_mean_acceleration_per_frame(
     *,
     traj_data: TrajectoryData,
-    individual_acceleration: pandas.DataFrame,
+    individual_acceleration: pd.DataFrame,
     measurement_area: MeasurementArea,
-) -> Tuple[pandas.DataFrame, pandas.DataFrame]:
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     r"""Compute mean acceleration per frame inside a given measurement area.
 
-    Computes the mean acceleration :math:`a_{mean}(t)` inside the measurement area from
-    the given individual acceleration data :math:`a_i(t)` (see
+    Computes the mean acceleration :math:`a_{mean}(t)` inside the measurement
+    area from the given individual acceleration data :math:`a_i(t)` (see
     :func:`~acceleration_calculator.compute_individual_acceleration` for
-    details of the computation). The mean acceleration :math:`a_{mean}` is defined as
+    details of the computation). The mean acceleration :math:`a_{mean}` is
+    defined as
 
     .. math::
 
@@ -163,7 +170,8 @@ def compute_mean_acceleration_per_frame(
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        individual_acceleration (pandas.DataFrame): individual acceleration data from
+        individual_acceleration (pandas.DataFrame): individual acceleration
+            data from
             :func:`~acceleration_calculator.compute_individual_acceleration`
         measurement_area (MeasurementArea): measurement area for which the
             acceleration is computed
@@ -173,14 +181,14 @@ def compute_mean_acceleration_per_frame(
     """
     if len(individual_acceleration.index) < len(traj_data.data.index):
         raise AccelerationError(
-            f"Can not compute the mean acceleration, as the there are less acceleration "
-            f"data (rows={len(individual_acceleration)}) than trajectory data "
-            f"(rows={len(traj_data.data.index)}). This means a person occupies "
-            f"space but has no acceleration at some frames."
+            f"Can not compute the mean acceleration, as the there are less "
+            f"acceleration data (rows={len(individual_acceleration)}) than "
+            f"trajectory data (rows={len(traj_data.data.index)}). This means a "
+            f"person occupies space but has no acceleration at some frames."
             f"To resolve this either edit your trajectory data, s.th. it only "
-            f"contains the data that is also contained in the acceleration data. Or "
-            f"use a different acceleration border method when computing the individual "
-            f"acceleration."
+            f"contains the data that is also contained in the acceleration "
+            f"data. Or use a different acceleration border method when "
+            f"computing the individual acceleration."
         )
 
     combined = traj_data.data.merge(
@@ -201,19 +209,20 @@ def compute_mean_acceleration_per_frame(
 def compute_voronoi_acceleration(
     *,
     traj_data: TrajectoryData,
-    individual_acceleration: pandas.DataFrame,
-    individual_voronoi_intersection: pandas.DataFrame,
+    individual_acceleration: pd.DataFrame,
+    individual_voronoi_intersection: pd.DataFrame,
     measurement_area: MeasurementArea,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     r"""Computes the Voronoi acceleration.
 
-    Computes the Voronoi acceleration :math:`a_{voronoi}(t)` inside the measurement
-    area :math:`M` from the given individual acceleration data :math:`a_i(t)` (see
+    Computes the Voronoi acceleration :math:`a_{voronoi}(t)` inside the
+    measurement area :math:`M` from the given individual acceleration data
+    :math:`a_i(t)` (see
     :func:`~acceleration_calculator.compute_individual_acceleration` for
     details of the computation) and their individual Voronoi intersection data
     (from :func:`~density_calculator.compute_voronoi_density`).
-    The individuals' accelerations are weighted by the proportion of their Voronoi cell
-    :math:`V_i` and the intersection with the measurement area
+    The individuals' accelerations are weighted by the proportion of their
+    Voronoi cell :math:`V_i` and the intersection with the measurement area
     :math:`V_i \cap M`.
 
     The Voronoi acceleration :math:`a_{voronoi}(t)` is defined as
@@ -232,13 +241,14 @@ def compute_voronoi_acceleration(
 
     Args:
         traj_data (TrajectoryData): trajectory data
-        individual_acceleration (pandas.DataFrame): individual acceleration data from
+        individual_acceleration (pandas.DataFrame): individual acceleration
+            data from
             :func:`~acceleration_calculator.compute_individual_acceleration`
-        individual_voronoi_intersection (pandas.DataFrame): intersections of the
-            individual with the measurement area of each pedestrian from
+        individual_voronoi_intersection (pandas.DataFrame): intersections of
+            the individual with the measurement area of each pedestrian from
             :func:`~method_utils.compute_intersecting_polygons`
-        measurement_area (MeasurementArea): area in which the voronoi acceleration
-            should be computed
+        measurement_area (MeasurementArea): area in which the voronoi
+            acceleration should be computed
 
     Returns:
         DataFrame containing the columns 'frame' and 'acceleration' in 'm/s^2'
@@ -247,17 +257,18 @@ def compute_voronoi_acceleration(
         individual_voronoi_intersection.index
     ):
         raise AccelerationError(
-            f"Can not compute the Voronoi acceleration, as the there are less acceleration "
-            f"data (rows={len(individual_acceleration)}) than Voronoi intersection "
-            f"data (rows={len(individual_voronoi_intersection.index)}). This "
-            f"means a person occupies space but has no acceleration at some frames."
-            f"To resolve this either edit your Voronoi intersection data, s.th. "
-            f"it only contains the data that is also contained in the acceleration "
-            f"data. Or use a different acceleration border method when computing the "
-            f"individual acceleration."
+            f"Can not compute the Voronoi acceleration, as the there are less "
+            f"acceleration data (rows={len(individual_acceleration)}) than "
+            f"Voronoi intersection data ("
+            f"rows={len(individual_voronoi_intersection.index)}). This "
+            f"means a person occupies space but has no acceleration at some "
+            f"frames. To resolve this either edit your Voronoi intersection "
+            f"data, s.th. it only contains the data that is also contained "
+            f"in the acceleration data. Or use a different acceleration border "
+            f"method when computing the individual acceleration."
         )
 
-    df_voronoi = pandas.merge(
+    df_voronoi = pd.merge(
         individual_voronoi_intersection,
         individual_acceleration,
         on=[ID_COL, FRAME_COL],
@@ -274,16 +285,16 @@ def compute_voronoi_acceleration(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
-    return pandas.DataFrame(df_voronoi_acceleration)
+    return pd.DataFrame(df_voronoi_acceleration)
 
 
 def _compute_individual_acceleration(
     *,
-    movement_data: pandas.DataFrame,
+    movement_data: pd.DataFrame,
     frame_rate: float,
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_acceleration_components: bool = True,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     """Compute the instantaneous acceleration of each pedestrian.
 
     Args:
@@ -293,12 +304,13 @@ def _compute_individual_acceleration(
         movement_direction (np.ndarray): main movement direction on which the
             actual movement is projected (default: None, when the un-projected
             movement should be used)
-        compute_acceleration_components (bool): compute the x and y components of the acceleration
+        compute_acceleration_components (bool): compute the x and y components
+            of the acceleration
 
     Returns:
-        DataFrame containing the columns: 'id', 'frame', 'acceleration' with the
-        acceleration in m/s^2, 'a_x' and 'a_y' with the acceleration components in x and y
-        direction if compute_acceleration is True
+        DataFrame containing the columns: 'id', 'frame', 'acceleration' with
+        the acceleration in m/s^2, 'a_x' and 'a_y' with the acceleration
+        components in x and y direction if compute_acceleration is True
     """
     columns = [ID_COL, FRAME_COL, ACC_COL]
     time_interval = movement_data.window_size / frame_rate
