@@ -19,8 +19,8 @@ echo "Check typing with mypy"
 check_for_failure python3 -m mypy --config-file mypy.ini pedpy/
 echo "-------------------------------------------------------------------------"
 
-echo "Linting with pylint"
-check_for_failure python3 -m pylint --recursive=y --extension-pkg-whitelist=scipy pedpy pedpy/data pedpy/io pedpy/methods pedpy/plotting pedpy/internal
+echo "Linting with ruff"
+check_for_failure python3 -m ruff check pedpy
 echo "-------------------------------------------------------------------------"
 
 if ((failure)); then
