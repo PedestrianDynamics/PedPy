@@ -1,4 +1,3 @@
-# type: ignore
 """Top level imports, for easier usage."""
 
 try:
