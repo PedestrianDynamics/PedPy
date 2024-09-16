@@ -125,8 +125,8 @@ def _calculate_pair_distances(
     for _, frame_df in data_df.groupby(FRAME_COL):
         number_pedestrians = len(frame_df[ID_COL].unique())
         if number_pedestrians > 1:
-            x_values = frame_df[X_COL].values
-            y_values = frame_df[Y_COL].values
+            x_values = frame_df[X_COL].to_numpy()
+            y_values = frame_df[Y_COL].to_numpy()
             coordinates = np.stack((x_values, y_values), axis=-1)
             # Calculate pairwise distances for the current frame using cdist
             frame_distances = cdist(

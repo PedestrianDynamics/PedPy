@@ -268,8 +268,7 @@ def compute_voronoi_acceleration(
             f"method when computing the individual acceleration."
         )
 
-    df_voronoi = pd.merge(
-        individual_voronoi_intersection,
+    df_voronoi = individual_voronoi_intersection.merge(
         individual_acceleration,
         on=[ID_COL, FRAME_COL],
     )
@@ -333,21 +332,27 @@ def _compute_individual_acceleration(
         # Projection of the displacement onto the movement direction
         norm_movement_direction = np.dot(movement_direction, movement_direction)
         movement_data[["dd_x", "dd_y"]] = (
-            np.dot(movement_data[["dd_x", "dd_y"]].values, movement_direction)[
-                :, None
-            ]
+            np.dot(
+                movement_data[["dd_x", "dd_y"]].to_numpy(), movement_direction
+            )[:, None]
             * movement_direction
             * norm_movement_direction
         )
         movement_data[ACC_COL] = (
-            np.dot(movement_data[["dd_x", "dd_y"]].values, movement_direction)
+            np.dot(
+                movement_data[["dd_x", "dd_y"]].to_numpy(), movement_direction
+            )
             / np.linalg.norm(movement_direction)
             / time_interval**2
         )
 
     if compute_acceleration_components:
-        movement_data[A_X_COL] = movement_data["dd_x"].values / time_interval**2
-        movement_data[A_Y_COL] = movement_data["dd_y"].values / time_interval**2
+        movement_data[A_X_COL] = (
+            movement_data["dd_x"].to_numpy() / time_interval**2
+        )
+        movement_data[A_Y_COL] = (
+            movement_data["dd_y"].to_numpy() / time_interval**2
+        )
         columns.append(A_X_COL)
         columns.append(A_Y_COL)
 

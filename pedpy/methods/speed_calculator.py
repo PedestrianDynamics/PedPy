@@ -316,8 +316,7 @@ def compute_voronoi_speed(
             f"computing the individual speed."
         )
 
-    df_voronoi = pd.merge(
-        individual_voronoi_intersection,
+    df_voronoi = individual_voronoi_intersection.merge(
         individual_speed,
         on=[ID_COL, FRAME_COL],
     )
@@ -412,21 +411,21 @@ def _compute_individual_speed(
         # Projection of the displacement onto the movement direction
         norm_movement_direction = np.dot(movement_direction, movement_direction)
         movement_data[["d_x", "d_y"]] = (
-            np.dot(movement_data[["d_x", "d_y"]].values, movement_direction)[
-                :, None
-            ]
+            np.dot(
+                movement_data[["d_x", "d_y"]].to_numpy(), movement_direction
+            )[:, None]
             * movement_direction
             * norm_movement_direction
         )
         movement_data[SPEED_COL] = (
-            np.dot(movement_data[["d_x", "d_y"]].values, movement_direction)
+            np.dot(movement_data[["d_x", "d_y"]].to_numpy(), movement_direction)
             / np.linalg.norm(movement_direction)
             / time_interval
         )
 
     if compute_velocity:
-        movement_data[V_X_COL] = movement_data["d_x"].values / time_interval
-        movement_data[V_Y_COL] = movement_data["d_y"].values / time_interval
+        movement_data[V_X_COL] = movement_data["d_x"].to_numpy() / time_interval
+        movement_data[V_Y_COL] = movement_data["d_y"].to_numpy() / time_interval
         columns.append(V_X_COL)
         columns.append(V_Y_COL)
 

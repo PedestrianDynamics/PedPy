@@ -451,8 +451,8 @@ def _compute_gaussian_density_profile(
         #  2.50662 = sqrt(2*pi)
         return 1 / (2.50662 * sigma) * np.exp(-(x**2) / (2 * sigma**2))
 
-    positions_x = frame_data.x.values
-    positions_y = frame_data.y.values
+    positions_x = frame_data.x.to_numpy()
+    positions_y = frame_data.y.to_numpy()
 
     # distance from each grid center x/y coordinates to the pedestrian positions
     distance_x = np.add.outer(
@@ -673,9 +673,9 @@ def _compute_gaussian_speed_profile(
         )
 
     # pedestrians' position and speed
-    positions_x = frame_data.x.values
-    positions_y = frame_data.y.values
-    speeds = frame_data.speed.values
+    positions_x = frame_data.x.to_numpy()
+    positions_y = frame_data.y.to_numpy()
+    speeds = frame_data.speed.to_numpy()
     # distance from each grid center coordinates to the pedestrian positions
     distance_x = np.subtract.outer(
         center_x,
@@ -742,7 +742,7 @@ def _compute_arithmetic_voronoi_speed_profile(
     )
 
     accumulated_speed = np.sum(
-        cells_with_peds * frame_data.speed.values,
+        cells_with_peds * frame_data.speed.to_numpy(),
         axis=1,
     )
     num_peds = np.count_nonzero(
@@ -778,7 +778,7 @@ def _compute_voronoi_speed_profile(
     """
     speed = (
         np.sum(
-            grid_intersections_area * frame_data.speed.values,
+            grid_intersections_area * frame_data.speed.to_numpy(),
             axis=1,
         )
     ) / grid_area

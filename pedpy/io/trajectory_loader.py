@@ -643,7 +643,7 @@ def _load_trajectory_data_from_viswalk(
 
         data.columns = cleaned_columns
         data = data[columns_to_keep]
-        data.rename(columns=rename_mapping, inplace=True)
+        data = data.rename(columns=rename_mapping)
 
         if data.empty:
             raise LoadTrajectoryError(common_error_message)

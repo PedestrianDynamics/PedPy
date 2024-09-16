@@ -495,15 +495,14 @@ def plot_neighborhood(
     base_color = kwargs.pop("base_color", PEDPY_RED)
     neighbor_color = kwargs.pop("neighbor_color", PEDPY_GREEN)
     default_color = kwargs.pop("default_color", PEDPY_GREY)
-    voronoi_neighbors = pd.merge(
-        voronoi_data[voronoi_data.frame == frame],
+    voronoi_neighbors = voronoi_data[voronoi_data.frame == frame].merge(
         neighbors[neighbors.frame == frame],
         on=[ID_COL, FRAME_COL],
     )
 
     base_neighbors = voronoi_neighbors[
         voronoi_neighbors[ID_COL] == pedestrian_id
-    ]["neighbors"].values[0]
+    ]["neighbors"].to_numpy()[0]
     if axes is None:
         axes = plt.gca()
     axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")

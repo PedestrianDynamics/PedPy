@@ -156,8 +156,8 @@ def compute_flow(
     Returns:
         DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
     """
-    crossing_speeds = pd.merge(
-        crossing_frames, individual_speed, on=[ID_COL, FRAME_COL]
+    crossing_speeds = crossing_frames.merge(
+        individual_speed, on=[ID_COL, FRAME_COL]
     )
 
     # Get frame where the first person passes the line

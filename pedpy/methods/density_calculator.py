@@ -109,8 +109,7 @@ def compute_voronoi_density(
         measurement_area=measurement_area,
     )
 
-    df_combined = pd.merge(
-        individual_voronoi_data,
+    df_combined = individual_voronoi_data.merge(
         df_intersecting,
         on=[ID_COL, FRAME_COL],
         how="outer",
