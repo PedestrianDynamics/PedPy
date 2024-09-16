@@ -256,24 +256,24 @@ Except from the functional requirements (see :ref:`Tests`) for changes in the co
 These will also be checked in our CI process for each Pull Request.
 
 1. **Code formatting:**
-To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``black``.
+To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``ruff format``.
 We provide a helper script (``scripts/format.sh``) that will format every file in the correct manner.
 To test it locally you can use ``scripts/check-format.sh``.
 
-2. **Docstring style:**
-Make sure to check whether every of your new functions has a docstring.
-We decided to use Google-docstring style to be used in our project.
-You can use `pydocstyle` to check if everything is correct locally.
-
-3. **Type Hints:**
+2. **Type Hints:**
 We decided that every function, parameter, return value, etc. should be annotated with type hints, as they make it clearer for users what to expect and what is needed.
 For ensuring that no type hint is forgotten we use ``MyPy``.
 This can be checked locally via ``python3 -m mypy --config-file mypy.ini pedpy/``
 
-4. **Linting:**
+3. **Linting:**
 Linting in Python is an important process that helps ensure that our code is consistent and adheres to best practices.
-Linting tools like ``pylint`` analyze our code for potential errors, bad practices, and code smells.
+Linting tools like ``ruff`` analyze our code for potential errors, bad practices, and code smells.
 This helps us catch issues early on and prevents them from becoming bigger problems down the line.
+
+4. **Docstring style:** (included in linting)
+Make sure to check whether every of your new functions has a docstring.
+We decided to use Google-docstring style to be used in our project.
+You can use `ruff` to check if everything is correct locally.
 
 If you want to run the same tests as in the CI pipeline, you can use ``scripts/ci.sh``.
 
