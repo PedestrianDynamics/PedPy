@@ -7,7 +7,7 @@ import numpy.typing as npt
 import pandas
 import shapely
 
-from pedpy.column_identifier import A_X_COL, A_Y_COL, ACC_COL, FRAME_COL, ID_COL
+from pedpy.column_identifier import ACC_COL, A_X_COL, A_Y_COL, FRAME_COL, ID_COL
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
@@ -334,12 +334,8 @@ def _compute_individual_acceleration(
         )
 
     if compute_acceleration_components:
-        movement_data[A_X_COL] = (
-            movement_data["dd_x"].values / time_interval**2
-        )
-        movement_data[A_Y_COL] = (
-            movement_data["dd_y"].values / time_interval**2
-        )
+        movement_data[A_X_COL] = movement_data["dd_x"].values / time_interval**2
+        movement_data[A_Y_COL] = movement_data["dd_y"].values / time_interval**2
         columns.append(A_X_COL)
         columns.append(A_Y_COL)
 

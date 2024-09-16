@@ -1,5 +1,6 @@
 # type: ignore
 """Top level imports, for easier usage."""
+
 try:
     from . import _version  # pylint: disable=import-self
 
