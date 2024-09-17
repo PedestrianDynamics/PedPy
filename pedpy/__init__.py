@@ -24,7 +24,6 @@ from .io.trajectory_loader import (
     load_walkable_area_from_ped_data_archive_hdf5,
 )
 from .methods.acceleration_calculator import (
-    AccelerationCalculation,
     compute_individual_acceleration,
     compute_mean_acceleration_per_frame,
     compute_voronoi_acceleration,
@@ -36,7 +35,9 @@ from .methods.density_calculator import (
 )
 from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
+    AccelerationCalculation,
     Cutoff,
+    SpeedCalculation,
     compute_frame_range_in_area,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
@@ -56,7 +57,6 @@ from .methods.profile_calculator import (
 )
 from .methods.spatial_analysis import compute_pair_distribution_function
 from .methods.speed_calculator import (
-    SpeedCalculation,
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,

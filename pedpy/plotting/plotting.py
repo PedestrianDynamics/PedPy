@@ -1066,6 +1066,8 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
         voronoi_data (pd.DataFrame): voronoi polygon data as returned by
             :func:`~density_calculator.compute_voronoi_density`
         frame (int): frame index
+        traj_data (TrajectoryData, optional): Will add pedestrian positions
+            to the plot if provided.
         walkable_area (WalkableArea, optional): WalkableArea object to plot
         measurement_area (MeasurementArea, optional): measurement area used to
             compute the Voronoi cells
@@ -1075,8 +1077,6 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             below for list of usable keywords
 
     Keyword Args:
-        traj_data (TrajectoryData, optional): Will add pedestrian positions
-            to the plot if provided.
         ped_color (optional): color used to display current ped positions
         voronoi_border_color (optional): border color of Voronoi cells
         voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell

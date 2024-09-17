@@ -108,7 +108,6 @@ case-sensitive = true
 known-first-party = ["pedpy"]
 
 [tool.ruff.lint]
-#select = ["E", "W", "I", "D", "PL", "NPY"]
 select = [
     # pyflakes
     "F",
