@@ -1,7 +1,7 @@
 """Top level imports, for easier usage."""
 
 try:
-    from . import _version  # pylint: disable=import-self
+    from . import _version  # type: ignore[attr-defined]
 
     __version__ = _version.__version__
     __commit_hash__ = _version.__commit_hash__
