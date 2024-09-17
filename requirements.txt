@@ -1,20 +1,20 @@
-numpy~=1.25,<2.0
-pandas~=2.0
-Shapely~=2.0
-scipy~=1.11
-matplotlib~=3.7
-h5py~=3.10.0
+numpy~=2.1
+pandas~=2.2.3
+Shapely~=2.0.6
+scipy~=1.14
+matplotlib~=3.9
+h5py~=3.11.0
 
 # testing
-pytest~=7.4
-pytest-mock~=3.11
+pytest~=8.3
+pytest-mock~=3.14
 
 # build tools
-setuptools>=65.5
+setuptools~=75.1
 click~=8.1
-build==0.10
+build~=1.1
 
 # ci
-mypy==1.4.1
+mypy~=1.11
 mypy-extensions==1.0
 ruff~=0.6
