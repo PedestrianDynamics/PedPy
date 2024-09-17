@@ -570,7 +570,11 @@ def compute_crossing_frames(
     # crossing means, the current movement crosses the line and the end point
     # of the movement is not on the line. The result is sorted by frame number
     crossing_frames = df_movement.loc[
-        shapely.intersects(df_movement.movement, measurement_line.line)
+        (shapely.intersects(df_movement.movement, measurement_line.line))
+        & (
+            shapely.distance(df_movement.end_position, measurement_line.line)
+            > 1e-5
+        )
     ][[ID_COL, FRAME_COL]]
 
     return crossing_frames
