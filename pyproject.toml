@@ -19,8 +19,8 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
-    "numpy~=1.25,<2.0",
-    "pandas~=2.0",
+    "numpy~=2.1",
+    "pandas~=2.2.2",
     "Shapely~=2.0",
     "scipy~=1.11",
     "matplotlib~=3.7",
