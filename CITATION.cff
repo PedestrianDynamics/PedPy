@@ -8,7 +8,6 @@ authors:
 - family-names: "Schrödter"
   given-names: "Tobias"
   orcid: "https://orcid.org/0000-0002-1071-060X"
-  affiliation: Forschungszentrum Jülich GmbH, Germany
 - name: "The PedPy Development Team"
 repository-code: "https://github.com/PedestrianDynamics/pedpy"
 keywords:
