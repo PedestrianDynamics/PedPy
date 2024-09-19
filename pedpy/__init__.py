@@ -11,9 +11,9 @@ except ImportError:
     __commit_hash__ = "unknown"
 
 from .column_identifier import (
+    ACC_COL,
     A_X_COL,
     A_Y_COL,
-    ACC_COL,
     COUNT_COL,
     CROSSING_FRAME_COL,
     CUMULATED_COL,
