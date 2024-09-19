@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from shapely import Polygon
+from tests.utils.utils import get_trajectory
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
@@ -20,7 +21,6 @@ from pedpy.methods.speed_calculator import (
     compute_species,
     compute_voronoi_speed,
 )
-from tests.utils.utils import get_trajectory
 
 
 def test_mean_speed_needs_same_length_speed_and_polygon_data():

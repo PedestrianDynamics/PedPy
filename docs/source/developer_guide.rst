@@ -28,7 +28,7 @@ So don't hesitate to speak up - we appreciate your input and look forward to wor
 Enhancement requests
 ====================
 
-You can submit feature requests on our `GitHub issues page <https://github.com/PedestrianDynamics/PedPy/issues>`_.
+You can submit feature requests on our `GitHub discussions <https://github.com/PedestrianDynamics/PedPy/discussions>`_.
 When submitting a feature request, please provide a clear and detailed description of the feature you would like to see added, along with any relevant use cases or examples.
 
 We can't promise to implement every feature request, but we do carefully consider all requests and prioritize them based on their potential impact on the community and feasibility.
@@ -56,7 +56,7 @@ Version control, Git, and GitHub
 
 If you're a new developer looking to contribute to `PedPy`, we have a streamlined process that utilizes Git and a fork-based approach on GitHub.
 For contributing you need to create a GitHub account first.
-We will try to explain the main git commands you will need to contribute to `PedPy`, but for a deeper understanding of Git and how it works we refer to the official documentation of `Git <https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F>`_ and `GitHub<https://docs.github.com/en/get-started/quickstart/hello-world>`_.
+We will try to explain the main git commands you will need to contribute to `PedPy`, but for a deeper understanding of Git and how it works we refer to the official documentation of `Git <https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F>`_ and `GitHub <https://docs.github.com/en/get-started/quickstart/hello-world>`_.
 
 **1. Fork the Repository:** Start by forking our project's repository on GitHub.
 This creates a personal copy of the project under your GitHub account, allowing you to freely make changes without affecting the original codebase.
@@ -173,9 +173,16 @@ Now, after activating the virtual environment you can install all dependencies f
 .. code-block:: bash
 
   (pedpy-venv) $ cd PedPy
-  (pedpy-venv) $ python -m pip install -r requirements
+  (pedpy-venv) $ python -m pip install -r requirements.txt
 
 Now everything is setup for you to start developing in *PedPy*!
+
+One way to test your code locally is to install it *PedPy* from the root directory with:
+
+.. code-block:: bash
+
+  (pedpy-venv) $  python -m pip install -e .
+
 
 Structure of the code
 ---------------------
@@ -249,24 +256,24 @@ Except from the functional requirements (see :ref:`Tests`) for changes in the co
 These will also be checked in our CI process for each Pull Request.
 
 1. **Code formatting:**
-To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``black``.
+To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``ruff format``.
 We provide a helper script (``scripts/format.sh``) that will format every file in the correct manner.
 To test it locally you can use ``scripts/check-format.sh``.
 
-2. **Docstring style:**
-Make sure to check whether every of your new functions has a docstring.
-We decided to use Google-docstring style to be used in our project.
-You can use `pydocstyle` to check if everything is correct locally.
-
-3. **Type Hints:**
+2. **Type Hints:**
 We decided that every function, parameter, return value, etc. should be annotated with type hints, as they make it clearer for users what to expect and what is needed.
 For ensuring that no type hint is forgotten we use ``MyPy``.
 This can be checked locally via ``python3 -m mypy --config-file mypy.ini pedpy/``
 
-4. **Linting:**
+3. **Linting:**
 Linting in Python is an important process that helps ensure that our code is consistent and adheres to best practices.
-Linting tools like ``pylint`` analyze our code for potential errors, bad practices, and code smells.
+Linting tools like ``ruff`` analyze our code for potential errors, bad practices, and code smells.
 This helps us catch issues early on and prevents them from becoming bigger problems down the line.
+
+4. **Docstring style:** (included in linting)
+Make sure to check whether every of your new functions has a docstring.
+We decided to use Google-docstring style to be used in our project.
+You can use `ruff` to check if everything is correct locally.
 
 If you want to run the same tests as in the CI pipeline, you can use ``scripts/ci.sh``.
 
@@ -284,18 +291,32 @@ How to build the documentation
 ------------------------------
 
 To build the documentation locally, you need to setup a development environment.
-Then navigate to the ``docs/`` directory.
-Then install all the needed requirements via:
+As above, it is recommend to use a virtual environment for this.
+Also make sure that *PedPy* is installed in this environment:
 
 .. code:: bash
 
-    $ pip install -r requirements.txt
+    (pedpy-venv) $  python -m pip install -e .
+
+
+To install all the needed requirements for building the documentation use:
+
+.. code:: bash
+
+    (pedpy-venv) $ pip install -r docs/requirements.txt
 
 Afterwards you can build the documentation with:
 
 .. code:: bash
 
-    $ sphinx-build -a source build
+    (pedpy-venv) $ sphinx-build -T -b html -a docs/source docs/build
+
+This might take a while as the notebooks will be executed, to exclude every notebook you can run the following command:
+
+.. code:: bash
+
+    (pedpy-venv) $ sphinx-build -T -b html -a docs/source docs/build -D nb_execution_excludepatterns='**.ipynb'
+
 
 It will create a new folder ``build/`` in which the websites are built.
 To preview it locally, open ``build/index.html`` in any browser of your liking.
@@ -309,8 +330,6 @@ To view the built site:
 
 1. Wait for CI to finish the `docs/readthedocs.org:pedpy` job
 2. Click on `Details`
-3. Click on the small `View docs` (**not** the large green box!)
-
 
 Alternatively, you can find the documentation for a pull request, after the CI job has finished, under the following link.
 As each pull request has a unique number, you need to substitute for ``<#PR>`` in the link:
@@ -322,5 +341,21 @@ As each pull request has a unique number, you need to substitute for ``<#PR>`` i
 Contact
 =======
 
-If you need any help, please feel free to open issues on GitHub or join us in our RocketChat Channel: https://juchat.fz-juelich.de/channel/pedpy-usergroup
+If you need any help, please feel free to open discussions on GitHub or join us in our RocketChat Channel:
 
+.. grid:: 1 2 2 2
+    :gutter: 4
+    :padding: 2 2 0 0
+    :class-container: sd-text-center
+
+    .. grid-item-card:: GitHub Discussions
+        :img-top: _static/github_logo.svg
+        :class-card: intro-card
+        :link: https://github.com/PedestrianDynamics/PedPy/discussions
+        :link-alt: To the GitHub discussions
+
+    .. grid-item-card:: RocketChat User Group
+        :img-top: _static/rocketchat_logo.svg
+        :class-card: intro-card
+        :link: https://juchat.fz-juelich.de/channel/pedpy-usergroup
+        :link-alt: To the RocketChat User Group

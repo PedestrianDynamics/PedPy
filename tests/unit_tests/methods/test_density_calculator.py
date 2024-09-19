@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from shapely import Polygon
 from shapely.geometry import Point
+from tests.utils.utils import get_trajectory, get_trajectory_data
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
@@ -12,7 +13,6 @@ from pedpy.methods.density_calculator import (
     compute_classic_density,
     compute_line_density,
 )
-from tests.utils.utils import get_trajectory, get_trajectory_data
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,46 @@
-# type: ignore
 """Top level imports, for easier usage."""
-from . import _version
+
+try:
+    from . import _version  # type: ignore[attr-defined]
+
+    __version__ = _version.__version__
+    __commit_hash__ = _version.__commit_hash__
+
+except ImportError:
+    __version__ = "unknown"
+    __commit_hash__ = "unknown"
+
+from .column_identifier import (
+    ACC_COL,
+    A_X_COL,
+    A_Y_COL,
+    COUNT_COL,
+    CROSSING_FRAME_COL,
+    CUMULATED_COL,
+    DENSITY_COL,
+    DISTANCE_COL,
+    END_POSITION_COL,
+    FIRST_FRAME_COL,
+    FLOW_COL,
+    FRAME_COL,
+    ID_COL,
+    INTERSECTION_COL,
+    LAST_FRAME_COL,
+    MEAN_SPEED_COL,
+    MID_FRAME_COL,
+    MID_POSITION_COL,
+    NEIGHBORS_COL,
+    POINT_COL,
+    POLYGON_COL,
+    SPEED_COL,
+    START_POSITION_COL,
+    TIME_COL,
+    V_X_COL,
+    V_Y_COL,
+    WINDOW_SIZE_COL,
+    X_COL,
+    Y_COL,
+)
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
 from .io.trajectory_loader import (
@@ -10,8 +50,14 @@ from .io.trajectory_loader import (
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
+    load_trajectory_from_viswalk,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
+)
+from .methods.acceleration_calculator import (
+    compute_individual_acceleration,
+    compute_mean_acceleration_per_frame,
+    compute_voronoi_acceleration,
 )
 from .methods.density_calculator import (
     compute_classic_density,
@@ -25,7 +71,9 @@ from .methods.flow_calculator import (
     compute_n_t,
 )
 from .methods.method_utils import (
+    AccelerationCalculation,
     Cutoff,
+    SpeedCalculation,
     compute_frame_range_in_area,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
@@ -36,9 +84,17 @@ from .methods.method_utils import (
     is_species_valid,
     is_trajectory_valid,
 )
-from .methods.profile_calculator import SpeedMethod, compute_profiles
+from .methods.profile_calculator import (
+    DensityMethod,
+    SpeedMethod,
+    compute_density_profile,
+    compute_grid_cell_polygon_intersection_area,
+    compute_profiles,
+    compute_speed_profile,
+    get_grid_cells,
+)
+from .methods.spatial_analysis import compute_pair_distribution_function
 from .methods.speed_calculator import (
-    SpeedCalculation,
     compute_individual_speed,
     compute_line_speed,
     compute_mean_speed_per_frame,
@@ -53,6 +109,7 @@ from .plotting.plotting import (
     PEDPY_ORANGE,
     PEDPY_PETROL,
     PEDPY_RED,
+    plot_acceleration,
     plot_density,
     plot_density_at_line,
     plot_density_distribution,
@@ -71,8 +128,6 @@ from .plotting.plotting import (
     plot_walkable_area,
 )
 
-__version__ = _version.get_versions()["version"]
-
 __all__ = [
     "MeasurementArea",
     "MeasurementLine",
@@ -84,6 +139,7 @@ __all__ = [
     "load_trajectory_from_jupedsim_sqlite",
     "load_trajectory_from_ped_data_archive_hdf5",
     "load_trajectory_from_txt",
+    "load_trajectory_from_viswalk",
     "load_walkable_area_from_jupedsim_sqlite",
     "load_walkable_area_from_ped_data_archive_hdf5",
     "compute_classic_density",
@@ -99,13 +155,23 @@ __all__ = [
     "compute_time_distance_line",
     "get_invalid_trajectory",
     "is_trajectory_valid",
+    "compute_pair_distribution_function",
+    "DensityMethod",
     "SpeedMethod",
+    "compute_density_profile",
+    "compute_grid_cell_polygon_intersection_area",
     "compute_profiles",
+    "compute_speed_profile",
+    "get_grid_cells",
     "SpeedCalculation",
     "compute_individual_speed",
     "compute_mean_speed_per_frame",
     "compute_passing_speed",
     "compute_voronoi_speed",
+    "AccelerationCalculation",
+    "compute_individual_acceleration",
+    "compute_mean_acceleration_per_frame",
+    "compute_voronoi_acceleration",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
@@ -125,5 +191,35 @@ __all__ = [
     "plot_trajectories",
     "plot_voronoi_cells",
     "plot_walkable_area",
+    "plot_acceleration",
+    "ID_COL",
+    "FRAME_COL",
+    "X_COL",
+    "Y_COL",
+    "POINT_COL",
+    "DENSITY_COL",
+    "POLYGON_COL",
+    "INTERSECTION_COL",
+    "COUNT_COL",
+    "CUMULATED_COL",
+    "TIME_COL",
+    "SPEED_COL",
+    "V_X_COL",
+    "V_Y_COL",
+    "FLOW_COL",
+    "MEAN_SPEED_COL",
+    "ACC_COL",
+    "A_X_COL",
+    "A_Y_COL",
+    "FIRST_FRAME_COL",
+    "MID_FRAME_COL",
+    "LAST_FRAME_COL",
+    "NEIGHBORS_COL",
+    "DISTANCE_COL",
+    "CROSSING_FRAME_COL",
+    "START_POSITION_COL",
+    "MID_POSITION_COL",
+    "END_POSITION_COL",
+    "WINDOW_SIZE_COL",
     "__version__",
 ]

@@ -831,18 +831,19 @@ def test_profiles(
     combined = pd.merge(
         individual_voronoi, individual_speed, on=[ID_COL, FRAME_COL]
     )
+    combined = combined.merge(trajectory.data, on=[ID_COL, FRAME_COL])
 
     individual_voronoi_speed_data = combined[
         combined.frame.between(min_frame, max_frame, inclusive="both")
     ]
     density_profiles, speed_profiles_arithmetic = compute_profiles(
-        individual_voronoi_speed_data=individual_voronoi_speed_data,
+        data=individual_voronoi_speed_data,
         walkable_area=walkable_area,
         grid_size=grid_size,
         speed_method=SpeedMethod.ARITHMETIC,
     )
     density_profiles, speed_profiles_voronoi = compute_profiles(
-        individual_voronoi_speed_data=individual_voronoi_speed_data,
+        data=individual_voronoi_speed_data,
         walkable_area=walkable_area,
         grid_size=grid_size,
         speed_method=SpeedMethod.VORONOI,
@@ -868,6 +869,14 @@ def test_profiles(
 
         reference_speed_arithmetic = np.loadtxt(
             next(velocity_result_folder.glob(f"*Arithmetic*{frame}*"))
+        )
+        print(
+            np.max(
+                np.linalg.norm(
+                    speed_profiles_arithmetic[frame - min_frame]
+                    - reference_speed_arithmetic
+                )
+            )
         )
 
         # There are artifacts of the polygons going outside the geometry in

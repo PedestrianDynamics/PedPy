@@ -13,9 +13,13 @@ build:
 
   jobs:
     pre_build:
-      - cp -r notebooks/* docs/source
       - pip install -e .
+      - sleep 60 # sleep for Zenodo upload to finsih
+      - python scripts/generate_bibtex.py
 
+    post_checkout:
+      # we need the tags for versioning to work
+      - git fetch --tags
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
@@ -28,4 +32,3 @@ formats: all
 python:
    install:
    - requirements: docs/requirements.txt
-

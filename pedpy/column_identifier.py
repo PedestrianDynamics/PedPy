@@ -21,12 +21,18 @@ V_Y_COL: Final = "v_y"
 FLOW_COL: Final = "flow"
 MEAN_SPEED_COL: Final = "mean_speed"
 
+ACC_COL: Final = "acceleration"
+A_X_COL: Final = "a_x"
+A_Y_COL: Final = "a_y"
+
 FIRST_FRAME_COL: Final = "entering_frame"
+MID_FRAME_COL: Final = "mid_frame"
 LAST_FRAME_COL: Final = "leaving_frame"
 NEIGHBORS_COL: Final = "neighbors"
 DISTANCE_COL: Final = "distance"
 CROSSING_FRAME_COL: Final = "crossing_frame"
 START_POSITION_COL: Final = "start_position"
+MID_POSITION_COL: Final = "mid_position"
 END_POSITION_COL: Final = "end_position"
 WINDOW_SIZE_COL: Final = "window_size"
 

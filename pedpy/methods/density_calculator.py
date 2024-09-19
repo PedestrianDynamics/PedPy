@@ -1,4 +1,5 @@
 """Module containing functions to compute densities."""
+
 from typing import Tuple
 
 import numpy as np
@@ -34,7 +35,7 @@ def compute_classic_density(
 
     The classic density :math:`\rho_{classic}(t)` is the number of pedestrians
     inside the given measurement area :math:`M` at the time :math:`t`, divided
-    by the area of that space (:math:`A(M)`):
+    by the area of that space :math:`A(M)`:
 
     .. math::
 
@@ -122,8 +123,7 @@ def compute_voronoi_density(
         measurement_area=measurement_area,
     )
 
-    df_combined = pd.merge(
-        individual_voronoi_data,
+    df_combined = individual_voronoi_data.merge(
         df_intersecting,
         on=[ID_COL, FRAME_COL],
         how="outer",
@@ -173,7 +173,7 @@ def compute_passing_density(
     .. math::
 
         \rho_{passing}(i) = {1 \over {t_{out}(i)-t_{in}(i)}}
-        \int^{t_{out}(i)}_{t_{in}(i)} {{N(t)} \over A(M)} dt
+        \int^{t_{out}(i)}_{t_{in}(i)} {{N(t)} \over A(M)} dt,
 
     where :math:`t_{in}(i) = f_{in}(i) / fps` is the time the pedestrian
     crossed the first line and :math:`t_{out}(i) = f_{out}(i) / fps` when they

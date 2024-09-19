@@ -7,5 +7,3 @@ sphinx-notfound-page==1.0.0
 sphinx-favicon==1.0.1
 sphinx-book-theme==1.0.1
 sphinx-autoapi==3.0.0
-h5py~=3.9.0
-tables~=3.8.0

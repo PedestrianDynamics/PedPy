@@ -1,22 +1,186 @@
-[tool.black]
-line-length = 80
-target-version = ['py38']
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true
+[project]
+name = "PedPy"
+dynamic = ['version']
+authors = [{ name = "T. Schrödter" }]
+description = "PedPy is a Python module for pedestrian movement analysis."
+readme = "README.md"
+license = { file = "LICENSE" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "numpy~=1.25,<2.0",
+    "pandas~=2.0",
+    "Shapely~=2.0",
+    "scipy~=1.11",
+    "matplotlib~=3.7",
+    "h5py~=3.10.0",
+]
+requires-python = ">=3.10"
 
-[tool.isort]
-line_length = 80
-multi_line_output = 3
-include_trailing_comma = true
-
-[tool.pydocstyle]
-inherit = false
-match-dir = "(pedpy|data|io|methods|plotting)"
-convention = "google"
+[project.urls]
+homepage = "https://pedpy.readthedocs.io/"
 
 [build-system]
-requires = ["setuptools>=42", "versioneer"]
+requires = ["setuptools>=42", "wheel", "versioningit"]
 build-backend = "setuptools.build_meta"
+
+[tool.versioningit.vcs]
+method = "git"
+default-tag = "0.0.0"
+
+[tool.versioningit.format]
+distance = "{next_version}.dev{distance}"
+dirty = "{next_version}.dev{distance}"
+distance-dirty = "{next_version}.dev{distance}"
+
+[tool.versioningit.write]
+file = "pedpy/_version.py"
+default-tag = "0.0.0"
+template = """
+__version__ = "{version}"
+__commit_hash__ = "{rev}"
+"""
+
+[tool.setuptools]
+packages = [
+    "pedpy", "pedpy.data", "pedpy.internal",
+    "pedpy.io",
+    "pedpy.methods",
+    "pedpy.plotting",
+]
+
+[tool.ruff]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+]
+
+line-length = 80
+src = ["pedpy"]
+extend-include = ["*.ipynb"]
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+known-first-party = ["pedpy"]
+
+[tool.ruff.lint]
+select = [
+    # pyflakes
+    "F",
+    # pep-8-naming
+    "N",
+    # pycodestyle
+    "E", "W", "D",
+    # flake8-2020
+    "YTT",
+    # flake8-bugbear
+    "B",
+    # flake8-quotes
+    "Q",
+    # flake8-debugger
+    "T10",
+    # flake8-gettext
+    "INT",
+    # pylint
+    "PL",
+    # flake8-pytest-style
+    "PT",
+    # misc lints
+    "PIE",
+    # flake8-pyi
+    "PYI",
+    # tidy imports
+    "TID",
+    # type-checking imports
+    "TCH",
+    # comprehensions
+    "C4",
+    # pygrep-hooks
+    "PGH",
+    # Ruff-specific rules
+    "RUF",
+    # flake8-bandit: exec-builtin
+    "S102",
+    # numpy
+    "NPY",
+    # Perflint
+    "PERF",
+    # flynt
+    "FLY",
+    # flake8-logging-format
+    "G",
+    # flake8-future-annotations
+    "FA",
+    # unconventional-import-alias
+    "ICN001",
+    # flake8-slots
+    "SLOT",
+    # flake8-raise
+    "RSE",
+    # pandas-vet
+    "PD",
+    "RUF"
+]
+ignore = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pylint]
+## Maximum number of arguments for function / method
+max-args = 10
+## Maximum number of branch for function / method body.
+max-branches = 15
+## Maximum number of locals for function / method body.
+max-locals = 20
+## Maximum number of statements in function / method body.
+max-statements = 50
+## Constant types to ignore when used as "magic values" (see: PLR2004).
+allow-magic-value-types = ["int", "str"]

@@ -7,11 +7,13 @@ on:
   push:
     branches:
       - main
+      - rls-*
     tags:
       - '**'
   pull_request:
     branches:
       - main
+      - rls-*
 
 jobs:
   pre-build-checks:
@@ -25,12 +27,12 @@ jobs:
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -52,18 +54,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ ubuntu-latest, macos-12, macos-14, windows-latest ]
         python-version: [ '3.10' ]
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -87,14 +89,14 @@ jobs:
 
       - name: Upload wheel as artifact
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
 
       - name: Upload notebooks and demo files as artifacts
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: demos_usage
           path: |
@@ -105,23 +107,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+        os: [ ubuntu-latest, macos-12, macos-14, windows-latest ]
         python-version: [ '3.10', '3.11' , '3.12']
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Download notebooks and demo files as artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: demos_usage
 
       - name: Download wheel
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
@@ -129,12 +131,12 @@ jobs:
       - name: Install wheel
         shell: bash
         run: |
-          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib h5py tables
+          python3 -m pip install --upgrade pip jupyter nbconvert nbformat matplotlib
           python3 -m pip install dist/*whl
 
       - name: Test if install was successful
         run: |
-          python3 -c "import pedpy; print(pedpy.__version__)"
+          python3 -c "import pedpy; print(f'PedPy {pedpy.__version__} (SHA: {pedpy.__commit_hash__})')"
 
       - name: Run getting started notebook
         run: |
@@ -149,8 +151,7 @@ jobs:
           jupyter nbconvert --to notebook --execute fundamental_diagram.ipynb
 
   publish:
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags'))}}
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags')}}
     needs: [ build, test ]
     strategy:
       fail-fast: false
@@ -161,20 +162,12 @@ jobs:
 
     steps:
       - name: Download wheel
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
 
-      - name: Publish package to test PyPi
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
-
       - name: Publish package to PyPi
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
