@@ -1059,9 +1059,10 @@ def _check_crossing_in_frame_range(
 def _compute_orthogonal_speed_in_relation_to_proprotion(
     group: pd.DataFrame, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
-    """Calculates the speed orthogonal to the line times partial line length of the polygon.
+    """Calculates the speed orthogonal to the line times partial line length.
 
-    group is a DataFrameGroupBy containing the columns 'v_x', 'v_y' and 'polygon'.
+    group is a DataFrameGroupBy containing the columns
+        'v_x', 'v_y' and 'polygon'.
     """
     normal_vector = measurement_line.normal_vector()
     return (
@@ -1072,7 +1073,10 @@ def _compute_orthogonal_speed_in_relation_to_proprotion(
 def _compute_partial_line_length(
     polygon: shapely.Polygon, measurement_line: MeasurementLine
 ) -> float:
-    """Calculates the fraction of the length that is intersected by the polygon."""
+    """Calculates the fraction of the length that is intersected by the polygon.
+
+    .
+    """
     line = measurement_line.line
     return shapely.length(shapely.intersection(polygon, line)) / shapely.length(
         line
@@ -1091,7 +1095,7 @@ def _apply_lambda_for_intersecting_frames(
     column_id_sp2: str,
     individual_speed: pd.DataFrame = None,
 ) -> pd.DataFrame:
-    """Applies lambda for both species for frames where Voronoi-polygon intersects with line.
+    """Applies lambda for both species for frames where Polygon intersects line.
 
     lambda_for_group is called with a group containing
      the data of one species and a Measurement Line.
@@ -1143,20 +1147,21 @@ def is_species_valid(
     individual_voronoi_polygons: pd.DataFrame,
     measurement_line: MeasurementLine,
 ) -> bool:
-    """Checks if there is species data for every pedestrian intersecting with the measurement line.
+    """Checks if there's species data of every pedestrian intersecting the line.
 
     Args:
-        species (pd.DataFrame): dataframe containing information about the species
-            of every pedestrian intersecting with the line,
+        species (pd.DataFrame): dataframe containing information
+            about the species of every pedestrian intersecting with the line,
             result from :func:`~speed_calculator.compute_species`
 
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
-            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
 
         measurement_line (MeasurementLine): measurement line
 
     Returns:
-        True if all needed data is provided by the species dataframe, else False.
+        True if all needed data is provided by the species dataframe else False.
     """
     intersecting_polygons = individual_voronoi_polygons[
         shapely.intersects(
@@ -1172,21 +1177,25 @@ def is_individual_speed_valid(
     individual_voronoi_polygons: pd.DataFrame,
     measurement_line: MeasurementLine,
 ) -> DataValidationStatus:
-    """Checks if speed data is provided for every pedestrian in every frame they intersect the line.
+    """Checks for speed data in any entry a pedestrian is intersecting the line.
 
     Args:
-        individual_speed (pd.DataFrame): individual speed data per frame, result from
-            :func:`~speed_calculator.compute_individual_speed` using :code:`compute_velocity`
+        individual_speed (pd.DataFrame): individual speed data per frame,
+            result from :func:`~speed_calculator.compute_individual_speed`
+            using :code:`compute_velocity`
 
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
-            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
 
         measurement_line (MeasurementLine): measurement line
 
     Returns:
-        DATA_CORRECT if all needed data is provided by the individual speed dataframe,
+        DATA_CORRECT if all needed data is provided
+            by the individual speed dataframe,
         COLUMN_MISSING if there is a column missing,
-        ENTRY_MISSING if there is no matching entry for a frame where polygon and line intersect.
+        ENTRY_MISSING if there is no matching entry
+            for a frame where polygon and line intersect.
     """
     if not all(
         column in individual_speed.columns

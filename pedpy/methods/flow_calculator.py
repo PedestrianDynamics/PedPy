@@ -211,31 +211,35 @@ def compute_line_flow(
     individual_speed: pd.DataFrame,
     species: pd.DataFrame,
 ) -> pd.DataFrame:
-    r"""Calculates the flow for both species and the total flow orthogonal to the measurement line.
+    r"""Calculates flow for both species and total flow orthogonal to line.
 
     The flow of each frame is accumulated from
     :math:`v_{i} * n_{l} * \frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
     for each pedestrian :math:`i` whose Voronoi cell intersects the line.
 
-    * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i` orthogonal to the line :math:`l`
+    * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i`
+        orthogonal to the line :math:`l`
     * :math:`A_i(t)` is the area of the Voronoi Cell
     * :math:`w` is the length of the measurement line
-    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
+    * :math:`w_i(t)` is the length of the intersecting line of the
+        Voronoi cell in frame :math:`t`.
 
-    Results are computed for both species (see :func:`~speed_calculator.compute_species`)
+    Results are computed for both species
+    (see :func:`~speed_calculator.compute_species`)
 
     Args:
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
-            frame, result from :func:`~method_utils.compute_individual_voronoi_polygons`
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
 
         measurement_line (MeasurementLine): line at which the flow is calculated
 
-        individual_speed (pd.DataFrame): individual speed data per frame, result from
-            :func:`~methods.speed_calculator.compute_individual_speed`
+        individual_speed (pd.DataFrame): individual speed data per frame, result
+            from :func:`~methods.speed_calculator.compute_individual_speed`
             using :code:`compute_velocity`
 
-        species (pd.DataFrame): dataframe containing information about the species
-            of every pedestrian intersecting the line,
+        species (pd.DataFrame): dataframe containing information about the
+            species of every pedestrian intersecting the line,
             result from :func:`~speed_calculator.compute_species`
     Returns:
         Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
@@ -246,7 +250,8 @@ def compute_line_flow(
         measurement_line=measurement_line,
     ):
         raise InputError(
-            "the species doesn't contain all data required to calculate the line flow.\n"
+            "the species doesn't contain all data required to "
+            "calculate the line flow.\n"
             "Perhaps the species was computed with different Voronoi data"
             " or a different measurement line."
         )
@@ -259,20 +264,24 @@ def compute_line_flow(
 
     if speed_validation_result == DataValidationStatus.ENTRY_MISSING:
         raise InputError(
-            "individual speed doesn't contain all data required to calculate the line flow.\n"
+            "individual speed doesn't contain all data required "
+            "to calculate the line flow.\n"
             "Perhaps there is some data missing at the beginning or the end. "
             "An other speed_calculation might fix this Problem."
         )
 
     if speed_validation_result == DataValidationStatus.COLUMN_MISSING:
         raise InputError(
-            "individual speed doesn't contain all data required to calculate the line flow.\n"
-            "Perhaps the individual speed was not calculated with the option compute_velocity."
+            "individual speed doesn't contain all data required "
+            "to calculate the line flow.\n"
+            "Perhaps the individual speed was not calculated with"
+            " the option compute_velocity."
         )
 
     if speed_validation_result != DataValidationStatus.DATA_CORRECT:
         raise InputError(
-            "individual speed doesn't contain all data required to calculate the line flow."
+            "individual speed doesn't contain all data"
+            " required to calculate the line flow."
         )
 
     result = _apply_lambda_for_intersecting_frames(

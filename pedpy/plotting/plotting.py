@@ -162,7 +162,7 @@ def _plot_multiple_series(  # pylint: disable=too-many-arguments
     y_label: str,
 ) -> matplotlib.axes.Axes:
     axes.set_title(title)
-    for y, color, label in zip(y_s, colors, labels):
+    for y, color, label in zip(y_s, colors, labels, strict=False):
         axes.plot(x, y, color=color, label=label, linewidth=line_width)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
@@ -176,11 +176,17 @@ def plot_speed_at_line(
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the speed of both species at the line and the total speed at the line.
+    """Plot the speed of both species and the total speed at the line.
 
     Args:
-        speed_at_line(pd.DataFrame): DataFrame containing information on speed at the line
-        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        speed_at_line(pd.DataFrame): DataFrame containing information on
+            speed at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
         title (optional): title of the plot
         color_species1 (optional): color of the speed of species 1 in the plot
         color_species2 (optional): color of the speed of species 2 in the plot
@@ -229,11 +235,17 @@ def plot_density_at_line(
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the density of both species at the line and the total density at the line.
+    """Plot the density of both species and the total density at the line.
 
     Args:
-        density_at_line(pd.DataFrame): DataFrame containing information on density at the line
-        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        density_at_line(pd.DataFrame): DataFrame containing information on
+            density at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
         title (optional): title of the plot
         color_species1 (optional): color of the density of species 1 in the plot
         color_species2 (optional): color of the density of species 2 in the plot
@@ -282,11 +294,17 @@ def plot_flow_at_line(
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the flow of both species at the line and the total flow at the line.
+    """Plot the flow of both species and the total flow at the line.
 
     Args:
-        flow_at_line(pd.DataFrame): DataFrame containing information on flow at the line
-        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be created
+        flow_at_line(pd.DataFrame): DataFrame containing information on
+            flow at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
         title (optional): title of the plot
         color_species1 (optional): color of the flow of species 1 in the plot
         color_species2 (optional): color of the flow of species 2 in the plot

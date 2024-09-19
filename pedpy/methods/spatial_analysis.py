@@ -24,7 +24,8 @@ def compute_pair_distribution_function(
     """Computes the pair distribution function g(r).
 
     This function calculates the spatial distribution of positions :math:`g(r)`
-    :math:`g(r)` here referred to the Euclidean distance between interacting pedestrians, i.e.,
+    :math:`g(r)` here referred to the Euclidean distance
+    between interacting pedestrians, i.e.,
     pedestrians that are in the same walkable area at the same moment.
     The pdf is given by the probability that two pedestrians are separated
     by :math:`r` normalized by the probability :math:`PNI(r)` that two
