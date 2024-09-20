@@ -453,8 +453,8 @@ def compute_line_speed(
 
     The speed of each frame is accumulated from
     :math:`v_{i} * n_{l} *  \frac{w_i(t)}{w}`
-    for each pedestrian :math:`i` whose Voronoi cell intersects the line
-        :math:`l`.
+    for each pedestrian :math:`i` whose Voronoi cell intersects
+        the line :math:`l`.
 
     * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i` orthogonal
         to the line :math:`l`
