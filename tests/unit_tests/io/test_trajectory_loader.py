@@ -21,7 +21,6 @@ from pedpy.io.trajectory_loader import (
     _load_trajectory_data_from_txt,
     _load_trajectory_meta_data_from_txt,
     _validate_is_file,
-    load_trajectory,
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,

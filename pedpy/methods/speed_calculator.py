@@ -10,15 +10,25 @@ import shapely
 from pedpy.column_identifier import (
     FRAME_COL,
     ID_COL,
+    POLYGON_COL,
+    SPECIES_COL,
     SPEED_COL,
+    SPEED_SP1_COL,
+    SPEED_SP2_COL,
     V_X_COL,
     V_Y_COL,
 )
-from pedpy.data.geometry import MeasurementArea
+from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
+    DataValidationStatus,
+    InputError,
     SpeedCalculation,
+    _apply_lambda_for_intersecting_frames,
     _compute_individual_movement,
+    _compute_orthogonal_speed_in_relation_to_proprotion,
+    is_individual_speed_valid,
+    is_species_valid,
 )
 
 
@@ -430,3 +440,176 @@ def _compute_individual_speed(
         columns.append(V_Y_COL)
 
     return movement_data[columns]
+
+
+def compute_line_speed(
+    *,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+    individual_speed: pd.DataFrame,
+    species: pd.DataFrame,
+) -> pd.DataFrame:
+    r"""Calculates speed of both species and total speed orthogonal to line.
+
+    The speed of each frame is accumulated from
+    :math:`v_{i} * n_{l} *  \frac{w_i(t)}{w}`
+    for each pedestrian :math:`i` whose Voronoi cell intersects
+        the line :math:`l`.
+
+    * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i` orthogonal
+        to the line :math:`l`
+    * :math:`w` is the length of the measurement line
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell
+        in frame :math:`t`.
+
+    Results are computed for both species
+        (see :func:`~speed_calculator.compute_species`)
+
+    Args:
+        individual_voronoi_polygons (pandas.DataFrame): individual Voronoi data
+            per frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`.
+
+        measurement_line (MeasurementLine): line at which the speed
+            is calculated
+
+        individual_speed (pandas.DataFrame): individual speed data per frame
+            , result from :func:`~speed_calculator.compute_individual_speed`
+            using :code:`compute_velocity`
+
+        species (pandas.DataFrame): dataframe containing information about
+            the species of every pedestrian intersecting the line,
+            result from :func:`~speed_calculator.compute_species`
+    Returns:
+        Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
+    """
+    if not is_species_valid(
+        species=species,
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+    ):
+        raise InputError(
+            "the species doesn't contain all data required"
+            " to calculate the line speed.\n"
+            "Perhaps the species was computed with different Voronoi data"
+            " or a different measurement line."
+        )
+
+    speed_validation_result = is_individual_speed_valid(
+        individual_speed=individual_speed,
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+    )
+
+    if speed_validation_result == DataValidationStatus.ENTRY_MISSING:
+        raise InputError(
+            "individual speed doesn't contain all data required"
+            " to calculate the line speed.\n"
+            "Perhaps there is some data missing at the beginning or the end. "
+            "An other speed_calculation might fix this Problem."
+        )
+
+    if speed_validation_result == DataValidationStatus.COLUMN_MISSING:
+        raise InputError(
+            "individual speed doesn't contain all data required"
+            " to calculate the line speed.\n"
+            "Perhaps the individual speed was not calculated"
+            "with the option compute_velocity."
+        )
+
+    if speed_validation_result != DataValidationStatus.DATA_CORRECT:
+        raise InputError(
+            "individual speed doesn't contain all data required"
+            " to calculate the line speed."
+        )
+
+    result = _apply_lambda_for_intersecting_frames(
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+        species=species,
+        lambda_for_group=lambda group, line: (
+            _compute_orthogonal_speed_in_relation_to_proprotion(group, line)
+        ).sum(),
+        column_id_sp1=SPEED_SP1_COL,
+        column_id_sp2=SPEED_SP2_COL,
+        individual_speed=individual_speed,
+    )
+    result[SPEED_SP2_COL] *= -1
+    result[SPEED_COL] = result[SPEED_SP1_COL] + result[SPEED_SP2_COL]
+    return result
+
+
+def compute_species(
+    *,
+    trajectory_data: TrajectoryData,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+    frame_step: int,
+) -> pd.DataFrame:
+    """Creates a Dataframe containing the species for each pedestrian.
+
+    The species describes from which side a pedestrian is
+    encountering the measurement line.
+    The species of a pedestrian :math:`i` is calculated
+    by :math:`sign(n * v_i(t_{i,l}))`, with
+    the normal vector n of the measurement line
+    and the velocity  of pedestrian i being :math:`v_i`
+    at the time when his Voronoi cell intersects the measurement line
+    :math:`t_{i,l}` for the first time.
+
+    If the Voronoi polygon of a pedestrian never intersects the measurement
+    line the pedestrian will not be included in the returned dataframe.
+
+    .. image:: /images/species_determination.svg
+        :width: 60 %
+        :align: center
+
+    This image shows the frame when the decision as to
+    which species the pedestrian belongs to is made.
+    It is the first frame in which his Voronoi cell intersects the line.
+    Now the current velocity decides which species they are assigned to.
+
+    For the decision it is not relevant whether a pedestrian
+    actually crosses the line afterward.
+
+    Args:
+        trajectory_data (TrajectoryData): trajectory data
+
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
+
+        measurement_line (MeasurementLine): measurement line
+
+        frame_step (int): gives the size of time interval for calculating the
+            velocity.
+
+    Returns:
+        Dataframe containing columns 'id' and 'species'
+    """
+    # create dataframe with id and first frame
+    # where Voronoi polygon intersects measurement line
+    intersecting_polys = individual_voronoi_polygons[
+        shapely.intersects(
+            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
+        )
+    ]
+    first_frames = (
+        intersecting_polys.groupby(ID_COL)[FRAME_COL].min().reset_index()
+    )
+
+    normal_vector = measurement_line.normal_vector()
+
+    initial_speed = compute_individual_speed(
+        traj_data=trajectory_data,
+        frame_step=frame_step,
+        compute_velocity=True,
+        speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
+        movement_direction=normal_vector,
+    )
+    # create dataframe with 'id' and 'species'
+    result = first_frames.merge(
+        initial_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL]
+    )
+    result[SPECIES_COL] = np.sign(result[SPEED_COL])
+    return result[[ID_COL, SPECIES_COL]]
