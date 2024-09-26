@@ -954,8 +954,8 @@ def load_walkable_area_from_vadere_scenario(
     """
     _validate_is_file(vadere_scenario_file)
 
-    if margin is not 0 and margin < 10 ** -decimals:
-        raise LoadTrajectoryError("Margin should be greater than 10 ** (-decimals).")
+    if margin != 0 and margin < 10 ** -decimals:
+        raise LoadTrajectoryError(f"Margin should be greater than 10 ** (-decimals).")
 
     with open(vadere_scenario_file, 'r') as f:
         data = json.load(f)
@@ -988,9 +988,9 @@ def load_walkable_area_from_vadere_scenario(
             error_obst_ids = {", ".join(error_obst_ids)}
             raise LoadTrajectoryError(
                 f"Cannot convert obstacles with IDs {error_obst_ids} because they touch the bound "
-                f"of the walkable area (inner bound of the bounding box in Vadere). Increase "
-                f"the walkable area or adapt the scenario file to make sure that obstacles have "
-                f"no common points with the bounding box."
+                f"of the walkable area (inner bound of the bounding box in Vadere). Increase the "
+                f"walkable area by adjusting 'margin' or adapt the scenario file to make sure that "
+                f"obstacles have no common points with the bounding box."
             )
 
     return WalkableArea(polygon=complete_area_points, obstacles=obstacles_)
