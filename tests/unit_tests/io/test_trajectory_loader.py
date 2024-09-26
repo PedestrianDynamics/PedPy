@@ -726,7 +726,8 @@ def test_parse_trajectory_data_from_txt_failure(
 
     with pytest.raises(ValueError) as error_info:
         _load_trajectory_data_from_txt(
-            trajectory_file=trajectory_txt, unit=TrajectoryUnit.METER  # type: ignore
+            trajectory_file=trajectory_txt,
+            unit=TrajectoryUnit.METER,  # type: ignore
         )
 
     assert expected_message in str(error_info.value)

@@ -12,11 +12,11 @@ in which the mean speed and density can be computed with different methods.
 """
 
 from enum import Enum, auto
-from typing import Any, List, Optional, Tuple
+from typing import Any, Final, List, Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
-import pandas
+import pandas as pd
 import shapely
 
 from pedpy.column_identifier import FRAME_COL
@@ -29,68 +29,71 @@ class SpeedMethod(Enum):  # pylint: disable=too-few-public-methods
 
     ARITHMETIC = auto()
     r"""Compute arithmetic Voronoi speed profile.
-    
-    In each cell :math:`M` the arithmetic Voronoi speed :math:`v_{arithmetic}` is defined as
+
+    In each cell :math:`M` the arithmetic Voronoi speed :math:`v_{arithmetic}`
+    is defined as
 
     .. math::
 
         v_{arithmetic} = \frac{1}{N} \sum_{i \in P_M} v_i,
 
-    
-    where :math:`P_M` are the pedestrians, whose Voronoi cell :math:`V_i` 
+
+    where :math:`P_M` are the pedestrians, whose Voronoi cell :math:`V_i`
     intersects with the grid cell :math:`M` (:math:`V_i \cap M`). Then
     :math:`N` is the number of pedestrians in :math:`P_M` (:math:`|P_M|`).
     """
 
     VORONOI = auto()
     r"""Compute Voronoi speed profile.
-    
+
     In each cell :math:`M` the Voronoi speed :math:`v_{voronoi}` is defined as
 
     .. math::
 
         v_{voronoi} = { \int\int v_{xy} dxdy \over A(M)},
-        
+
     where :math:`v_{xy} = v_i` is the individual speed of
-    each pedestrian, whose :math:`V_i \cap M` and :math:`A(M)` the area 
+    each pedestrian, whose :math:`V_i \cap M` and :math:`A(M)` the area
     the grid cell.
     """
 
     MEAN = auto()
     r"""Compute mean speed profile.
-    
+
     In each cell :math:`M` the mean speed :math:`v_{mean}` is defined as
-    
+
     .. math::
-    
+
         v_{mean} = \frac{1}{N} \sum_{i \in P_M} v_i,
-        
+
     where :math:`P_M` are the pedestrians inside the grid cell. Then :math:`N`
     is the number of pedestrians inside :math:`P_M` (:math:`|P_M|`).
     """
 
     GAUSSIAN = auto()
     r"""Compute Gaussian speed profile.
-    
-    In each cell the weighted speed :math:`v_{c}` is calculated as 
-    
-    .. math::
-     
-        v_{c} = \frac{\sum_{i=1}^{N}{\big(w_i\cdot v_i\big)}}{\sum_{i=1}^{N} w_i},
 
-    where :math:`v_i` is the speed of a pedestrian and :math:`w_i` are weights 
-    depending on the pedestrian's distance :math:`\delta` from its position 
-    (:math:`\boldsymbol{r}_i`) to the center of the grid 
+    In each cell the weighted speed :math:`v_{c}` is calculated as
+
+    .. math::
+
+        v_{c} = \frac{\sum_{i=1}^{N}{\big(w_i\cdot v_i\big)}}
+            {\sum_{i=1}^{N} w_i},
+
+    where :math:`v_i` is the speed of a pedestrian and :math:`w_i` are weights
+    depending on the pedestrian's distance :math:`\delta` from its position
+    (:math:`\boldsymbol{r}_i`) to the center of the grid
     (:math:`\boldsymbol{c}`) cell:
 
     .. math::
         \delta =  \boldsymbol{r}_i - \boldsymbol{c}.
-    
+
     The weights :math:`w_i` are  calculated by a Gaussian as follows:
-   
+
     .. math::
-    
-        w_i = \frac{1} {\sigma \cdot \sqrt{2\pi}} \exp\big(-\frac{\delta^2}{2\sigma^2}\big),
+
+        w_i = \frac{1} {\sigma \cdot
+            \sqrt{2\pi}} \exp\big(-\frac{\delta^2}{2\sigma^2}\big),
 
     where :math:`\sigma` is derived from FWHM as:
 
@@ -104,47 +107,48 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
 
     VORONOI = auto()
     r"""Voronoi density profile.
-    
-    In each cell the density :math:`\rho_{voronoi}` is defined by 
-    
+
+    In each cell the density :math:`\rho_{voronoi}` is defined by
+
     .. math::
 
             \rho_{voronoi} = { \int\int \rho_{xy} dxdy \over A(M)},
 
     where :math:`\rho_{xy} = 1 / A(V_i)` is the individual density of
-    each pedestrian, with the individual Voronoi polygons :math:`V_i` where 
+    each pedestrian, with the individual Voronoi polygons :math:`V_i` where
     :math:`V_i \cap M` and :math:`A(M)` the area of the grid cell.
     """
 
     CLASSIC = auto()
     r"""Classic density profile.
-    
-    In each cell the density  :math:`\rho_{classic}` is defined by 
-    
+
+    In each cell the density  :math:`\rho_{classic}` is defined by
+
     .. math::
-     
+
         \rho_{classic} = {N \over A(M)},
-    
+
     where :math:`N` is the number of pedestrians inside the grid cell :math:`M`
-    and the area of that grid cell (:math:`A(M)`). 
+    and the area of that grid cell (:math:`A(M)`).
     """
 
     GAUSSIAN = auto()
     r"""Gaussian density profile.
 
-    In each cell the density :math:`\rho_{gaussian}` is defined by 
+    In each cell the density :math:`\rho_{gaussian}` is defined by
 
     .. math::
-     
-        \rho_{gaussian} = \sum_{i=1}^{N}{\delta (\boldsymbol{r}_i - \boldsymbol{c})},
 
-    where :math:`\boldsymbol{r}_i` is the position of a pedestrian and 
+        \rho_{gaussian} = \sum_{i=1}^{N}{\delta
+            (\boldsymbol{r}_i - \boldsymbol{c})},
+
+    where :math:`\boldsymbol{r}_i` is the position of a pedestrian and
     :math:`\boldsymbol{c}`
-    is the center of the grid cell. Finally :math:`\delta(x)` is approximated 
+    is the center of the grid cell. Finally :math:`\delta(x)` is approximated
     by a Gaussian
-    
+
     .. math::
-        
+
         \delta(x) = \frac{1}{\sigma\sqrt{2\pi}}\exp[-x^2/2\sigma^2],
 
     where :math:`\sigma` is the standard deviation.
@@ -152,9 +156,9 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
 
 
 @alias({"data": "individual_voronoi_speed_data"})
-def compute_profiles(
+def compute_profiles(  # noqa: D417
     *,
-    data: pandas.DataFrame = None,
+    data: pd.DataFrame = None,
     walkable_area: WalkableArea,
     grid_size: float,
     speed_method: SpeedMethod,
@@ -162,7 +166,10 @@ def compute_profiles(
     gaussian_width: Optional[float] = None,
     # pylint: disable=unused-argument,too-many-arguments
     **kwargs: Any,
-) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]],]:
+) -> Tuple[
+    List[npt.NDArray[np.float64]],
+    List[npt.NDArray[np.float64]],
+]:
     """Computes the density and speed profiles.
 
     .. note::
@@ -187,7 +194,8 @@ def compute_profiles(
             all the needed data, you can merge the results of the different
             function on the 'id' and 'frame' columns (see
             :meth:`pandas.DataFrame.merge` and :func:`pandas.merge`).
-        walkable_area (WalkableArea): geometry for which the profiles are computed
+        walkable_area (WalkableArea): geometry for which the profiles are
+            computed
         grid_size: resolution of the grid used for computing the
             profiles
         speed_method: speed method used to compute the
@@ -245,7 +253,7 @@ def compute_profiles(
 
 def compute_density_profile(
     *,
-    data: pandas.DataFrame,
+    data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     density_method: DensityMethod,
@@ -258,7 +266,8 @@ def compute_density_profile(
     Args:
         data (pandas.DataFrame): Data from which the profiles are computes.
             The DataFrame must contain a `frame` column. It must contain
-            a `polygon` column (from :func:`~method_utils.compute_individual_voronoi_polygons`)
+            a `polygon` column (from
+            :func:`~method_utils.compute_individual_voronoi_polygons`)
             when using the :attr:`DensityMethod.VORONOI`. When computing
             the classic density profile (:attr:`DensityMethod.CLASSIC`) or
             Gaussian density profile (:attr:`DensityMethod.GAUSSIAN`) the
@@ -329,7 +338,8 @@ def compute_density_profile(
         elif density_method == DensityMethod.GAUSSIAN:
             if gaussian_width is None:
                 raise ValueError(
-                    "Computing a Gaussian density profile needs a parameter 'gaussian_width'."
+                    "Computing a Gaussian density profile needs a parameter "
+                    "'gaussian_width'."
                 )
 
             density = _compute_gaussian_density_profile(
@@ -353,7 +363,7 @@ def compute_density_profile(
 
 def _compute_voronoi_density_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
 ) -> npt.NDArray[np.float64]:
@@ -369,7 +379,7 @@ def _compute_voronoi_density_profile(
 
 def _compute_classic_density_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
 ) -> npt.NDArray[np.float64]:
@@ -414,7 +424,7 @@ def _compute_classic_density_profile(
 
 def _compute_gaussian_density_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     center_x: npt.NDArray[np.float64],
     center_y: npt.NDArray[np.float64],
     width: float,
@@ -441,8 +451,8 @@ def _compute_gaussian_density_profile(
         #  2.50662 = sqrt(2*pi)
         return 1 / (2.50662 * sigma) * np.exp(-(x**2) / (2 * sigma**2))
 
-    positions_x = frame_data.x.values
-    positions_y = frame_data.y.values
+    positions_x = frame_data.x.to_numpy()
+    positions_y = frame_data.y.to_numpy()
 
     # distance from each grid center x/y coordinates to the pedestrian positions
     distance_x = np.add.outer(
@@ -466,7 +476,7 @@ def _compute_gaussian_density_profile(
 
 def compute_speed_profile(
     *,
-    data: pandas.DataFrame,
+    data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     speed_method: SpeedMethod,
@@ -604,7 +614,7 @@ def compute_speed_profile(
 
 def _compute_gaussian_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     center_x: npt.NDArray[np.float64],
     center_y: npt.NDArray[np.float64],
     fwhm: float,
@@ -620,22 +630,22 @@ def _compute_gaussian_speed_profile(
     speed at each grid cell based on these normalized weights.
 
     Args:
-    - frame_data (pd.DataFrame): A pandas DataFrame containing the columns
-                                 'x', 'y', and 'speed', representing the x and
-                                 y positions of the pedestrians and their speeds
-                                 , respectively.
-    - center_x (npt.NDArray[np.float64]): A NumPy array of x-coordinates for the
-      grid centers.
-    - center_y (npt.NDArray[np.float64]): A NumPy array of y-coordinates for the
-      grid centers.
-    - fwhm (float): The full width at half maximum (FWHM) parameter for the
-      Gaussian kernel, controlling the spread of the Gaussian function.
+    frame_data (pd.DataFrame): A pandas DataFrame containing the columns
+                                'x', 'y', and 'speed', representing the x and
+                                y positions of the pedestrians and their speeds
+                                , respectively.
+    center_x (npt.NDArray[np.float64]): A NumPy array of x-coordinates for the
+        grid centers.
+    center_y (npt.NDArray[np.float64]): A NumPy array of y-coordinates for the
+        grid centers.
+    fwhm (float): The full width at half maximum (FWHM) parameter for the
+        Gaussian kernel, controlling the spread of the Gaussian function.
 
     Returns:
-    - np.ndarray: A 2D NumPy array where each element represents the weighted
-      average speed of pedestrians at each grid cell, with the shape
-        (len(center_x), len(center_y)). The array is transposed to align with
-          the expected grid orientation.
+        A 2D NumPy array where each element represents the weighted
+            average speed of pedestrians at each grid cell, with the shape
+            (len(center_x), len(center_y)). The array is transposed to align
+            with the expected grid orientation.
     """
 
     def _compute_gaussian_weights(
@@ -650,23 +660,22 @@ def _compute_gaussian_speed_profile(
         sigma = FWHM / (2 * sqrt(2 * ln(2)))
 
         Args:
-        - x: Value(s) for which the Gaussian should be computed.
-        - fwhm: Full width at half maximum, a measure of spread.
+            x (npt.NDArray[np.float64]): Value(s) for which the Gaussian should
+                be computed.
+            fwhm (float): Full width at half maximum, a measure of spread.
 
         Returns:
-        - Gaussian density corresponding to the given values and FWHM.
+            Gaussian density corresponding to the given values and FWHM.
         """
         sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))
         return (
-            1
-            / (sigma * np.sqrt(2 * np.pi))
-            * np.exp(-(x**2) / (2 * sigma**2))
+            1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(-(x**2) / (2 * sigma**2))
         )
 
     # pedestrians' position and speed
-    positions_x = frame_data.x.values
-    positions_y = frame_data.y.values
-    speeds = frame_data.speed.values
+    positions_x = frame_data.x.to_numpy()
+    positions_y = frame_data.y.to_numpy()
+    speeds = frame_data.speed.to_numpy()
     # distance from each grid center coordinates to the pedestrian positions
     distance_x = np.subtract.outer(
         center_x,
@@ -711,7 +720,7 @@ def _compute_gaussian_speed_profile(
 
 def _compute_arithmetic_voronoi_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
 ) -> npt.NDArray[np.float64]:
     """Compute the arithmetic mean speed per grid cell.
@@ -725,14 +734,15 @@ def _compute_arithmetic_voronoi_speed_profile(
     Returns:
         Arithmetic mean speed per grid cell
     """
+    THRESHOLD: Final = 1e-16  # noqa: N806
     cells_with_peds = np.where(
-        grid_intersections_area > 1e-16,
+        grid_intersections_area > THRESHOLD,
         1,
         0,
     )
 
     accumulated_speed = np.sum(
-        cells_with_peds * frame_data.speed.values,
+        cells_with_peds * frame_data.speed.to_numpy(),
         axis=1,
     )
     num_peds = np.count_nonzero(
@@ -751,23 +761,24 @@ def _compute_arithmetic_voronoi_speed_profile(
 
 def _compute_voronoi_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     grid_intersections_area: npt.NDArray[np.float64],
     grid_area: float,
 ) -> npt.NDArray[np.float64]:
     """Compute the Voronoi speed per grid cell.
 
     Args:
-        frame_data (npt.NDArray[np.float64]): all relevant data in a specific frame
-        grid_intersections_area (npt.NDArray[np.float64]): intersection areas for each
-                pedestrian with each grid cells
+        frame_data (npt.NDArray[np.float64]): all relevant data in a specific
+            frame
+        grid_intersections_area (npt.NDArray[np.float64]): intersection areas
+            for each pedestrian with each grid cells
         grid_area (float): area of one grid cell
     Returns:
         Voronoi speed per grid cell
     """
     speed = (
         np.sum(
-            grid_intersections_area * frame_data.speed.values,
+            grid_intersections_area * frame_data.speed.to_numpy(),
             axis=1,
         )
     ) / grid_area
@@ -777,7 +788,7 @@ def _compute_voronoi_speed_profile(
 
 def _compute_mean_speed_profile(
     *,
-    frame_data: pandas.DataFrame,
+    frame_data: pd.DataFrame,
     walkable_area: WalkableArea,
     grid_size: float,
     fill_value: float,
@@ -844,10 +855,13 @@ def _compute_mean_speed_profile(
 
 def compute_grid_cell_polygon_intersection_area(
     *,
-    data: pandas.DataFrame,
+    data: pd.DataFrame,
     grid_cells: npt.NDArray[shapely.Polygon],
-) -> Tuple[npt.NDArray[np.float64], pandas.DataFrame,]:
-    """Computes the intersection area of the grid cells with the Voronoi polygons.
+) -> Tuple[
+    npt.NDArray[np.float64],
+    pd.DataFrame,
+]:
+    """Computes the intersection area of the grid with the Voronoi polygons.
 
     .. note::
 
@@ -856,25 +870,28 @@ def compute_grid_cell_polygon_intersection_area(
 
     .. note::
 
-        If computing the speed/density profiles multiple times, e.g., with different methods it
-        is of advantage to compute the grid cell polygon intersections before and then pass the
-        result to the other functions.
+        If computing the speed/density profiles multiple times, e.g., with
+        different methods it is of advantage to compute the grid cell polygon
+        intersections before and then pass the result to the other functions.
 
     .. important::
 
-        When passing the grid cell-polygon intersection, make sure to also pass the returned
-        DataFrame as data, as it has the same ordering of rows as used for the grid cell-polygon
-        intersection. Changing the order afterward will return wrong results!
+        When passing the grid cell-polygon intersection, make sure to also
+        pass the returned DataFrame as data, as it has the same ordering of
+        rows as used for the grid cell-polygon intersection. Changing the
+        order afterward will return wrong results!
 
     Args:
-        data: DataFrame containing at least the columns 'frame' and 'polygon' (which should hold
-            the result from :func:`~method_utils.compute_individual_voronoi_polygons`)
-        grid_cells: Grid cells used for computing the profiles, e.g., result from
-            :func:`get_grid_cells`
+        data: DataFrame containing at least the columns 'frame' and 'polygon'
+            (which should hold the result from
+            :func:`~method_utils.compute_individual_voronoi_polygons`)
+        grid_cells: Grid cells used for computing the profiles, e.g., result
+            from :func:`get_grid_cells`
 
     Returns:
-        Tuple containing first the grid cell-polygon intersection areas, and second the reordered
-        data by 'frame', which needs to be used in the next steps.
+        Tuple containing first the grid cell-polygon intersection areas, and
+            second the reordered data by 'frame', which needs to be used in
+            the next steps.
     """
     (
         grid_intersections_area,
@@ -920,7 +937,11 @@ def get_grid_cells(
     *,
     walkable_area: WalkableArea,
     grid_size: float,
-) -> Tuple[npt.NDArray[shapely.Polygon], int, int,]:
+) -> Tuple[
+    npt.NDArray[shapely.Polygon],
+    int,
+    int,
+]:
     """Creates a list of square grid cells covering the geometry.
 
     .. image:: /images/profile_grid.svg

@@ -1,7 +1,7 @@
-# type: ignore
 """Top level imports, for easier usage."""
+
 try:
-    from . import _version  # pylint: disable=import-self
+    from . import _version  # type: ignore[attr-defined]
 
     __version__ = _version.__version__
     __commit_hash__ = _version.__commit_hash__
@@ -10,6 +10,37 @@ except ImportError:
     __version__ = "unknown"
     __commit_hash__ = "unknown"
 
+from .column_identifier import (
+    ACC_COL,
+    A_X_COL,
+    A_Y_COL,
+    COUNT_COL,
+    CROSSING_FRAME_COL,
+    CUMULATED_COL,
+    DENSITY_COL,
+    DISTANCE_COL,
+    END_POSITION_COL,
+    FIRST_FRAME_COL,
+    FLOW_COL,
+    FRAME_COL,
+    ID_COL,
+    INTERSECTION_COL,
+    LAST_FRAME_COL,
+    MEAN_SPEED_COL,
+    MID_FRAME_COL,
+    MID_POSITION_COL,
+    NEIGHBORS_COL,
+    POINT_COL,
+    POLYGON_COL,
+    SPEED_COL,
+    START_POSITION_COL,
+    TIME_COL,
+    V_X_COL,
+    V_Y_COL,
+    WINDOW_SIZE_COL,
+    X_COL,
+    Y_COL,
+)
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
 from .io.trajectory_loader import (
@@ -26,7 +57,6 @@ from .io.trajectory_loader import (
     load_walkable_area_from_vadere_scenario,
 )
 from .methods.acceleration_calculator import (
-    AccelerationCalculation,
     compute_individual_acceleration,
     compute_mean_acceleration_per_frame,
     compute_voronoi_acceleration,
@@ -38,7 +68,9 @@ from .methods.density_calculator import (
 )
 from .methods.flow_calculator import compute_flow, compute_n_t
 from .methods.method_utils import (
+    AccelerationCalculation,
     Cutoff,
+    SpeedCalculation,
     compute_frame_range_in_area,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
@@ -56,9 +88,8 @@ from .methods.profile_calculator import (
     compute_speed_profile,
     get_grid_cells,
 )
-from .methods.spatial_analysis import compute_pair_distibution_function
+from .methods.spatial_analysis import compute_pair_distribution_function
 from .methods.speed_calculator import (
-    SpeedCalculation,
     compute_individual_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,
@@ -116,7 +147,7 @@ __all__ = [
     "compute_time_distance_line",
     "get_invalid_trajectory",
     "is_trajectory_valid",
-    "compute_pair_distibution_function",
+    "compute_pair_distribution_function",
     "DensityMethod",
     "SpeedMethod",
     "compute_density_profile",
@@ -153,5 +184,34 @@ __all__ = [
     "plot_voronoi_cells",
     "plot_walkable_area",
     "plot_acceleration",
+    "ID_COL",
+    "FRAME_COL",
+    "X_COL",
+    "Y_COL",
+    "POINT_COL",
+    "DENSITY_COL",
+    "POLYGON_COL",
+    "INTERSECTION_COL",
+    "COUNT_COL",
+    "CUMULATED_COL",
+    "TIME_COL",
+    "SPEED_COL",
+    "V_X_COL",
+    "V_Y_COL",
+    "FLOW_COL",
+    "MEAN_SPEED_COL",
+    "ACC_COL",
+    "A_X_COL",
+    "A_Y_COL",
+    "FIRST_FRAME_COL",
+    "MID_FRAME_COL",
+    "LAST_FRAME_COL",
+    "NEIGHBORS_COL",
+    "DISTANCE_COL",
+    "CROSSING_FRAME_COL",
+    "START_POSITION_COL",
+    "MID_POSITION_COL",
+    "END_POSITION_COL",
+    "WINDOW_SIZE_COL",
     "__version__",
 ]

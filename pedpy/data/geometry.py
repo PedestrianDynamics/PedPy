@@ -43,7 +43,8 @@ class WalkableArea:
         Args:
             polygon: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                :class:`shapely.Point` objects. Passing a wkt representation of
+                :class:`shapely.Point` objects. Passing a `str` sequence
+                containing a Well-Known Text (wkt) format representation of
                 a polygon is also allowed.
             obstacles (Optional): list of sequences of (x, y) numeric
                 coordinate pairs, or an array-like with shape (N, 2). Also, can
@@ -73,9 +74,9 @@ class WalkableArea:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
-                "Walkable area can not be changed after construction!"
+                "Walkable area can not be changed after " "construction!"
             )
         return super().__setattr__(attr, value)
 
@@ -138,8 +139,9 @@ class MeasurementArea:
         Args:
             coordinates: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                shapely.Point objects. Passing a wkt representation of a polygon
-                is also allowed.
+                :class:`shapely.Point` objects. Passing a `str` sequence
+                containing a Well-Known Text (wkt) format representation of a
+                polygon is also allowed.
         """
         try:
             self._polygon = _create_polygon_from_input(coordinates)
@@ -172,7 +174,7 @@ class MeasurementArea:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Measurement area can not be changed after construction!"
             )
@@ -228,8 +230,9 @@ class MeasurementLine:
         Args:
             coordinates: A sequence of (x, y) numeric coordinate pairs, or
                 an array-like with shape (N, 2). Also, can be a sequence of
-                shapely.Point objects. Passing a wkt representation of a
-                LineString is also allowed.
+                :class:`shapely.Point` objects. Passing a `str` sequence
+                containing a Well-Known Text (wkt) format representation of
+                a LineString is also allowed.
         """
         try:
             if isinstance(coordinates, shapely.LineString):
@@ -240,7 +243,8 @@ class MeasurementLine:
                 self._line = shapely.LineString(coordinates)
         except Exception as exc:
             raise GeometryError(
-                f"Could not create measurement line from the given coordinates: {exc}."
+                f"Could not create measurement line from the given "
+                f"coordinates: {exc}."
             ) from exc
 
         if not isinstance(self._line, shapely.LineString):
@@ -267,7 +271,7 @@ class MeasurementLine:
             attr: attribute to set
             value: value to be set to attribute
         """
-        if getattr(self, "_frozen"):
+        if self._frozen:
             raise AttributeError(
                 "Measurement line can not be changed after construction!"
             )
@@ -450,7 +454,8 @@ def _create_polygon_from_input(
     ):
         if holes is not None:
             raise GeometryError(
-                "If polygon is of type shapely.Polygon additional holes are not allowed."
+                "If polygon is of type shapely.Polygon additional holes are "
+                "not allowed."
             )
         return_poly = _polygon_from_shapely(polygon_input)
     elif isinstance(polygon_input, str):
@@ -470,7 +475,8 @@ def _create_polygon_from_input(
             return_poly = _polygon_from_coordinates(polygon_input, holes=holes)
         except Exception as exc:
             raise GeometryError(
-                f"Could not create polygon from the given input: {polygon_input}."
+                f"Could not create polygon from the given input: "
+                f"{polygon_input}."
             ) from exc
 
     if not return_poly.is_simple or return_poly.area == 0:

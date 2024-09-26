@@ -7,7 +7,7 @@ import sqlite3
 from enum import Enum
 from typing import Any, Optional, Tuple
 
-import h5py  # type: ignore
+import h5py
 import numpy as np
 import pandas as pd
 import shapely
@@ -80,8 +80,9 @@ def load_trajectory(
                 in the file, None if unit should be parsed from the file
 
     Returns:
-        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
-    """
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData`
+            representation of the file data
+    """  # noqa: E501
     return load_trajectory_from_txt(
         trajectory_file=trajectory_file,
         default_frame_rate=default_frame_rate,
@@ -109,8 +110,9 @@ def load_trajectory_from_txt(
                 in the file, None if unit should be parsed from the file
 
     Returns:
-        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
-    """
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData`
+            representation of the file data
+    """  # noqa: E501
     _validate_is_file(trajectory_file)
 
     traj_frame_rate, traj_unit = _load_trajectory_meta_data_from_txt(
@@ -179,7 +181,7 @@ def _load_trajectory_data_from_txt(
         ) from exc
 
 
-def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
+def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
     *,
     trajectory_file: pathlib.Path,
     default_frame_rate: Optional[float],
@@ -217,7 +219,7 @@ def _load_trajectory_meta_data_from_txt(  # pylint: disable=too-many-branches
                     try:
                         if parsed_frame_rate is None:
                             parsed_frame_rate = float(substring)
-                    except ValueError:
+                    except ValueError:  # noqa: PERF203
                         continue
 
             if "x/cm" in line.lower() or "in cm" in line.lower():
@@ -290,8 +292,9 @@ def load_trajectory_from_jupedsim_sqlite(
         trajectory_file: trajectory file in JuPedSim sqlite format
 
     Returns:
-        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
-    """
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData`
+            representation of the file data
+    """  # noqa: E501
     _validate_is_file(trajectory_file)
 
     with sqlite3.connect(trajectory_file) as con:
@@ -302,8 +305,9 @@ def load_trajectory_from_jupedsim_sqlite(
             )
         except Exception as exc:
             raise LoadTrajectoryError(
-                "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
-                "contain a 'trajectory_data' table. Please check your file."
+                "The given sqlite trajectory is not a valid JuPedSim format, "
+                "it does not not contain a 'trajectory_data' table. Please "
+                "check your file."
             ) from exc
         if data.empty:
             raise LoadTrajectoryError(
@@ -319,14 +323,15 @@ def load_trajectory_from_jupedsim_sqlite(
             )
         except Exception as exc:
             raise LoadTrajectoryError(
-                "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
-                "contain a 'metadata' table. Please check your file."
+                "The given sqlite trajectory is not a valid JuPedSim format, "
+                "it does not not contain a 'metadata' table. Please check "
+                "your file."
             ) from exc
 
         if fps_query_result is None:
             raise LoadTrajectoryError(
-                "The given sqlite trajectory file seems not include a frame rate. "
-                "Please check your file."
+                "The given sqlite trajectory file seems not include a frame "
+                "rate. Please check your file."
             )
         fps = float(fps_query_result[0])
 
@@ -340,15 +345,15 @@ def load_walkable_area_from_jupedsim_sqlite(
 
     .. note::
 
-        When using a JuPedSim sqlite trajectory file with version 2, the walkable area is the union
-        of all provided walkable areas in the file.
+        When using a JuPedSim sqlite trajectory file with version 2, the
+        walkable area is the union of all provided walkable areas in the file.
 
     Args:
         trajectory_file: trajectory file in JuPedSim sqlite format
 
     Returns:
         WalkableArea: :class:`~geometry.WalkableArea` used in the simulation
-    """
+    """  # noqa: E501
     _validate_is_file(trajectory_file)
 
     with sqlite3.connect(trajectory_file) as connection:
@@ -361,8 +366,8 @@ def load_walkable_area_from_jupedsim_sqlite(
             return _load_walkable_area_from_jupedsim_sqlite_v2(connection)
 
         raise LoadTrajectoryError(
-            f"The given sqlite trajectory has unsupported db version {db_version}. "
-            f"Supported are versions: 1, 2."
+            f"The given sqlite trajectory has unsupported db version "
+            f"{db_version}. Supported are versions: 1, 2."
         )
 
 
@@ -384,8 +389,8 @@ def _load_walkable_area_from_jupedsim_sqlite_v1(
         )
     except Exception as exc:
         raise LoadTrajectoryError(
-            "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
-            "contain a 'geometry' table. Please check your file."
+            "The given sqlite trajectory is not a valid JuPedSim format, it "
+            "does not not contain a 'geometry' table. Please check your file."
         ) from exc
 
     if walkable_query_result is None:
@@ -405,8 +410,9 @@ def _load_walkable_area_from_jupedsim_sqlite_v2(
         geometries = [shapely.from_wkt(s) for s in res.fetchall()]
     except Exception as exc:
         raise LoadTrajectoryError(
-            "The given sqlite trajectory is not a valid JuPedSim format, it does not not "
-            "contain a 'geometry' table. Please check your file."
+            "The given sqlite trajectory is not a valid JuPedSim format, "
+            "it does not not contain a 'geometry' table. Please check your "
+            "file."
         ) from exc
 
     if not geometries:
@@ -424,21 +430,24 @@ def load_trajectory_from_ped_data_archive_hdf5(
     """Loads data from the hdf5 file as :class:`~trajectory_data.TrajectoryData`.
 
     Loads data from files in the
-    `Pedestrian Dynamics Data Archive <https://ped.fz-juelich.de/da/doku.php>`_ HDF5
-    format. The format is explained in more detail
+    `Pedestrian Dynamics Data Archive <https://ped.fz-juelich.de/da/doku.php>`_
+    HDF5 format. The format is explained in more detail
     `here <https://ped.fz-juelich.de/da/doku.php?id=info>`_.
 
-    In short: The file format includes the trajectory data in a data set `trajectory` which
-    contains the trajectory data, e.g., x, y, z coordinates, frame number and a person identifier.
-    The dataset is additionally annotated with an attribute `fps` which gives the frame rate in
-    which the data was recorded.
+    In short: The file format includes the trajectory data in a data set
+    `trajectory` which contains the trajectory data, e.g., x, y, z coordinates,
+    frame number and a person identifier. The dataset is additionally annotated
+    with an attribute `fps` which gives the frame rate in which the data was
+    recorded.
 
     Args:
-        trajectory_file: trajectory file in Pedestrian Dynamics Data Archive HDF5 format
+        trajectory_file: trajectory file in Pedestrian Dynamics Data Archive
+            HDF5 format
 
     Returns:
-        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
-    """
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation
+            of the file data
+    """  # noqa: E501
     _validate_is_file(trajectory_file)
 
     with h5py.File(trajectory_file, "r") as hdf5_file:
@@ -458,8 +467,9 @@ def load_trajectory_from_ped_data_archive_hdf5(
         if not {ID_COL, FRAME_COL, X_COL, Y_COL}.issubset(set(column_names)):
             raise LoadTrajectoryError(
                 f"{trajectory_file} seems to be not a supported hdf5 file, "
-                f"the 'trajectory' dataset does not contain the following columns: "
-                f"'{ID_COL}', '{FRAME_COL}', '{X_COL}', and '{Y_COL}'."
+                f"the 'trajectory' dataset does not contain the following "
+                f"columns: '{ID_COL}', '{FRAME_COL}', '{X_COL}', and "
+                f"'{Y_COL}'."
             )
 
         if "fps" not in trajectory_dataset.attrs:
@@ -482,19 +492,20 @@ def load_walkable_area_from_ped_data_archive_hdf5(
     """Loads the walkable area from the hdf5 file as :class:`~geometry.WalkableArea`.
 
     Loads walkable area from files in the
-    `Pedestrian Dynamics Data Archive <https://ped.fz-juelich.de/da/doku.php>`_ HDF5
-    format. The format is explained in more detail
+    `Pedestrian Dynamics Data Archive <https://ped.fz-juelich.de/da/doku.php>`_
+    HDF5 format. The format is explained in more detail
     `here <https://ped.fz-juelich.de/da/doku.php?id=info>`_.
 
-    In short: The file format includes an attribute `wkt_geometry` at root level, which contains
-    the walkable area of the experiments.
+    In short: The file format includes an attribute `wkt_geometry` at root
+    level, which contains the walkable area of the experiments.
 
     Args:
-        trajectory_file: trajectory file in Pedestrian Dynamics Data Archive HDF5 format
+        trajectory_file: trajectory file in Pedestrian Dynamics Data Archive
+            HDF5 format
 
     Returns:
         WalkableArea: :class:`~geometry.WalkableArea` used in the experiment
-    """
+    """  # noqa: E501
     _validate_is_file(trajectory_file)
 
     with h5py.File(trajectory_file, "r") as hdf5_file:
@@ -515,14 +526,15 @@ def load_trajectory_from_viswalk(
 ) -> TrajectoryData:
     """Loads data from Viswalk-csv file as :class:`~trajectory_data.TrajectoryData`.
 
-    This function reads a CSV file containing trajectory data from Viswalk simulations and
-    converts it into a :class:`~trajectory_data.TrajectoryData` object which can be used for
-    further analysis and processing in the *PedPy* framework.
+    This function reads a CSV file containing trajectory data from Viswalk
+    simulations and converts it into a :class:`~trajectory_data.TrajectoryData`
+    object which can be used for further analysis and processing in the
+    *PedPy* framework.
 
     .. note::
 
-        Viswalk data have a time column, that is going to be converted to a frame column for use
-        with *PedPy*.
+        Viswalk data have a time column, that is going to be converted to a
+        frame column for use with *PedPy*.
 
     .. warning::
 
@@ -530,16 +542,19 @@ def load_trajectory_from_viswalk(
 
     Args:
         trajectory_file: The full path of the CSV file containing the Viswalk
-            trajectory data. The expected format is a CSV file with :code:`;` as delimiter, and it
-            should contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
-            Comment lines may start with a :code:`*` and will be ignored.
+            trajectory data. The expected format is a CSV file with :code:`;`
+            as delimiter, and it should contain at least the following
+            columns: NO, SIMSEC, COORDCENTX, COORDCENTY. Comment lines may
+            start with a :code:`*` and will be ignored.
 
     Returns:
-        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation
+            of the file data
 
     Raises:
-        LoadTrajectoryError: If the provided path does not exist or is not a file.
-    """
+        LoadTrajectoryError: If the provided path does not exist or is not a
+            file.
+    """  # noqa: E501
     _validate_is_file(trajectory_file)
 
     traj_dataframe = _load_trajectory_data_from_viswalk(
@@ -562,8 +577,9 @@ def _calculate_frames_and_fps(
     mean_diff = traj_dataframe.groupby(ID_COL)["time"].diff().dropna().mean()
     if math.isnan(mean_diff):
         raise LoadTrajectoryError(
-            "Can not determine the frame rate used to write the trajectory file. "
-            "This may happen, if the file only contains data for a single frame."
+            "Can not determine the frame rate used to write the trajectory "
+            "file. This may happen, if the file only contains data for a "
+            "single frame."
         )
 
     fps = int(round(1 / mean_diff))
@@ -579,9 +595,10 @@ def _load_trajectory_data_from_viswalk(
 
     Args:
         trajectory_file (pathlib.Path): The file containing the trajectory data.
-            The expected format is a CSV file with ';' as delimiter, and it should
-            contain at least the following columns: NO, SIMSEC, COORDCENTX, COORDCENTY.
-            Comment lines may start with a '*' and will be ignored.
+            The expected format is a CSV file with ';' as delimiter, and it
+            should contain at least the following columns: NO, SIMSEC,
+            COORDCENTX, COORDCENTY. Comment lines may start with a '*' and
+            will be ignored.
 
     Returns:
         The trajectory data as :class:`DataFrame`, the coordinates are
@@ -630,7 +647,7 @@ def _load_trajectory_data_from_viswalk(
 
         data.columns = cleaned_columns
         data = data[columns_to_keep]
-        data.rename(columns=rename_mapping, inplace=True)
+        data = data.rename(columns=rename_mapping)
 
         if data.empty:
             raise LoadTrajectoryError(common_error_message)
