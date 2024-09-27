@@ -566,11 +566,11 @@ def _compute_crossing_frames(
     measurement_line: MeasurementLine,
     count_on_line: bool,
 ) -> pd.DataFrame:
-    """Compute the frames at the pedestrians pass the measurement line.
+    """Compute the frames at which pedestrians pass the measurement line.
 
-    Depending on count_on_line the crossing frame is either the frame the
-    pedestrian touches the line (count_on_line = True) or when the movement
-    crosses but does not end on the line.
+    If count_on_line is set to True, the crossing frame is the one where the
+    pedestrian touches the line. Otherwise, it is the frame where the
+    pedestrian crosses the line without stopping on it.
 
     Args:
         traj_data (pandas.DataFrame): trajectory data
@@ -600,23 +600,28 @@ def _compute_crossing_frames(
         )
     )
 
+    movement_crosses_line = shapely.intersects(
+        df_movement.movement, measurement_line.line
+    )
+
     if count_on_line:
-        crossing_frames = df_movement.loc[
-            shapely.intersects(df_movement.movement, measurement_line.line)
-        ][[ID_COL, FRAME_COL]]
+        crossing_frames = df_movement.loc[movement_crosses_line][
+            [ID_COL, FRAME_COL]
+        ]
     else:
-        # crossing means, the current movement crosses the line and the end
-        # point of the movement is not on the line. The result is sorted by
-        # frame number
+        # Case when crossing means movement crosses the line, but the end point
+        # is not on it
+
+        # Minimum distance to consider crossing complete
         CROSSING_THRESHOLD: Final = 1e-5  # noqa: N806
+
+        movement_ends_on_line = (
+            shapely.distance(df_movement.end_position, measurement_line.line)
+            < CROSSING_THRESHOLD
+        )
+
         crossing_frames = df_movement.loc[
-            (shapely.intersects(df_movement.movement, measurement_line.line))
-            & (
-                shapely.distance(
-                    df_movement.end_position, measurement_line.line
-                )
-                > CROSSING_THRESHOLD
-            )
+            (movement_crosses_line) & (~movement_ends_on_line)
         ][[ID_COL, FRAME_COL]]
 
     return crossing_frames
