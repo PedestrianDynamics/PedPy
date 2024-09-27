@@ -6,7 +6,7 @@ import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import List, Optional, Tuple
+from typing import Final, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -175,11 +175,13 @@ def compute_frame_range_in_area(
         traj_data=traj_data, measurement_area=measurement_area
     )
 
-    crossing_frames_first = compute_crossing_frames(
-        traj_data=traj_data, measurement_line=measurement_line
+    crossing_frames_first = _compute_crossing_frames(
+        traj_data=traj_data,
+        measurement_line=measurement_line,
+        count_on_line=True,
     )
-    crossing_frames_second = compute_crossing_frames(
-        traj_data=traj_data, measurement_line=second_line
+    crossing_frames_second = _compute_crossing_frames(
+        traj_data=traj_data, measurement_line=second_line, count_on_line=True
     )
 
     start_crossed_1 = _check_crossing_in_frame_range(
@@ -522,7 +524,9 @@ def compute_intersecting_polygons(
 
 
 def compute_crossing_frames(
-    *, traj_data: TrajectoryData, measurement_line: MeasurementLine
+    *,
+    traj_data: TrajectoryData,
+    measurement_line: MeasurementLine,
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
@@ -549,6 +553,35 @@ def compute_crossing_frames(
         DataFrame containing the columns 'id', 'frame', where 'frame' is
         the frame where the measurement line is crossed.
     """
+    return _compute_crossing_frames(
+        traj_data=traj_data,
+        measurement_line=measurement_line,
+        count_on_line=False,
+    )
+
+
+def _compute_crossing_frames(
+    *,
+    traj_data: TrajectoryData,
+    measurement_line: MeasurementLine,
+    count_on_line: bool,
+) -> pd.DataFrame:
+    """Compute the frames at which pedestrians pass the measurement line.
+
+    If count_on_line is set to True, the crossing frame is the one where the
+    pedestrian touches the line. Otherwise, it is the frame where the
+    pedestrian crosses the line without stopping on it.
+
+    Args:
+        traj_data (pandas.DataFrame): trajectory data
+        measurement_line (MeasurementLine): measurement line which is crossed
+        count_on_line (bool): Count movement ending on line (True) or only if
+            movement crosses line, but does not end on line.
+
+    Returns:
+        DataFrame containing the columns 'id', 'frame', where 'frame' is
+        the frame where the measurement line is crossed.
+    """
     # stack is used to get the coordinates in the correct order, as pygeos
     # does not support creating linestring from points directly. The
     # resulting array looks as follows:
@@ -567,11 +600,29 @@ def compute_crossing_frames(
         )
     )
 
-    # crossing means, the current movement crosses the line and the end point
-    # of the movement is not on the line. The result is sorted by frame number
-    crossing_frames = df_movement.loc[
-        shapely.intersects(df_movement.movement, measurement_line.line)
-    ][[ID_COL, FRAME_COL]]
+    movement_crosses_line = shapely.intersects(
+        df_movement.movement, measurement_line.line
+    )
+
+    if count_on_line:
+        crossing_frames = df_movement.loc[movement_crosses_line][
+            [ID_COL, FRAME_COL]
+        ]
+    else:
+        # Case when crossing means movement crosses the line, but the end point
+        # is not on it
+
+        # Minimum distance to consider crossing complete
+        CROSSING_THRESHOLD: Final = 1e-5  # noqa: N806
+
+        movement_ends_on_line = (
+            shapely.distance(df_movement.end_position, measurement_line.line)
+            < CROSSING_THRESHOLD
+        )
+
+        crossing_frames = df_movement.loc[
+            (movement_crosses_line) & (~movement_ends_on_line)
+        ][[ID_COL, FRAME_COL]]
 
     return crossing_frames
 
