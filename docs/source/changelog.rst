@@ -2,6 +2,39 @@
 Changelog
 *********
 
+Version 1.2.0 (2024-09-27)
+==========================
+
+**New features:**
+
+- New speed profile method: Gauss
+- New spatial analysis method: Pair distribution function
+- New core measurement method: Acceleration
+- Improve plotting:
+    * In distance-line plots, the line can be colored in the speed of the pedestrian
+
+**What's changed:**
+
+- Improve plotting:
+- Column identifiers are now exposed at top-level, e.g., can be imported with :code:`from pedpy import *`
+
+**Fixes:**
+
+- Fix bug in :code:`compute_crossing_frames`, returning the frame a pedestrian may stand on line
+- Improve documentation:
+    * Fix in developer guide
+    * Fix data types not displayed correctly in some parts of documentation
+    * Restructure methods page and add new category names 
+    * Add details about the Well-Known-Text (WKT) format
+    * General minor documentation fixes and improvements
+
+Version 1.1.3 (2024-08-30)
+==========================
+
+**Fixes:**
+
+- Distance to time plot, now show the correct time
+
 Version 1.1.2 (2024-06-16)
 ==========================
 
@@ -42,7 +75,7 @@ Version 1.1.0 (2024-03-13)
 **What's changed:**
 
 * Nightly builds will no longer be uploaded to test-PyPI
-* kwagrs how passed from plotting functions to matplotlib backend
+* kwagrs now passed from plotting functions to matplotlib backend
 * Support :class:`~shapely.GeometryCollection` as base for geometries
 * Add support for Python 3.12
 * Functions are now exposed at top-level, e.g., can be imported with :code:`from pedpy import *`
