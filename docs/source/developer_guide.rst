@@ -252,8 +252,21 @@ Only Pull Request with succeeding pipelines will be allowed to be merged into th
 Formatting/Linting
 ------------------
 
-Except from the functional requirements (see :ref:`Tests`) for changes in the code base, we also have some non-functional requirements.
+Aside from the functional requirements (see :ref:`Tests`) for changes in the code base, we also have some non-functional requirements.
 These will also be checked in our CI process for each Pull Request.
+To ensure compliance with these requirements, we have integrated pre-commit hooks into the repository.
+
+1. **Install Pre-Commit Hooks:**
+
+To simplify and automate formatting, linting, and type checking, we use pre-commit hooks. This will ensure that every commit is checked against our formatting, linting, and type hinting standards before being accepted.
+
+To set up the pre-commit hooks locally, run the following command:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+Now, every time you commit changes, the hooks will automatically run, checking for issues related to formatting, linting, and type hints.
 
 1. **Code formatting:**
 To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``ruff format``.
