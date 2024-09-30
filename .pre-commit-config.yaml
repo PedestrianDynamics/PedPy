@@ -1,5 +1,5 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit  
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.8
     hooks:
     # Run the linter.
@@ -15,6 +15,6 @@ repos:
         name: Analyze with Mypy
         entry: mypy --config-file mypy.ini
         language: python
-        types: ['python']  # Targets Python files        
+        types: ['python']  # Targets Python files
         files: \.py$  # Only .py files
         exclude: (tests/|scripts/)
