@@ -79,7 +79,12 @@ jobs:
 
       - name: Run pytests
         run: |
-          python3 -m pytest -vv -s tests
+          python3 -m pytest --cov=pedpy --cov-report=xml -vv -s tests
+
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build wheel
         id: build-wheel
