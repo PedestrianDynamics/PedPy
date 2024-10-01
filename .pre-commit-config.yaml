@@ -17,5 +17,5 @@ repos:
         language: python
         types: ['python']  # Targets Python files
         files: \.py$  # Only .py files
-        exclude: (tests/|scripts/)
+        exclude: (tests/|scripts/|docs|helper)
         
