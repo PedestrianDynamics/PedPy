@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 check_for_failure() {
     "$@" || failure=1
@@ -7,16 +7,11 @@ check_for_failure() {
 location="$(cd "$(dirname "${0}")";pwd -P)"
 root="$(cd "$(dirname "${location}/../..")";pwd -P)"
 
-echo "Check format"
-check_for_failure "${root}"/scripts/check-format.sh
-echo "-------------------------------------------------------------------------"
+echo "Installing pre-commit..."
+check_for_failure pip install pre-commit
 
-echo "Check typing with mypy"
-check_for_failure python3 -m mypy --config-file mypy.ini pedpy/
-echo "-------------------------------------------------------------------------"
-
-echo "Linting with ruff"
-check_for_failure python3 -m ruff check pedpy
+echo "Running pre-commit checks..."
+check_for_failure pre-commit run --all-files
 echo "-------------------------------------------------------------------------"
 
 if ((failure)); then
