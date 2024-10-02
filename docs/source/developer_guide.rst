@@ -273,10 +273,14 @@ To ensure that your Pull Request may get accepted, make sure that the code is fo
 We provide a helper script (``scripts/format.sh``) that will format every file in the correct manner.
 To test it locally you can use ``scripts/check-format.sh``.
 
+Alternatively, if you have installed the pre-commit hooks, and an attempted commit fails, the hook will automatically format the file for you.
+The change then may be added to the staging are (``git add <file name>```).
+Afterwards, the formatting hook should succeed.
+
 2. **Type Hints:**
 We decided that every function, parameter, return value, etc. should be annotated with type hints, as they make it clearer for users what to expect and what is needed.
 For ensuring that no type hint is forgotten we use ``MyPy``.
-This can be checked locally via ``python3 -m mypy --config-file mypy.ini pedpy/``
+This can be checked locally via ``python3 -m mypy .``
 
 3. **Linting:**
 Linting in Python is an important process that helps ensure that our code is consistent and adheres to best practices.
