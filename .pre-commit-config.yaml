@@ -2,20 +2,29 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.8
     hooks:
-    # Run the linter.
       - id: ruff
+        name: Check include sorting (ruff)
         args: ['check', '--select', 'I', '--fix', '.']
-    # Run the formatter.
       - id: ruff-format
+        name: Check formatting (ruff)
+        args: ['--fix', '.']
+      - id: ruff
+        name: Linting (ruff)
+        args: ['pedpy']
 
-  # Mypy type checker
-  - repo: local
+
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2  # Use the latest version of mypy available at the time
     hooks:
       - id: mypy
-        name: Analyze with Mypy
-        entry: mypy --config-file mypy.ini
-        language: python
-        types: ['python']  # Targets Python files
-        files: \.py$  # Only .py files
-        exclude: (tests/|scripts/|docs|helper)
-        
+        name: Check type hints (mypy)
+        additional_dependencies: [
+            "numpy~=2.1",
+            "pandas~=2.2.3",
+            "Shapely~=2.0.6",
+            "scipy~=1.14",
+            "matplotlib~=3.9",
+            "h5py~=3.11"
+        ]
+        exclude: "(^helper/|^docs/|^scripts/|^tests/)"
