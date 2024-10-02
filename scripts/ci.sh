@@ -7,9 +7,6 @@ check_for_failure() {
 location="$(cd "$(dirname "${0}")";pwd -P)"
 root="$(cd "$(dirname "${location}/../..")";pwd -P)"
 
-echo "Installing pre-commit..."
-check_for_failure pip install pre-commit
-
 echo "Running pre-commit checks..."
 check_for_failure pre-commit run --all-files
 echo "-------------------------------------------------------------------------"
