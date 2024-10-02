@@ -7,12 +7,10 @@ repos:
         args: ['check', '--select', 'I', '--fix', '.']
       - id: ruff-format
         name: Check formatting (ruff)
-        args: ['--fix', '.']
+        args: ['.']
       - id: ruff
         name: Linting (ruff)
-        args: ['pedpy']
-
-
+        files: ^pedpy/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2  # Use the latest version of mypy available at the time
