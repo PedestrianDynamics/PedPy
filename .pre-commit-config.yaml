@@ -14,19 +14,6 @@ repos:
         name: Linting (ruff)
         files: ^pedpy/
 
-      # Manual hooks, for checking formatting without changing files
-      - id: ruff
-        alias: ruff-include-sorting-dry
-        name: Check include sorting (ruff)
-        args: ['check', '--select', 'I', '.']
-        stages: [manual]
-      - id: ruff-format
-        alias: ruff-format-dry
-        name: Check formatting (ruff)
-        args: ['.', '--check']
-        stages: [manual]
-
-
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.2  # Use the latest version of mypy available at the time
     hooks:
