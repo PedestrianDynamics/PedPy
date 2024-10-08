@@ -268,26 +268,27 @@ pre-commit install
 ```
 Now, every time you commit changes, the hooks will automatically run, checking for issues related to formatting, linting, and type hints.
 
-1. **Code formatting:**
-To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``ruff format``.
-We provide a helper script (``scripts/format.sh``) that will format every file in the correct manner.
-To test it locally you can use ``scripts/check-format.sh``.
+.. note ::
 
-Alternatively, if you have installed the pre-commit hooks, and an attempted commit fails, the hook will automatically format the file for you.
-The change then may be added to the staging are (``git add <file name>```).
-Afterwards, the formatting hook should succeed.
+  These pre-commit hooks may change your files, i.e., when the code needs some reformatting, make sure to add these new changes also to your commit.
+  Otherwise you will not be able to commit.
 
-2. **Type Hints:**
+2. **Code formatting:**
+To ensure that your Pull Request may get accepted, make sure that the code is formatted with ``ruff``.
+The pre-commit hooks, will automatically format your code according to our guide lines.
+Alternatively, We provide a helper script (``scripts/format.sh``) that will format every file in the correct manner.
+
+3. **Type Hints:**
 We decided that every function, parameter, return value, etc. should be annotated with type hints, as they make it clearer for users what to expect and what is needed.
 For ensuring that no type hint is forgotten we use ``MyPy``.
 This can be checked locally via ``python3 -m mypy .``
 
-3. **Linting:**
+4. **Linting:**
 Linting in Python is an important process that helps ensure that our code is consistent and adheres to best practices.
 Linting tools like ``ruff`` analyze our code for potential errors, bad practices, and code smells.
 This helps us catch issues early on and prevents them from becoming bigger problems down the line.
 
-4. **Docstring style:** (included in linting)
+5. **Docstring style:** (included in linting)
 Make sure to check whether every of your new functions has a docstring.
 We decided to use Google-docstring style to be used in our project.
 You can use `ruff` to check if everything is correct locally.
