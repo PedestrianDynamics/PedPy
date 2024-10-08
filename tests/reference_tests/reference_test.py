@@ -527,6 +527,16 @@ def test_nt(line, folder):
         traj_data=trajectory,
         measurement_line=line,
     )
+
+    # In JPSreport crossing was counted when a pedestrians touches the
+    # measurement line the first time. In PedPy the crossing is counted
+    # when the movement crossed the line and does not end on it. Hence,
+    # some slight modifications in edge need to be done to adapt the
+    # reference results.
+    if folder.name == "corridor":
+        reference_result.loc[243, CUMULATED_COL] -= 1
+        reference_result.loc[3082, CUMULATED_COL] -= 1
+
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
         result[TIME_COL], reference_result[TIME_COL], atol=TOLERANCE

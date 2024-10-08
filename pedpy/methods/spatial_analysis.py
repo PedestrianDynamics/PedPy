@@ -24,12 +24,11 @@ def compute_pair_distribution_function(
     """Computes the pair distribution function g(r).
 
     This function calculates the spatial distribution of positions :math:`g(r)`
-    :math:`g(r)` here referred to the Euclidean distance
-    between interacting pedestrians, i.e.,
-    pedestrians that are in the same walkable area at the same moment.
-    The pdf is given by the probability that two pedestrians are separated
-    by :math:`r` normalized by the probability :math:`PNI(r)` that two
-    non-interacting pedestrians are separated by :math:`r`, specifically
+    :math:`g(r)` here referred to the Euclidean distance between interacting
+    pedestrians, i.e., pedestrians that are in the same walkable area at the
+    same moment. The pdf is given by the probability that two pedestrians are
+    separated by :math:`r` normalized by the probability :math:`PNI(r)` that
+    two non-interacting pedestrians are separated by :math:`r`, specifically
 
     .. math::
         g(r) = P(r)/PNI(r),
@@ -79,9 +78,7 @@ def compute_pair_distribution_function(
     )  # Normalising by the number of pairwise distances in the dataframe
     ## Scrambled distribution
     pd_ni_bins = pd.cut(pairwise_dist_ni_array, radius_bins)
-    pd_ni_bins_normalised = (
-        pd_ni_bins.value_counts().sort_index().to_numpy()
-    ) / len(
+    pd_ni_bins_normalised = (pd_ni_bins.value_counts().sort_index().to_numpy()) / len(
         pairwise_dist_ni_array
     )  # Normalising by the number of pairwise distances in the dataframe
 
@@ -131,9 +128,7 @@ def _calculate_pair_distances(
             y_values = frame_df[Y_COL].to_numpy()
             coordinates = np.stack((x_values, y_values), axis=-1)
             # Calculate pairwise distances for the current frame using cdist
-            frame_distances = cdist(
-                coordinates, coordinates, metric="euclidean"
-            )
+            frame_distances = cdist(coordinates, coordinates, metric="euclidean")
 
             # Extract the upper triangle without the diagonal
             distances_upper_triangle = frame_distances[
