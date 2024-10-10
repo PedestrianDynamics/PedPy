@@ -19,13 +19,14 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
-    "numpy~=1.25,<2.0",
-    "pandas~=2.0",
-    "Shapely~=2.0",
-    "scipy~=1.11",
-    "matplotlib~=3.7",
-    "h5py~=3.10.0",
+    "numpy~=2.1",
+    "pandas~=2.2.3",
+    "Shapely~=2.0.6",
+    "scipy~=1.14",
+    "matplotlib~=3.9",
+    "h5py~=3.11",
 ]
+
 requires-python = ">=3.10"
 
 [project.urls]
