@@ -8,7 +8,7 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Final, Callable, List, Optional, Tuple
+from typing import Callable, Final, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -1162,10 +1162,10 @@ def compute_individual_areas(
 
 def _process_frame(
     frame: int,
-    shape_and_speedmap_framegroup,
+    shape_and_speedmap_framegroup: pd.DataFrame,
     grid: GridInfo,
     cutoff_distance: float,
-):
+) -> pd.DataFrame:
     """Process one frame with the Fast-Marching-Method.
 
     Processing a frame involves transferring the position of the pedestrians
@@ -1209,7 +1209,7 @@ def _process_frame(
 def _form_to_grid(
     grid: GridInfo,
     form: shapely.Point | shapely.Polygon | shapely.MultiPolygon,
-):
+) -> List[tuple[int, int]]:
     """Transfers the form to the grid.
 
     Args:
@@ -1240,7 +1240,7 @@ def _form_to_grid(
         return []
 
 
-def _cartesian_to_grid(grid: GridInfo, point: shapely.Point):
+def _cartesian_to_grid(grid: GridInfo, point: shapely.Point) -> tuple[int, int]:
     """Converts Cartesian coordinates of point to grid coordinates."""
     minx, miny, maxx, maxy = grid.boundary.bounds
 
@@ -1258,7 +1258,9 @@ def _cartesian_to_grid(grid: GridInfo, point: shapely.Point):
     return int(round(i)), int(round(j))
 
 
-def _grid_cells_of_polygon(grid: GridInfo, polygon: shapely.Polygon):
+def _grid_cells_of_polygon(
+    grid: GridInfo, polygon: shapely.Polygon
+) -> List[tuple[int, int]]:
     """Returns a list of all cells located on the border of the polygon."""
     cart_coordinates = list(polygon.exterior.coords)
     used_cells = []
@@ -1275,7 +1277,9 @@ def _grid_cells_of_polygon(grid: GridInfo, polygon: shapely.Polygon):
     return unique_cells
 
 
-def _bresenham_line(y1: int, x1: int, y2: int, x2: int) -> list[tuple]:
+def _bresenham_line(
+    y1: int, x1: int, y2: int, x2: int
+) -> list[tuple[int, int]]:
     """Determines all Grid cells used on a line with Bresenham's line algorithm.
 
     The line starts at the Point (x1, y1) and ends at (x2, y2).
@@ -1289,17 +1293,11 @@ def _bresenham_line(y1: int, x1: int, y2: int, x2: int) -> list[tuple]:
     dx = x2 - x1
     dy = y2 - y1
 
-    if dy < 0:
-        ystep = -1
-        dy = -dy
-    else:
-        ystep = 1
+    ystep = -1 + 2 * (dy >= 0)
+    dy = abs(dy)
 
-    if dx < 0:
-        xstep = -1
-        dx = -dx
-    else:
-        xstep = 1
+    xstep = -1 + 2 * (dx >= 0)
+    dx = abs(dx)
 
     ddy = 2 * dy
     ddx = 2 * dx
@@ -1400,8 +1398,8 @@ def _calc_arrivaltime(
 
 
 def _fast_marching_algorithm(
-    shape_and_speedmap: pd.DataFrame, cutoff_distance: int = np.inf
-) -> tuple:
+    shape_and_speedmap: pd.DataFrame, cutoff_distance: float = np.inf
+) -> tuple[np.array, np.array]:
     """Uses the fast-marching method to assign grid cells to the pedestrians.
 
     for each pedestrian a wavefront is calculated. Each grid cell is assigned
@@ -1481,7 +1479,9 @@ def _fast_marching_algorithm(
     return time_map, wave_map
 
 
-def _get_polygons_by_shapely_boxes(wave_map: np.array, grid: GridInfo):
+def _get_polygons_by_shapely_boxes(
+    wave_map: np.array, grid: GridInfo
+) -> dict[int, shapely.Polygon]:
     """Determins the Polygons of the assigned wave_map.
 
     Determins the Polygons for every unique value exept np.isnan.
@@ -1789,7 +1789,7 @@ def apply_point_as_shape(
 
 
 def apply_speedmap_from_additions(
-    group: pd.DataFrame, grid: GridInfo, additions: dict
+    group: pd.DataFrame, grid: GridInfo, additions: dict[str, np.array]
 ) -> pd.DataFrame:
     """Assigns a precomputed speedmap to each entry in the frame group.
 
@@ -1870,7 +1870,7 @@ def apply_individual_speedmap(
 
 def apply_computed_speedmap(
     group: pd.DataFrame, grid: GridInfo, additions: None
-):
+) -> pd.DataFrame:
     """Computes speedmap for the grid and assigns to the entire frame group.
 
     This function computes a speed map based on the provided grid's boundary
@@ -1900,7 +1900,9 @@ def apply_computed_speedmap(
     return group
 
 
-def create_elipse(point, width, length, alpha) -> shapely.Polygon:
+def create_elipse(
+    point: shapely.Point, width: float, length: float, alpha: float
+) -> shapely.Polygon:
     """Creates an ellipse at point with specified width, length and rotation.
 
     This function generates an elliptical shape using the Shapely library
@@ -1945,7 +1947,7 @@ def compute_width_length_alpha(
     b_max: float = 0.4,
     v0: float = 1.2,
     a_v: float = 1,
-) -> tuple:
+) -> tuple[float, float, float]:
     r"""Computes the width, length, and angle of the ellipse of the GCFM.
 
     This function calculates the dimensions (width and length) and
