@@ -482,7 +482,7 @@ def test_voronoi_speed(
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.index.values).all()
     assert np.isclose(
         result[result.index.isin(reference_result.index)][SPEED_COL],
         reference_result[SPEED_COL],
