@@ -185,3 +185,31 @@ max-locals = 20
 max-statements = 50
 ## Constant types to ignore when used as "magic values" (see: PLR2004).
 allow-magic-value-types = ["int", "str"]
+
+[tool.mypy]
+python_version = "3.10"
+namespace_packages = true
+ignore_missing_imports = false
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+no_implicit_reexport = true
+strict_equality = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+plugins = ["numpy.typing.mypy_plugin"]
+exclude = "^(helper|docs|scripts|tests)(/|$)"
+
+[[tool.mypy.overrides]]
+module = [
+    "matplotlib.*",
+    "mpl_toolkits.*",
+    "pandas.*",
+    "shapely.*",
+    "numpy.*",
+    "scipy.*",
+    "setuptools.*",
+    "h5py.*",
+]
+ignore_missing_imports = true

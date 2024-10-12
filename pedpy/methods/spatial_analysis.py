@@ -78,7 +78,9 @@ def compute_pair_distribution_function(
     )  # Normalising by the number of pairwise distances in the dataframe
     ## Scrambled distribution
     pd_ni_bins = pd.cut(pairwise_dist_ni_array, radius_bins)
-    pd_ni_bins_normalised = (pd_ni_bins.value_counts().sort_index().to_numpy()) / len(
+    pd_ni_bins_normalised = (
+        pd_ni_bins.value_counts().sort_index().to_numpy()
+    ) / len(
         pairwise_dist_ni_array
     )  # Normalising by the number of pairwise distances in the dataframe
 
@@ -128,7 +130,9 @@ def _calculate_pair_distances(
             y_values = frame_df[Y_COL].to_numpy()
             coordinates = np.stack((x_values, y_values), axis=-1)
             # Calculate pairwise distances for the current frame using cdist
-            frame_distances = cdist(coordinates, coordinates, metric="euclidean")
+            frame_distances = cdist(
+                coordinates, coordinates, metric="euclidean"
+            )
 
             # Extract the upper triangle without the diagonal
             distances_upper_triangle = frame_distances[

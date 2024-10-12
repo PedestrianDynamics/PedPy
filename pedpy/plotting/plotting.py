@@ -61,6 +61,7 @@ def _plot_polygon(
     line_width: float = 1,
     hole_color: Any = "lightgrey",
     hole_alpha: float = 1,
+    zorder: float = 1000,
 ) -> matplotlib.axes.Axes:
     """Plot the shapely polygon (including holes).
 
@@ -74,6 +75,8 @@ def _plot_polygon(
         line_width (float): line width of the borders
         hole_color (Any): background color of holes
         hole_alpha (float): alpha of background color for holes
+        zorder (float): Specifies the drawing order of the polygon,
+            lower values are drawn first
 
     Returns:
         matplotlib.axes.Axes instance where the polygon is plotted
@@ -90,7 +93,7 @@ def _plot_polygon(
         facecolor="none",
         linewidth=line_width,
         closed=True,
-        zorder=1000,
+        zorder=zorder,
     )
     axes.add_patch(exterior_polygon_border)
 
@@ -101,7 +104,7 @@ def _plot_polygon(
         linewidth=line_width,
         alpha=polygon_alpha,
         closed=True,
-        zorder=1000,
+        zorder=zorder,
     )
     axes.add_patch(exterior_polygon_fill)
 
@@ -115,7 +118,7 @@ def _plot_polygon(
             linewidth=line_width,
             alpha=1,
             closed=True,
-            zorder=1000,
+            zorder=zorder,
         )
         axes.add_patch(interior_polygon_border)
 
@@ -126,7 +129,7 @@ def _plot_polygon(
             linewidth=line_width,
             alpha=hole_alpha,
             closed=True,
-            zorder=1000,
+            zorder=zorder,
         )
         axes.add_patch(interior_polygon_fill)
 
@@ -1383,6 +1386,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             line_color=voronoi_border_color,
             polygon_color=color,
             polygon_alpha=voronoi_outside_ma_alpha,
+            zorder=1,
         )
 
         if INTERSECTION_COL in data.columns:
@@ -1394,6 +1398,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
                     line_color="none",
                     polygon_color=color,
                     polygon_alpha=voronoi_inside_ma_alpha,
+                    zorder=1,
                 )
 
         if traj_data:
