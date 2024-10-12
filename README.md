@@ -29,7 +29,7 @@ If you use *PedPy* in your work, please cite it using the following information 
 
 ### Setup Python
 
-For setting up your Python Environment a Python version >= 3.10 is recommended (our code is tested with 3.10, 3.11, and 3.12).
+For setting up your Python Environment a Python version >= 3.11 is recommended (our code is tested with 3.11, 3.12, and 3.13).
 To avoid conflicts with other libraries/applications the usage of virtual environments is recommended, see [Python Documentation](https://docs.python.org/3/library/venv.html) for more detail.
 
 ### Installing PedPy

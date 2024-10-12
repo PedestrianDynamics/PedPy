@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ '3.10' ]
+        python-version: [ '3.11' ]
     runs-on: ${{ matrix.os }}
     continue-on-error: true
 
@@ -55,7 +55,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-12, macos-14, windows-latest ]
-        python-version: [ '3.10' ]
+        python-version: [ '3.11' ]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -113,7 +113,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-12, macos-14, windows-latest ]
-        python-version: [ '3.10', '3.11' , '3.12']
+        python-version: [ '3.11', '3.12' , '3.13']
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -162,7 +162,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest ]
-        python-version: [ '3.10' ]
+        python-version: [ '3.11' ]
     runs-on: ${{ matrix.os }}
 
     steps:
