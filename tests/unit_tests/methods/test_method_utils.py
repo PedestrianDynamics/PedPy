@@ -1,7 +1,9 @@
+from unittest.mock import MagicMock
+
 import numpy as np
 import pandas as pd
 import pytest
-from shapely import Polygon
+from shapely import Point, Polygon
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementLine
@@ -11,6 +13,7 @@ from pedpy.methods.method_utils import (
     _compute_orthogonal_speed_in_relation_to_proportion,
     _compute_partial_line_length,
     compute_crossing_frames,
+    compute_neighbor_distance,
     compute_neighbors,
     is_individual_speed_valid,
     is_species_valid,
@@ -454,3 +457,121 @@ def test_compute_neighbors_deprecation_warning():
         DeprecationWarning, match="The parameter 'as_list=True' is deprecated"
     ):
         compute_neighbors(dummy_data, as_list=True)
+
+
+def test_compute_neighbor_distance():
+    traj_data = TrajectoryData(
+        data=pd.DataFrame(
+            {
+                ID_COL: [1, 2, 3],
+                FRAME_COL: [0, 0, 0],
+                X_COL: [0, 3, 6],
+                Y_COL: [0, 4, 8],
+            }
+        ),
+        frame_rate=1,
+    )
+
+    neighborhood = pd.DataFrame(
+        {
+            ID_COL: [1, 2],
+            FRAME_COL: [0, 0],
+            NEIGHBOR_ID_COL: [2, 3],
+        }
+    )
+
+    result = compute_neighbor_distance(
+        traj_data=traj_data, neighborhood=neighborhood
+    )
+
+    expected_result = pd.DataFrame(
+        {
+            ID_COL: [1, 2],
+            FRAME_COL: [0, 0],
+            NEIGHBOR_ID_COL: [2, 3],
+            DISTANCE_COL: [
+                5.0,
+                5.0,
+            ],  # Euclidean distances: sqrt(3^2 + 4^2) = 5
+        }
+    )
+
+    pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
+
+
+def test_compute_neighbor_distance_invalid_list_input():
+    traj_data = MagicMock(spec=TrajectoryData)
+    neighborhood = pd.DataFrame(
+        {
+            ID_COL: [1, 2],
+            FRAME_COL: [0, 0],
+            NEIGHBORS_COL: [[2], [3]],  # as_list=True adds this column
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Cannot compute distance between neighbors with list-format data.",
+    ):
+        compute_neighbor_distance(
+            traj_data=traj_data, neighborhood=neighborhood
+        )
+
+
+def test_compute_neighbor_distance_empty_input():
+    traj_data = TrajectoryData(
+        data=pd.DataFrame(columns=[ID_COL, FRAME_COL, X_COL, Y_COL]).astype(
+            {X_COL: "float64", Y_COL: "float64"}
+        ),
+        frame_rate=1,
+    )
+    neighborhood = pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL])
+
+    result = compute_neighbor_distance(
+        traj_data=traj_data, neighborhood=neighborhood
+    )
+
+    expected_result = pd.DataFrame(
+        columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL, DISTANCE_COL]
+    )
+
+    pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
+
+
+def test_compute_neighbor_distance_different_distances():
+    traj_data = TrajectoryData(
+        data=pd.DataFrame(
+            {
+                ID_COL: [1, 2, 3],
+                FRAME_COL: [0, 0, 0],
+                X_COL: [0, 3, 10],
+                Y_COL: [0, 4, 10],
+            }
+        ),
+        frame_rate=1,
+    )
+
+    neighborhood = pd.DataFrame(
+        {
+            ID_COL: [1, 2],
+            FRAME_COL: [0, 0],
+            NEIGHBOR_ID_COL: [2, 3],
+        }
+    )
+
+    result = compute_neighbor_distance(
+        traj_data=traj_data, neighborhood=neighborhood
+    )
+
+    expected_result = pd.DataFrame(
+        {
+            ID_COL: [1, 2],
+            FRAME_COL: [0, 0],
+            NEIGHBOR_ID_COL: [2, 3],
+            DISTANCE_COL: [5.0, 9.21954445729],  # sqrt(7^2 + 6^2) = 9.21
+        }
+    )
+
+    pd.testing.assert_frame_equal(
+        result, expected_result, check_dtype=False, atol=1e-6
+    )
