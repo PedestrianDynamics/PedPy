@@ -30,6 +30,8 @@ from pedpy.column_identifier import (
     ID_COL,
     INTERSECTION_COL,
     MEAN_SPEED_COL,
+    NEIGHBORS_COL,
+    NEIGHBOR_ID_COL,
     POLYGON_COL,
     SPEED_COL,
     SPEED_SP1_COL,
@@ -675,7 +677,12 @@ def plot_neighborhood(
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the neighborhood.
+    """Plots the neighborhood of a specified pedestrian.
+
+    This function visualizes the neighborhood for a given pedestrian at a
+    specified frame using Voronoi polygons for each pedestrian. It colors
+    the specified pedestrian, their neighbors, and other pedestrians
+    distinctly based on the neighborhood data.
 
     Args:
         pedestrian_id(int): id of pedestrian to plot neighbors for
@@ -697,44 +704,104 @@ def plot_neighborhood(
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
+    if NEIGHBORS_COL in neighbors.columns:
+        # Extract neighbors from when they are stored as list in a column
+        neighbors_in_frame = neighbors[neighbors[FRAME_COL] == frame].set_index(
+            ID_COL
+        )
+        neighbor_ids = neighbors_in_frame[NEIGHBORS_COL].to_dict()
+    elif NEIGHBOR_ID_COL in neighbors.columns:
+        # Extract neighbors from when they are stored as one neighbor per row
+        neighbors_in_frame = neighbors[neighbors[FRAME_COL] == frame]
+        neighbor_ids = (
+            neighbors_in_frame.groupby(ID_COL)[NEIGHBOR_ID_COL]
+            .apply(set)
+            .to_dict()
+        )
+    else:
+        raise RuntimeError("Unknown neighbor data format")
+
+    return _plot_neighborhood(
+        pedestrian_id=pedestrian_id,
+        neighbor_ids=neighbor_ids,
+        frame=frame,
+        voronoi_data=voronoi_data,
+        walkable_area=walkable_area,
+        axes=axes,
+        **kwargs,
+    )
+
+
+def _plot_neighborhood(
+    *,
+    pedestrian_id: int,
+    neighbor_ids: dict[int, List[int]],
+    frame: int,
+    voronoi_data: pd.DataFrame,
+    walkable_area: WalkableArea,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the neighborhood of a pedestrian.
+
+    Args:
+        pedestrian_id(int): id of pedestrian to plot neighbors for
+        neighbor_ids(dict[int, List[int]]): neighborhood with base id as key
+        frame(int): frame for which the plot is created
+        voronoi_data (pd.DataFrame): individual Voronoi polygon for each person
+            and frame
+        walkable_area(WalkableArea): WalkableArea object of plot
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be
+            created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        hole_color (optional): color of the holes in the walkable area
+        base_color (optional): color of the base pedestrians
+        neighbor_color (optional): color of neighbor pedestrians
+        default_color (optional): color of default pedestrians
+    Returns:
+        matplotlib.axes.Axes: instances where the neighborhood is plotted
+    """
+    # Extract color settings from kwargs
     hole_color = kwargs.pop("hole_color", "w")
     base_color = kwargs.pop("base_color", PEDPY_RED)
     neighbor_color = kwargs.pop("neighbor_color", PEDPY_GREEN)
     default_color = kwargs.pop("default_color", PEDPY_GREY)
-    voronoi_neighbors = voronoi_data[voronoi_data.frame == frame].merge(
-        neighbors[neighbors.frame == frame],
-        on=[ID_COL, FRAME_COL],
-    )
 
-    base_neighbors = voronoi_neighbors[
-        voronoi_neighbors[ID_COL] == pedestrian_id
-    ]["neighbors"].to_numpy()[0]
+    # Filter voronoi_data for polygons in the same frame
+    voronoi_neighbors = voronoi_data[voronoi_data[FRAME_COL] == frame]
+
+    # Prepare arrays for colors and alphas to avoid conditionals in the loop
+    ped_ids = voronoi_neighbors[ID_COL].to_numpy()
+    polygons = voronoi_neighbors[POLYGON_COL].to_numpy()
+    colors = np.full((len(ped_ids), 3), default_color, dtype=float)
+    alphas = np.full(len(ped_ids), 0.2)
+
+    # Set base pedestrian color and neighbors colors
+    for idx, ped_id in enumerate(ped_ids):
+        if ped_id == pedestrian_id:
+            colors[idx] = base_color
+            alphas[idx] = 0.5
+        elif ped_id in neighbor_ids.get(pedestrian_id, []):
+            colors[idx] = neighbor_color
+            alphas[idx] = 0.5
+
+    # Set up the plot
     if axes is None:
         axes = plt.gca()
     axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
 
+    # Plot the walkable area
     plot_walkable_area(
         axes=axes,
         walkable_area=walkable_area,
         hole_color=hole_color,
     )
 
-    for _, row in voronoi_neighbors.iterrows():
-        poly = row[POLYGON_COL]
-        ped_id = row[ID_COL]
-
-        are_neighbors = ped_id in base_neighbors
-
-        color = default_color
-        alpha = 0.2
-        if ped_id == pedestrian_id:
-            color = base_color
-            alpha = 0.5
-
-        if are_neighbors:
-            color = neighbor_color
-            alpha = 0.5
-
+    # Plot each polygon with precomputed colors and alphas
+    for poly, color, alpha in zip(polygons, colors, alphas, strict=False):
         _plot_polygon(
             axes=axes,
             polygon=poly,
@@ -742,7 +809,9 @@ def plot_neighborhood(
             polygon_color=color,
             polygon_alpha=alpha,
         )
-        axes.set_aspect("equal")
+
+    # Set aspect ratio
+    axes.set_aspect("equal")
 
     return axes
 
