@@ -419,6 +419,59 @@ def _compute_neighbors_single(
     )
 
 
+def compute_neighbor_distance(
+    *,
+    traj_data: TrajectoryData,
+    neighborhood: pd.DataFrame,
+) -> pd.DataFrame:
+    """Compute the distance between the neighbors.
+
+    Computes the distance between the position of neighbors. As neighbors the
+    result of :func:`~compute_neighbors` with parameter :code:`as_list=False`.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        neighborhood (pd.DataFrame): DataFrame containing the columns 'id',
+            'frame' and 'neighbor_id'. The result of :func:`~compute_neighbors`
+            with parameter :code:`as_list=False` can be used here as input.
+
+    Raises:
+        ValueError: When passing a result of :func:`~compute_neighbors`
+            with parameter :code:`as_list=True`.
+
+    Returns:
+        DataFrame containing the columns 'id', 'frame', 'neighbor_id' and
+        'distance'.
+    """
+    if NEIGHBORS_COL in neighborhood.columns:
+        raise ValueError(
+            "For compute the distance between neighbors compute the "
+            "neighborhood with `as_list=False`."
+        )
+
+    neighbors_with_position = neighborhood.merge(
+        traj_data.data[[ID_COL, FRAME_COL, POINT_COL]],
+        on=[ID_COL, FRAME_COL],
+        how="left",
+    )
+
+    neighbors_with_position = neighbors_with_position.merge(
+        traj_data.data[[ID_COL, FRAME_COL, POINT_COL]],
+        left_on=[NEIGHBOR_ID_COL, FRAME_COL],
+        right_on=[ID_COL, FRAME_COL],
+        suffixes=("", "_neighbor"),
+    )
+
+    neighbors_with_position[DISTANCE_COL] = shapely.distance(
+        neighbors_with_position[POINT_COL],
+        neighbors_with_position["point_neighbor"],
+    )
+
+    return neighbors_with_position[
+        [ID_COL, FRAME_COL, NEIGHBOR_ID_COL, DISTANCE_COL]
+    ]
+
+
 def compute_time_distance_line(
     *, traj_data: TrajectoryData, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
