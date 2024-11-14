@@ -11,6 +11,7 @@ from pedpy.methods.method_utils import (
     _compute_orthogonal_speed_in_relation_to_proportion,
     _compute_partial_line_length,
     compute_crossing_frames,
+    compute_neighbors,
     is_individual_speed_valid,
     is_species_valid,
 )
@@ -294,3 +295,162 @@ def test_compute_crossing_frame_trajectory_ends_on_line(frames_on_line):
     )
 
     assert len(crossing_frames) == 0
+
+
+@pytest.fixture
+def sample_voronoi_data():
+    return pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 4],
+            FRAME_COL: [0, 0, 0, 0],  # All in the same frame
+            POLYGON_COL: [
+                Polygon([(0, 0), (1, 0), (0.5, 1)]),  # ID 1
+                Polygon([(1, 0), (2, 0), (1.5, 1)]),  # ID 2
+                Polygon([(0.5, 1), (1.5, 1), (1, 2)]),  # ID 3
+                Polygon([(3, 3), (4, 3), (3.5, 4)]),  # ID 4 (isolated)
+            ],
+        }
+    )
+
+
+@pytest.mark.filterwarnings(
+    "ignore:The parameter 'as_list=True' is deprecated and may change in a future version.*:DeprecationWarning"
+)
+def test_compute_neighbors_as_list(sample_voronoi_data: pd.DataFrame):
+    result = compute_neighbors(sample_voronoi_data, as_list=True)
+
+    expected = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 4],
+            FRAME_COL: [0, 0, 0, 0],
+            NEIGHBORS_COL: [
+                [2, 3],
+                [1, 3],
+                [1, 2],
+                [],
+            ],  # ID 4 has no neighbors
+        }
+    )
+
+    pd.testing.assert_frame_equal(
+        result.sort_values(by=ID_COL).reset_index(drop=True), expected
+    )
+
+
+def test_compute_neighbors_single(sample_voronoi_data):
+    result = compute_neighbors(sample_voronoi_data, as_list=False)
+
+    expected = pd.DataFrame(
+        {
+            ID_COL: [1, 1, 2, 2, 3, 3],
+            FRAME_COL: [0, 0, 0, 0, 0, 0],
+            NEIGHBOR_ID_COL: [2, 3, 1, 3, 1, 2],
+        }
+    )
+
+    pd.testing.assert_frame_equal(
+        result.sort_values(by=[ID_COL, NEIGHBOR_ID_COL]).reset_index(drop=True),
+        expected,
+    )
+
+
+@pytest.mark.filterwarnings(
+    "ignore:The parameter 'as_list=True' is deprecated and may change in a future version.*:DeprecationWarning"
+)
+def test_compute_neighbors_empty():
+    empty_df = pd.DataFrame(columns=[ID_COL, FRAME_COL, POLYGON_COL])
+
+    result_list = compute_neighbors(empty_df, as_list=True)
+    result_single = compute_neighbors(empty_df, as_list=False)
+
+    assert result_list.empty
+    assert result_single.empty
+
+
+@pytest.mark.filterwarnings(
+    "ignore:The parameter 'as_list=True' is deprecated and may change in a future version.*:DeprecationWarning"
+)
+def test_compute_neighbors_single_pedestrian():
+    df = pd.DataFrame(
+        {
+            ID_COL: [1],
+            FRAME_COL: [0],
+            POLYGON_COL: [Polygon([(0, 0), (1, 0), (0.5, 1)])],
+        }
+    )
+
+    result_list = compute_neighbors(df, as_list=True)
+    result_single = compute_neighbors(df, as_list=False)
+
+    expected_list = pd.DataFrame(
+        {ID_COL: [1], FRAME_COL: [0], NEIGHBORS_COL: [[]]}
+    )
+    expected_single = pd.DataFrame(
+        columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL]
+    ).astype({ID_COL: "int64", FRAME_COL: "int64", NEIGHBOR_ID_COL: "int64"})
+    pd.testing.assert_frame_equal(result_list, expected_list)
+    pd.testing.assert_frame_equal(result_single, expected_single)
+
+
+@pytest.mark.filterwarnings(
+    "ignore:The parameter 'as_list=True' is deprecated and may change in a future version.*:DeprecationWarning"
+)
+def test_compute_neighbors_multiple_frames():
+    df = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 4],
+            FRAME_COL: [0, 0, 1, 1],  # Two frames
+            POLYGON_COL: [
+                Polygon([(0, 0), (1, 0), (0.5, 1)]),  # Frame 0
+                Polygon([(1, 0), (2, 0), (1.5, 1)]),  # Frame 0
+                Polygon([(3, 3), (4, 3), (3.5, 4)]),  # Frame 1
+                Polygon([(4, 3), (5, 3), (4.5, 4)]),  # Frame 1
+            ],
+        }
+    )
+
+    result_list = compute_neighbors(df, as_list=True)
+
+    expected_list = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 4],
+            FRAME_COL: [0, 0, 1, 1],
+            NEIGHBORS_COL: [[2], [1], [4], [3]],
+        }
+    )
+
+    pd.testing.assert_frame_equal(
+        result_list.sort_values(by=ID_COL).reset_index(drop=True), expected_list
+    )
+
+
+@pytest.mark.filterwarnings(
+    "ignore:The parameter 'as_list=True' is deprecated and may change in a future version.*:DeprecationWarning"
+)
+def test_compute_neighbors_no_touching():
+    df = pd.DataFrame(
+        {
+            ID_COL: [1, 2],
+            FRAME_COL: [0, 0],
+            POLYGON_COL: [
+                Polygon([(0, 0), (1, 0), (0.5, 1)]),
+                Polygon([(2, 0), (3, 0), (2.5, 1)]),  # Not touching ID 1
+            ],
+        }
+    )
+
+    result_list = compute_neighbors(df, as_list=True)
+    expected_list = pd.DataFrame(
+        {ID_COL: [1, 2], FRAME_COL: [0, 0], NEIGHBORS_COL: [[], []]}
+    )
+
+    pd.testing.assert_frame_equal(result_list, expected_list)
+
+
+def test_compute_neighbors_deprecation_warning():
+    dummy_data = pd.DataFrame(columns=[ID_COL, FRAME_COL, POLYGON_COL])
+
+    with pytest.warns(
+        DeprecationWarning, match="The parameter 'as_list=True' is deprecated"
+    ):
+        compute_neighbors(dummy_data, as_list=True)

@@ -1,8 +1,9 @@
 """Helper functions for the analysis methods."""
-# pylint: disable=C0302
 
+# pylint: disable=C0302
 import itertools
 import logging
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -25,6 +26,7 @@ from pedpy.column_identifier import (
     LAST_FRAME_COL,
     MID_POSITION_COL,
     NEIGHBORS_COL,
+    NEIGHBOR_ID_COL,
     POINT_COL,
     POLYGON_COL,
     SPECIES_COL,
@@ -275,6 +277,7 @@ def compute_frame_range_in_area(
 
 def compute_neighbors(
     individual_voronoi_data: pd.DataFrame,
+    as_list: bool = True,
 ) -> pd.DataFrame:
     """Compute the neighbors of each pedestrian based on the Voronoi cells.
 
@@ -282,16 +285,49 @@ def compute_neighbors(
     pedestrian is a neighbor if the Voronoi cells of both pedestrian touch
     and some point. The threshold for touching is set to 1mm.
 
+    Important:
+        For legacy reasons the function :func:`~method_utils.compute_neighbors`
+        works also without specifing :code:`as_list` (defaults to
+        :code:`True`). We highly discourage using this, as its result is
+        harder to be used in further computations. Use 'as_list=False' instead.
+        The default value may change in future versions of *PedPy*.
+
     Args:
         individual_voronoi_data (pandas.DataFrame): individual voronoi data,
             needs to contain a column 'polygon', which holds a
             :class:`shapely.Polygon` (result from
             :func:`~method_utils.compute_individual_voronoi_polygons`)
+        as_list (bool): Return the neighbors as a list per pedestrian and frame,
+            if :code:`True`, otherwise each neighbor is in a single row.
 
     Returns:
         DataFrame containing the columns 'id', 'frame' and 'neighbors', where
-        neighbors are a list of the neighbor's IDs
+        neighbors are a list of the neighbor's IDs if as_list is :code:`True`.
+        Otherwise the DataFrame contains the columns 'id', 'frame',
+        'neighbor_id'.
     """
+    if as_list:
+        warnings.warn(
+            "The parameter 'as_list=True' is deprecated and may change in a "
+            "future version. It is kept for backwards compatibility. We "
+            "highly discourage using this, as its result is harder to be "
+            "used in further computations. Use 'as_list=False' instead.",
+            category=DeprecationWarning,
+            stacklevel=2,  # Makes the warning appear at the caller level
+        )
+
+        return _compute_neighbors_list(
+            individual_voronoi_data=individual_voronoi_data
+        )
+    else:
+        return _compute_neighbors_single(
+            individual_voronoi_data=individual_voronoi_data
+        )
+
+
+def _compute_neighbors_list(
+    individual_voronoi_data: pd.DataFrame,
+) -> pd.DataFrame:
     neighbor_df = []
 
     for frame, frame_data in individual_voronoi_data.groupby(FRAME_COL):
@@ -330,7 +366,56 @@ def compute_neighbors(
         )
         neighbor_df.append(frame_df)
 
+    if not neighbor_df:
+        return pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBORS_COL])
+
     return pd.concat(neighbor_df)
+
+
+def _compute_neighbors_single(
+    individual_voronoi_data: pd.DataFrame,
+) -> pd.DataFrame:
+    neighbor_df = []
+
+    for frame, frame_data in individual_voronoi_data.groupby(FRAME_COL):
+        polygons = frame_data[POLYGON_COL].to_numpy()
+
+        touching = shapely.dwithin(
+            polygons[:, np.newaxis], polygons[np.newaxis, :], 1e-9
+        )
+
+        # the peds are not neighbors of themselves
+        np.fill_diagonal(touching, False)
+
+        # Filter neighbor relationships based on the touching matrix
+        ids = frame_data[ID_COL].to_numpy()
+        row_idx, col_idx = np.where(
+            touching
+        )  # Get row and column indices of True values
+        id_column = ids[row_idx]  # Extract original IDs
+        neighbor_column = ids[col_idx]  # Extract corresponding neighbor IDs
+
+        # Create DataFrame for this frame's neighbors
+        frame_neighbors = pd.DataFrame(
+            {
+                ID_COL: id_column,
+                FRAME_COL: frame,
+                NEIGHBOR_ID_COL: neighbor_column,
+            }
+        )
+
+        # Append to the result list
+        neighbor_df.append(frame_neighbors)
+
+    if not neighbor_df:
+        return pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL])
+
+    # Concatenate all frames' data into a single DataFrame
+    return (
+        pd.concat(neighbor_df, ignore_index=True)
+        .sort_values(by=[FRAME_COL, ID_COL])
+        .reset_index(drop=True)
+    )
 
 
 def compute_time_distance_line(
