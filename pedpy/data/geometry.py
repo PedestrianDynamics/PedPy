@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from numbers import Number
 from typing import Any, List, Optional, Tuple
 
+import numpy as np
 import shapely
 
 
@@ -312,6 +313,16 @@ class MeasurementLine:
             Measurement line as :class:`shapely.LineString`.
         """
         return self._line
+
+    def normal_vector(self):
+        """Returns a normalized normal vector of the line."""
+        normal_vec = np.array(
+            [
+                self._line.xy[1][1] - self._line.xy[1][0],
+                self._line.xy[0][0] - self._line.xy[0][1],
+            ]
+        )
+        return normal_vec / np.linalg.norm(normal_vec)
 
 
 ###############################################################################

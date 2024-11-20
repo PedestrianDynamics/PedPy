@@ -1,8 +1,10 @@
 """Helper functions for the analysis methods."""
+
 # pylint: disable=C0302
 
 import itertools
 import logging
+import typing
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -27,8 +29,11 @@ from pedpy.column_identifier import (
     NEIGHBORS_COL,
     POINT_COL,
     POLYGON_COL,
+    SPECIES_COL,
     START_POSITION_COL,
     TIME_COL,
+    V_X_COL,
+    V_Y_COL,
     WINDOW_SIZE_COL,
     X_COL,
     Y_COL,
@@ -53,6 +58,14 @@ class AccelerationCalculation(Enum):  # pylint: disable=too-few-public-methods
     BORDER_EXCLUDE = auto()
 
 
+class DataValidationStatus(Enum):  # pylint: disable=too-few-public-methods
+    """Identifies the result of a return value."""
+
+    DATA_CORRECT = auto()
+    COLUMN_MISSING = auto()
+    ENTRY_MISSING = auto()
+
+
 @dataclass(
     kw_only=True,
 )
@@ -70,6 +83,18 @@ class Cutoff:
 
     radius: float
     quad_segments: int = 3
+
+
+class InputError(Exception):
+    """Class reflecting errors when incorrect input was given."""
+
+    def __init__(self, message):
+        """Create InputError with the given message.
+
+        Args:
+            message: Error message
+        """
+        self.message = message
 
 
 def is_trajectory_valid(
@@ -1081,3 +1106,167 @@ def _check_crossing_in_frame_range(
     crossed[column_name] = crossed[column_name] == "both"
     crossed = crossed[crossed[column_name]]
     return crossed
+
+
+def _compute_orthogonal_speed_in_relation_to_proprotion(
+    group: pd.DataFrame, measurement_line: MeasurementLine
+) -> pd.DataFrame:
+    """Calculates the speed orthogonal to the line times partial line length.
+
+    group is a DataFrameGroupBy containing the columns
+        'v_x', 'v_y' and 'polygon'.
+    """
+    normal_vector = measurement_line.normal_vector()
+    return (
+        group[V_X_COL] * normal_vector[0] + group[V_Y_COL] * normal_vector[1]
+    ) * _compute_partial_line_length(group[POLYGON_COL], measurement_line)
+
+
+def _compute_partial_line_length(
+    polygon: shapely.Polygon, measurement_line: MeasurementLine
+) -> float:
+    """Calculates the fraction of the length that is intersected by the polygon.
+
+    .
+    """
+    line = measurement_line.line
+    return shapely.length(shapely.intersection(polygon, line)) / shapely.length(
+        line
+    )
+
+
+def _apply_lambda_for_intersecting_frames(
+    *,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+    species: pd.DataFrame,
+    lambda_for_group: typing.Callable[
+        [pd.DataFrame, MeasurementLine], pd.DataFrame
+    ],
+    column_id_sp1: str,
+    column_id_sp2: str,
+    individual_speed: pd.DataFrame = None,
+) -> pd.DataFrame:
+    """Applies lambda for both species for frames where Polygon intersects line.
+
+    lambda_for_group is called with a group containing
+     the data of one species and a Measurement Line.
+    """
+    merged_table = individual_voronoi_polygons[
+        shapely.intersects(
+            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
+        )
+    ]
+
+    merged_table = merged_table.merge(species, on="id", how="left")
+    if individual_speed is not None:
+        merged_table = merged_table.merge(
+            individual_speed,
+            left_on=[ID_COL, FRAME_COL],
+            right_on=[ID_COL, FRAME_COL],
+        )
+
+    species_1 = merged_table[merged_table[SPECIES_COL] == 1]
+    species_2 = merged_table[merged_table[SPECIES_COL] == -1]
+
+    if not species_1.empty:
+        species_1 = (
+            species_1.groupby(FRAME_COL)
+            .apply(lambda group: lambda_for_group(group, measurement_line))
+            .reset_index()
+        )
+        species_1.columns = [FRAME_COL, column_id_sp1]
+    else:
+        species_1 = pd.DataFrame(columns=[FRAME_COL, column_id_sp1])
+
+    if not species_2.empty:
+        species_2 = (
+            species_2.groupby(FRAME_COL)
+            .apply(lambda group: lambda_for_group(group, measurement_line))
+            .reset_index()
+        )
+        species_2.columns = [FRAME_COL, column_id_sp2]
+    else:
+        species_2 = pd.DataFrame(columns=[FRAME_COL, column_id_sp2])
+
+    result = species_1.merge(species_2, on=FRAME_COL, how="outer").fillna(0)
+    return result.sort_values(by=FRAME_COL, ascending=False)
+
+
+def is_species_valid(
+    *,
+    species: pd.DataFrame,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+) -> bool:
+    """Checks if there's species data of every pedestrian intersecting the line.
+
+    Args:
+        species (pd.DataFrame): dataframe containing information
+            about the species of every pedestrian intersecting with the line,
+            result from :func:`~speed_calculator.compute_species`
+
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
+
+        measurement_line (MeasurementLine): measurement line
+
+    Returns:
+        True if all needed data is provided by the species dataframe else False.
+    """
+    intersecting_polygons = individual_voronoi_polygons[
+        shapely.intersects(
+            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
+        )
+    ]
+    return intersecting_polygons[ID_COL].isin(species[ID_COL]).all()
+
+
+def is_individual_speed_valid(
+    *,
+    individual_speed: pd.DataFrame,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+) -> DataValidationStatus:
+    """Checks for speed data in any entry a pedestrian is intersecting the line.
+
+    Args:
+        individual_speed (pd.DataFrame): individual speed data per frame,
+            result from :func:`~speed_calculator.compute_individual_speed`
+            using :code:`compute_velocity`
+
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
+
+        measurement_line (MeasurementLine): measurement line
+
+    Returns:
+        DATA_CORRECT if all needed data is provided
+            by the individual speed dataframe,
+        COLUMN_MISSING if there is a column missing,
+        ENTRY_MISSING if there is no matching entry
+            for a frame where polygon and line intersect.
+    """
+    if not all(
+        column in individual_speed.columns
+        for column in [ID_COL, FRAME_COL, V_X_COL, V_Y_COL]
+    ):
+        return DataValidationStatus.COLUMN_MISSING
+    intersecting_polygons = individual_voronoi_polygons[
+        shapely.intersects(
+            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
+        )
+    ]
+    if (
+        not intersecting_polygons.merge(
+            individual_speed, on=["id", "frame"], how="left"
+        )
+        .notna()
+        .all()
+        .all()
+    ):
+        return DataValidationStatus.ENTRY_MISSING
+
+    return DataValidationStatus.DATA_CORRECT

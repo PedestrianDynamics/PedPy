@@ -6,7 +6,10 @@ import pandas as pd
 
 from pedpy.column_identifier import (
     CUMULATED_COL,
+    DENSITY_COL,
     FLOW_COL,
+    FLOW_SP1_COL,
+    FLOW_SP2_COL,
     FRAME_COL,
     ID_COL,
     MEAN_SPEED_COL,
@@ -15,7 +18,15 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import compute_crossing_frames
+from pedpy.methods.method_utils import (
+    DataValidationStatus,
+    InputError,
+    _apply_lambda_for_intersecting_frames,
+    _compute_orthogonal_speed_in_relation_to_proprotion,
+    compute_crossing_frames,
+    is_individual_speed_valid,
+    is_species_valid,
+)
 
 
 def compute_n_t(
@@ -191,3 +202,100 @@ def compute_flow(
             )
 
     return pd.DataFrame(rows)
+
+
+def compute_line_flow(
+    *,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+    individual_speed: pd.DataFrame,
+    species: pd.DataFrame,
+) -> pd.DataFrame:
+    r"""Calculates flow for both species and total flow orthogonal to line.
+
+    The flow of each frame is accumulated from
+    :math:`v_{i} * n_{l} * \frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line.
+
+    * :math:`v_{i} * n_{l}` is the speed of pedestrian :math:`i`
+        orthogonal to the line :math:`l`
+    * :math:`A_i(t)` is the area of the Voronoi Cell
+    * :math:`w` is the length of the measurement line
+    * :math:`w_i(t)` is the length of the intersecting line of the
+        Voronoi cell in frame :math:`t`.
+
+    Results are computed for both species
+    (see :func:`~speed_calculator.compute_species`)
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
+
+        measurement_line (MeasurementLine): line at which the flow is calculated
+
+        individual_speed (pd.DataFrame): individual speed data per frame, result
+            from :func:`~methods.speed_calculator.compute_individual_speed`
+            using :code:`compute_velocity`
+
+        species (pd.DataFrame): dataframe containing information about the
+            species of every pedestrian intersecting the line,
+            result from :func:`~speed_calculator.compute_species`
+    Returns:
+        Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
+    """
+    if not is_species_valid(
+        species=species,
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+    ):
+        raise InputError(
+            "the species doesn't contain all data required to "
+            "calculate the line flow.\n"
+            "Perhaps the species was computed with different Voronoi data"
+            " or a different measurement line."
+        )
+
+    speed_validation_result = is_individual_speed_valid(
+        individual_speed=individual_speed,
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+    )
+
+    if speed_validation_result == DataValidationStatus.ENTRY_MISSING:
+        raise InputError(
+            "individual speed doesn't contain all data required "
+            "to calculate the line flow.\n"
+            "Perhaps there is some data missing at the beginning or the end. "
+            "An other speed_calculation might fix this Problem."
+        )
+
+    if speed_validation_result == DataValidationStatus.COLUMN_MISSING:
+        raise InputError(
+            "individual speed doesn't contain all data required "
+            "to calculate the line flow.\n"
+            "Perhaps the individual speed was not calculated with"
+            " the option compute_velocity."
+        )
+
+    if speed_validation_result != DataValidationStatus.DATA_CORRECT:
+        raise InputError(
+            "individual speed doesn't contain all data"
+            " required to calculate the line flow."
+        )
+
+    result = _apply_lambda_for_intersecting_frames(
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+        species=species,
+        lambda_for_group=lambda group, line: (
+            _compute_orthogonal_speed_in_relation_to_proprotion(group, line)
+            * group[DENSITY_COL]
+        ).sum(),
+        column_id_sp1=FLOW_SP1_COL,
+        column_id_sp2=FLOW_SP2_COL,
+        individual_speed=individual_speed,
+    )
+    result[FLOW_SP2_COL] *= -1
+    result[FLOW_COL] = result[FLOW_SP1_COL] + result[FLOW_SP2_COL]
+    return result
