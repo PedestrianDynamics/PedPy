@@ -12,7 +12,7 @@ coverage:
         threshold: 10%  # Stricter for new changes
 
 comment:
-  layout: "diff, files, tree, grid"
+  layout: "condensed_header, condensed_files, condensed_footer" # add "condensed_" to "header", "files" and "footer"
   behavior: new  # Only post for new commits
   require_changes: false  # Always post comments
   require_base: false  # Don’t block if base is missing
