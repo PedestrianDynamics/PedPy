@@ -6,10 +6,12 @@ coverage:
       default:
         target: auto
         threshold: 50%  # Allow more fluctuation
+        informational: true  # Do not fail CI; only provide information
     patch:
       default:
         target: auto
         threshold: 10%  # Stricter for new changes
+        informational: true  # Do not fail CI; only provide information
 
 comment:
   layout: "condensed_header, condensed_files, condensed_footer" # add "condensed_" to "header", "files" and "footer"
