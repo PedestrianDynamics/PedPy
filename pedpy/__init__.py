@@ -116,7 +116,7 @@ from .plotting.plotting import (
     plot_walkable_area,
 )
 
-__all__ = [
+__all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "MeasurementArea",
     "MeasurementLine",
     "WalkableArea",

@@ -3,7 +3,7 @@ pandas~=2.2.3
 Shapely~=2.0.6
 scipy~=1.14
 matplotlib~=3.9
-h5py~=3.11.0
+h5py~=3.12
 
 # testing
 pytest~=8.3
@@ -16,7 +16,7 @@ click~=8.1
 build~=1.1
 
 # ci
-mypy~=1.11
+mypy==1.13
 mypy-extensions==1.0
-ruff~=0.6
-pre-commit~=3.8
+ruff==0.8
+pre-commit==4.0
