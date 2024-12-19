@@ -12,7 +12,7 @@ in which the mean speed and density can be computed with different methods.
 """
 
 from enum import Enum, auto
-from typing import Any, Final, List, Optional, Tuple
+from typing import Any, Final, Optional, Sequence, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -167,8 +167,8 @@ def compute_profiles(  # noqa: D417
     # pylint: disable=unused-argument,too-many-arguments
     **kwargs: Any,
 ) -> Tuple[
-    List[npt.NDArray[np.float64]],
-    List[npt.NDArray[np.float64]],
+    Sequence[npt.NDArray[np.float64]],
+    Sequence[npt.NDArray[np.float64]],
 ]:
     """Computes the density and speed profiles.
 
@@ -260,7 +260,7 @@ def compute_density_profile(
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     gaussian_width: Optional[float] = None,
     # pylint: disable=too-many-arguments
-) -> List[npt.NDArray[np.float64]]:
+) -> Sequence[npt.NDArray[np.float64]]:
     """Compute the density profile.
 
     Args:
@@ -484,7 +484,7 @@ def compute_speed_profile(
     fill_value: float = np.nan,
     gaussian_width: float = 0.5,
     # pylint: disable=too-many-arguments
-) -> List[npt.NDArray[np.float64]]:
+) -> Sequence[npt.NDArray[np.float64]]:
     """Computes the speed profile for pedestrians within an area.
 
     This function calculates speed profiles based on pedestrian speed data

@@ -24,7 +24,7 @@ dependencies = [
     "Shapely~=2.0.6",
     "scipy~=1.14",
     "matplotlib~=3.9",
-    "h5py~=3.11",
+    "h5py~=3.12",
 ]
 
 requires-python = ">=3.11"
