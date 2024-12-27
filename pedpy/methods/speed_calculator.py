@@ -459,7 +459,7 @@ def compute_line_speed(
 
     for each pedestrian :math:`i` whose Voronoi cell intersects the line :math:`l`.
 
-    Hier:
+    Here:
 
     * :math:`v_{i} \cdot n_{l}` is the speed of pedestrian :math:`i` orthogonal to the line :math:`l`.
     * :math:`w` is the length of the measurement line.
