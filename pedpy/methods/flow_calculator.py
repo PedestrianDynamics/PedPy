@@ -222,10 +222,12 @@ def compute_line_flow(
 
     Here:
 
-    * :math:`v_{i} \cdot n_{l}` is the speed of pedestrian :math:`i` orthogonal to the line :math:`l`.
+    * :math:`v_{i} \cdot n_{l}` is the speed of pedestrian :math:`i` orthogonal
+      to the line :math:`l`.
     * :math:`A_i(t)` is the area of the Voronoi Cell.
     * :math:`w` is the length of the measurement line.
-    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell
+      in frame :math:`t`.
 
     Results are computed for both species
     (see :func:`~speed_calculator.compute_species`)

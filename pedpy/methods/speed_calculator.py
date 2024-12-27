@@ -278,13 +278,15 @@ def compute_voronoi_speed(
 ) -> pd.DataFrame:
     r"""Compute the Voronoi speed per frame inside the measurement area.
 
-    This function calculates the Voronoi speed, :math:`v_{voronoi}(t)`, within the measurement
-    area :math:`M`. It uses the individual speed data, :math:`v_i(t)` (computed via
-    :func:`~speed_calculator.compute_individual_speed`), and the Voronoi intersection data
+    This function calculates the Voronoi speed, :math:`v_{voronoi}(t)`, within
+    the measurement area :math:`M`. It uses the individual speed data,
+    :math:`v_i(t)`
+    (computed via :func:`~speed_calculator.compute_individual_speed`), and the
+    Voronoi intersection data
     (obtained from :func:`~density_calculator.compute_voronoi_density`).
 
-    The individual speeds are weighted by the proportion of their Voronoi cell, :math:`V_i`,
-    that intersects with the measurement area, :math:`V_i \cap M`.
+    The individual speeds are weighted by the proportion of their Voronoi cell,
+    :math:`V_i`, that intersects with the measurement area, :math:`V_i \cap M`.
 
     The Voronoi speed, :math:`v_{voronoi}(t)`, is defined as:
 
@@ -294,8 +296,10 @@ def compute_voronoi_speed(
 
     where:
 
-    * :math:`v_{xy}(t) = v_i(t)` represents the individual speed of each pedestrian whose Voronoi cell intersects with the measurement area,
-    * :math:`V_i(t) \cap M` is the overlapping region between a pedestrian's Voronoi cell and the measurement area,
+    * :math:`v_{xy}(t) = v_i(t)` represents the individual speed of each
+      pedestrian whose Voronoi cell intersects with the measurement area,
+    * :math:`V_i(t) \cap M` is the overlapping region between a pedestrian's
+      Voronoi cell and the measurement area,
     * and :math:`A(M)` is the area of the measurement region.
 
     .. image:: /images/voronoi_density.svg
@@ -349,20 +353,24 @@ def compute_passing_speed(
 ) -> pd.DataFrame:
     r"""Compute the individual speed of the pedestrian who pass the area.
 
-    The individual speed, :math:`v^i_{passing}`, is calculated as the speed at which
-    a pedestrian travels a given distance :math:`d`. It is defined by the formula:
+    The individual speed, :math:`v^i_{passing}`, is calculated as the speed at
+    which a pedestrian travels a given distance :math:`d`. It is defined by
+    the formula:
 
     .. math::
         v^i_{passing} = \frac{d}{\Delta t},
 
     where:
 
-    * :math:`\Delta t = \frac{(f_{out} - f_{in})}{\text{fps}}` is the time required for the pedestrian to cross the area.
-    * :math:`f_{in}` and :math:`f_{out}` are the frames where the pedestrian crossed the first and second lines, respectively,
+    * :math:`\Delta t = \frac{(f_{out} - f_{in})}{\text{fps}}` is the time
+      required for the pedestrian to cross the area.
+    * :math:`f_{in}` and :math:`f_{out}` are the frames where the pedestrian
+      crossed the first and second lines, respectively,
     * and :math:`\text{fps}` is the frame rate of the trajectory data, given
       by :attr:`~trajectory_data.TrajectoryData.frame_rate`.
 
-    For details on how the crossing frames (:math:`f_{in}` and :math:`f_{out}`) are computed, see :func:`~method_utils.compute_frame_range_in_area`.
+    For details on how the crossing frames (:math:`f_{in}` and :math:`f_{out}`)
+    are computed, see :func:`~method_utils.compute_frame_range_in_area`.
 
     Args:
         frames_in_area (pandas.DataFrame): information for each pedestrian when
@@ -457,15 +465,19 @@ def compute_line_speed(
     .. math::
          v_{i} \cdot n_{l} \cdot  \frac{w_i(t)}{w},
 
-    for each pedestrian :math:`i` whose Voronoi cell intersects the line :math:`l`.
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line
+    :math:`l`.
 
     Here:
 
-    * :math:`v_{i} \cdot n_{l}` is the speed of pedestrian :math:`i` orthogonal to the line :math:`l`.
+    * :math:`v_{i} \cdot n_{l}` is the speed of pedestrian :math:`i` orthogonal
+      to the line :math:`l`.
     * :math:`w` is the length of the measurement line.
-    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell
+      in frame :math:`t`.
 
-    Results are computed for both species (see :func:`~speed_calculator.compute_species`)
+    Results are computed for both species
+    (see :func:`~speed_calculator.compute_species`)
 
     Args:
         individual_voronoi_polygons (pandas.DataFrame): individual Voronoi data
@@ -548,7 +560,7 @@ def compute_species(
     measurement_line: MeasurementLine,
     frame_step: int,
 ) -> pd.DataFrame:
-    """Creates a Dataframe containing the species for each pedestrian.
+    r"""Creates a Dataframe containing the species for each pedestrian.
 
     The species indicate from which side a pedestrian
     encounters the measurement line.
