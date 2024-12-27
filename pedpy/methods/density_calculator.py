@@ -167,7 +167,6 @@ def compute_passing_density(
     in the same time interval (:math:`[t_{in}(i), t_{out}(i)]`) as the
     pedestrian :math:`i` divided by the area of that measurement area
     :math:`A(M)`.
-
     Then the computation becomes:
 
     .. math::
@@ -177,10 +176,9 @@ def compute_passing_density(
 
     where
 
-    * :math:`t_{in}(i) = f_{in}(i) / fps` is the time pedestrian :math:`i` crosses the first line
-    * :math:`t_{out}(i) = f_{out}(i) / fps` when pedestrian :math:`i` crosses the second line
-    * :math:`f_{in}` and :math:`f_{out}` are the frames at which pedestrian :math:`i`
-             crosses the first and second lines, respectively,
+    * :math:`t_{in}(i) = f_{in}(i) / fps` is the time pedestrian :math:`i` crosses the first line.
+    * :math:`t_{out}(i) = f_{out}(i) / fps` when pedestrian :math:`i` crosses the second line.
+    * :math:`f_{in}` and :math:`f_{out}` are the frames at which pedestrian :math:`i` crosses the first and second lines, respectively.
     * :math:`fps` is the frame rate of the trajectory data, defined by :attr:`~trajectory_data.TrajectoryData.frame_rate` of the trajectory data.
 
     Args:
@@ -237,16 +235,17 @@ def compute_line_density(
     r"""Calculates density for both species and total density at line.
 
     The density of each frame is accumulated from
-    :math:`\frac{1}{A_i(t)}\cdot \frac{w_i(t)}{w}`
+
+    .. math::
+          \frac{1}{A_i(t)}\cdot \frac{w_i(t)}{w},
+
     for each pedestrian :math:`i` whose Voronoi cell intersects the line.
 
-    * :math:`A_i(t)` is the area of the Voronoi Cell
-    * :math:`w` is the length of the measurement line
-    * :math:`w_i(t)` is the length of the intersecting line
-        of the Voronoi cell in frame :math:`t`.
+    * :math:`A_i(t)` is the area of the Voronoi Cell.
+    * :math:`w` is the length of the measurement line.
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell in frame :math:`t`.
 
-    Results are computed for both species
-        (see :func:`~speed_calculator.compute_species`)
+    Results are computed for both species (see :func:`~speed_calculator.compute_species`)
 
     Args:
         individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
