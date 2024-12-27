@@ -278,24 +278,26 @@ def compute_voronoi_speed(
 ) -> pd.DataFrame:
     r"""Compute the Voronoi speed per frame inside the measurement area.
 
-    Computes the Voronoi speed :math:`v_{voronoi}(t)` inside the measurement
-    area :math:`M` from the given individual speed data :math:`v_i(t)` (see
-    :func:`~speed_calculator.compute_individual_speed` for
-    details of the computation) and their individual Voronoi intersection data
-    (from :func:`~density_calculator.compute_voronoi_density`).
-    The individuals speed are weighted by the proportion of their Voronoi cell
-    :math:`V_i` and the intersection with the measurement area
-    :math:`V_i \cap M`.
+    This function calculates the Voronoi speed, :math:`v_{voronoi}(t)`, within the measurement
+    area :math:`M`. It uses the individual speed data, :math:`v_i(t)` (computed via
+    :func:`~speed_calculator.compute_individual_speed`), and the Voronoi intersection data
+    (obtained from :func:`~density_calculator.compute_voronoi_density`).
 
-    The Voronoi speed :math:`v_{voronoi}(t)` is defined as
+    The individual speeds are weighted by the proportion of their Voronoi cell, :math:`V_i`,
+    that intersects with the measurement area, :math:`V_i \cap M`.
+
+    The Voronoi speed, :math:`v_{voronoi}(t)`, is defined as:
 
     .. math::
 
-        v_{voronoi}(t) = { \int\int v_{xy}(t) dxdy \over A(M)},
+        v_{voronoi}(t) = \frac{\int\int v_{xy}(t) \, dx \, dy}{A(M)},
 
-    where :math:`v_{xy}(t) = v_i(t)` is the individual speed of
-    each pedestrian, whose :math:`V_i(t) \cap M` and :math:`A(M)` the area of
-    the measurement area.
+    where:
+    * :math:`v_{xy}(t) = v_i(t)` represents the individual speed of each pedestrian whose
+        Voronoi cell intersects with the measurement area,
+    * :math:`V_i(t) \cap M` is the overlapping region between a pedestrian's Voronoi cell
+        and the measurement area,
+    * and :math:`A(M)` is the area of the measurement region.
 
     .. image:: /images/voronoi_density.svg
         :width: 60 %
@@ -348,20 +350,23 @@ def compute_passing_speed(
 ) -> pd.DataFrame:
     r"""Compute the individual speed of the pedestrian who pass the area.
 
-    Compute the individual speed :math:`v^i_{passing}` at which the pedestrian
-    traveled the given distance :math:`d`, which is defined as:
+    The individual speed, :math:`v^i_{passing}`, is calculated as the speed at which
+    a pedestrian travels a given distance :math:`d`. It is defined by the formula:
 
     .. math::
 
-        v^i_{passing} = {{d} \over{ \Delta t}},
+        v^i_{passing} = \frac{d}{\Delta t},
 
-    where :math:`\Delta t = (f_{out} - f_{in}) / fps` is the time the
-    pedestrian needed to cross the area, where :math:`f_{in}` and
-    :math:`f_{out}` are the frames where the pedestrian crossed the first line,
-    and the second line respectively. For details on the computation of the
-    crossing frames, see :func:`~method_utils.compute_frame_range_in_area`.
-    And :math:`fps` is the :attr:`~trajectory_data.TrajectoryData.frame_rate`
-    of the trajectory data.
+    where:
+    * :math:`\Delta t = \frac{(f_{out} - f_{in})}{\text{fps}}` is the time required
+       for the pedestrian to cross the area,
+    * :math:`f_{in}` and :math:`f_{out}` are the frames where the pedestrian crossed
+       the first and second lines, respectively,
+    * and :math:`\text{fps}` is the frame rate of the trajectory data, given
+      by :attr:`~trajectory_data.TrajectoryData.frame_rate`.
+
+    For details on how the crossing frames (:math:`f_{in}` and :math:`f_{out}`) are computed,
+    see :func:`~method_utils.compute_frame_range_in_area`.
 
     Args:
         frames_in_area (pandas.DataFrame): information for each pedestrian when
@@ -548,29 +553,31 @@ def compute_species(
 ) -> pd.DataFrame:
     """Creates a Dataframe containing the species for each pedestrian.
 
-    The species describes from which side a pedestrian is
-    encountering the measurement line.
+    The species indicate from which side a pedestrian
+    encounters the measurement line.
     The species of a pedestrian :math:`i` is calculated
-    by :math:`sign(n * v_i(t_{i,l}))`, with
-    the normal vector n of the measurement line
-    and the velocity  of pedestrian i being :math:`v_i`
-    at the time when his Voronoi cell intersects the measurement line
-    :math:`t_{i,l}` for the first time.
+    by :math:`sign(n * v_i(t_{i,l}))`,
 
-    If the Voronoi polygon of a pedestrian never intersects the measurement
-    line the pedestrian will not be included in the returned dataframe.
+    where:
+    * :math:`n` the normal vector of the measurement line,
+    * ::math`v_i` is the velocity  of pedestrian :math:`i`
+      at the time when their Voronoi cell intersects the measurement line
+      :math:`t_{i,l}` for the first time.
+
+    Pedestrians whose Voronoi polygons never intersect the measurement line
+    are excluded from the resulting DataFrame.
 
     .. image:: /images/species_determination.svg
         :width: 60 %
         :align: center
 
-    This image shows the frame when the decision as to
-    which species the pedestrian belongs to is made.
-    It is the first frame in which his Voronoi cell intersects the line.
-    Now the current velocity decides which species they are assigned to.
+    This image illustrates the frame in which the decision is made regarding
+    the species classification of a pedestrian. The decision is based on the
+    current velocity at the first frame where the pedestrian's Voronoi cell
+    intersects the measurement line.
 
-    For the decision it is not relevant whether a pedestrian
-    actually crosses the line afterward.
+    It is important to note that the decision does not depend on whether
+    the pedestrian actually crosses the measurement line afterward.
 
     Args:
         trajectory_data (TrajectoryData): trajectory data
