@@ -13,6 +13,7 @@ from pedpy.methods.density_calculator import (
     compute_classic_density,
     compute_line_density,
 )
+from pedpy.methods.method_utils import InputError
 
 
 @pytest.mark.parametrize(
@@ -134,14 +135,28 @@ def example_data():
 def test_compute_line_density(example_data):
     species, speed, voronoi, line = example_data
 
-    desity_on_line = compute_line_density(
+    density_on_line = compute_line_density(
         individual_voronoi_polygons=voronoi,
         measurement_line=line,
         species=species,
     )
 
-    assert desity_on_line.shape[0] == 1
-    assert desity_on_line[DENSITY_SP1_COL].values[0] == pytest.approx(3 * 0.5)
-    assert desity_on_line[DENSITY_SP2_COL].values[0] == pytest.approx(3 * 0.5)
+    assert density_on_line.shape[0] == 1
+    assert density_on_line[DENSITY_SP1_COL].values[0] == pytest.approx(3 * 0.5)
+    assert density_on_line[DENSITY_SP2_COL].values[0] == pytest.approx(3 * 0.5)
 
-    assert desity_on_line[DENSITY_COL].values[0] == pytest.approx(3)
+    assert density_on_line[DENSITY_COL].values[0] == pytest.approx(3)
+
+
+def test_compute_line_density_invalid_species(example_data):
+    """Test that compute_line_density raises InputError when species data doesn't match Voronoi polygons."""
+    species, speed, voronoi, line = example_data
+
+    invalid_species = species.iloc[0:1]
+    error_text = "the species data does not contain all information "
+    with pytest.raises(InputError, match=error_text):
+        compute_line_density(
+            individual_voronoi_polygons=voronoi,
+            measurement_line=line,
+            species=invalid_species,
+        )
