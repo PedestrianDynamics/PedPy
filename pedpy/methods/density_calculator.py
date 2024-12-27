@@ -175,12 +175,15 @@ def compute_passing_density(
         \rho_{passing}(i) = {1 \over {t_{out}(i)-t_{in}(i)}}
         \int^{t_{out}(i)}_{t_{in}(i)} {{N(t)} \over A(M)} dt,
 
-    where :math:`t_{in}(i) = f_{in}(i) / fps` is the time the pedestrian
-    crossed the first line and :math:`t_{out}(i) = f_{out}(i) / fps` when they
-    crossed the second line, where :math:`f_{in}` and :math:`f_{out}` are the
-    frames where the pedestrian crossed the first line, and the second line
-    respectively. And :math:`fps` is the
-    :attr:`~trajectory_data.TrajectoryData.frame_rate` of the trajectory data.
+    where
+    * :math:`t_{in}(i) = f_{in}(i) / fps` is the time pedestrian :math:`i`
+             crosses the first line
+    * :math:`t_{out}(i) = f_{out}(i) / fps` when pedestrian :math:`i`
+             crosses the second line
+    * :math:`f_{in}` and :math:`f_{out}` are the frames at which pedestrian :math:`i`
+             crosses the first and second lines, respectively,
+    * :math:`fps` is the frame rate of the trajectory data, defined by
+             :attr:`~trajectory_data.TrajectoryData.frame_rate` of the trajectory data.
 
     Args:
         density_per_frame (pd.DataFrame): density per frame, result from
@@ -236,7 +239,7 @@ def compute_line_density(
     r"""Calculates density for both species and total density at line.
 
     The density of each frame is accumulated from
-    :math:`\frac{1}{A_i(t)}*  \frac{w_i(t)}{w}`
+    :math:`\frac{1}{A_i(t)}\cdot \frac{w_i(t)}{w}`
     for each pedestrian :math:`i` whose Voronoi cell intersects the line.
 
     * :math:`A_i(t)` is the area of the Voronoi Cell
