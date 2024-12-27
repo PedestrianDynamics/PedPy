@@ -6,6 +6,7 @@ from shapely import Polygon
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementLine
 from pedpy.methods.flow_calculator import compute_line_flow
+from pedpy.methods.method_utils import InputError
 
 
 @pytest.fixture
@@ -64,3 +65,18 @@ def test_compute_line_flow(example_data):
     assert flow_on_line[FLOW_COL].values[0] == pytest.approx(
         (n[0] * 1 + n[1] * 1) * 3
     )
+
+
+def test_compute_line_flow_invalid_species(example_data):
+    """Test that compute_line_flow raises InputError when species data doesn't match Voronoi polygons."""
+    species, speed, voronoi, line = example_data
+
+    invalid_species = species.iloc[0:1]
+    error_text = "the species doesn't contain all data required to"
+    with pytest.raises(InputError, match=error_text):
+        compute_line_flow(
+            individual_voronoi_polygons=voronoi,
+            measurement_line=line,
+            species=invalid_species,
+            individual_speed=speed,
+        )
