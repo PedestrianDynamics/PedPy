@@ -302,5 +302,7 @@ def compute_line_flow(
         individual_speed=individual_speed,
     )
     result[FLOW_SP2_COL] *= -1
-    result[FLOW_COL] = result[FLOW_SP1_COL] + result[FLOW_SP2_COL]
+    result[FLOW_COL] = result[FLOW_SP1_COL].fillna(0) + result[
+        FLOW_SP2_COL
+    ].fillna(0)
     return result

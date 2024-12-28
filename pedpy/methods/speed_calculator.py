@@ -549,7 +549,9 @@ def compute_line_speed(
         individual_speed=individual_speed,
     )
     result[SPEED_SP2_COL] *= -1
-    result[SPEED_COL] = result[SPEED_SP1_COL] + result[SPEED_SP2_COL]
+    result[SPEED_COL] = result[SPEED_SP1_COL].fillna(0) + result[
+        SPEED_SP2_COL
+    ].fillna(0)
     return result
 
 

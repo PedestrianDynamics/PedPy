@@ -291,5 +291,7 @@ def compute_line_density(
         column_id_sp2=DENSITY_SP2_COL,
     )
 
-    result[DENSITY_COL] = result[DENSITY_SP1_COL] + result[DENSITY_SP2_COL]
+    result[DENSITY_COL] = result[DENSITY_SP1_COL].fillna(0) + result[
+        DENSITY_SP2_COL
+    ].fillna(0)
     return result
