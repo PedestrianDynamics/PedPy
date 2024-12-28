@@ -451,6 +451,45 @@ def _compute_individual_speed(
     return movement_data[columns]
 
 
+def _validate_inputs(
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+    individual_speed: pd.DataFrame,
+    species: pd.DataFrame,
+) -> None:
+    """Centralize input validation with clear error messages."""
+    if not is_species_valid(
+        species=species,
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+    ):
+        raise InputError(
+            "Species data validation failed. Ensure species data matches "
+            "the Voronoi data and measurement line used for calculation."
+        )
+
+    speed_status = is_individual_speed_valid(
+        individual_speed=individual_speed,
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+    )
+    error_messages = {
+        DataValidationStatus.ENTRY_MISSING: """
+        Missing speed data entries. Check for gaps in trajectory data.""",
+        DataValidationStatus.COLUMN_MISSING: """
+        Required velocity columns missing.
+        Ensure speed was calculated with compute_velocity option.""",
+        DataValidationStatus.DATA_CORRECT: None,
+    }
+    if speed_status != DataValidationStatus.DATA_CORRECT:
+        error_msg = error_messages.get(
+            speed_status,
+            "Individual speed doesn't contain all data required to calculate "
+            "the line speed.",
+        )
+        raise InputError(error_msg)
+
+
 def compute_line_speed(
     *,
     individual_voronoi_polygons: pd.DataFrame,
@@ -497,45 +536,9 @@ def compute_line_speed(
     Returns:
         Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
     """
-    if not is_species_valid(
-        species=species,
-        individual_voronoi_polygons=individual_voronoi_polygons,
-        measurement_line=measurement_line,
-    ):
-        raise InputError(
-            "the species doesn't contain all data required"
-            " to calculate the line speed.\n"
-            "Perhaps the species was computed with different Voronoi data"
-            " or a different measurement line."
-        )
-
-    speed_validation_result = is_individual_speed_valid(
-        individual_speed=individual_speed,
-        individual_voronoi_polygons=individual_voronoi_polygons,
-        measurement_line=measurement_line,
+    _validate_inputs(
+        individual_voronoi_polygons, measurement_line, individual_speed, species
     )
-
-    if speed_validation_result == DataValidationStatus.ENTRY_MISSING:
-        raise InputError(
-            "individual speed doesn't contain all data required"
-            " to calculate the line speed.\n"
-            "Perhaps there is some data missing at the beginning or the end. "
-            "An other speed_calculation might fix this Problem."
-        )
-
-    if speed_validation_result == DataValidationStatus.COLUMN_MISSING:
-        raise InputError(
-            "individual speed doesn't contain all data required"
-            " to calculate the line speed.\n"
-            "Perhaps the individual speed was not calculated"
-            "with the option compute_velocity."
-        )
-
-    if speed_validation_result != DataValidationStatus.DATA_CORRECT:
-        raise InputError(
-            "individual speed doesn't contain all data required"
-            " to calculate the line speed."
-        )
 
     result = _apply_lambda_for_intersecting_frames(
         individual_voronoi_polygons=individual_voronoi_polygons,

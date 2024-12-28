@@ -12,6 +12,7 @@ from pedpy.methods.method_utils import (
     SpeedCalculation,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
+    InputError,
 )
 from pedpy.methods.speed_calculator import (
     SpeedError,
@@ -378,3 +379,50 @@ def test_compute_species_correct_for_not_intersecting(non_intersecting_setup):
         non_matching[columnnames[0]] != non_matching[columnnames[1]]
     ]
     assert non_matching.shape[0] == 0
+
+
+def test_compute_line_speed_invalid_species(example_data):
+    species, speed, voronoi, line = example_data
+    # Modify species to make it invalid
+    invalid_species = species.copy()
+    invalid_species.iloc[0, 0] = 999  # Add invalid pedestrian ID
+
+    with pytest.raises(InputError, match="Species data validation failed."):
+        compute_line_speed(
+            individual_speed=speed,
+            species=invalid_species,
+            individual_voronoi_polygons=voronoi,
+            measurement_line=line,
+        )
+
+
+def test_compute_line_speed_missing_speed_entries(example_data):
+    species, speed, voronoi, line = example_data
+    # Remove some speed entries
+    invalid_speed = speed.copy()
+    invalid_speed = invalid_speed.iloc[1:]  # Remove first row
+
+    with pytest.raises(InputError, match="Missing speed data entries"):
+        compute_line_speed(
+            individual_speed=invalid_speed,
+            species=species,
+            individual_voronoi_polygons=voronoi,
+            measurement_line=line,
+        )
+
+
+def test_compute_line_speed_missing_velocity_columns(example_data):
+    species, speed, voronoi, line = example_data
+    # Remove velocity columns
+    invalid_speed = speed.copy()
+    invalid_speed = invalid_speed.drop(
+        [V_X_COL, V_Y_COL], axis=1
+    )  # Assuming these are your velocity columns
+
+    with pytest.raises(InputError, match="Required velocity columns missing"):
+        compute_line_speed(
+            individual_speed=invalid_speed,
+            species=species,
+            individual_voronoi_polygons=voronoi,
+            measurement_line=line,
+        )
