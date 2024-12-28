@@ -9,10 +9,10 @@ from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
     Cutoff,
+    InputError,
     SpeedCalculation,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
-    InputError,
 )
 from pedpy.methods.speed_calculator import (
     SpeedError,
