@@ -72,11 +72,43 @@ def test_compute_line_flow_invalid_species(example_data):
     species, speed, voronoi, line = example_data
 
     invalid_species = species.iloc[0:1]
-    error_text = "the species doesn't contain all data required to"
+    error_text = "Species data validation failed. "
     with pytest.raises(InputError, match=error_text):
         compute_line_flow(
             individual_voronoi_polygons=voronoi,
             measurement_line=line,
             species=invalid_species,
             individual_speed=speed,
+        )
+
+
+def test_compute_line_flow_missing_speed_entries(example_data):
+    species, speed, voronoi, line = example_data
+    # Remove some speed entries
+    invalid_speed = speed.copy()
+    invalid_speed = invalid_speed.iloc[1:]  # Remove first row
+
+    with pytest.raises(InputError, match="Missing speed data entries"):
+        compute_line_flow(
+            individual_speed=invalid_speed,
+            species=species,
+            individual_voronoi_polygons=voronoi,
+            measurement_line=line,
+        )
+
+
+def test_compute_line_flow_missing_velocity_columns(example_data):
+    species, speed, voronoi, line = example_data
+    # Remove velocity columns
+    invalid_speed = speed.copy()
+    invalid_speed = invalid_speed.drop(
+        [V_X_COL, V_Y_COL], axis=1
+    )  # Assuming these are your velocity columns
+
+    with pytest.raises(InputError, match="Required velocity columns missing"):
+        compute_line_flow(
+            individual_speed=invalid_speed,
+            species=species,
+            individual_voronoi_polygons=voronoi,
+            measurement_line=line,
         )
