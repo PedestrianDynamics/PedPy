@@ -210,7 +210,37 @@ def _validate_inputs(
     individual_speed: pd.DataFrame,
     species: pd.DataFrame,
 ) -> None:
-    """Centralize input validation with clear error messages."""
+    """Validate input data for consistency and correctness before computation.
+
+    This function performs checks on the input data to ensure that:
+
+    1. **Species Data Consistency:**
+       Verifies that the `species` DataFrame aligns with the
+       `individual_voronoi_polygons` and the `measurement_line`.
+       This ensures that species data is correctly associated with
+       the individual Voronoi polygons and the measurement setup.
+
+    2. **Individual Speed Data Integrity:**
+       Validates the `individual_speed` DataFrame by checking for:
+         - Missing entries in trajectory data.
+         - Required velocity columns to ensure proper speed calculation.
+         - General data completeness necessary for line speed computation.
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame):
+            DataFrame containing Voronoi polygons for each individual.
+
+        measurement_line (MeasurementLine):
+            Object representing the measurement line used in calculations.
+
+        individual_speed (pd.DataFrame):
+            DataFrame containing individual speed data, including velocity
+            components.
+
+        species (pd.DataFrame):
+            DataFrame mapping individuals to their respective species or
+            categories.
+    """
     if not is_species_valid(
         species=species,
         individual_voronoi_polygons=individual_voronoi_polygons,

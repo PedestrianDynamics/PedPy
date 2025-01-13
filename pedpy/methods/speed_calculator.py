@@ -457,7 +457,45 @@ def _validate_inputs(
     individual_speed: pd.DataFrame,
     species: pd.DataFrame,
 ) -> None:
-    """Centralize input validation with clear error messages."""
+    """Validate the consistency and completeness of input data.
+
+    This function performs two validation checks to ensure that the input data
+    is suitable for further processing:
+
+    1. **Species Data Validation:**
+       Confirms that the `species` DataFrame is consistent with the
+       `individual_voronoi_polygons` and the `measurement_line`.
+       This ensures that all species are correctly associated with individuals
+       in the Voronoi data and that the measurement line is correctly defined
+       for analysis.
+
+    2. **Individual Speed Data Validation:**
+       Checks the `individual_speed` DataFrame for:
+         - **Missing Trajectory Entries:** Verifies that all individuals have
+           corresponding speed data with no missing entries.
+         - **Missing Velocity Columns:** Ensures that necessary velocity
+           components are present.
+           This typically requires enabling the `compute_velocity` option.
+         - **Overall Data Completeness:** Confirms that all required
+           data is available for accurate line speed computation.
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame):
+            DataFrame containing Voronoi polygons for each individual
+            in the system.
+
+        measurement_line (MeasurementLine):
+            Object defining the measurement line used for analysis
+            and calculations.
+
+        individual_speed (pd.DataFrame):
+            DataFrame holding individual speed data, typically including
+            velocity components (`vx`, `vy`).
+
+        species (pd.DataFrame):
+            DataFrame mapping individuals to species or categories, used for
+            classification in the analysis.
+    """
     if not is_species_valid(
         species=species,
         individual_voronoi_polygons=individual_voronoi_polygons,

@@ -6,6 +6,7 @@ from typing import Any, List, Optional, Tuple
 
 import numpy as np
 import shapely
+from numpy.typing import NDArray
 
 
 class GeometryError(Exception):
@@ -314,8 +315,13 @@ class MeasurementLine:
         """
         return self._line
 
-    def normal_vector(self):
-        """Returns a normalized normal vector of the line."""
+    def normal_vector(self) -> NDArray[np.float64]:
+        """Compute and returns the normalized normal vector of the line.
+
+        Returns:
+            NDArray[np.float64]: A 2D NumPy array representing the normalized
+            normal vector of the line in the form [x, y].
+        """
         normal_vec = np.array(
             [
                 self._line.xy[1][1] - self._line.xy[1][0],

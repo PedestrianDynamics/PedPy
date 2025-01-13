@@ -3,11 +3,10 @@
 
 import itertools
 import logging
-import typing
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Final, List, Optional, Tuple
+from typing import Callable, Final, List, Optional, Tuple, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -41,6 +40,10 @@ from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 
 _log = logging.getLogger(__name__)
+
+LambdaGroupFunction: TypeAlias = Callable[
+    [pd.DataFrame, MeasurementLine], pd.DataFrame
+]
 
 
 class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
@@ -1139,17 +1142,64 @@ def _apply_lambda_for_intersecting_frames(
     individual_voronoi_polygons: pd.DataFrame,
     measurement_line: MeasurementLine,
     species: pd.DataFrame,
-    lambda_for_group: typing.Callable[
-        [pd.DataFrame, MeasurementLine], pd.DataFrame
-    ],
+    lambda_for_group: LambdaGroupFunction,
     column_id_sp1: str,
     column_id_sp2: str,
     individual_speed: pd.DataFrame = None,
 ) -> pd.DataFrame:
-    """Applies lambda for both species for frames where Polygon intersects line.
+    """Apply a custom function to frames.
 
-    lambda_for_group is called with a group containing
-     the data of one species and a Measurement Line.
+    Frames, where Voronoi polygons intersect with a measurement line,
+    grouped by species.
+
+    This function filters the `individual_voronoi_polygons` to include only
+    those polygons that intersect with the given `measurement_line`.
+    It then separates the data by species and applies a user-defined
+    function (`lambda_for_group`) to each group on a per-frame basis.
+
+    The results for both species are merged into a single DataFrame,
+    with separate columns for each species' computed values.
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame):
+            DataFrame containing Voronoi polygons for each individual, including
+            a polygon geometry column.
+
+        measurement_line (MeasurementLine):
+            The measurement line used to filter intersecting Voronoi polygons.
+
+        species (pd.DataFrame):
+            DataFrame mapping individual IDs to species identifiers.
+            Must contain the species column (`SPECIES_COL`).
+
+        lambda_for_group (LambdaGroupFunction):
+            A function applied to each group of species data intersecting
+            the measurement line.
+            It takes a species-specific group of data and the measurement line
+            and returns a processed DataFrame.
+
+        column_id_sp1 (str):
+            The name of the output column for species 1 results in the
+            merged DataFrame.
+
+        column_id_sp2 (str):
+            The name of the output column for species 2 results in the merged
+            DataFrame.
+
+        individual_speed (pd.DataFrame, optional):
+            Optional DataFrame containing individual speed data, merged if
+            provided, using `ID_COL` and `FRAME_COL`.
+
+    Returns:
+        pd.DataFrame:
+            A DataFrame with computed results for both species, merged by frame.
+            Contains `column_id_sp1` and `column_id_sp2` as result columns.
+            The result is sorted by frame in descending order.
+
+    Notes:
+        - Species are identified by `1` and `-1` in the `SPECIES_COL`.
+        - Frames without data for one species will contain `NaN` in the
+          corresponding result column.
     """
     merged_table = individual_voronoi_polygons[
         shapely.intersects(
@@ -1170,7 +1220,7 @@ def _apply_lambda_for_intersecting_frames(
 
     if not species_1.empty:
         species_1 = (
-            species_1.groupby(FRAME_COL)
+            species_1.groupby(FRAME_COL, group_keys=False)
             .apply(lambda group: lambda_for_group(group, measurement_line))
             .reset_index()
         )
@@ -1180,7 +1230,7 @@ def _apply_lambda_for_intersecting_frames(
 
     if not species_2.empty:
         species_2 = (
-            species_2.groupby(FRAME_COL)
+            species_2.groupby(FRAME_COL, group_keys=False)
             .apply(lambda group: lambda_for_group(group, measurement_line))
             .reset_index()
         )
