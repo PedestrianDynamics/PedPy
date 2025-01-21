@@ -8,7 +8,7 @@ from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
     DataValidationStatus,
-    _compute_orthogonal_speed_in_relation_to_proprotion,
+    _compute_orthogonal_speed_in_relation_to_proportion,
     _compute_partial_line_length,
     compute_crossing_frames,
     is_individual_speed_valid,
@@ -52,7 +52,7 @@ def test_compute_orthogonal_speed_in_relation_to_proportion():
     n = [0.5**0.5, -(0.5**0.5)]
     line = MeasurementLine([(0, 0), (1, 1)])
     assert np.allclose(n, line.normal_vector())
-    actual = _compute_orthogonal_speed_in_relation_to_proprotion(
+    actual = _compute_orthogonal_speed_in_relation_to_proportion(
         group=group, measurement_line=line
     )
     assert _compute_partial_line_length(poly, line) == 0.5

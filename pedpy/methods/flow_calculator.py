@@ -22,7 +22,7 @@ from pedpy.methods.method_utils import (
     DataValidationStatus,
     InputError,
     _apply_lambda_for_intersecting_frames,
-    _compute_orthogonal_speed_in_relation_to_proprotion,
+    _compute_orthogonal_speed_in_relation_to_proportion,
     compute_crossing_frames,
     is_individual_speed_valid,
     is_species_valid,
@@ -326,7 +326,7 @@ def compute_line_flow(
         measurement_line=measurement_line,
         species=species,
         lambda_for_group=lambda group, line: (
-            _compute_orthogonal_speed_in_relation_to_proprotion(group, line)
+            _compute_orthogonal_speed_in_relation_to_proportion(group, line)
             * group[DENSITY_COL]
         ).sum(),
         column_id_sp1=FLOW_SP1_COL,

@@ -26,7 +26,7 @@ from pedpy.methods.method_utils import (
     SpeedCalculation,
     _apply_lambda_for_intersecting_frames,
     _compute_individual_movement,
-    _compute_orthogonal_speed_in_relation_to_proprotion,
+    _compute_orthogonal_speed_in_relation_to_proportion,
     is_individual_speed_valid,
     is_species_valid,
 )
@@ -583,7 +583,7 @@ def compute_line_speed(
         measurement_line=measurement_line,
         species=species,
         lambda_for_group=lambda group, line: (
-            _compute_orthogonal_speed_in_relation_to_proprotion(group, line)
+            _compute_orthogonal_speed_in_relation_to_proportion(group, line)
         ).sum(),
         column_id_sp1=SPEED_SP1_COL,
         column_id_sp2=SPEED_SP2_COL,

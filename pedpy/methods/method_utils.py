@@ -468,7 +468,7 @@ def compute_individual_voronoi_polygons(
         if not use_blind_points and len(points) - len(blind_points) < 4:
             _log.warning(
                 f"Not enough pedestrians (N="
-                f"{len(points) -len(blind_points)}) available to "
+                f"{len(points) - len(blind_points)}) available to "
                 f"calculate Voronoi cells for frame = {frame}. "
                 f"Consider enable use of blind points."
             )
@@ -1110,7 +1110,7 @@ def _check_crossing_in_frame_range(
     return crossed
 
 
-def _compute_orthogonal_speed_in_relation_to_proprotion(
+def _compute_orthogonal_speed_in_relation_to_proportion(
     group: pd.DataFrame, measurement_line: MeasurementLine
 ) -> pd.DataFrame:
     """Calculates the speed orthogonal to the line times partial line length.
