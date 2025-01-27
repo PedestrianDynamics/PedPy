@@ -6,10 +6,24 @@ import numpy as np
 import pandas as pd
 import shapely
 
-from pedpy.column_identifier import COUNT_COL, DENSITY_COL, FRAME_COL, ID_COL
-from pedpy.data.geometry import MeasurementArea
+from pedpy.column_identifier import (
+    COUNT_COL,
+    DENSITY_COL,
+    DENSITY_SP1_COL,
+    DENSITY_SP2_COL,
+    FRAME_COL,
+    ID_COL,
+    POLYGON_COL,
+)
+from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import compute_intersecting_polygons
+from pedpy.methods.method_utils import (
+    InputError,
+    _apply_lambda_for_intersecting_frames,
+    _compute_partial_line_length,
+    compute_intersecting_polygons,
+    is_species_valid,
+)
 
 
 def compute_classic_density(
@@ -153,7 +167,6 @@ def compute_passing_density(
     in the same time interval (:math:`[t_{in}(i), t_{out}(i)]`) as the
     pedestrian :math:`i` divided by the area of that measurement area
     :math:`A(M)`.
-
     Then the computation becomes:
 
     .. math::
@@ -161,11 +174,15 @@ def compute_passing_density(
         \rho_{passing}(i) = {1 \over {t_{out}(i)-t_{in}(i)}}
         \int^{t_{out}(i)}_{t_{in}(i)} {{N(t)} \over A(M)} dt,
 
-    where :math:`t_{in}(i) = f_{in}(i) / fps` is the time the pedestrian
-    crossed the first line and :math:`t_{out}(i) = f_{out}(i) / fps` when they
-    crossed the second line, where :math:`f_{in}` and :math:`f_{out}` are the
-    frames where the pedestrian crossed the first line, and the second line
-    respectively. And :math:`fps` is the
+    where
+
+    * :math:`t_{in}(i) = f_{in}(i) / fps` is the time pedestrian :math:`i`
+      crosses the first line.
+    * :math:`t_{out}(i) = f_{out}(i) / fps` when pedestrian :math:`i` crosses
+    the second line.
+    * :math:`f_{in}` and :math:`f_{out}` are the frames at which pedestrian
+    :math:`i` crosses the first and second lines, respectively.
+    * :math:`fps` is the frame rate of the trajectory data, defined by
     :attr:`~trajectory_data.TrajectoryData.frame_rate` of the trajectory data.
 
     Args:
@@ -211,3 +228,70 @@ def _get_num_peds_per_frame(traj_data: TrajectoryData) -> pd.DataFrame:
     )
 
     return num_peds_per_frame
+
+
+def compute_line_density(
+    *,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+    species: pd.DataFrame,
+) -> pd.DataFrame:
+    r"""Calculates density for both species and total density at line.
+
+    The density of each frame is accumulated from
+
+    .. math::
+          \frac{1}{A_i(t)} \cdot \frac{w_i(t)}{w},
+
+    for each pedestrian :math:`i` whose Voronoi cell intersects the line.
+
+    * :math:`A_i(t)` is the area of the Voronoi Cell.
+    * :math:`w` is the length of the measurement line.
+    * :math:`w_i(t)` is the length of the intersecting line of the Voronoi cell
+      in frame :math:`t`.
+
+    Results are computed for both species
+    (see :func:`~speed_calculator.compute_species`)
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
+
+        measurement_line (MeasurementLine): line at which the density
+            is calculated
+
+        species (pd.DataFrame): dataframe containing information about
+            the species of every pedestrian intersecting the line,
+            result from :func:`~speed_calculator.compute_species`
+    Returns:
+        Dataframe containing columns 'frame', 'p_sp+1', 'p_sp-1', 'density'
+    """
+    if not is_species_valid(
+        species=species,
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+    ):
+        raise InputError(
+            "the species data does not contain all information "
+            "required to calculate the line density.\n"
+            "Perhaps the species was computed with different"
+            " Voronoi data or a different measurement line."
+        )
+
+    result = _apply_lambda_for_intersecting_frames(
+        individual_voronoi_polygons=individual_voronoi_polygons,
+        measurement_line=measurement_line,
+        species=species,
+        lambda_for_group=lambda group, line: (
+            group[DENSITY_COL]
+            * (_compute_partial_line_length(group[POLYGON_COL], line))
+        ).sum(),
+        column_id_sp1=DENSITY_SP1_COL,
+        column_id_sp2=DENSITY_SP2_COL,
+    )
+
+    result[DENSITY_COL] = result[DENSITY_SP1_COL].fillna(0) + result[
+        DENSITY_SP2_COL
+    ].fillna(0)
+    return result
