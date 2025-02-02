@@ -2,6 +2,26 @@
 Changelog
 *********
 
+Version 1.3.0 (2025-02-02)
+==========================
+
+**New feature:**
+
+*Continuity equation and fundamental diagram of pedestrians* [#f1]_ describes a new approach to compute the fundamental diagram for pedestrian dynamics. 
+This approach uses Voronoi decomposition to allow defintiions of density, speed and flow on the basis of trajectories in accordance with the continuity equation.
+It also enables measurement along a line, handling different motion directions without losing velocity sign.
+
+How to use the new method is shown in the following Jupyter-Notebook: :doc:`Fundamental Diagrams at Measurement Line <../fundamental_diagram_at_measurement_line>`
+
+.. figure:: images/fd_continuity.png
+    :width: 90%
+    :align: center
+    
+    Left: Voronoi decomposition, Voronoi cells which intersect with the measurement line are indicated by color. 
+    Right: Voronoi decomposition, Red and blue indicate the main movememnt direction.
+
+.. [#f1] J. Adrian, A. K. Boomers, S. Paetzke, and A. Seyfried, “Continuity equation and fundamental diagram of pedestrians.” arXiv, 2024. doi: 10.48550/ARXIV.2409.11857. Available: https://arxiv.org/abs/2409.11857 
+
 Version 1.2.0 (2024-09-27)
 ==========================
 
@@ -15,7 +35,7 @@ Version 1.2.0 (2024-09-27)
 
 **What's changed:**
 
-- Improve plotting:
+- Improve plotting
 - Column identifiers are now exposed at top-level, e.g., can be imported with :code:`from pedpy import *`
 
 **Fixes:**
