@@ -336,7 +336,7 @@ def test_create_walkable_area_error(area_input, message):
 def test_changing_walkable_area_fails():
     with pytest.raises(
         AttributeError,
-        match=rf"Walkable area can not be changed after construction!",
+        match=r"Walkable area can not be changed after construction!",
     ):
         walkable_area = WalkableArea(
             shapely.Polygon([(-1, -1), (-1, 1), (1, 1), (1, -1)])
@@ -590,7 +590,7 @@ def test_create_measurement_area_error(area_input, message):
 def test_changing_measurement_area_fails():
     with pytest.raises(
         AttributeError,
-        match=rf"Measurement area can not be changed after construction!",
+        match=r"Measurement area can not be changed after construction!",
     ):
         measurement_area = MeasurementArea(((0, 0), (0, 1), (1, 1), (1, 0)))
         measurement_area._polygon = shapely.LinearRing(
@@ -712,7 +712,7 @@ def test_create_measurement_line_error(line_input, message):
 def test_changing_measurement_line_fails():
     with pytest.raises(
         AttributeError,
-        match=rf"Measurement line can not be changed after construction!",
+        match=r"Measurement line can not be changed after construction!",
     ):
         measurement_line = MeasurementLine(
             [

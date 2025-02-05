@@ -21,13 +21,19 @@ from numpy.typing import NDArray
 from pedpy.column_identifier import (
     CUMULATED_COL,
     DENSITY_COL,
+    DENSITY_SP1_COL,
+    DENSITY_SP2_COL,
     FLOW_COL,
+    FLOW_SP1_COL,
+    FLOW_SP2_COL,
     FRAME_COL,
     ID_COL,
     INTERSECTION_COL,
     MEAN_SPEED_COL,
     POLYGON_COL,
     SPEED_COL,
+    SPEED_SP1_COL,
+    SPEED_SP2_COL,
     TIME_COL,
     X_COL,
     Y_COL,
@@ -145,6 +151,203 @@ def _plot_series(  # pylint: disable=too-many-arguments
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
+
+
+def _plot_multiple_series(  # pylint: disable=too-many-arguments
+    axes: matplotlib.axes.Axes,
+    title: str,
+    x: pd.Series,
+    y_s: list[pd.Series],
+    colors: list[str],
+    labels: list[str],
+    line_width: float,
+    x_label: str,
+    y_label: str,
+) -> matplotlib.axes.Axes:
+    axes.set_title(title)
+    for y, color, label in zip(y_s, colors, labels, strict=False):
+        axes.plot(x, y, color=color, label=label, linewidth=line_width)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
+    axes.legend()
+    return axes
+
+
+def plot_speed_at_line(
+    *,
+    speed_at_line: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the speed of both species and the total speed at the line.
+
+    Args:
+        speed_at_line(pd.DataFrame): DataFrame containing information on
+            speed at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        title (optional): title of the plot
+        color_species1 (optional): color of the speed of species 1 in the plot
+        color_species2 (optional): color of the speed of species 2 in the plot
+        color_total (optional): color of the total speed in the plot
+        label_species1 (optional): tag of species 1 in the legend
+        label_species2 (optional): tag of species 2 in the legend
+        label_total (optional): tag of total speed in the legend
+
+    Returns:
+         matplotlib.axes.Axes instance where the speeds are plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
+    color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
+    color_total = kwargs.get("color_total", PEDPY_GREEN)
+    title = kwargs.get("title", "Speed at Line")
+    x_label = kwargs.get("x_label", "Frame")
+    y_label = kwargs.get("y_label", "v / m/s")
+    label_sp1 = kwargs.get("lable_species1", "species 1")
+    label_sp2 = kwargs.get("lable_species2", "species 2")
+    label_total = kwargs.get("lable_total", "total")
+    line_width = kwargs.get("line_width", 0.5)
+
+    return _plot_multiple_series(
+        axes=axes,
+        title=title,
+        x=speed_at_line[FRAME_COL],
+        y_s=[
+            speed_at_line[SPEED_SP1_COL],
+            speed_at_line[SPEED_SP2_COL],
+            speed_at_line[SPEED_COL],
+        ],
+        colors=[color_sp1, color_sp2, color_total],
+        labels=[label_sp1, label_sp2, label_total],
+        x_label=x_label,
+        y_label=y_label,
+        line_width=line_width,
+    )
+
+
+def plot_density_at_line(
+    *,
+    density_at_line: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the density of both species and the total density at the line.
+
+    Args:
+        density_at_line(pd.DataFrame): DataFrame containing information on
+            density at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        title (optional): title of the plot
+        color_species1 (optional): color of the density of species 1 in the plot
+        color_species2 (optional): color of the density of species 2 in the plot
+        color_total (optional): color of the total density in the plot
+        label_species1 (optional): tag of species 1 in the legend
+        label_species2 (optional): tag of species 2 in the legend
+        label_total (optional): tag of total speed in the legend
+
+    Returns:
+         matplotlib.axes.Axes instance where the densities are plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
+    color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
+    color_total = kwargs.get("color_total", PEDPY_GREEN)
+    title = kwargs.get("title", "Density at Line")
+    x_label = kwargs.get("x_label", "Frame")
+    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
+    label_sp1 = kwargs.get("lable_species1", "species 1")
+    label_sp2 = kwargs.get("lable_species2", "species 2")
+    label_total = kwargs.get("lable_total", "total")
+    line_width = kwargs.get("line_width", 0.5)
+
+    return _plot_multiple_series(
+        axes=axes,
+        title=title,
+        x=density_at_line[FRAME_COL],
+        y_s=[
+            density_at_line[DENSITY_SP1_COL],
+            density_at_line[DENSITY_SP2_COL],
+            density_at_line[DENSITY_COL],
+        ],
+        colors=[color_sp1, color_sp2, color_total],
+        labels=[label_sp1, label_sp2, label_total],
+        x_label=x_label,
+        y_label=y_label,
+        line_width=line_width,
+    )
+
+
+def plot_flow_at_line(
+    *,
+    flow_at_line: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the flow of both species and the total flow at the line.
+
+    Args:
+        flow_at_line(pd.DataFrame): DataFrame containing information on
+            flow at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        title (optional): title of the plot
+        color_species1 (optional): color of the flow of species 1 in the plot
+        color_species2 (optional): color of the flow of species 2 in the plot
+        color_total (optional): color of the total flow in the plot
+        label_species1 (optional): tag of species 1 in the legend
+        label_species2 (optional): tag of species 2 in the legend
+        label_total (optional): tag of total speed in the legend
+
+    Returns:
+         matplotlib.axes.Axes instance where the profiles are plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
+    color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
+    color_total = kwargs.get("color_total", PEDPY_GREEN)
+    title = kwargs.get("title", "Flow at Line")
+    x_label = kwargs.get("x_label", "Frame")
+    y_label = kwargs.get("y_label", "J / 1/s")
+    label_sp1 = kwargs.get("lable_species1", "species 1")
+    label_sp2 = kwargs.get("lable_species2", "species 2")
+    label_total = kwargs.get("lable_total", "total")
+    line_width = kwargs.get("line_width", 0.5)
+
+    return _plot_multiple_series(
+        axes=axes,
+        title=title,
+        x=flow_at_line[FRAME_COL],
+        y_s=[
+            flow_at_line[FLOW_SP1_COL],
+            flow_at_line[FLOW_SP2_COL],
+            flow_at_line[FLOW_COL],
+        ],
+        colors=[color_sp1, color_sp2, color_total],
+        labels=[label_sp1, label_sp2, label_total],
+        x_label=x_label,
+        y_label=y_label,
+        line_width=line_width,
+    )
 
 
 def plot_nt(

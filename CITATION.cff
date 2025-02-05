@@ -19,7 +19,29 @@ identifiers:
   - description: This is the collection of archived snapshots of all versions of PedPy
     type: doi
     value: "10.5281/zenodo.7194992"
+  - description: This is the archived snapshot of version 1.3.0 of PedPy
+    type: doi
+    value: "10.5281/zenodo.14789994"
+  - description: This is the archived snapshot of version 1.2.0 of PedPy
+    type: doi
+    value: "10.5281/zenodo.13850961"
+  - description: This is the archived snapshot of version 1.1.2 of PedPy
+    type: doi
+    value: "10.5281/zenodo.11778532"
+  - description: This is the archived snapshot of version 1.1.1 of PedPy
+    type: doi
+    value: "10.5281/zenodo.11622761"
+  - description: This is the archived snapshot of version 1.1.0 of PedPy
+    type: doi
+    value: "10.5281/zenodo.10814490"
+  - description: This is the archived snapshot of version 1.0.2 of PedPy
+    type: doi
+    value: "10.5281/zenodo.10016938"
+  - description: This is the archived snapshot of version 1.0.1 of PedPy
+    type: doi
+    value: "10.5281/zenodo.8406551"
   - description: This is the archived snapshot of version 1.0.0 of PedPy
     type: doi
     value: "10.5281/zenodo.8405437"
-version: 1.0.2
+
+version: 1.4.0-dev

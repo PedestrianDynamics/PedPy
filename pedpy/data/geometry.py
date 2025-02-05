@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from numbers import Number
 from typing import Any, List, Optional, Tuple
 
+import numpy as np
 import shapely
+from numpy.typing import NDArray
 
 
 class GeometryError(Exception):
@@ -312,6 +314,21 @@ class MeasurementLine:
             Measurement line as :class:`shapely.LineString`.
         """
         return self._line
+
+    def normal_vector(self) -> NDArray[np.float64]:
+        """Compute and returns the normalized normal vector of the line.
+
+        Returns:
+            NDArray[np.float64]: A 2D NumPy array representing the normalized
+            normal vector of the line in the form [x, y].
+        """
+        normal_vec = np.array(
+            [
+                self._line.xy[1][1] - self._line.xy[1][0],
+                self._line.xy[0][0] - self._line.xy[0][1],
+            ]
+        )
+        return normal_vec / np.linalg.norm(normal_vec)
 
 
 ###############################################################################
