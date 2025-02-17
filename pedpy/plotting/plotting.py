@@ -804,10 +804,10 @@ def plot_time_distance(  # noqa: PLR0915
 
         Args:
         axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's data.
+        ped_data: DataFrame containing pedestrian data.
         color: Color of the scatter plot marker.
         """
-        min_data = ped_data[ped_data.frame == ped_data.frame.min()]
+        min_data = ped_data.loc[ped_data.groupby(ID_COL)[FRAME_COL].idxmin()]
         axes.scatter(
             min_data.distance,
             min_data.time,
@@ -825,13 +825,13 @@ def plot_time_distance(  # noqa: PLR0915
 
         Args:
         axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's data.
+        ped_data: DataFrame containing pedestrian data.
         norm: Normalization for the colormap based on speed.
         cmap: The colormap to use for coloring the line based on speed.
         frame_rate: Frame rate used to adjust time values.
         color: Color of the scatter plot marker.
         """
-        min_data = ped_data[ped_data.frame == ped_data.frame.min()]
+        min_data = ped_data.loc[ped_data.groupby(ID_COL)[FRAME_COL].idxmin()]
         axes.scatter(
             min_data.distance,
             min_data.time,
