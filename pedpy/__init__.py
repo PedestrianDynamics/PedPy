@@ -102,6 +102,7 @@ from .methods.speed_calculator import (
     compute_species,
     compute_voronoi_speed,
 )
+from .methods.temporal_analysis import compute_STFT
 from .plotting.plotting import (
     PEDPY_BLUE,
     PEDPY_GREEN,
@@ -160,6 +161,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "is_species_valid",
     "is_trajectory_valid",
     "compute_pair_distribution_function",
+    "compute_STFT",
     "DensityMethod",
     "SpeedMethod",
     "compute_density_profile",
