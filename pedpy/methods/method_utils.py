@@ -25,6 +25,7 @@ from pedpy.column_identifier import (
     LAST_FRAME_COL,
     MID_POSITION_COL,
     NEIGHBORS_COL,
+    NEIGHBOR_ID_COL,
     POINT_COL,
     POLYGON_COL,
     SPECIES_COL,
@@ -275,6 +276,7 @@ def compute_frame_range_in_area(
 
 def compute_neighbors(
     individual_voronoi_data: pd.DataFrame,
+    as_list: bool = True,
 ) -> pd.DataFrame:
     """Compute the neighbors of each pedestrian based on the Voronoi cells.
 
@@ -287,11 +289,28 @@ def compute_neighbors(
             needs to contain a column 'polygon', which holds a
             :class:`shapely.Polygon` (result from
             :func:`~method_utils.compute_individual_voronoi_polygons`)
+        as_list (bool): Return the neighbors as a list per peda and frame, if
+            true, otherwise each neighbor is in a single row.
 
     Returns:
         DataFrame containing the columns 'id', 'frame' and 'neighbors', where
-        neighbors are a list of the neighbor's IDs
+        neighbors are a list of the neighbor's IDs if as_list is True.
+        Otherwise the DataFrame contains the columns 'id', 'frame',
+        'neighbor_id'.
     """
+    if as_list:
+        return _compute_neighbors_list(
+            individual_voronoi_data=individual_voronoi_data
+        )
+    else:
+        return _compute_neighbors_single(
+            individual_voronoi_data=individual_voronoi_data
+        )
+
+
+def _compute_neighbors_list(
+    individual_voronoi_data: pd.DataFrame,
+) -> pd.DataFrame:
     neighbor_df = []
 
     for frame, frame_data in individual_voronoi_data.groupby(FRAME_COL):
@@ -331,6 +350,104 @@ def compute_neighbors(
         neighbor_df.append(frame_df)
 
     return pd.concat(neighbor_df)
+
+
+def _compute_neighbors_single(
+    individual_voronoi_data: pd.DataFrame,
+) -> pd.DataFrame:
+    neighbor_df = []
+    for frame, frame_data in individual_voronoi_data.groupby(FRAME_COL):
+        touching = shapely.dwithin(
+            np.array(frame_data[POLYGON_COL])[:, np.newaxis],
+            np.array(frame_data[POLYGON_COL])[np.newaxis, :],
+            1e-9,  # Voronoi cells as close as 1 mm are touching
+        )
+
+        # the peds are not neighbors of themselves
+        for i in range(len(touching)):
+            touching[i, i] = False
+
+        # Create matrix of ped IDs
+        ids = np.outer(
+            np.ones_like(frame_data[ID_COL].to_numpy()),
+            frame_data[ID_COL].to_numpy().reshape(1, -1),
+        )
+
+        # Filter neighbor relationships based on the touching matrix
+        id_column = ids[touching]  # IDs for each row where touching is True
+        neighbor_column = ids.T[touching]  # Transpose to get the neighbor IDs
+
+        # Create DataFrame for this frame's neighbors
+        frame_neighbors = pd.DataFrame(
+            {
+                ID_COL: id_column,
+                FRAME_COL: frame,
+                NEIGHBOR_ID_COL: neighbor_column,
+            }
+        )
+
+        # Append to the result list
+        neighbor_df.append(frame_neighbors)
+
+    # Concatenate all frames' data into a single DataFrame
+    return (
+        pd.concat(neighbor_df, ignore_index=True)
+        .sort_values(by=[FRAME_COL, ID_COL])
+        .reset_index(drop=True)
+    )
+
+
+def compute_neighbor_distance(
+    *,
+    traj_data: TrajectoryData,
+    neighborhood: pd.DataFrame,
+) -> pd.DataFrame:
+    """Compute the distance between the neighbors.
+
+    Computes the distance between the position of neighbors. As neighbors the
+    result of :func:`~compute_neighbors` with parameter :code:`as_list=False`.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        neighborhood (pd.DataFrame): DataFrame containing the columns 'id',
+            'frame' and 'neighbor_id'. The result of :func:`~compute_neighbors`
+            with parameter :code:`as_list=False` can be used here as input.
+
+    Raises:
+        ValueError: When passing a result of :func:`~compute_neighbors`
+            with parameter :code:`as_list=True`.
+
+    Returns:
+        DataFrame containing the columns 'id', 'frame', 'neighbor_id' and
+        'distance'.
+    """
+    if NEIGHBORS_COL in neighborhood.columns:
+        raise ValueError(
+            "For compute the distance between neighbors compute the "
+            "neighborhood with `as_list=False`."
+        )
+
+    neighbors_with_position = neighborhood.merge(
+        traj_data.data[[ID_COL, FRAME_COL, POINT_COL]],
+        on=[ID_COL, FRAME_COL],
+        how="left",
+    )
+
+    neighbors_with_position = neighbors_with_position.merge(
+        traj_data.data[[ID_COL, FRAME_COL, POINT_COL]],
+        left_on=[NEIGHBOR_ID_COL, FRAME_COL],
+        right_on=[ID_COL, FRAME_COL],
+        suffixes=("", "_neighbor"),
+    )
+
+    neighbors_with_position[DISTANCE_COL] = shapely.distance(
+        neighbors_with_position[POINT_COL],
+        neighbors_with_position["point_neighbor"],
+    )
+
+    return neighbors_with_position[
+        [ID_COL, FRAME_COL, NEIGHBOR_ID_COL, DISTANCE_COL]
+    ]
 
 
 def compute_time_distance_line(
