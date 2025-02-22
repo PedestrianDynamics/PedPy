@@ -28,3 +28,9 @@ repos:
             "h5py~=3.11"
         ]
         exclude: "(^helper/|^docs/|^scripts/|^tests/)"
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.8.1
+    hooks:
+      - id: nbstripout
+        exclude: ^docs/
