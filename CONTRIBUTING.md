@@ -5,4 +5,4 @@ If you’re interested in improving the library’s functionality, we encourage 
 Our code base is open source and available on GitHub, so you can easily contribute by submitting pull requests or reporting issues and bugs. 
 We also welcome feedback on new features or enhancements that you think would be useful.
 
-Fore more information check the Developer Guide on our website: [Developer Guide](https://pedpy.readthedocs.io/en/latest/developer_guide.html)
+Fore more information check the Developer Guide on our website: [Developer Guide](https://pedpy.readthedocs.io/latest/developer_guide.html)
