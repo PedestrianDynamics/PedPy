@@ -23,9 +23,9 @@ from scipy.signal import stft
 def compute_STFT(
     signal_series: str,
     frame_rate: float,
-    nperseg: int = None,
-    noverlap: int = None,
-    nfft: int = None,
+    segments_length: int = None,
+    overlap_length: int = None,
+    zeros_padded: int = None,
     window: str = "hann",
 ) -> pd.DataFrame:
     """Computes the Short-Time Fourier Transform (STFT) of a signal.
@@ -51,15 +51,16 @@ def compute_STFT(
         # with each signal value.
         frame_rate (float): The frame rate of the signal data. The frame rate
             have to remain constant thought the whole dataset.
-        nperseg (int, optional): Length of each segment for the STFT window.
+        segments_length (int, optional): Length of each segment for the STFT window.
             Defaults to one teenth of signal_series length.
-        noverlap (int, optional): Number of overlapping points between
-            segments. Defaults to None (half of `nperseg` is used).
-        nfft (int, optional): Number of FFT points. Defaults to None
-            (same as `nperseg`).
+        overlap_length (int, optional): Number of overlapping points between
+            segments. Defaults to None (half of `segments_length` is used).
+        zeros_padded (int, optional): Number of FFT points. Defaults to None
+            (same as `segments_length`).
         window (str or tuple, optional): The window function to apply before
-            computing the STFT. Defaults to `'hann'`.
-
+            computing the STFT. Defaults is `'hann'` (corresponds to a `'hann'`
+            window). Other options are `'hamming'`, `'bartlett'`, `'blackman'`,
+            `'boxcar'`, `'triang'`, etc.
     Returns:
         pd.DataFrame: A DataFrame containing the following columns:
             - `"Frequency"`: The frequency bins of the STFT.
@@ -69,17 +70,21 @@ def compute_STFT(
             - `"Phase"`: The phase of the STFT at each time-frequency point.
     """
 
-    # Set default nperseg if None
-    if nperseg is None:
-        nperseg = len(signal_series) // 10
+    # Set default segments_length if None
+    if segments_length is None:
+        segments_length = len(signal_series) // 10
+
+    # Set default overlap_length if None
+    if overlap_length is None:
+        overlap_length = segments_length // 2
 
     # Extract signal data and compute STFT
     f, t, Zxx = stft(
         signal_series.values,
         fs=frame_rate,
-        nperseg=nperseg,
-        noverlap=noverlap,
-        nfft=nfft,
+        nperseg=segments_length,
+        noverlap=overlap_length,
+        nfft=zeros_padded,
         window=window,
     )
 
