@@ -11,9 +11,8 @@ For example: Short-Time Fourier Transform (STFT) and Welch's method for spectral
 # import pandas as pd
 # from scipy.spatial.distance import cdist
 
-
-import pandas as pd
 import numpy as np
+import pandas as pd
 from scipy.signal import stft, welch
 
 
@@ -96,7 +95,9 @@ def compute_STFT(
                 f, len(t)
             ),  # Repeat each frequency value for each time step
             "Time": np.tile(t, len(f)),  # Tile time values across frequencies
-            "Magnitude": np.abs(Zxx).flatten(),  # Flatten the STFT magnitude values
+            "Magnitude": np.abs(
+                Zxx
+            ).flatten(),  # Flatten the STFT magnitude values
             "Phase": np.angle(Zxx).flatten(),  # Flatten the phase values
         }
     )
