@@ -102,7 +102,7 @@ from .methods.speed_calculator import (
     compute_species,
     compute_voronoi_speed,
 )
-from .methods.temporal_analysis import compute_STFT
+from .methods.temporal_analysis import compute_STFT, compute_welch_spectral_distribution
 from .plotting.plotting import (
     PEDPY_BLUE,
     PEDPY_GREEN,
