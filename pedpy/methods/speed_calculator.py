@@ -20,9 +20,9 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import InputError, SpeedError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
-    InputError,
     SpeedCalculation,
     _apply_lambda_for_intersecting_frames,
     _compute_individual_movement,
@@ -30,18 +30,6 @@ from pedpy.methods.method_utils import (
     is_individual_speed_valid,
     is_species_valid,
 )
-
-
-class SpeedError(Exception):
-    """Class reflecting errors when computing speeds with PedPy."""
-
-    def __init__(self, message):
-        """Create SpeedError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
 
 
 def compute_individual_speed(

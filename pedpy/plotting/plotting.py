@@ -42,6 +42,7 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyRuntimeError
 
 _log = logging.getLogger(__name__)
 
@@ -719,7 +720,7 @@ def plot_neighborhood(
             .to_dict()
         )
     else:
-        raise RuntimeError("Unknown neighbor data format")
+        raise PedPyRuntimeError("Unknown neighbor data format")
 
     return _plot_neighborhood(
         pedestrian_id=pedestrian_id,

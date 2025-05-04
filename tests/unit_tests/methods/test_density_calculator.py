@@ -8,12 +8,12 @@ from tests.utils.utils import get_trajectory, get_trajectory_data
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import InputError
 from pedpy.methods.density_calculator import (
     _get_num_peds_per_frame,
     compute_classic_density,
     compute_line_density,
 )
-from pedpy.methods.method_utils import InputError
 
 
 @pytest.mark.parametrize(

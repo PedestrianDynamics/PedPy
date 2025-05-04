@@ -17,8 +17,8 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import InputError
 from pedpy.methods.method_utils import (
-    InputError,
     _apply_lambda_for_intersecting_frames,
     _compute_partial_line_length,
     compute_intersecting_polygons,
