@@ -6,4 +6,4 @@ nbconvert==7.9.0
 sphinx-notfound-page==1.0.0
 sphinx-favicon==1.0.1
 sphinx-book-theme==1.0.1
-sphinx-autoapi==3.0.0
+sphinx-autoapi==3.6.0
