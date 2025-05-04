@@ -40,6 +40,7 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyValueError
 
 _log = logging.getLogger(__name__)
 
@@ -87,18 +88,6 @@ class Cutoff:
 
     radius: float
     quad_segments: int = 3
-
-
-class InputError(Exception):
-    """Class reflecting errors when incorrect input was given."""
-
-    def __init__(self, message):
-        """Create InputError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
 
 
 def is_trajectory_valid(
@@ -441,7 +430,7 @@ def compute_neighbor_distance(
             with parameter :code:`as_list=False` can be used here as input.
 
     Raises:
-        ValueError: When passing a result of :func:`~compute_neighbors`
+        PedPyValueError: When passing a result of :func:`~compute_neighbors`
             with parameter :code:`as_list=True`.
 
     Returns:
@@ -449,7 +438,7 @@ def compute_neighbor_distance(
         'distance'.
     """
     if NEIGHBORS_COL in neighborhood.columns:
-        raise ValueError(
+        raise PedPyValueError(
             "Cannot compute distance between neighbors with list-format data. "
             "Please use the result of compute_neighbors with parameter "
             "as_list=False."
@@ -888,7 +877,7 @@ def _compute_individual_movement(
             traj_data, frame_step, bidirectional
         )
 
-    raise ValueError("speed border method not accepted")
+    raise PedPyValueError("speed border method not accepted")
 
 
 def _compute_movement_exclude_border(
@@ -1119,7 +1108,7 @@ def _compute_individual_movement_acceleration(
             traj_data, frame_step
         )
 
-    raise ValueError("acceleration border method not accepted")
+    raise PedPyValueError("acceleration border method not accepted")
 
 
 def _compute_movement_acceleration_exclude_border(
