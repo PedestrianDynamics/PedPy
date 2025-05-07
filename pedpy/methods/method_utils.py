@@ -1366,7 +1366,10 @@ def _apply_lambda_for_intersecting_frames(
     if not species_1.empty:
         species_1 = (
             species_1.groupby(FRAME_COL, group_keys=False)
-            .apply(lambda group: lambda_for_group(group, measurement_line))
+            .apply(
+                lambda group: lambda_for_group(group, measurement_line),
+                include_groups=False,
+            )
             .reset_index()
         )
         species_1.columns = [FRAME_COL, column_id_sp1]
@@ -1376,7 +1379,10 @@ def _apply_lambda_for_intersecting_frames(
     if not species_2.empty:
         species_2 = (
             species_2.groupby(FRAME_COL, group_keys=False)
-            .apply(lambda group: lambda_for_group(group, measurement_line))
+            .apply(
+                lambda group: lambda_for_group(group, measurement_line),
+                include_groups=False,
+            )
             .reset_index()
         )
         species_2.columns = [FRAME_COL, column_id_sp2]
