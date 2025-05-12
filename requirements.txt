@@ -12,7 +12,7 @@ pytest-cov~=5.0
  
 # build tools
 setuptools~=75.1
-click~=8.1
+click~=8.2
 build~=1.1
 
 # ci
