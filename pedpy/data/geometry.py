@@ -8,17 +8,7 @@ import numpy as np
 import shapely
 from numpy.typing import NDArray
 
-
-class GeometryError(Exception):
-    """Class reflecting errors when creating PedPy geometry objects."""
-
-    def __init__(self, message):
-        """Create GeometryError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
+from pedpy.errors import GeometryError, PedPyAttributeError
 
 
 @dataclass
@@ -77,7 +67,7 @@ class WalkableArea:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Walkable area can not be changed after " "construction!"
             )
         return super().__setattr__(attr, value)
@@ -177,7 +167,7 @@ class MeasurementArea:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Measurement area can not be changed after construction!"
             )
         return super().__setattr__(attr, value)
@@ -274,7 +264,7 @@ class MeasurementLine:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Measurement line can not be changed after construction!"
             )
         return super().__setattr__(attr, value)

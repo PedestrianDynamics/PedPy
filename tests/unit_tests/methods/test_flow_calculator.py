@@ -5,8 +5,8 @@ from shapely import Polygon
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementLine
+from pedpy.errors import InputError
 from pedpy.methods.flow_calculator import compute_line_flow
-from pedpy.methods.method_utils import InputError
 
 
 @pytest.fixture
