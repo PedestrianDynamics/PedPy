@@ -82,7 +82,7 @@ jobs:
           python3 -m pytest --cov=pedpy --cov-report=xml -vv -s tests
 
       - name: Upload results to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: matrix.os == 'ubuntu-24.04'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
