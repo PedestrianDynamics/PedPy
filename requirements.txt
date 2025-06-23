@@ -8,7 +8,7 @@ h5py~=3.13,<4.0
 # testing
 pytest~=8.4
 pytest-mock~=3.14
-pytest-cov~=6.1
+pytest-cov~=6.2
  
 # build tools
 setuptools>=78.1.1,<81.0
@@ -16,7 +16,7 @@ click~=8.2
 build~=1.2
 
 # ci
-mypy==1.16.0
+mypy==1.16.1
 mypy-extensions==1.1.0
-ruff==0.11.13
+ruff==0.12.0
 pre-commit==4.2.0
