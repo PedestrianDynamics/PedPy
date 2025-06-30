@@ -14,6 +14,7 @@
 [![Documentation Status](https://readthedocs.org/projects/pedpy/badge/?version=latest)](http://pedpy.readthedocs.io/?badge=latest)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7046/badge)](https://bestpractices.coreinfrastructure.org/projects/7046)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
+[![JuRSE Code Pick – July 2025](https://img.shields.io/badge/JuRSE_Code_Pick-Jul_2025-blue)](https://www.fz-juelich.de/en/rse/jurse-community/jurse-code-of-the-month/july-2025)
 
 # PedPy: Analysis of pedestrian dynamics based on trajectory files.  
 
