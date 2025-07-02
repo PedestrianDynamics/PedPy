@@ -44,8 +44,18 @@ from .column_identifier import (
 )
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
+from .errors import (
+    AccelerationError,
+    GeometryError,
+    InputError,
+    PedPyAttributeError,
+    PedPyError,
+    PedPyRuntimeError,
+    PedPyTypeError,
+    PedPyValueError,
+    SpeedError,
+)
 from .io.trajectory_loader import (
-    LoadTrajectoryError,
     TrajectoryUnit,
     load_trajectory,
     load_trajectory_from_jupedsim_sqlite,
@@ -235,4 +245,13 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "END_POSITION_COL",
     "WINDOW_SIZE_COL",
     "__version__",
+    "AccelerationError",
+    "GeometryError",
+    "InputError",
+    "PedPyAttributeError",
+    "PedPyError",
+    "PedPyRuntimeError",
+    "PedPyTypeError",
+    "PedPyValueError",
+    "SpeedError",
 ]

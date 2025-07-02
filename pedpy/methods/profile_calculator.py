@@ -21,6 +21,7 @@ import shapely
 
 from pedpy.column_identifier import FRAME_COL
 from pedpy.data.geometry import WalkableArea
+from pedpy.errors import PedPyRuntimeError, PedPyValueError
 from pedpy.internal.utils import alias
 
 
@@ -314,7 +315,7 @@ def compute_density_profile(
     ) in data_grouped_by_frame:
         if density_method == DensityMethod.VORONOI:
             if grid_intersections_area is None:
-                raise RuntimeError(
+                raise PedPyRuntimeError(
                     "Computing a Voronoi density profile needs the parameter "
                     "`grid_intersections_area`."
                 )
@@ -337,7 +338,7 @@ def compute_density_profile(
             )
         elif density_method == DensityMethod.GAUSSIAN:
             if gaussian_width is None:
-                raise ValueError(
+                raise PedPyValueError(
                     "Computing a Gaussian density profile needs a parameter "
                     "'gaussian_width'."
                 )
@@ -349,7 +350,7 @@ def compute_density_profile(
                 width=gaussian_width,
             )
         else:
-            raise ValueError("density method not accepted.")
+            raise PedPyValueError("density method not accepted.")
 
         density_profiles.append(
             density.reshape(
@@ -553,7 +554,7 @@ def compute_speed_profile(
     ) in data_grouped_by_frame:
         if speed_method == SpeedMethod.VORONOI:
             if grid_intersections_area is None:
-                raise RuntimeError(
+                raise PedPyRuntimeError(
                     "Computing a Arithmetic speed profile needs the parameter "
                     "`grid_intersections_area`."
                 )
@@ -569,7 +570,7 @@ def compute_speed_profile(
             )
         elif speed_method == SpeedMethod.ARITHMETIC:
             if grid_intersections_area is None:
-                raise RuntimeError(
+                raise PedPyRuntimeError(
                     "Computing a Arithmetic speed profile needs the parameter "
                     "`grid_intersections_area`."
                 )
@@ -600,7 +601,7 @@ def compute_speed_profile(
                 fwhm=gaussian_width,
             )
         else:
-            raise ValueError("Speed method not accepted.")
+            raise PedPyValueError("Speed method not accepted.")
 
         speed_profiles.append(
             speed.reshape(

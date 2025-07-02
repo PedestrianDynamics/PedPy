@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 import shapely
 
 from pedpy.column_identifier import FRAME_COL, POINT_COL
+from pedpy.errors import PedPyTypeError
 
 
 @dataclass(frozen=True)
@@ -81,7 +82,7 @@ class TrajectoryData:
                 filtered_data.reset_index(drop=True), self.frame_rate
             )
 
-        raise TypeError("Slicing requires a 'slice' object.")
+        raise PedPyTypeError("Slicing requires a 'slice' object.")
 
     @property
     def bounds(self) -> tuple[float, float, float, float]:
