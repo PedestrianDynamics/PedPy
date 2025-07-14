@@ -18,5 +18,5 @@ build~=1.2
 # ci
 mypy==1.16.1
 mypy-extensions==1.1.0
-ruff==0.12.1
+ruff==0.12.2
 pre-commit==4.2.0
