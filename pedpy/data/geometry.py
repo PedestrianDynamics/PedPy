@@ -437,7 +437,15 @@ def _polygon_from_coordinates(
     *,
     holes: Optional[List[Tuple[Number]] | shapely.Point] = None,
 ) -> shapely.Polygon:
-    return shapely.Polygon(coordinates, holes=holes)
+    poly = shapely.Polygon(coordinates)
+    if holes is None:
+        return poly
+
+    for hole in holes:
+        obs = shapely.Polygon(hole)
+        poly = poly.difference(obs)
+
+    return poly
 
 
 def _create_polygon_from_input(
