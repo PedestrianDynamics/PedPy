@@ -16,7 +16,7 @@ click~=8.2
 build~=1.2
 
 # ci
-mypy==1.16.1
+mypy==1.17.0
 mypy-extensions==1.1.0
-ruff==0.12.2
+ruff==0.12.4
 pre-commit==4.2.0
