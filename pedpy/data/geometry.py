@@ -199,6 +199,57 @@ class MeasurementArea:
         """
         return self._polygon
 
+    @property
+    def bounds(self):
+        """Minimum bounding region (minx, miny, maxx, maxy).
+
+        Returns:
+            Minimum bounding region (minx, miny, maxx, maxy)
+        """
+        return self._polygon.bounds
+
+
+###############################################################################
+# Axis Aligned MeasurmentArea
+###############################################################################
+class AxisAlignedMeasurmentArea(MeasurementArea):
+    """Axis-aligned areas to study pedestrian dynamics.
+
+    An axis aligned measurement area is defined as an area, which is
+    axis-algined, convex, simple, and covers a non-zero area.
+    """
+
+    _frozen = False
+
+    def __init__(self, box: tuple[float, float, float, float]):
+        """Create an axis-aligned measurement area from the given input.
+
+        The measurement area may be a convex, simple area which covers a
+        non-zero area.
+
+        Args:
+            box: A tuple of four floats representing the axis-aligned bounding
+                box of the measurement area in the form (min_x, min_y, max_x,
+                max_y). The box must define a valid rectangle with non-zero
+                area.
+        """
+        try:
+            self._polygon = shapely.box(*box)
+        except Exception as exc:
+            raise GeometryError(
+                f"Could not create profile measurement area from the given "
+                f"input: {exc}."
+            ) from exc
+
+        if not self._polygon.is_valid or self._polygon.area == 0:
+            raise GeometryError(
+                "Profile measurement area needs to be valid and cover a "
+                "non-zero area."
+            )
+
+        shapely.prepare(self._polygon)
+        self._frozen = True
+
 
 ###############################################################################
 # Measurement Line
