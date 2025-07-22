@@ -40,7 +40,12 @@ from pedpy.column_identifier import (
     X_COL,
     Y_COL,
 )
-from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
+from pedpy.data.geometry import (
+    AxisAlignedMeasurementArea,
+    MeasurementArea,
+    MeasurementLine,
+    WalkableArea,
+)
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.errors import PedPyRuntimeError
 
@@ -1052,6 +1057,7 @@ def plot_time_distance(  # noqa: PLR0915
 def plot_profiles(
     *,
     walkable_area: WalkableArea,
+    measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     profiles: list[NDArray[np.float64]],
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
@@ -1060,6 +1066,9 @@ def plot_profiles(
 
     Args:
         walkable_area(WalkableArea): walkable area of the plot
+        measurement_area (MeasurementArea): Measurement area for which the
+            profiles are computed.
+
         profiles(list): List of profiles like speed or density profiles
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be
             created
@@ -1080,6 +1089,9 @@ def plot_profiles(
         mean_profiles = np.nanmean(profiles, axis=0)
 
     bounds = walkable_area.bounds
+
+    if measurement_area is not None:
+        bounds = measurement_area.bounds
 
     title = kwargs.pop("title", "")
     walkable_color = kwargs.pop("walkable_color", "w")

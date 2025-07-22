@@ -6,7 +6,12 @@ import pytest
 import shapely
 
 from pedpy.column_identifier import *
-from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
+from pedpy.data.geometry import (
+    AxisAlignedMeasurementArea,
+    MeasurementArea,
+    MeasurementLine,
+    WalkableArea,
+)
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.io.trajectory_loader import TrajectoryUnit, load_trajectory
 from pedpy.methods.density_calculator import (
@@ -21,7 +26,10 @@ from pedpy.methods.method_utils import (
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
 )
-from pedpy.methods.profile_calculator import SpeedMethod, compute_profiles
+from pedpy.methods.profile_calculator import (
+    SpeedMethod,
+    compute_profiles,
+)
 from pedpy.methods.speed_calculator import (
     SpeedCalculation,
     compute_individual_speed,
@@ -757,7 +765,7 @@ def test_passing_speed(measurement_line, width, folder):
 
 
 @pytest.mark.parametrize(
-    "walkable_area_polygon, grid_size, cut_off_radius, quad_segments, min_frame, "
+    "walkable_area_polygon, offset, grid_size, cut_off_radius, quad_segments, min_frame, "
     "max_frame, folder",
     [
         (
@@ -766,6 +774,21 @@ def test_passing_speed(measurement_line, width, folder):
                 "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
                 "-2.25 0.53, -2.25 6.25, 4 6.25))"
             ),
+            None,
+            0.2,
+            0.8,
+            3,
+            110,
+            120,
+            ROOT_DIR / pathlib.Path("data/bottleneck"),
+        ),
+        (
+            shapely.from_wkt(
+                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
+                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
+                "-2.25 0.53, -2.25 6.25, 4 6.25))"
+            ),
+            (9, 23, 29, 34),
             0.2,
             0.8,
             3,
@@ -775,6 +798,17 @@ def test_passing_speed(measurement_line, width, folder):
         ),
         (
             shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
+            None,
+            0.2,
+            0.8,
+            3,
+            110,
+            120,
+            ROOT_DIR / pathlib.Path("data/corridor"),
+        ),
+        (
+            shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
+            (45, 60, 10, 18),
             0.2,
             0.8,
             3,
@@ -786,6 +820,19 @@ def test_passing_speed(measurement_line, width, folder):
             shapely.from_wkt(
                 "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
             ),
+            None,
+            0.2,
+            0.8,
+            3,
+            110,
+            120,
+            ROOT_DIR / pathlib.Path("data/corner"),
+        ),
+        (
+            shapely.from_wkt(
+                "POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"
+            ),
+            (1, 14, 25, 39),
             0.2,
             0.8,
             3,
@@ -797,6 +844,7 @@ def test_passing_speed(measurement_line, width, folder):
 )
 def test_profiles(
     walkable_area_polygon,
+    offset: tuple[int, int, int, int],
     grid_size,
     cut_off_radius,
     quad_segments,
@@ -827,6 +875,22 @@ def test_profiles(
     )
 
     walkable_area = WalkableArea(walkable_area_polygon)
+    measurement_area = None
+    if offset is not None:
+        # Compute the measurement area based on the offset
+        # From the right and bottom side of the measurement area a safety
+        # margin of 0.01 is subtracted to avoid that the boundary is included
+        # in the grid used for the profiles.
+        wa_x_min, _, _, wa_y_max = walkable_area.bounds
+        offset_x_first, offset_x_last, offset_y_first, offset_y_last = offset
+        ma_x_min = wa_x_min + offset_x_first * grid_size
+        ma_x_max = wa_x_min + offset_x_last * grid_size - 0.01
+        ma_y_min = (wa_y_max - offset_y_last * grid_size) + 0.01
+        ma_y_max = wa_y_max - offset_y_first * grid_size
+        measurement_area = AxisAlignedMeasurementArea(
+            ma_x_min, ma_y_min, ma_x_max, ma_y_max
+        )
+
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory,
         walkable_area=walkable_area,
@@ -849,19 +913,27 @@ def test_profiles(
     density_profiles, speed_profiles_arithmetic = compute_profiles(
         data=individual_voronoi_speed_data,
         walkable_area=walkable_area,
+        axis_aligned_measurement_area=measurement_area,
         grid_size=grid_size,
         speed_method=SpeedMethod.ARITHMETIC,
     )
+
     density_profiles, speed_profiles_voronoi = compute_profiles(
         data=individual_voronoi_speed_data,
+        axis_aligned_measurement_area=measurement_area,
         walkable_area=walkable_area,
         grid_size=grid_size,
         speed_method=SpeedMethod.VORONOI,
     )
+
     for frame in range(min_frame, max_frame + 1):
         reference_density = np.loadtxt(
             next(density_result_folder.glob(f"*{frame}*"))
         )
+        if offset:
+            reference_density = reference_density[
+                offset_y_first:offset_y_last, offset_x_first:offset_x_last
+            ]
         assert np.isclose(
             density_profiles[frame - min_frame],
             reference_density,
@@ -871,6 +943,11 @@ def test_profiles(
         reference_speed_voronoi = np.loadtxt(
             next(velocity_result_folder.glob(f"*Voronoi*{frame}*"))
         )
+        if offset:
+            reference_speed_voronoi = reference_speed_voronoi[
+                offset_y_first:offset_y_last, offset_x_first:offset_x_last
+            ]
+
         assert np.isclose(
             speed_profiles_voronoi[frame - min_frame],
             reference_speed_voronoi,
@@ -880,14 +957,10 @@ def test_profiles(
         reference_speed_arithmetic = np.loadtxt(
             next(velocity_result_folder.glob(f"*Arithmetic*{frame}*"))
         )
-        print(
-            np.max(
-                np.linalg.norm(
-                    speed_profiles_arithmetic[frame - min_frame]
-                    - reference_speed_arithmetic
-                )
-            )
-        )
+        if offset:
+            reference_speed_arithmetic = reference_speed_arithmetic[
+                offset_y_first:offset_y_last, offset_x_first:offset_x_last
+            ]
 
         # There are artifacts of the polygons going outside the geometry in
         # this test case. They appear to originate from handling the border of

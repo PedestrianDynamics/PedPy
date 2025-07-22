@@ -42,7 +42,12 @@ from .column_identifier import (
     X_COL,
     Y_COL,
 )
-from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
+from .data.geometry import (
+    AxisAlignedMeasurementArea,
+    MeasurementArea,
+    MeasurementLine,
+    WalkableArea,
+)
 from .data.trajectory_data import TrajectoryData
 from .errors import (
     AccelerationError,
@@ -141,6 +146,7 @@ from .plotting.plotting import (
 )
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
+    "AxisAlignedMeasurementArea",
     "MeasurementArea",
     "MeasurementLine",
     "WalkableArea",
