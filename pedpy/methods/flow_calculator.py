@@ -18,9 +18,9 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import InputError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
-    InputError,
     _apply_lambda_for_intersecting_frames,
     _compute_orthogonal_speed_in_relation_to_proportion,
     compute_crossing_frames,

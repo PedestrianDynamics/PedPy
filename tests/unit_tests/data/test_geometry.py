@@ -3,12 +3,12 @@ import pytest
 import shapely
 
 from pedpy.data.geometry import (
-    GeometryError,
     MeasurementArea,
     MeasurementLine,
     WalkableArea,
     _create_polygon_from_input,
 )
+from pedpy.errors import GeometryError
 
 
 # ###############################################################################
