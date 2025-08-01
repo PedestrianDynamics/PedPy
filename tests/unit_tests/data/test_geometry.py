@@ -3,6 +3,7 @@ import pytest
 import shapely
 
 from pedpy.data.geometry import (
+    AxisAlignedMeasurmentArea,
     MeasurementArea,
     MeasurementLine,
     WalkableArea,
@@ -11,9 +12,9 @@ from pedpy.data.geometry import (
 from pedpy.errors import GeometryError
 
 
-# ###############################################################################
-# # Walkable Area
-# ###############################################################################
+###############################################################################
+# Walkable Area
+###############################################################################
 @pytest.mark.parametrize(
     "point_input",
     [
@@ -384,7 +385,10 @@ def test_changing_walkable_area_fails():
 )
 def test_create_measurement_area_from_coordinates(coordinates):
     measurement_area = MeasurementArea(coordinates)
+    reference_polygon = shapely.Polygon(coordinates)
+
     assert measurement_area.coords[:] == coordinates
+    assert measurement_area.bounds == reference_polygon.bounds
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
     assert measurement_area.polygon.is_valid
@@ -420,6 +424,7 @@ def test_create_measurement_area_from_points(points):
     reference_polygon = shapely.Polygon(points)
     measurement_area = MeasurementArea(points)
     assert measurement_area.coords[:] == reference_polygon.exterior.coords[:]
+    assert measurement_area.bounds == reference_polygon.bounds
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
     assert measurement_area.polygon.is_valid
@@ -461,6 +466,7 @@ def test_create_measurement_area_from_points(points):
 def test_create_measurement_area_from_polygon(polygon):
     measurement_area = MeasurementArea(polygon)
     assert measurement_area.coords[:] == polygon.exterior.coords[:]
+    assert measurement_area.bounds == polygon.bounds
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
     assert measurement_area.polygon.is_valid
@@ -510,6 +516,7 @@ def test_create_measurement_area_from_wkt(wkt):
 
     measurement_area = MeasurementArea(wkt)
     assert measurement_area.coords[:] == reference_polygon.exterior.coords[:]
+    assert measurement_area.bounds == reference_polygon.bounds
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
     assert measurement_area.polygon.is_valid
@@ -617,6 +624,37 @@ def test_changing_measurement_area_fails():
         measurement_area._polygon = shapely.LinearRing(
             ((0, 0), (0, 1), (1, 1), (1, 0))
         )
+
+
+###############################################################################
+# Axis Aligned MeasurmentArea
+###############################################################################
+@pytest.mark.parametrize(
+    "area_input, message",
+    [
+        (
+            (
+                0,
+                0,
+                0,
+                0,
+            ),
+            "Axis-aligned measurement area needs",
+        ),
+        (
+            (
+                5.5,
+                5.5,
+                5.5,
+                5.5,
+            ),
+            "Axis-aligned measurement area needs",
+        ),
+    ],
+)
+def test_create_axis_aligned_measurement_area_error(area_input, message):
+    with pytest.raises(GeometryError, match=rf".*{message}.*"):
+        measurement_area = AxisAlignedMeasurmentArea(*area_input)
 
 
 ###############################################################################
