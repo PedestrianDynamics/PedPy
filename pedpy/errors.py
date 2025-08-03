@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: Copyright (C) 2022-2025 Forschungszentrum Jülich GmbH, IAS-7
+# SPDX-FileCopyrightText: Copyright (C) 2024-2025 Tobias Schrödter
+#
+# SPDX-License-Identifier: MIT
+
 """Custom exception classes for PedPy.
 
 This module defines a hierarchy of exceptions for clear and specific

@@ -1,0 +1,40 @@
+version = 1
+
+[[annotations]]
+path = [
+    "pedpy/**",
+    "tests/**/*.py",
+    "scripts/**",
+    "notebooks/**",
+    "helper/**",
+    "docs/**/*.py","docs/**/*.rst",
+    "*",
+    ".github/**"
+]
+SPDX-FileCopyrightText = [
+    "2022-2025 Forschungszentrum Jülich GmbH, IAS-7",
+    "2024-2025 Tobias Schrödter"
+]
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+    "docs/**",
+    "figs/**",
+]
+SPDX-FileCopyrightText = [
+    "2022-2025 Forschungszentrum Jülich GmbH, IAS-7",
+    "2024-2025 Tobias Schrödter"
+]
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+path = [
+    "tests/reference_tests/data/**",
+    "tests/unit_tests/io/test-data/**"
+]
+precedence = "override"
+SPDX-FileCopyrightText = [
+    "2022-2025 Forschungszentrum Jülich GmbH, IAS-7",
+]
+SPDX-License-Identifier = "CC-BY-4.0"
