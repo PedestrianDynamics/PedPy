@@ -199,6 +199,56 @@ class MeasurementArea:
         """
         return self._polygon
 
+    @property
+    def bounds(self):
+        """Minimum bounding region (minx, miny, maxx, maxy).
+
+        Returns:
+            Minimum bounding region (minx, miny, maxx, maxy)
+        """
+        return self._polygon.bounds
+
+
+###############################################################################
+# Axis Aligned MeasurmentArea
+###############################################################################
+class AxisAlignedMeasurmentArea(MeasurementArea):
+    """Axis-aligned areas to study pedestrian dynamics.
+
+    An axis aligned measurement area is defined as an area, which is
+    axis-algined, convex, simple, and covers a non-zero area.
+    """
+
+    _frozen = False
+
+    def __init__(self, x_min: float, y_min: float, x_max: float, y_max: float):
+        """Create an axis-aligned measurement area from the given input.
+
+        Creates a rectangular axis-aligned measurement area using the provided
+        coordinates. The resulting area must be valid and have a non-zero area.
+        Raises a GeometryError if the polygon cannot be created or is invalid.
+
+            x_min (float): Minimum x-coordinate of the measurement area.
+            y_min (float): Minimum y-coordinate of the measurement area.
+            x_max (float): Maximum x-coordinate of the measurement area.
+            y_max (float): Maximum y-coordinate of the measurement area.
+
+        Raises:
+            GeometryError: If the measurement area cannot be created or is
+                invalid.
+        """
+        self._polygon = shapely.box(
+            xmin=x_min, ymin=y_min, xmax=x_max, ymax=y_max
+        )
+
+        if self._polygon.area == 0:
+            raise GeometryError(
+                "Axis-aligned measurement area needs to cover a non-zero area."
+            )
+
+        shapely.prepare(self._polygon)
+        self._frozen = True
+
 
 ###############################################################################
 # Measurement Line
