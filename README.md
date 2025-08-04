@@ -1,9 +1,9 @@
-
 <div align="center">
-    <img src="docs/source/_static/logo_text.svg" height="100px" alt="PedPy Logo">
+    <img src="https://raw.githubusercontent.com/PedestrianDynamics/PedPy/refs/heads/main/docs/source/_static/logo_text.svg" height="100px" alt="PedPy Logo">
 </div>
 
------------------
+<div align="center">
+
 [![PyPI Latest Release](https://img.shields.io/pypi/v/pedpy.svg)](https://pypi.org/project/pedpy/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pedpy)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg)](https://doi.org/10.5281/zenodo.7194992)
@@ -16,84 +16,155 @@
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
 [![JuRSE Code Pick – July 2025](https://img.shields.io/badge/JuRSE_Code_Pick-Jul_2025-blue)](https://www.fz-juelich.de/en/rse/jurse-community/jurse-code-of-the-month/july-2025)
 
-# PedPy: Analysis of pedestrian dynamics based on trajectory files.  
+</div>
 
-*PedPy* is a python module for pedestrian movement analysis. 
-It implements different measurement methods for density, velocity and flow.
+# PedPy
 
-If you use *PedPy* in your work, please cite it using the following information from zenodo:
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg)](https://doi.org/10.5281/zenodo.7194992)
+**PedPy** is a Python library for quantitative analysis of pedestrian dynamics from trajectory data.
+It offers multiple measurement methods for computing fundamental diagrams, e.g., density, velocity and flow.
 
 
-## Getting started
+## Features
 
-### Setup Python
+- Pedestrian density, velocity, and flow computation
+- Further analysis methods, e.g., profiles, neighborhoods, pair-distribution fucntion
+- Easy-to-use API for loading and processing trajectory data, directly supports parsing the output of various simulation tools
+- Plotting module to directly view the results of the analysis
+- Open-source, well-documented, and tested
 
-For setting up your Python Environment a Python version >= 3.11 is recommended (our code is tested with 3.11, 3.12, and 3.13).
-To avoid conflicts with other libraries/applications the usage of virtual environments is recommended, see [Python Documentation](https://docs.python.org/3/library/venv.html) for more detail.
+## Getting Started
 
-### Installing PedPy
+### Installation
 
-To install the latest **stable** version of *PedPy* and its dependencies from PyPI:
+PedPy requires Python >= 3.11.  
+It is recommended to use a [virtual environment](https://docs.python.org/3/library/venv.html).
+
+Install the latest stable release from PyPI:
+
 ```bash
 python3 -m pip install pedpy
 ```
 
-You can also install the latest version of *PedPy* directly from the repository, by following these steps:
+To install the latest development version from the repository:
 
-1. Uninstall an installed version of *PedPy*:
 ```bash
-python3 -m pip uninstall pedpy
+python3 -m pip install --force-reinstall git+https://github.com/PedestrianDynamics/PedPy.git
 ```
 
-2. Install latest version of *PedPy* from repository:
+> [!IMPORTANT]  
+> The latest repository version may be unstable. Use with caution.
+
+### Quickstart
+
+```python
+from pedpy import *
+
+# Load trajectory data from file
+traj = load_trajectory(
+  trajectory_file=pathlib.Path("some_trajectory_data.txt")
+)
+
+# Create measurement area
+measurement_area = MeasurementArea(
+  [(-0.4, 0.5), (0.4, 0.5), (0.4, 1.3), (-0.4, 1.3)]
+)
+
+# Compute classic density in the measurement area
+classic_density = compute_classic_density(
+    traj_data=traj, measurement_area=measurement_area
+)
+
+plot_density(density=classic_density, title="Classic density")
 ```
-python3 -m pip install git+https://github.com/PedestrianDynamics/PedPy.git
-```
+
+See the [Getting Started Guide](https://pedpy.readthedocs.io/stable/getting_started.html) for a step-by-step introduction.
+A more extensive documentation and demonstration of **PedPy**'s capabilities can be found in the [User Guide](https://pedpy.readthedocs.io/stable/user_guide.html).
+
 
 ### Usage
 
-For first time users, have a look at the [getting started notebook](notebooks/getting_started.ipynb), as it shows the first steps to start an analysis with *PedPy*.
-A more detailed overview of *PedPy* is demonstrated in the [user guide notebook](notebooks/user_guide.ipynb).
-The [fundamental diagram notebook](notebooks/fundamental_diagram.ipynb) shows how to use *PedPy* for computing the fundamental diagram of a series of experiments.
+PedPy is designed to be used in scripts or interactive Jupyter notebooks.
 
-#### Interactive online session
+- Explore [getting started](notebooks/getting_started.ipynb), [user guide](notebooks/user_guide.ipynb), and [fundamental diagram](notebooks/fundamental_diagram.ipynb) notebooks.
+- For local usage, clone the repository and install the extra requirements for notebooks and plotting:
 
-If you want to try out *PedPy* for the first time, you can find an interactive online environments for both notebooks here:
+    ```bash
+    git clone https://github.com/PedestrianDynamics/pedpy.git
+    python3 -m pip install jupyter matplotlib
+    ```
 
-- Getting started: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fgetting_started.ipynb)
-- User guide: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fuser_guide.ipynb)
-- Fundamental diagram: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Ffundamental_diagram.ipynb)
+    Then start a Jupyter server:
 
-**Note:** 
-The execution might be slower compared to a local usage, as only limited resources are available.
-It is possible to also upload different trajectory files and run the analysis completely online, but this might not be advisable for long computations.
+    ```bash
+    jupyter notebook
+    ```
 
-#### Local usage of the notebooks
+## Example Visualizations
 
-For local usage of the notebooks, you can either download the notebooks and [demo files](notebooks/demo-data) from the GitHub repository or clone the whole repository with:
-```bash 
-git clone https://github.com/PedestrianDynamics/pedpy.git
+
+<div align="center">
+<table style="border-collapse: collapse; border: none;">
+  <tr style="border: none;">
+    <td style="border: none;"><img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/bottleneck_setup.png" width="400" alt="Bottleneck Setup Example"/></td>
+    <td style="border: none;">
+      <img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/voronoi_cells.png" width="400" alt="Voronoi-based Density Analysis"/>
+      <img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/speed_density_profile.png" width="400" alt="Speed-Density Profile"/>
+    </td>
+  </tr>
+</table>
+<table style="border-collapse: collapse; border: none;">
+  <tr style="border: none;">
+    <td style="border: none;" width="50%"><img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/density_comparison.png" width="500" alt="Density Comparison Methods"/></td>
+    <td style="border: none;" width="50%"><img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/time_distance.png" width="500" alt="Time-Distance Analysis"/></td>
+  </tr>
+</table>
+</div>
+
+
+## Documentation
+
+- [Full Documentation](https://pedpy.readthedocs.io/)
+- [Getting Started Guide](https://pedpy.readthedocs.io/stable/getting_started.html)
+- [Extensive User Guide](https://pedpy.readthedocs.io/stable/user_guide.html)
+- [API Reference](https://pedpy.readthedocs.io/stable/api/index.html)
+
+
+## Citation
+
+If you use **PedPy** in your work, please cite:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg)](https://doi.org/10.5281/zenodo.7194992)
+
+For the latest release (v.1.3.2) the BibTeX entry is:
+```
+@software{schrodter_2025_15337052,
+  author       = {Schrödter, Tobias and
+                  The PedPy Development Team},
+  title        = {PedPy - Pedestrian Trajectory Analyzer},
+  month        = may,
+  year         = 2025,
+  publisher    = {Zenodo},
+  version      = {v1.3.2},
+  doi          = {10.5281/zenodo.15337052},
+  url          = {https://doi.org/10.5281/zenodo.15337052},
+}
 ```
 
-For using either of the notebook some additional libraries need to be installed, mainly for plotting.
-You can install the needed libraries with:
+If you used a different version, please use Zenodo to get the citation information. 
 
-```bash
-python3 -m pip install jupyter matplotlib
-```
+## Contributing
 
-Afterward, you can start a jupyter server with:
+Contributions are welcome and we looking forward for any contribution from the community!
+Take a look at out [Developer Guide](https://pedpy.readthedocs.io/stable/developer_guide.html) to check out different ways to contribute to **PedPy**.
+See the [contributing guidelines](CONTRIBUTING.md) and open an issue or pull request on [GitHub](https://github.com/PedestrianDynamics/PedPy/issues).
 
-```bash
-jupyter notebook
-```
+## Getting Help
 
-After navigating to one of the notebooks, you can see how the library can be used for different kinds of analysis.
+If you find yourself in a position where you need assistance from us, don't hesitate to contact us. 
+- GitHub Issues: Report bugs
+- GitHub Discussions: Ask questions, share ideas, request features
 
-Some examples how the computed values can be visualized are also shown in the notebooks, e.g., density/velocity profiles, fundamental diagrams, N-T-diagrams, etc.
+## License
 
-![voronoi](figs/voronoi_diagrams.png)
+PedPy is released under the [MIT License](LICENSE).
 
-![density](figs/density_comparison.png)
