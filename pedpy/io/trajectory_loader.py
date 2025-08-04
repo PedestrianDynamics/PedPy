@@ -803,7 +803,7 @@ def _load_trajectory_data_from_vadere(
             encoding="utf-8-sig",
         )
 
-        data.rename(columns=rename_mapping, inplace=True)
+        data = data.rename(columns=rename_mapping)
 
         if data.empty:
             raise LoadTrajectoryError(common_error_message)
@@ -834,7 +834,7 @@ def _event_driven_traj_to_const_frame_rate(
     )
 
     trajectory_too_short_messages = []
-    traj_dataframe.set_index(TIME_COL, inplace=True)
+    traj_dataframe = traj_dataframe.set_index(TIME_COL)
     traj_by_ped = traj_dataframe.groupby(ID_COL)
     traj_dataframe_interpolated = pd.DataFrame()
     for ped_id, traj in traj_by_ped:
@@ -889,19 +889,19 @@ def _event_driven_traj_to_const_frame_rate(
     if traj_dataframe_interpolated.empty:
         raise LoadTrajectoryError("No valid trajectories were captured.")
 
-    traj_dataframe_interpolated.reset_index(inplace=True)
+    traj_dataframe_interpolated = traj_dataframe_interpolated.reset_index()
 
     traj_dataframe_interpolated[FRAME_COL] = (
         (traj_dataframe_interpolated[TIME_COL] * frame_rate)
         .round(decimals=0)
         .astype(int)
     )
-    traj_dataframe_interpolated.drop(
-        labels=TIME_COL, axis="columns", inplace=True
+    traj_dataframe_interpolated = traj_dataframe_interpolated.drop(
+        labels=TIME_COL, axis="columns"
     )
 
-    traj_dataframe_interpolated.sort_values(
-        by=[FRAME_COL, ID_COL], ignore_index=True, inplace=True
+    traj_dataframe_interpolated = traj_dataframe_interpolated.sort_values(
+        by=[FRAME_COL, ID_COL], ignore_index=True
     )
     return traj_dataframe_interpolated
 
