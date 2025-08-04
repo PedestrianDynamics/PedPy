@@ -662,6 +662,7 @@ def load_trajectory_from_vadere(
     *,
     trajectory_file: pathlib.Path,
     frame_rate: float,
+    ignore_too_short_trajectories: bool = False
 ) -> TrajectoryData:
     """Loads trajectory data from Vadere-traj file as :class:`~trajectory_data.TrajectoryData`.
 
@@ -676,6 +677,9 @@ def load_trajectory_from_vadere(
             startX (in m), startY (in m). Additional columns (e.g. endTime, endX, endY, targetId)
             will be ignored.
         frame_rate: Frame rate in frames per second.
+        ignore_too_short_trajectories: If False (default), the operation will abort when a trajectory
+            is detected to be too short.
+            If True, such trajectories will be ignored and a warning logged.
 
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation of the file data
@@ -691,7 +695,7 @@ def load_trajectory_from_vadere(
     )
 
     traj_dataframe = _event_driven_traj_to_const_frame_rate(
-        traj_dataframe=traj_dataframe, frame_rate=frame_rate
+        traj_dataframe=traj_dataframe, frame_rate=frame_rate, ignore_too_short_trajectories=ignore_too_short_trajectories
     )
 
     return TrajectoryData(
@@ -812,6 +816,7 @@ def _load_trajectory_data_from_vadere(
 def _event_driven_traj_to_const_frame_rate(
     traj_dataframe: pd.DataFrame,
     frame_rate: float,
+    ignore_too_short_trajectories: bool,
 ) -> pd.DataFrame:
     """Interpolate trajectory data linearly for non-equidistant time steps.
 
@@ -828,6 +833,7 @@ def _event_driven_traj_to_const_frame_rate(
         traj_dataframe, frame_rate
     )
 
+    trajectory_too_short_messages = []
     traj_dataframe.set_index(TIME_COL, inplace=True)
     traj_by_ped = traj_dataframe.groupby(ID_COL)
     traj_dataframe_interpolated = pd.DataFrame()
@@ -847,11 +853,16 @@ def _event_driven_traj_to_const_frame_rate(
         )
 
         if t_start == t_stop:
-            _log.warning(
-                f"Trajectory of pedestrian {str(ped_id)} is too short in time "
-                f"to be captured by the chosen frame rate of {str(frame_rate)}. "
+            msg = (
+                f"Trajectory of pedestrian {ped_id} is too short in time "
+                f"to be captured by the chosen frame rate of {frame_rate}. "
                 f"Therefore, this trajectory will be ignored."
             )
+            if ignore_too_short_trajectories:
+                _log.warning(msg)
+                continue
+            else:
+                trajectory_too_short_messages.append(msg)
         else:
             equidist_time_steps = np.linspace(
                 start=t_start_,
@@ -868,6 +879,15 @@ def _event_driven_traj_to_const_frame_rate(
             traj_dataframe_interpolated = pd.concat(
                 [traj_dataframe_interpolated, traj]
             )
+
+    if trajectory_too_short_messages and not ignore_too_short_trajectories:
+        raise LoadTrajectoryError(
+            "One or more pedestrian trajectories are too short to be captured "
+            f"at frame rate {frame_rate}:\n- " + "\n- ".join(trajectory_too_short_messages)
+        )
+
+    if traj_dataframe_interpolated.empty:
+        raise LoadTrajectoryError("No valid trajectories were captured.")
 
     traj_dataframe_interpolated.reset_index(inplace=True)
 
