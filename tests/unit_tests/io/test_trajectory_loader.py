@@ -1866,7 +1866,7 @@ def test_load_trajectory_from_vadere_reference_file():
     traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
         "test-data/vadere_postvis.traj"
     )
-    load_trajectory_from_vadere(trajectory_file=traj_txt)
+    load_trajectory_from_vadere(trajectory_file=traj_txt, frame_rate=24.0)
 
 
 def test_load_trajectory_from_vadere_no_data(
@@ -1961,6 +1961,7 @@ def test_load_trajectory_from_vadere_columns_missing(
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_vadere(
             trajectory_file=trajectory_vadere,
+            frame_rate=24.0
         )
     assert "The given trajectory file seems to be incorrect or empty." in str(
         error_info.value
@@ -1988,6 +1989,7 @@ def test_load_trajectory_from_vadere_columns_non_unique(
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_vadere(
             trajectory_file=trajectory_vadere,
+            frame_rate=24.0,
         )
     assert "The given trajectory file seems to be incorrect or empty." in str(
         error_info.value

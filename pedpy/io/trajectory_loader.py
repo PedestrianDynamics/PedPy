@@ -661,7 +661,7 @@ def _load_trajectory_data_from_viswalk(
 def load_trajectory_from_vadere(
     *,
     trajectory_file: pathlib.Path,
-    frame_rate: float = 24.0,
+    frame_rate: float,
 ) -> TrajectoryData:
     """Loads trajectory data from Vadere-traj file as :class:`~trajectory_data.TrajectoryData`.
 
