@@ -10,7 +10,9 @@ import datetime
 current_year = datetime.datetime.today().year
 
 project = "PedPy"
-copyright = f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7"
+copyright = (
+    f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7 & Tobias Schrödter"
+)
 
 import pedpy
 

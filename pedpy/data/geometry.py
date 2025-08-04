@@ -4,19 +4,11 @@ from dataclasses import dataclass
 from numbers import Number
 from typing import Any, List, Optional, Tuple
 
+import numpy as np
 import shapely
+from numpy.typing import NDArray
 
-
-class GeometryError(Exception):
-    """Class reflecting errors when creating PedPy geometry objects."""
-
-    def __init__(self, message):
-        """Create GeometryError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
+from pedpy.errors import GeometryError, PedPyAttributeError
 
 
 @dataclass
@@ -75,7 +67,7 @@ class WalkableArea:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Walkable area can not be changed after " "construction!"
             )
         return super().__setattr__(attr, value)
@@ -175,7 +167,7 @@ class MeasurementArea:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Measurement area can not be changed after construction!"
             )
         return super().__setattr__(attr, value)
@@ -272,7 +264,7 @@ class MeasurementLine:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Measurement line can not be changed after construction!"
             )
         return super().__setattr__(attr, value)
@@ -312,6 +304,21 @@ class MeasurementLine:
             Measurement line as :class:`shapely.LineString`.
         """
         return self._line
+
+    def normal_vector(self) -> NDArray[np.float64]:
+        """Compute and returns the normalized normal vector of the line.
+
+        Returns:
+            NDArray[np.float64]: A 2D NumPy array representing the normalized
+            normal vector of the line in the form [x, y].
+        """
+        normal_vec = np.array(
+            [
+                self._line.xy[1][1] - self._line.xy[1][0],
+                self._line.xy[0][0] - self._line.xy[0][1],
+            ]
+        )
+        return normal_vec / np.linalg.norm(normal_vec)
 
 
 ###############################################################################
@@ -420,7 +427,15 @@ def _polygon_from_coordinates(
     *,
     holes: Optional[List[Tuple[Number]] | shapely.Point] = None,
 ) -> shapely.Polygon:
-    return shapely.Polygon(coordinates, holes=holes)
+    poly = shapely.Polygon(coordinates)
+    if holes is None:
+        return poly
+
+    for hole in holes:
+        obs = shapely.Polygon(hole)
+        poly = poly.difference(obs)
+
+    return poly
 
 
 def _create_polygon_from_input(

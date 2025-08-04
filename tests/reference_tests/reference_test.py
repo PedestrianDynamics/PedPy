@@ -226,7 +226,7 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.index.values).all()
     assert np.isclose(
         result[result.index.isin(reference_result.index)][DENSITY_COL],
         reference_result[DENSITY_COL],
@@ -306,7 +306,7 @@ def test_voronoi_density_blind_points(
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.index.values).all()
     assert np.isclose(
         result[result.index.isin(reference_result.index)][DENSITY_COL],
         reference_result[DENSITY_COL],
@@ -381,7 +381,7 @@ def test_voronoi_density_blind_points_cutoff(
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.index.values).all()
     assert np.isclose(
         result[result.index.isin(reference_result.index)][DENSITY_COL],
         reference_result[DENSITY_COL],
@@ -482,7 +482,7 @@ def test_voronoi_speed(
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.in1d(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.index.values).all()
     assert np.isclose(
         result[result.index.isin(reference_result.index)][SPEED_COL],
         reference_result[SPEED_COL],
@@ -527,6 +527,16 @@ def test_nt(line, folder):
         traj_data=trajectory,
         measurement_line=line,
     )
+
+    # In JPSreport crossing was counted when a pedestrians touches the
+    # measurement line the first time. In PedPy the crossing is counted
+    # when the movement crossed the line and does not end on it. Hence,
+    # some slight modifications in edge need to be done to adapt the
+    # reference results.
+    if folder.name == "corridor":
+        reference_result.loc[243, CUMULATED_COL] -= 1
+        reference_result.loc[3082, CUMULATED_COL] -= 1
+
     assert (reference_result.index.values == result.index.values).all()
     assert np.isclose(
         result[TIME_COL], reference_result[TIME_COL], atol=TOLERANCE

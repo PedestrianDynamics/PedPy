@@ -3,12 +3,12 @@ import pytest
 import shapely
 
 from pedpy.data.geometry import (
-    GeometryError,
     MeasurementArea,
     MeasurementLine,
     WalkableArea,
     _create_polygon_from_input,
 )
+from pedpy.errors import GeometryError
 
 
 # ###############################################################################
@@ -46,15 +46,36 @@ from pedpy.data.geometry import (
                 (0.1, 1.1),
             ],
         ),
+        (
+            [(-10, 6.5), (-10, -6.5), (6, -6.5), (6, 6.5)],
+            [
+                [
+                    (0, 6.5),
+                    (0, 0.35),
+                    (0.2, 0.35),
+                    (0.2, 0.85),
+                    (2.2, 0.85),
+                    (2.2, 6.5),
+                ],
+                [
+                    (0, -6.5),
+                    (0, -0.35),
+                    (0.2, -0.35),
+                    (0.2, -0.85),
+                    (2.2, -0.85),
+                    (2.2, -6.5),
+                ],
+            ],
+        ),
     ],
 )
 def test_create_walkable_area_from_coordinates(point_input):
     reference_polygon = shapely.Polygon(*point_input)
+    if not reference_polygon.is_valid:
+        reference_polygon = reference_polygon.buffer(0)
     walkable_area = WalkableArea(*point_input)
 
-    assert walkable_area.polygon.equals_exact(
-        reference_polygon, tolerance=1e-20
-    )
+    assert walkable_area.polygon.equals(reference_polygon)
     assert walkable_area.area != 0
     assert walkable_area.polygon.is_simple
     assert shapely.is_prepared(walkable_area.polygon)
@@ -131,11 +152,10 @@ def test_create_walkable_area_from_points(point_input):
     reference_polygon = shapely.Polygon(*point_input)
     walkable_area = WalkableArea(*point_input)
 
-    assert walkable_area.polygon.equals_exact(
-        reference_polygon, tolerance=1e-20
-    )
+    assert walkable_area.polygon.equals(reference_polygon)
     assert walkable_area.area != 0
     assert walkable_area.polygon.is_simple
+    assert walkable_area.polygon.is_valid
     assert shapely.is_prepared(walkable_area.polygon)
 
 
@@ -172,11 +192,10 @@ def test_create_walkable_area_from_points(point_input):
 def test_create_walkable_area_from_polygon(reference_polygon):
     walkable_area = WalkableArea(reference_polygon)
 
-    assert walkable_area.polygon.equals_exact(
-        reference_polygon, tolerance=1e-20
-    )
+    assert walkable_area.polygon.equals(reference_polygon)
     assert walkable_area.area != 0
     assert walkable_area.polygon.is_simple
+    assert walkable_area.polygon.is_valid
     assert shapely.is_prepared(walkable_area.polygon)
 
 
@@ -215,11 +234,10 @@ def test_create_walkable_area_from_geometry_collection(geometry_collection):
 
     walkable_area = WalkableArea(geometry_collection)
 
-    assert walkable_area.polygon.equals_exact(
-        reference_polygon, tolerance=1e-20
-    )
+    assert walkable_area.polygon.equals(reference_polygon)
     assert walkable_area.area != 0
     assert walkable_area.polygon.is_simple
+    assert walkable_area.polygon.is_valid
     assert shapely.is_prepared(walkable_area.polygon)
 
 
@@ -287,11 +305,10 @@ def test_create_walkable_area_from_wkt(wkt):
     if isinstance(reference_polygon, shapely.GeometryCollection):
         reference_polygon = shapely.union_all(reference_polygon)
 
-    assert walkable_area.polygon.equals_exact(
-        reference_polygon, tolerance=1e-20
-    )
+    assert walkable_area.polygon.equals(reference_polygon)
     assert walkable_area.area != 0
     assert walkable_area.polygon.is_simple
+    assert walkable_area.polygon.is_valid
     assert shapely.is_prepared(walkable_area.polygon)
 
 
@@ -336,7 +353,7 @@ def test_create_walkable_area_error(area_input, message):
 def test_changing_walkable_area_fails():
     with pytest.raises(
         AttributeError,
-        match=rf"Walkable area can not be changed after construction!",
+        match=r"Walkable area can not be changed after construction!",
     ):
         walkable_area = WalkableArea(
             shapely.Polygon([(-1, -1), (-1, 1), (1, 1), (1, -1)])
@@ -370,6 +387,7 @@ def test_create_measurement_area_from_coordinates(coordinates):
     assert measurement_area.coords[:] == coordinates
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
+    assert measurement_area.polygon.is_valid
 
 
 @pytest.mark.parametrize(
@@ -404,6 +422,7 @@ def test_create_measurement_area_from_points(points):
     assert measurement_area.coords[:] == reference_polygon.exterior.coords[:]
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
+    assert measurement_area.polygon.is_valid
     assert shapely.is_prepared(measurement_area.polygon)
 
 
@@ -444,6 +463,7 @@ def test_create_measurement_area_from_polygon(polygon):
     assert measurement_area.coords[:] == polygon.exterior.coords[:]
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
+    assert measurement_area.polygon.is_valid
     assert shapely.is_prepared(measurement_area.polygon)
 
 
@@ -492,6 +512,7 @@ def test_create_measurement_area_from_wkt(wkt):
     assert measurement_area.coords[:] == reference_polygon.exterior.coords[:]
     assert measurement_area.area != 0
     assert measurement_area._polygon.is_simple
+    assert measurement_area.polygon.is_valid
     assert shapely.is_prepared(measurement_area.polygon)
 
 
@@ -590,7 +611,7 @@ def test_create_measurement_area_error(area_input, message):
 def test_changing_measurement_area_fails():
     with pytest.raises(
         AttributeError,
-        match=rf"Measurement area can not be changed after construction!",
+        match=r"Measurement area can not be changed after construction!",
     ):
         measurement_area = MeasurementArea(((0, 0), (0, 1), (1, 1), (1, 0)))
         measurement_area._polygon = shapely.LinearRing(
@@ -712,7 +733,7 @@ def test_create_measurement_line_error(line_input, message):
 def test_changing_measurement_line_fails():
     with pytest.raises(
         AttributeError,
-        match=rf"Measurement line can not be changed after construction!",
+        match=r"Measurement line can not be changed after construction!",
     ):
         measurement_line = MeasurementLine(
             [
@@ -761,9 +782,10 @@ def test_create_polygon_from_coordinates(coordinate_input):
     polygon = _create_polygon_from_input(*coordinate_input)
 
     assert isinstance(polygon, shapely.Polygon)
-    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.equals(reference_polygon)
     assert polygon.area != 0
     assert polygon.is_simple
+    assert polygon.is_valid
 
 
 @pytest.mark.parametrize(
@@ -829,9 +851,10 @@ def test_create_polygon_from_points(point_input):
     polygon = _create_polygon_from_input(*point_input)
 
     assert isinstance(polygon, shapely.Polygon)
-    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.equals(reference_polygon)
     assert polygon.area != 0
     assert polygon.is_simple
+    assert polygon.is_valid
 
 
 @pytest.mark.parametrize(
@@ -865,9 +888,10 @@ def test_create_polygon_from_polygon(reference_polygon):
     polygon = _create_polygon_from_input(reference_polygon)
 
     assert isinstance(polygon, shapely.Polygon)
-    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.equals(reference_polygon)
     assert polygon.area != 0
     assert polygon.is_simple
+    assert polygon.is_valid
 
 
 @pytest.mark.parametrize(
@@ -908,9 +932,10 @@ def test_create_polygon_from_wkt(wkt):
     polygon = _create_polygon_from_input(wkt)
 
     assert isinstance(polygon, shapely.Polygon)
-    assert polygon.equals_exact(reference_polygon, tolerance=1e-20)
+    assert polygon.equals(reference_polygon)
     assert polygon.area != 0
     assert polygon.is_simple
+    assert polygon.is_valid
 
 
 @pytest.mark.parametrize(

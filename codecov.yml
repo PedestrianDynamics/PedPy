@@ -1,0 +1,22 @@
+coverage:
+  ignore:
+    - "pedpy/plotting/*"  # Exclude plotting for coverage, as we will not test it
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 50%  # Allow more fluctuation
+        informational: true  # Do not fail CI; only provide information
+    patch:
+      default:
+        target: auto
+        threshold: 10%  # Stricter for new changes
+        informational: true  # Do not fail CI; only provide information
+
+comment:
+  layout: "condensed_header, condensed_files, condensed_footer" # add "condensed_" to "header", "files" and "footer"
+  behavior: new  # Only post for new commits
+  require_changes: false  # Always post comments
+  require_base: false  # Don’t block if base is missing
+  require_head: false  # Don’t block if head is missing
+  hide_project_coverage: false  # Show project-level coverage

@@ -1,12 +1,13 @@
 """Helper functions for the analysis methods."""
-# pylint: disable=C0302
 
+# pylint: disable=C0302
 import itertools
 import logging
+import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import List, Optional, Tuple
+from typing import Callable, Final, List, Optional, Tuple, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -25,18 +26,27 @@ from pedpy.column_identifier import (
     LAST_FRAME_COL,
     MID_POSITION_COL,
     NEIGHBORS_COL,
+    NEIGHBOR_ID_COL,
     POINT_COL,
     POLYGON_COL,
+    SPECIES_COL,
     START_POSITION_COL,
     TIME_COL,
+    V_X_COL,
+    V_Y_COL,
     WINDOW_SIZE_COL,
     X_COL,
     Y_COL,
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyValueError
 
 _log = logging.getLogger(__name__)
+
+LambdaGroupFunction: TypeAlias = Callable[
+    [pd.DataFrame, MeasurementLine], pd.DataFrame
+]
 
 
 class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
@@ -51,6 +61,14 @@ class AccelerationCalculation(Enum):  # pylint: disable=too-few-public-methods
     """Method-identifier used to compute the movement at traj borders."""
 
     BORDER_EXCLUDE = auto()
+
+
+class DataValidationStatus(Enum):  # pylint: disable=too-few-public-methods
+    """Identifies the result of a return value."""
+
+    DATA_CORRECT = auto()
+    COLUMN_MISSING = auto()
+    ENTRY_MISSING = auto()
 
 
 @dataclass(
@@ -175,11 +193,13 @@ def compute_frame_range_in_area(
         traj_data=traj_data, measurement_area=measurement_area
     )
 
-    crossing_frames_first = compute_crossing_frames(
-        traj_data=traj_data, measurement_line=measurement_line
+    crossing_frames_first = _compute_crossing_frames(
+        traj_data=traj_data,
+        measurement_line=measurement_line,
+        count_on_line=True,
     )
-    crossing_frames_second = compute_crossing_frames(
-        traj_data=traj_data, measurement_line=second_line
+    crossing_frames_second = _compute_crossing_frames(
+        traj_data=traj_data, measurement_line=second_line, count_on_line=True
     )
 
     start_crossed_1 = _check_crossing_in_frame_range(
@@ -246,6 +266,7 @@ def compute_frame_range_in_area(
 
 def compute_neighbors(
     individual_voronoi_data: pd.DataFrame,
+    as_list: bool = True,
 ) -> pd.DataFrame:
     """Compute the neighbors of each pedestrian based on the Voronoi cells.
 
@@ -253,16 +274,49 @@ def compute_neighbors(
     pedestrian is a neighbor if the Voronoi cells of both pedestrian touch
     and some point. The threshold for touching is set to 1mm.
 
+    Important:
+        For legacy reasons the function :func:`~method_utils.compute_neighbors`
+        works also without specifing :code:`as_list` (defaults to
+        :code:`True`). We highly discourage using this, as its result is
+        harder to be used in further computations. Use 'as_list=False' instead.
+        The default value may change in future versions of *PedPy*.
+
     Args:
         individual_voronoi_data (pandas.DataFrame): individual voronoi data,
             needs to contain a column 'polygon', which holds a
             :class:`shapely.Polygon` (result from
             :func:`~method_utils.compute_individual_voronoi_polygons`)
+        as_list (bool): Return the neighbors as a list per pedestrian and frame,
+            if :code:`True`, otherwise each neighbor is in a single row.
 
     Returns:
         DataFrame containing the columns 'id', 'frame' and 'neighbors', where
-        neighbors are a list of the neighbor's IDs
+        neighbors are a list of the neighbor's IDs if as_list is :code:`True`.
+        Otherwise the DataFrame contains the columns 'id', 'frame',
+        'neighbor_id'.
     """
+    if as_list:
+        warnings.warn(
+            "The parameter 'as_list=True' is deprecated and may change in a "
+            "future version. It is kept for backwards compatibility. We "
+            "highly discourage using this, as its result is harder to be "
+            "used in further computations. Use 'as_list=False' instead.",
+            category=DeprecationWarning,
+            stacklevel=2,  # Makes the warning appear at the caller level
+        )
+
+        return _compute_neighbors_list(
+            individual_voronoi_data=individual_voronoi_data
+        )
+    else:
+        return _compute_neighbors_single(
+            individual_voronoi_data=individual_voronoi_data
+        )
+
+
+def _compute_neighbors_list(
+    individual_voronoi_data: pd.DataFrame,
+) -> pd.DataFrame:
     neighbor_df = []
 
     for frame, frame_data in individual_voronoi_data.groupby(FRAME_COL):
@@ -301,7 +355,116 @@ def compute_neighbors(
         )
         neighbor_df.append(frame_df)
 
+    if not neighbor_df:
+        return pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBORS_COL])
+
     return pd.concat(neighbor_df)
+
+
+def _compute_neighbors_single(
+    individual_voronoi_data: pd.DataFrame,
+) -> pd.DataFrame:
+    neighbor_df = []
+
+    for frame, frame_data in individual_voronoi_data.groupby(FRAME_COL):
+        polygons = frame_data[POLYGON_COL].to_numpy()
+
+        touching = shapely.dwithin(
+            polygons[:, np.newaxis], polygons[np.newaxis, :], 1e-9
+        )
+
+        # the peds are not neighbors of themselves
+        np.fill_diagonal(touching, False)
+
+        # Filter neighbor relationships based on the touching matrix
+        ids = frame_data[ID_COL].to_numpy()
+        row_idx, col_idx = np.where(
+            touching
+        )  # Get row and column indices of True values
+        id_column = ids[row_idx]  # Extract original IDs
+        neighbor_column = ids[col_idx]  # Extract corresponding neighbor IDs
+
+        # Create DataFrame for this frame's neighbors
+        frame_neighbors = pd.DataFrame(
+            {
+                ID_COL: id_column,
+                FRAME_COL: frame,
+                NEIGHBOR_ID_COL: neighbor_column,
+            }
+        )
+
+        # Append to the result list
+        neighbor_df.append(frame_neighbors)
+
+    if not neighbor_df:
+        return pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL])
+
+    # Concatenate all frames' data into a single DataFrame
+    return (
+        pd.concat(neighbor_df, ignore_index=True)
+        .sort_values(by=[FRAME_COL, ID_COL])
+        .reset_index(drop=True)
+    )
+
+
+def compute_neighbor_distance(
+    *,
+    traj_data: TrajectoryData,
+    neighborhood: pd.DataFrame,
+) -> pd.DataFrame:
+    """Compute the distance between the neighbors.
+
+    Computes the distance between the position of neighbors. As neighbors the
+    result of :func:`~compute_neighbors` with parameter :code:`as_list=False`.
+
+    Note:
+        The resulting :class:`~pandas.DataFrame` is symmetric. If pedestrian A
+        is a neighbor of pedestrian B, then pedestrian B is also a neighbor of
+        pedestrian A. Consequently, the distance between both appears twice in
+        the :class:`~pandas.DataFrame`.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        neighborhood (pd.DataFrame): DataFrame containing the columns 'id',
+            'frame' and 'neighbor_id'. The result of :func:`~compute_neighbors`
+            with parameter :code:`as_list=False` can be used here as input.
+
+    Raises:
+        PedPyValueError: When passing a result of :func:`~compute_neighbors`
+            with parameter :code:`as_list=True`.
+
+    Returns:
+        DataFrame containing the columns 'id', 'frame', 'neighbor_id' and
+        'distance'.
+    """
+    if NEIGHBORS_COL in neighborhood.columns:
+        raise PedPyValueError(
+            "Cannot compute distance between neighbors with list-format data. "
+            "Please use the result of compute_neighbors with parameter "
+            "as_list=False."
+        )
+
+    neighbors_with_position = neighborhood.merge(
+        traj_data.data[[ID_COL, FRAME_COL, POINT_COL]],
+        on=[ID_COL, FRAME_COL],
+        how="left",
+    )
+
+    neighbors_with_position = neighbors_with_position.merge(
+        traj_data.data[[ID_COL, FRAME_COL, POINT_COL]],
+        left_on=[NEIGHBOR_ID_COL, FRAME_COL],
+        right_on=[ID_COL, FRAME_COL],
+        suffixes=("", "_neighbor"),
+    )
+
+    neighbors_with_position[DISTANCE_COL] = shapely.distance(
+        neighbors_with_position[POINT_COL],
+        neighbors_with_position["point_neighbor"],
+    )
+
+    return neighbors_with_position[
+        [ID_COL, FRAME_COL, NEIGHBOR_ID_COL, DISTANCE_COL]
+    ]
 
 
 def compute_time_distance_line(
@@ -439,7 +602,7 @@ def compute_individual_voronoi_polygons(
         if not use_blind_points and len(points) - len(blind_points) < 4:
             _log.warning(
                 f"Not enough pedestrians (N="
-                f"{len(points) -len(blind_points)}) available to "
+                f"{len(points) - len(blind_points)}) available to "
                 f"calculate Voronoi cells for frame = {frame}. "
                 f"Consider enable use of blind points."
             )
@@ -522,7 +685,9 @@ def compute_intersecting_polygons(
 
 
 def compute_crossing_frames(
-    *, traj_data: TrajectoryData, measurement_line: MeasurementLine
+    *,
+    traj_data: TrajectoryData,
+    measurement_line: MeasurementLine,
 ) -> pd.DataFrame:
     """Compute the frames at the pedestrians pass the measurement line.
 
@@ -549,6 +714,35 @@ def compute_crossing_frames(
         DataFrame containing the columns 'id', 'frame', where 'frame' is
         the frame where the measurement line is crossed.
     """
+    return _compute_crossing_frames(
+        traj_data=traj_data,
+        measurement_line=measurement_line,
+        count_on_line=False,
+    )
+
+
+def _compute_crossing_frames(
+    *,
+    traj_data: TrajectoryData,
+    measurement_line: MeasurementLine,
+    count_on_line: bool,
+) -> pd.DataFrame:
+    """Compute the frames at which pedestrians pass the measurement line.
+
+    If count_on_line is set to True, the crossing frame is the one where the
+    pedestrian touches the line. Otherwise, it is the frame where the
+    pedestrian crosses the line without stopping on it.
+
+    Args:
+        traj_data (pandas.DataFrame): trajectory data
+        measurement_line (MeasurementLine): measurement line which is crossed
+        count_on_line (bool): Count movement ending on line (True) or only if
+            movement crosses line, but does not end on line.
+
+    Returns:
+        DataFrame containing the columns 'id', 'frame', where 'frame' is
+        the frame where the measurement line is crossed.
+    """
     # stack is used to get the coordinates in the correct order, as pygeos
     # does not support creating linestring from points directly. The
     # resulting array looks as follows:
@@ -567,11 +761,29 @@ def compute_crossing_frames(
         )
     )
 
-    # crossing means, the current movement crosses the line and the end point
-    # of the movement is not on the line. The result is sorted by frame number
-    crossing_frames = df_movement.loc[
-        shapely.intersects(df_movement.movement, measurement_line.line)
-    ][[ID_COL, FRAME_COL]]
+    movement_crosses_line = shapely.intersects(
+        df_movement.movement, measurement_line.line
+    )
+
+    if count_on_line:
+        crossing_frames = df_movement.loc[movement_crosses_line][
+            [ID_COL, FRAME_COL]
+        ]
+    else:
+        # Case when crossing means movement crosses the line, but the end point
+        # is not on it
+
+        # Minimum distance to consider crossing complete
+        CROSSING_THRESHOLD: Final = 1e-5  # noqa: N806
+
+        movement_ends_on_line = (
+            shapely.distance(df_movement.end_position, measurement_line.line)
+            < CROSSING_THRESHOLD
+        )
+
+        crossing_frames = df_movement.loc[
+            (movement_crosses_line) & (~movement_ends_on_line)
+        ][[ID_COL, FRAME_COL]]
 
     return crossing_frames
 
@@ -665,7 +877,7 @@ def _compute_individual_movement(
             traj_data, frame_step, bidirectional
         )
 
-    raise ValueError("speed border method not accepted")
+    raise PedPyValueError("speed border method not accepted")
 
 
 def _compute_movement_exclude_border(
@@ -896,7 +1108,7 @@ def _compute_individual_movement_acceleration(
             traj_data, frame_step
         )
 
-    raise ValueError("acceleration border method not accepted")
+    raise PedPyValueError("acceleration border method not accepted")
 
 
 def _compute_movement_acceleration_exclude_border(
@@ -1030,3 +1242,222 @@ def _check_crossing_in_frame_range(
     crossed[column_name] = crossed[column_name] == "both"
     crossed = crossed[crossed[column_name]]
     return crossed
+
+
+def _compute_orthogonal_speed_in_relation_to_proportion(
+    group: pd.DataFrame, measurement_line: MeasurementLine
+) -> pd.DataFrame:
+    """Calculates the speed orthogonal to the line times partial line length.
+
+    group is a DataFrameGroupBy containing the columns
+        'v_x', 'v_y' and 'polygon'.
+    """
+    normal_vector = measurement_line.normal_vector()
+    return (
+        group[V_X_COL] * normal_vector[0] + group[V_Y_COL] * normal_vector[1]
+    ) * _compute_partial_line_length(group[POLYGON_COL], measurement_line)
+
+
+def _compute_partial_line_length(
+    polygon: shapely.Polygon, measurement_line: MeasurementLine
+) -> float:
+    """Calculates the fraction of the length that is intersected by the polygon.
+
+    .
+    """
+    line = measurement_line.line
+    return shapely.length(shapely.intersection(polygon, line)) / shapely.length(
+        line
+    )
+
+
+def _apply_lambda_for_intersecting_frames(
+    *,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+    species: pd.DataFrame,
+    lambda_for_group: LambdaGroupFunction,
+    column_id_sp1: str,
+    column_id_sp2: str,
+    individual_speed: pd.DataFrame = None,
+) -> pd.DataFrame:
+    """Apply a custom function to frames.
+
+    Frames, where Voronoi polygons intersect with a measurement line,
+    grouped by species.
+
+    This function filters the `individual_voronoi_polygons` to include only
+    those polygons that intersect with the given `measurement_line`.
+    It then separates the data by species and applies a user-defined
+    function (`lambda_for_group`) to each group on a per-frame basis.
+
+    The results for both species are merged into a single DataFrame,
+    with separate columns for each species' computed values.
+
+    Args:
+        individual_voronoi_polygons (pd.DataFrame):
+            DataFrame containing Voronoi polygons for each individual, including
+            a polygon geometry column.
+
+        measurement_line (MeasurementLine):
+            The measurement line used to filter intersecting Voronoi polygons.
+
+        species (pd.DataFrame):
+            DataFrame mapping individual IDs to species identifiers.
+            Must contain the species column (`SPECIES_COL`).
+
+        lambda_for_group (LambdaGroupFunction):
+            A function applied to each group of species data intersecting
+            the measurement line.
+            It takes a species-specific group of data and the measurement line
+            and returns a processed DataFrame.
+
+        column_id_sp1 (str):
+            The name of the output column for species 1 results in the
+            merged DataFrame.
+
+        column_id_sp2 (str):
+            The name of the output column for species 2 results in the merged
+            DataFrame.
+
+        individual_speed (pd.DataFrame, optional):
+            Optional DataFrame containing individual speed data, merged if
+            provided, using `ID_COL` and `FRAME_COL`.
+
+    Returns:
+        pd.DataFrame:
+            A DataFrame with computed results for both species, merged by frame.
+            Contains `column_id_sp1` and `column_id_sp2` as result columns.
+            The result is sorted by frame in descending order.
+
+    Notes:
+        - Species are identified by `1` and `-1` in the `SPECIES_COL`.
+        - Frames without data for one species will contain `NaN` in the
+          corresponding result column.
+    """
+    merged_table = individual_voronoi_polygons[
+        shapely.intersects(
+            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
+        )
+    ]
+
+    merged_table = merged_table.merge(species, on="id", how="left")
+    if individual_speed is not None:
+        merged_table = merged_table.merge(
+            individual_speed,
+            left_on=[ID_COL, FRAME_COL],
+            right_on=[ID_COL, FRAME_COL],
+        )
+
+    species_1 = merged_table[merged_table[SPECIES_COL] == 1]
+    species_2 = merged_table[merged_table[SPECIES_COL] == -1]
+
+    if not species_1.empty:
+        species_1 = (
+            species_1.groupby(FRAME_COL, group_keys=False)
+            .apply(
+                lambda group: lambda_for_group(group, measurement_line),
+                include_groups=False,
+            )
+            .reset_index()
+        )
+        species_1.columns = [FRAME_COL, column_id_sp1]
+    else:
+        species_1 = pd.DataFrame(columns=[FRAME_COL, column_id_sp1])
+
+    if not species_2.empty:
+        species_2 = (
+            species_2.groupby(FRAME_COL, group_keys=False)
+            .apply(
+                lambda group: lambda_for_group(group, measurement_line),
+                include_groups=False,
+            )
+            .reset_index()
+        )
+        species_2.columns = [FRAME_COL, column_id_sp2]
+    else:
+        species_2 = pd.DataFrame(columns=[FRAME_COL, column_id_sp2])
+
+    result = species_1.merge(
+        species_2, on=FRAME_COL, how="outer"
+    ).infer_objects(copy=False)
+    return result.sort_values(by=FRAME_COL, ascending=False)
+
+
+def is_species_valid(
+    *,
+    species: pd.DataFrame,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+) -> bool:
+    """Checks if there's species data of every pedestrian intersecting the line.
+
+    Args:
+        species (pd.DataFrame): dataframe containing information
+            about the species of every pedestrian intersecting with the line,
+            result from :func:`~speed_calculator.compute_species`
+
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
+
+        measurement_line (MeasurementLine): measurement line
+
+    Returns:
+        True if all needed data is provided by the species dataframe else False.
+    """
+    intersecting_polygons = individual_voronoi_polygons[
+        shapely.intersects(
+            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
+        )
+    ]
+    return intersecting_polygons[ID_COL].isin(species[ID_COL]).all()
+
+
+def is_individual_speed_valid(
+    *,
+    individual_speed: pd.DataFrame,
+    individual_voronoi_polygons: pd.DataFrame,
+    measurement_line: MeasurementLine,
+) -> DataValidationStatus:
+    """Checks for speed data in any entry a pedestrian is intersecting the line.
+
+    Args:
+        individual_speed (pd.DataFrame): individual speed data per frame,
+            result from :func:`~speed_calculator.compute_individual_speed`
+            using :code:`compute_velocity`
+
+        individual_voronoi_polygons (pd.DataFrame): individual Voronoi data per
+            frame, result
+            from :func:`~method_utils.compute_individual_voronoi_polygons`
+
+        measurement_line (MeasurementLine): measurement line
+
+    Returns:
+        DATA_CORRECT if all needed data is provided
+            by the individual speed dataframe,
+        COLUMN_MISSING if there is a column missing,
+        ENTRY_MISSING if there is no matching entry
+            for a frame where polygon and line intersect.
+    """
+    if not all(
+        column in individual_speed.columns
+        for column in [ID_COL, FRAME_COL, V_X_COL, V_Y_COL]
+    ):
+        return DataValidationStatus.COLUMN_MISSING
+    intersecting_polygons = individual_voronoi_polygons[
+        shapely.intersects(
+            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
+        )
+    ]
+    if (
+        not intersecting_polygons.merge(
+            individual_speed, on=["id", "frame"], how="left"
+        )
+        .notna()
+        .all()
+        .all()
+    ):
+        return DataValidationStatus.ENTRY_MISSING
+
+    return DataValidationStatus.DATA_CORRECT

@@ -10,22 +10,11 @@ import shapely
 from pedpy.column_identifier import ACC_COL, A_X_COL, A_Y_COL, FRAME_COL, ID_COL
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import AccelerationError
 from pedpy.methods.method_utils import (
     AccelerationCalculation,
     _compute_individual_movement_acceleration,
 )
-
-
-class AccelerationError(Exception):
-    """Class reflecting errors when computing accelerations with PedPy."""
-
-    def __init__(self, message):
-        """Create AccelerationError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
 
 
 def compute_individual_acceleration(

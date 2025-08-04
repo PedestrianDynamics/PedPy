@@ -21,19 +21,28 @@ from numpy.typing import NDArray
 from pedpy.column_identifier import (
     CUMULATED_COL,
     DENSITY_COL,
+    DENSITY_SP1_COL,
+    DENSITY_SP2_COL,
     FLOW_COL,
+    FLOW_SP1_COL,
+    FLOW_SP2_COL,
     FRAME_COL,
     ID_COL,
     INTERSECTION_COL,
     MEAN_SPEED_COL,
+    NEIGHBORS_COL,
+    NEIGHBOR_ID_COL,
     POLYGON_COL,
     SPEED_COL,
+    SPEED_SP1_COL,
+    SPEED_SP2_COL,
     TIME_COL,
     X_COL,
     Y_COL,
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyRuntimeError
 
 _log = logging.getLogger(__name__)
 
@@ -55,6 +64,7 @@ def _plot_polygon(
     line_width: float = 1,
     hole_color: Any = "lightgrey",
     hole_alpha: float = 1,
+    zorder: float = 1000,
 ) -> matplotlib.axes.Axes:
     """Plot the shapely polygon (including holes).
 
@@ -68,6 +78,8 @@ def _plot_polygon(
         line_width (float): line width of the borders
         hole_color (Any): background color of holes
         hole_alpha (float): alpha of background color for holes
+        zorder (float): Specifies the drawing order of the polygon,
+            lower values are drawn first
 
     Returns:
         matplotlib.axes.Axes instance where the polygon is plotted
@@ -84,7 +96,7 @@ def _plot_polygon(
         facecolor="none",
         linewidth=line_width,
         closed=True,
-        zorder=1000,
+        zorder=zorder,
     )
     axes.add_patch(exterior_polygon_border)
 
@@ -95,7 +107,7 @@ def _plot_polygon(
         linewidth=line_width,
         alpha=polygon_alpha,
         closed=True,
-        zorder=1000,
+        zorder=zorder,
     )
     axes.add_patch(exterior_polygon_fill)
 
@@ -109,7 +121,7 @@ def _plot_polygon(
             linewidth=line_width,
             alpha=1,
             closed=True,
-            zorder=1000,
+            zorder=zorder,
         )
         axes.add_patch(interior_polygon_border)
 
@@ -120,7 +132,7 @@ def _plot_polygon(
             linewidth=line_width,
             alpha=hole_alpha,
             closed=True,
-            zorder=1000,
+            zorder=zorder,
         )
         axes.add_patch(interior_polygon_fill)
 
@@ -142,6 +154,203 @@ def _plot_series(  # pylint: disable=too-many-arguments
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
+
+
+def _plot_multiple_series(  # pylint: disable=too-many-arguments
+    axes: matplotlib.axes.Axes,
+    title: str,
+    x: pd.Series,
+    y_s: list[pd.Series],
+    colors: list[str],
+    labels: list[str],
+    line_width: float,
+    x_label: str,
+    y_label: str,
+) -> matplotlib.axes.Axes:
+    axes.set_title(title)
+    for y, color, label in zip(y_s, colors, labels, strict=False):
+        axes.plot(x, y, color=color, label=label, linewidth=line_width)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
+    axes.legend()
+    return axes
+
+
+def plot_speed_at_line(
+    *,
+    speed_at_line: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the speed of both species and the total speed at the line.
+
+    Args:
+        speed_at_line(pd.DataFrame): DataFrame containing information on
+            speed at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        title (optional): title of the plot
+        color_species1 (optional): color of the speed of species 1 in the plot
+        color_species2 (optional): color of the speed of species 2 in the plot
+        color_total (optional): color of the total speed in the plot
+        label_species1 (optional): tag of species 1 in the legend
+        label_species2 (optional): tag of species 2 in the legend
+        label_total (optional): tag of total speed in the legend
+
+    Returns:
+         matplotlib.axes.Axes instance where the speeds are plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
+    color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
+    color_total = kwargs.get("color_total", PEDPY_GREEN)
+    title = kwargs.get("title", "Speed at Line")
+    x_label = kwargs.get("x_label", "Frame")
+    y_label = kwargs.get("y_label", "v / m/s")
+    label_sp1 = kwargs.get("lable_species1", "species 1")
+    label_sp2 = kwargs.get("lable_species2", "species 2")
+    label_total = kwargs.get("lable_total", "total")
+    line_width = kwargs.get("line_width", 0.5)
+
+    return _plot_multiple_series(
+        axes=axes,
+        title=title,
+        x=speed_at_line[FRAME_COL],
+        y_s=[
+            speed_at_line[SPEED_SP1_COL],
+            speed_at_line[SPEED_SP2_COL],
+            speed_at_line[SPEED_COL],
+        ],
+        colors=[color_sp1, color_sp2, color_total],
+        labels=[label_sp1, label_sp2, label_total],
+        x_label=x_label,
+        y_label=y_label,
+        line_width=line_width,
+    )
+
+
+def plot_density_at_line(
+    *,
+    density_at_line: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the density of both species and the total density at the line.
+
+    Args:
+        density_at_line(pd.DataFrame): DataFrame containing information on
+            density at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        title (optional): title of the plot
+        color_species1 (optional): color of the density of species 1 in the plot
+        color_species2 (optional): color of the density of species 2 in the plot
+        color_total (optional): color of the total density in the plot
+        label_species1 (optional): tag of species 1 in the legend
+        label_species2 (optional): tag of species 2 in the legend
+        label_total (optional): tag of total speed in the legend
+
+    Returns:
+         matplotlib.axes.Axes instance where the densities are plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
+    color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
+    color_total = kwargs.get("color_total", PEDPY_GREEN)
+    title = kwargs.get("title", "Density at Line")
+    x_label = kwargs.get("x_label", "Frame")
+    y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
+    label_sp1 = kwargs.get("lable_species1", "species 1")
+    label_sp2 = kwargs.get("lable_species2", "species 2")
+    label_total = kwargs.get("lable_total", "total")
+    line_width = kwargs.get("line_width", 0.5)
+
+    return _plot_multiple_series(
+        axes=axes,
+        title=title,
+        x=density_at_line[FRAME_COL],
+        y_s=[
+            density_at_line[DENSITY_SP1_COL],
+            density_at_line[DENSITY_SP2_COL],
+            density_at_line[DENSITY_COL],
+        ],
+        colors=[color_sp1, color_sp2, color_total],
+        labels=[label_sp1, label_sp2, label_total],
+        x_label=x_label,
+        y_label=y_label,
+        line_width=line_width,
+    )
+
+
+def plot_flow_at_line(
+    *,
+    flow_at_line: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the flow of both species and the total flow at the line.
+
+    Args:
+        flow_at_line(pd.DataFrame): DataFrame containing information on
+            flow at the line
+        axes (matplotlib.axes.Axes, optional): Axes to plot on,
+            if None new will be created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        title (optional): title of the plot
+        color_species1 (optional): color of the flow of species 1 in the plot
+        color_species2 (optional): color of the flow of species 2 in the plot
+        color_total (optional): color of the total flow in the plot
+        label_species1 (optional): tag of species 1 in the legend
+        label_species2 (optional): tag of species 2 in the legend
+        label_total (optional): tag of total speed in the legend
+
+    Returns:
+         matplotlib.axes.Axes instance where the profiles are plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
+    color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
+    color_total = kwargs.get("color_total", PEDPY_GREEN)
+    title = kwargs.get("title", "Flow at Line")
+    x_label = kwargs.get("x_label", "Frame")
+    y_label = kwargs.get("y_label", "J / 1/s")
+    label_sp1 = kwargs.get("lable_species1", "species 1")
+    label_sp2 = kwargs.get("lable_species2", "species 2")
+    label_total = kwargs.get("lable_total", "total")
+    line_width = kwargs.get("line_width", 0.5)
+
+    return _plot_multiple_series(
+        axes=axes,
+        title=title,
+        x=flow_at_line[FRAME_COL],
+        y_s=[
+            flow_at_line[FLOW_SP1_COL],
+            flow_at_line[FLOW_SP2_COL],
+            flow_at_line[FLOW_COL],
+        ],
+        colors=[color_sp1, color_sp2, color_total],
+        labels=[label_sp1, label_sp2, label_total],
+        x_label=x_label,
+        y_label=y_label,
+        line_width=line_width,
+    )
 
 
 def plot_nt(
@@ -469,7 +678,12 @@ def plot_neighborhood(
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the neighborhood.
+    """Plots the neighborhood of a specified pedestrian.
+
+    This function visualizes the neighborhood for a given pedestrian at a
+    specified frame using Voronoi polygons for each pedestrian. It colors
+    the specified pedestrian, their neighbors, and other pedestrians
+    distinctly based on the neighborhood data.
 
     Args:
         pedestrian_id(int): id of pedestrian to plot neighbors for
@@ -491,44 +705,104 @@ def plot_neighborhood(
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
+    if NEIGHBORS_COL in neighbors.columns:
+        # Extract neighbors from when they are stored as list in a column
+        neighbors_in_frame = neighbors[neighbors[FRAME_COL] == frame].set_index(
+            ID_COL
+        )
+        neighbor_ids = neighbors_in_frame[NEIGHBORS_COL].to_dict()
+    elif NEIGHBOR_ID_COL in neighbors.columns:
+        # Extract neighbors from when they are stored as one neighbor per row
+        neighbors_in_frame = neighbors[neighbors[FRAME_COL] == frame]
+        neighbor_ids = (
+            neighbors_in_frame.groupby(ID_COL)[NEIGHBOR_ID_COL]
+            .apply(set)
+            .to_dict()
+        )
+    else:
+        raise PedPyRuntimeError("Unknown neighbor data format")
+
+    return _plot_neighborhood(
+        pedestrian_id=pedestrian_id,
+        neighbor_ids=neighbor_ids,
+        frame=frame,
+        voronoi_data=voronoi_data,
+        walkable_area=walkable_area,
+        axes=axes,
+        **kwargs,
+    )
+
+
+def _plot_neighborhood(
+    *,
+    pedestrian_id: int,
+    neighbor_ids: dict[int, List[int]],
+    frame: int,
+    voronoi_data: pd.DataFrame,
+    walkable_area: WalkableArea,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the neighborhood of a pedestrian.
+
+    Args:
+        pedestrian_id(int): id of pedestrian to plot neighbors for
+        neighbor_ids(dict[int, List[int]]): neighborhood with base id as key
+        frame(int): frame for which the plot is created
+        voronoi_data (pd.DataFrame): individual Voronoi polygon for each person
+            and frame
+        walkable_area(WalkableArea): WalkableArea object of plot
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be
+            created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        hole_color (optional): color of the holes in the walkable area
+        base_color (optional): color of the base pedestrians
+        neighbor_color (optional): color of neighbor pedestrians
+        default_color (optional): color of default pedestrians
+    Returns:
+        matplotlib.axes.Axes: instances where the neighborhood is plotted
+    """
+    # Extract color settings from kwargs
     hole_color = kwargs.pop("hole_color", "w")
     base_color = kwargs.pop("base_color", PEDPY_RED)
     neighbor_color = kwargs.pop("neighbor_color", PEDPY_GREEN)
     default_color = kwargs.pop("default_color", PEDPY_GREY)
-    voronoi_neighbors = voronoi_data[voronoi_data.frame == frame].merge(
-        neighbors[neighbors.frame == frame],
-        on=[ID_COL, FRAME_COL],
-    )
 
-    base_neighbors = voronoi_neighbors[
-        voronoi_neighbors[ID_COL] == pedestrian_id
-    ]["neighbors"].to_numpy()[0]
+    # Filter voronoi_data for polygons in the same frame
+    voronoi_neighbors = voronoi_data[voronoi_data[FRAME_COL] == frame]
+
+    # Prepare arrays for colors and alphas to avoid conditionals in the loop
+    ped_ids = voronoi_neighbors[ID_COL].to_numpy()
+    polygons = voronoi_neighbors[POLYGON_COL].to_numpy()
+    colors = np.full((len(ped_ids), 3), default_color, dtype=float)
+    alphas = np.full(len(ped_ids), 0.2)
+
+    # Set base pedestrian color and neighbors colors
+    for idx, ped_id in enumerate(ped_ids):
+        if ped_id == pedestrian_id:
+            colors[idx] = base_color
+            alphas[idx] = 0.5
+        elif ped_id in neighbor_ids.get(pedestrian_id, []):
+            colors[idx] = neighbor_color
+            alphas[idx] = 0.5
+
+    # Set up the plot
     if axes is None:
         axes = plt.gca()
     axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
 
+    # Plot the walkable area
     plot_walkable_area(
         axes=axes,
         walkable_area=walkable_area,
         hole_color=hole_color,
     )
 
-    for _, row in voronoi_neighbors.iterrows():
-        poly = row[POLYGON_COL]
-        ped_id = row[ID_COL]
-
-        are_neighbors = ped_id in base_neighbors
-
-        color = default_color
-        alpha = 0.2
-        if ped_id == pedestrian_id:
-            color = base_color
-            alpha = 0.5
-
-        if are_neighbors:
-            color = neighbor_color
-            alpha = 0.5
-
+    # Plot each polygon with precomputed colors and alphas
+    for poly, color, alpha in zip(polygons, colors, alphas, strict=False):
         _plot_polygon(
             axes=axes,
             polygon=poly,
@@ -536,7 +810,9 @@ def plot_neighborhood(
             polygon_color=color,
             polygon_alpha=alpha,
         )
-        axes.set_aspect("equal")
+
+    # Set aspect ratio
+    axes.set_aspect("equal")
 
     return axes
 
@@ -598,10 +874,10 @@ def plot_time_distance(  # noqa: PLR0915
 
         Args:
         axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's data.
+        ped_data: DataFrame containing pedestrian data.
         color: Color of the scatter plot marker.
         """
-        min_data = ped_data[ped_data.frame == ped_data.frame.min()]
+        min_data = ped_data.loc[ped_data.groupby(ID_COL)[FRAME_COL].idxmin()]
         axes.scatter(
             min_data.distance,
             min_data.time,
@@ -619,13 +895,13 @@ def plot_time_distance(  # noqa: PLR0915
 
         Args:
         axes: The matplotlib axes to plot on.
-        ped_data: DataFrame containing a single pedestrian's data.
+        ped_data: DataFrame containing pedestrian data.
         norm: Normalization for the colormap based on speed.
         cmap: The colormap to use for coloring the line based on speed.
         frame_rate: Frame rate used to adjust time values.
         color: Color of the scatter plot marker.
         """
-        min_data = ped_data[ped_data.frame == ped_data.frame.min()]
+        min_data = ped_data.loc[ped_data.groupby(ID_COL)[FRAME_COL].idxmin()]
         axes.scatter(
             min_data.distance,
             min_data.time,
@@ -1180,6 +1456,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             line_color=voronoi_border_color,
             polygon_color=color,
             polygon_alpha=voronoi_outside_ma_alpha,
+            zorder=1,
         )
 
         if INTERSECTION_COL in data.columns:
@@ -1191,6 +1468,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
                     line_color="none",
                     polygon_color=color,
                     polygon_alpha=voronoi_inside_ma_alpha,
+                    zorder=1,
                 )
 
         if traj_data:

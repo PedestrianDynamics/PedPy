@@ -15,6 +15,7 @@ import shapely
 from pedpy.column_identifier import FRAME_COL, ID_COL, TIME_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import LoadTrajectoryError, PedPyValueError
 
 _log = logging.getLogger(__name__)
 
@@ -158,7 +159,7 @@ def _load_trajectory_data_from_txt(
         )
 
         if data.empty:
-            raise ValueError(
+            raise PedPyValueError(
                 "The given trajectory file seem to be empty. It should "
                 "contain at least 5 columns: ID, frame, X, Y, Z. The values "
                 "should be separated by any white space. Comment line may "
@@ -172,7 +173,7 @@ def _load_trajectory_data_from_txt(
 
         return data
     except pd.errors.ParserError as exc:
-        raise ValueError(
+        raise PedPyValueError(
             "The given trajectory file could not be parsed. It should "
             "contain at least 5 columns: ID, frame, X, Y, Z. The values "
             "should be separated by any white space. Comment line may start "
@@ -231,7 +232,7 @@ def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
     frame_rate = parsed_frame_rate
     if parsed_frame_rate is None and default_frame_rate is not None:
         if default_frame_rate <= 0:
-            raise ValueError(
+            raise PedPyValueError(
                 f"Default frame needs to be positive but is "
                 f"{default_frame_rate}"
             )
@@ -239,7 +240,7 @@ def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
         frame_rate = default_frame_rate
 
     if parsed_frame_rate is None and default_frame_rate is None:
-        raise ValueError(
+        raise PedPyValueError(
             "Frame rate is needed, but none could be found in the trajectory "
             "file. "
             f"Please check your trajectory file: {trajectory_file} or provide "
@@ -248,14 +249,14 @@ def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
 
     if parsed_frame_rate is not None and default_frame_rate is None:
         if parsed_frame_rate <= 0:
-            raise ValueError(
+            raise PedPyValueError(
                 "Frame rate needs to be a positive value, but is "
                 f"{parsed_frame_rate}. "
                 "Please check your trajectory file: {trajectory_file}."
             )
     if parsed_frame_rate is not None and default_frame_rate is not None:
         if parsed_frame_rate != default_frame_rate:
-            raise ValueError(
+            raise PedPyValueError(
                 "The given default frame rate seems to differ from the frame "
                 "rate given in the trajectory file: "
                 f"{default_frame_rate} != {parsed_frame_rate}"
@@ -266,7 +267,7 @@ def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
         unit = default_unit
 
     if parsed_unit is None and default_unit is None:
-        raise ValueError(
+        raise PedPyValueError(
             "Unit is needed, but none could be found in the trajectory file. "
             f"Please check your trajectory file: {trajectory_file} or provide "
             "a default unit."
@@ -274,7 +275,7 @@ def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
 
     if parsed_unit is not None and default_unit is not None:
         if parsed_unit != default_unit:
-            raise ValueError(
+            raise PedPyValueError(
                 "The given default unit seems to differ from the unit given "
                 "in the trajectory file: "
                 f"{default_unit} != {parsed_unit}"

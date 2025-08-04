@@ -9,10 +9,12 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg)](https://doi.org/10.5281/zenodo.7194992)
 [![License](https://img.shields.io/pypi/l/pedpy.svg)](https://github.com/PedestrianDynamics/pedpy/blob/main/LICENSE)
 ![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
+[![codecov](https://codecov.io/gh/PedestrianDynamics/PedPy/graph/badge.svg?token=X5C9NTKAVK)](https://codecov.io/gh/PedestrianDynamics/PedPy)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Documentation Status](https://readthedocs.org/projects/pedpy/badge/?version=latest)](http://pedpy.readthedocs.io/?badge=latest)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7046/badge)](https://bestpractices.coreinfrastructure.org/projects/7046)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
+[![JuRSE Code Pick – July 2025](https://img.shields.io/badge/JuRSE_Code_Pick-Jul_2025-blue)](https://www.fz-juelich.de/en/rse/jurse-community/jurse-code-of-the-month/july-2025)
 
 # PedPy: Analysis of pedestrian dynamics based on trajectory files.  
 
@@ -28,7 +30,7 @@ If you use *PedPy* in your work, please cite it using the following information 
 
 ### Setup Python
 
-For setting up your Python Environment a Python version >= 3.10 is recommended (our code is tested with 3.10, 3.11, and 3.12).
+For setting up your Python Environment a Python version >= 3.11 is recommended (our code is tested with 3.11, 3.12, and 3.13).
 To avoid conflicts with other libraries/applications the usage of virtual environments is recommended, see [Python Documentation](https://docs.python.org/3/library/venv.html) for more detail.
 
 ### Installing PedPy

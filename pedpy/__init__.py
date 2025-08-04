@@ -30,6 +30,7 @@ from .column_identifier import (
     MID_FRAME_COL,
     MID_POSITION_COL,
     NEIGHBORS_COL,
+    NEIGHBOR_ID_COL,
     POINT_COL,
     POLYGON_COL,
     SPEED_COL,
@@ -43,8 +44,18 @@ from .column_identifier import (
 )
 from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from .data.trajectory_data import TrajectoryData
+from .errors import (
+    AccelerationError,
+    GeometryError,
+    InputError,
+    PedPyAttributeError,
+    PedPyError,
+    PedPyRuntimeError,
+    PedPyTypeError,
+    PedPyValueError,
+    SpeedError,
+)
 from .io.trajectory_loader import (
-    LoadTrajectoryError,
     TrajectoryUnit,
     load_trajectory,
     load_trajectory_from_jupedsim_sqlite,
@@ -63,10 +74,15 @@ from .methods.acceleration_calculator import (
 )
 from .methods.density_calculator import (
     compute_classic_density,
+    compute_line_density,
     compute_passing_density,
     compute_voronoi_density,
 )
-from .methods.flow_calculator import compute_flow, compute_n_t
+from .methods.flow_calculator import (
+    compute_flow,
+    compute_line_flow,
+    compute_n_t,
+)
 from .methods.method_utils import (
     AccelerationCalculation,
     Cutoff,
@@ -74,9 +90,12 @@ from .methods.method_utils import (
     compute_frame_range_in_area,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
+    compute_neighbor_distance,
     compute_neighbors,
     compute_time_distance_line,
     get_invalid_trajectory,
+    is_individual_speed_valid,
+    is_species_valid,
     is_trajectory_valid,
 )
 from .methods.profile_calculator import (
@@ -91,8 +110,10 @@ from .methods.profile_calculator import (
 from .methods.spatial_analysis import compute_pair_distribution_function
 from .methods.speed_calculator import (
     compute_individual_speed,
+    compute_line_speed,
     compute_mean_speed_per_frame,
     compute_passing_speed,
+    compute_species,
     compute_voronoi_speed,
 )
 from .plotting.plotting import (
@@ -104,13 +125,16 @@ from .plotting.plotting import (
     PEDPY_RED,
     plot_acceleration,
     plot_density,
+    plot_density_at_line,
     plot_density_distribution,
     plot_flow,
+    plot_flow_at_line,
     plot_measurement_setup,
     plot_neighborhood,
     plot_nt,
     plot_profiles,
     plot_speed,
+    plot_speed_at_line,
     plot_speed_distribution,
     plot_time_distance,
     plot_trajectories,
@@ -118,7 +142,7 @@ from .plotting.plotting import (
     plot_walkable_area,
 )
 
-__all__ = [
+__all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "MeasurementArea",
     "MeasurementLine",
     "WalkableArea",
@@ -135,17 +159,22 @@ __all__ = [
     "load_walkable_area_from_ped_data_archive_hdf5",
     "load_walkable_area_from_vadere_scenario",
     "compute_classic_density",
+    "compute_line_density",
     "compute_passing_density",
     "compute_voronoi_density",
     "compute_flow",
+    "compute_line_flow",
     "compute_n_t",
     "Cutoff",
     "compute_frame_range_in_area",
     "compute_individual_voronoi_polygons",
     "compute_intersecting_polygons",
     "compute_neighbors",
+    "compute_neighbor_distance",
     "compute_time_distance_line",
     "get_invalid_trajectory",
+    "is_individual_speed_valid",
+    "is_species_valid",
     "is_trajectory_valid",
     "compute_pair_distribution_function",
     "DensityMethod",
@@ -157,8 +186,10 @@ __all__ = [
     "get_grid_cells",
     "SpeedCalculation",
     "compute_individual_speed",
+    "compute_line_speed",
     "compute_mean_speed_per_frame",
     "compute_passing_speed",
+    "compute_species",
     "compute_voronoi_speed",
     "AccelerationCalculation",
     "compute_individual_acceleration",
@@ -171,13 +202,16 @@ __all__ = [
     "PEDPY_PETROL",
     "PEDPY_RED",
     "plot_density",
+    "plot_density_at_line",
     "plot_density_distribution",
     "plot_flow",
+    "plot_flow_at_line",
     "plot_measurement_setup",
     "plot_neighborhood",
     "plot_nt",
     "plot_profiles",
     "plot_speed",
+    "plot_speed_at_line",
     "plot_speed_distribution",
     "plot_time_distance",
     "plot_trajectories",
@@ -207,6 +241,7 @@ __all__ = [
     "MID_FRAME_COL",
     "LAST_FRAME_COL",
     "NEIGHBORS_COL",
+    "NEIGHBOR_ID_COL",
     "DISTANCE_COL",
     "CROSSING_FRAME_COL",
     "START_POSITION_COL",
@@ -214,4 +249,13 @@ __all__ = [
     "END_POSITION_COL",
     "WINDOW_SIZE_COL",
     "__version__",
+    "AccelerationError",
+    "GeometryError",
+    "InputError",
+    "PedPyAttributeError",
+    "PedPyError",
+    "PedPyRuntimeError",
+    "PedPyTypeError",
+    "PedPyValueError",
+    "SpeedError",
 ]
