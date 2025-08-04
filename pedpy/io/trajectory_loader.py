@@ -11,6 +11,7 @@ import h5py
 import numpy as np
 import pandas as pd
 import shapely
+from shapely import Polygon
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, TIME_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
@@ -956,10 +957,6 @@ def load_walkable_area_from_vadere_scenario(
 ) -> WalkableArea:
     """Loads the walkable area from the Vadere scenario file as :class:`~geometry.WalkableArea`.
 
-    .. note::
-        Obstacles in the scenario files are not allowed to overlap with other obstacles or the
-        bounding box. Merge overlapping obstacles in Vadere before loading the scenario into PedPy.
-
     Args:
         vadere_scenario_file: Vadere scenario file (json format)
         margin: Increases the walkable area by the value of margin to avoid that the topography
@@ -996,13 +993,14 @@ def load_walkable_area_from_vadere_scenario(
         area_poly = shapely.Polygon(complete_area_points)
 
         # obstacles
+        walkable_area_poly = Polygon(area_poly.exterior.coords)
         obstacles = topography["obstacles"]
-        obstacles_ = list()
         error_obst_ids = list()
         for obstacle in obstacles:
             obst_points = _vadere_shape_to_point_list(obstacle["shape"], decimals=decimals)
-            if area_poly.contains_properly(shapely.Polygon(obst_points)):
-                obstacles_ += [obst_points]
+            obstacle_polygon = shapely.Polygon(obst_points)
+            if area_poly.contains_properly(obstacle_polygon):
+                walkable_area_poly = walkable_area_poly.difference(obstacle_polygon)
             else:
                 error_obst_ids += [str(obstacle["id"])]
 
@@ -1015,7 +1013,7 @@ def load_walkable_area_from_vadere_scenario(
                 f"obstacles have no common points with the bounding box."
             )
 
-    return WalkableArea(polygon=complete_area_points, obstacles=obstacles_)
+    return WalkableArea(walkable_area_poly)
 
 
 def _vadere_shape_to_point_list(shape: dict, decimals: int):
