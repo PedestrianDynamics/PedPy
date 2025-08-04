@@ -736,6 +736,7 @@ def _load_trajectory_data_from_vadere(
 
     common_error_message = (
         "The given trajectory file seems to be incorrect or empty. "
+        "One possible reason is that it was exported using a version of Vadere prior to 2.0. "
         "It should contain the following columns, which should be "
         f"uniquely identifiably by: {', '.join(columns_to_keep)}. "
         f"Columns should be separated by a space character. "
