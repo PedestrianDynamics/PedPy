@@ -315,6 +315,8 @@ cython_debug/
 *.code-workspace
 
 docs/build
+docs/jupyter_execute
+docs/source/results_introduction/
 pedpy/_version.py
 docs/source/ZENODO.rst
 notebooks/results_introduction
