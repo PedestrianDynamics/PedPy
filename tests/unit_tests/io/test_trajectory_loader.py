@@ -369,7 +369,7 @@ def write_vadere_csv_file(
     *,
     data: Optional[pd.DataFrame] = None,
     file: pathlib.Path,
-    frame_rate: float = 0,
+    frame_rate: float,
 ):
     data = data.rename(
         columns={
@@ -1881,6 +1881,7 @@ def test_load_trajectory_from_vadere_no_data(
     write_vadere_csv_file(
         file=trajectory_vadere,
         data=written_data,
+        frame_rate=24.0,
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
@@ -1956,6 +1957,7 @@ def test_load_trajectory_from_vadere_columns_missing(
     write_vadere_csv_file(
         file=trajectory_vadere,
         data=written_data,
+        frame_rate=24.0,
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
@@ -1984,6 +1986,7 @@ def test_load_trajectory_from_vadere_columns_non_unique(
     write_vadere_csv_file(
         file=trajectory_vadere,
         data=written_data,
+        frame_rate=24.0,
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
