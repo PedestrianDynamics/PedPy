@@ -14,6 +14,7 @@ import pandas as pd
 import pytest
 import shapely
 from numpy import dtype
+from shapely import Polygon, LinearRing
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import WalkableArea
@@ -2093,4 +2094,20 @@ def test_load_walkable_area_from_vadere_scenario_success(
     expected_holes = [list(p.coords) for p in area_poly.interiors]
     expected_walkable_area = WalkableArea(expected_shell_points, obstacles=expected_holes)
 
-    assert expected_walkable_area.polygon.equals(walkable_area_from_file.polygon)
+    expected_walkable_area_polygon = force_cw(expected_walkable_area.polygon)
+    walkable_area_from_file_polygon = force_cw(walkable_area_from_file.polygon)
+
+    # The polygons coordinates may differ by up to 'margin' on both axes.
+    # The maximum possible difference between coordinates is therefore the diagonal of the square formed
+    maximum_coordinate_difference_due_to_margin = math.sqrt(margin * margin + margin * margin)
+
+    assert expected_walkable_area_polygon.equals_exact(walkable_area_from_file_polygon, maximum_coordinate_difference_due_to_margin)
+
+def force_cw(polygon):
+    if is_ccw(polygon):
+        return Polygon(polygon.exterior.coords[::-1])
+    else:
+        return polygon
+
+def is_ccw(polygon):
+    return LinearRing(polygon.exterior.coords).is_ccw
