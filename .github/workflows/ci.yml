@@ -15,6 +15,9 @@ on:
       - main
       - rls-*
 
+permissions:
+  contents: write
+
 jobs:
   pre-build-checks:
     strategy:
@@ -177,3 +180,9 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: false
