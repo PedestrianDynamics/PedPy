@@ -40,17 +40,13 @@ To install the latest **stable** version of *PedPy* and its dependencies from Py
 python3 -m pip install pedpy
 ```
 
-You can also install the latest version of *PedPy* directly from the repository, by following these steps:
+You can also install the latest version of *PedPy* directly from the repository:
 
-1. Uninstall an installed version of *PedPy*:
 ```bash
-python3 -m pip uninstall pedpy
+python3 -m pip --force-reinstall git+https://github.com/PedestrianDynamics/PedPy.git
 ```
-
-2. Install latest version of *PedPy* from repository:
-```
-python3 -m pip install git+https://github.com/PedestrianDynamics/PedPy.git
-```
+> [!IMPORTANT]  
+> The latest version may not be stable! Please use with caution.
 
 ### Usage
 
@@ -58,25 +54,10 @@ For first time users, have a look at the [getting started notebook](notebooks/ge
 A more detailed overview of *PedPy* is demonstrated in the [user guide notebook](notebooks/user_guide.ipynb).
 The [fundamental diagram notebook](notebooks/fundamental_diagram.ipynb) shows how to use *PedPy* for computing the fundamental diagram of a series of experiments.
 
-#### Interactive online session
-
-If you want to try out *PedPy* for the first time, you can find an interactive online environments for both notebooks here:
-
-- Getting started: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fgetting_started.ipynb)
-- User guide: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Fuser_guide.ipynb)
-- Fundamental diagram: [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/PedestrianDynamics/PedPy/main?labpath=notebooks%2Ffundamental_diagram.ipynb)
-
-**Note:** 
-The execution might be slower compared to a local usage, as only limited resources are available.
-It is possible to also upload different trajectory files and run the analysis completely online, but this might not be advisable for long computations.
-
-#### Local usage of the notebooks
-
 For local usage of the notebooks, you can either download the notebooks and [demo files](notebooks/demo-data) from the GitHub repository or clone the whole repository with:
 ```bash 
 git clone https://github.com/PedestrianDynamics/pedpy.git
 ```
-
 For using either of the notebook some additional libraries need to be installed, mainly for plotting.
 You can install the needed libraries with:
 
