@@ -14,7 +14,7 @@ import pandas as pd
 import pytest
 import shapely
 from numpy import dtype
-from shapely import Polygon, LinearRing
+from shapely import LinearRing, Polygon
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import WalkableArea
@@ -391,17 +391,17 @@ def write_vadere_csv_file(
 
 def is_rectangular(poly: shapely.Polygon):
     return math.isclose(
-            a=poly.area,
-            b=poly.minimum_rotated_rectangle.area,
-            abs_tol=0,
-        )
+        a=poly.area,
+        b=poly.minimum_rotated_rectangle.area,
+        abs_tol=0,
+    )
 
 
 def write_vadere_scenario_file(
-        file,
-        complete_area,
-        obstacles,
-        bounding_box_width,
+    file,
+    complete_area,
+    obstacles,
+    bounding_box_width,
 ):
     obstacles_ = list()
 
@@ -425,7 +425,7 @@ def write_vadere_scenario_file(
                 {
                     "shape": {
                         "type": "POLYGON",
-                        "points": [{"x": p[0], "y": p[1]} for p in obst_coords]
+                        "points": [{"x": p[0], "y": p[1]} for p in obst_coords],
                     }
                 }
             ]
@@ -440,18 +440,26 @@ def write_vadere_scenario_file(
                         "bounds": {
                             "x": complete_area.bounds[0],
                             "y": complete_area.bounds[1],
-                            "width": abs(complete_area.bounds[2] - complete_area.bounds[0]),
-                            "height": abs(complete_area.bounds[3] - complete_area.bounds[1]),
+                            "width": abs(
+                                complete_area.bounds[2]
+                                - complete_area.bounds[0]
+                            ),
+                            "height": abs(
+                                complete_area.bounds[3]
+                                - complete_area.bounds[1]
+                            ),
                         },
                         "boundingBoxWidth": bounding_box_width,
                     },
                     "obstacles": obstacles_,
                 }
-            }
+            },
         }
     else:
-        raise RuntimeError("Internal Error: Trying to write non-rectangular shape as Vadere "
-                           "scenario bound.")
+        raise RuntimeError(
+            "Internal Error: Trying to write non-rectangular shape as Vadere "
+            "scenario bound."
+        )
 
     # Convert and write JSON object to file
     with open(file, "w") as f:
@@ -497,14 +505,14 @@ def write_header_viswalk(file, data):
         for column in data.columns[:-1]:
             if column in column_description:
                 description = column_description[column]
-                writer.write(f"{description[:description.find(',')]};")
+                writer.write(f"{description[: description.find(',')]};")
             else:
                 writer.write(f"{column.capitalize()}")
 
         column = data.columns[-1]
         if column in column_description:
             description = column_description[column]
-            writer.write(f"{description[:description.find(',')]};")
+            writer.write(f"{description[: description.find(',')]};")
         else:
             writer.write(f"{column.capitalize()}")
         writer.write("\n")
@@ -1962,8 +1970,7 @@ def test_load_trajectory_from_vadere_columns_missing(
 
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_vadere(
-            trajectory_file=trajectory_vadere,
-            frame_rate=24.0
+            trajectory_file=trajectory_vadere, frame_rate=24.0
         )
     assert "The given trajectory file seems to be incorrect or empty." in str(
         error_info.value
@@ -2057,10 +2064,10 @@ def test_load_trajectory_from_vadere_columns_non_unique(
     ],
 )
 def test_load_walkable_area_from_vadere_scenario_success(
-        tmp_path: pathlib.Path,
-        area_poly: shapely.Polygon,
-        margin: bool,
-        bounding_box: float,
+    tmp_path: pathlib.Path,
+    area_poly: shapely.Polygon,
+    margin: bool,
+    bounding_box: float,
 ):
     file_path = pathlib.Path(tmp_path / "vadere_test.scenario")
     decimals = 6
@@ -2097,22 +2104,31 @@ def test_load_walkable_area_from_vadere_scenario_success(
     expected_shell_points = np.round(expected_shell_points, decimals)
     # 2) treat holes separately to avoid buffering of holes
     expected_holes = [list(p.coords) for p in area_poly.interiors]
-    expected_walkable_area = WalkableArea(expected_shell_points, obstacles=expected_holes)
+    expected_walkable_area = WalkableArea(
+        expected_shell_points, obstacles=expected_holes
+    )
 
     expected_walkable_area_polygon = force_cw(expected_walkable_area.polygon)
     walkable_area_from_file_polygon = force_cw(walkable_area_from_file.polygon)
 
     # The polygons coordinates may differ by up to 'margin' on both axes.
     # The maximum possible difference between coordinates is therefore the diagonal of the square formed
-    maximum_coordinate_difference_due_to_margin = math.sqrt(margin * margin + margin * margin)
+    maximum_coordinate_difference_due_to_margin = math.sqrt(
+        margin * margin + margin * margin
+    )
 
-    assert expected_walkable_area_polygon.equals_exact(walkable_area_from_file_polygon, maximum_coordinate_difference_due_to_margin)
+    assert expected_walkable_area_polygon.equals_exact(
+        walkable_area_from_file_polygon,
+        maximum_coordinate_difference_due_to_margin,
+    )
+
 
 def force_cw(polygon):
     if is_ccw(polygon):
         return Polygon(polygon.exterior.coords[::-1])
     else:
         return polygon
+
 
 def is_ccw(polygon):
     return LinearRing(polygon.exterior.coords).is_ccw
