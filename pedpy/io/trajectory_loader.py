@@ -22,18 +22,6 @@ from pedpy.errors import LoadTrajectoryError, PedPyValueError
 _log = logging.getLogger(__name__)
 
 
-class LoadTrajectoryError(Exception):
-    """Class reflecting errors when loading trajectories with PedPy."""
-
-    def __init__(self, message):
-        """Create LoadTrajectoryError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
-
-
 class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
     """Identifier of the unit of the trajectory coordinates."""
 
@@ -730,23 +718,22 @@ def _load_trajectory_data_from_vadere(
         The trajectory data as :class:`DataFrame`,
         the coordinates are in meter (m).
     """
-
-    VADERE_COMMENT = "#"  # Comment identifier in Vadere trajectory files
-    VADERE_KEY_ID = "pedestrianId"
-    VADERE_KEY_TIME = "simTime"
-    VADERE_KEY_X = "startX"
-    VADERE_KEY_Y = "startY"
+    vadere_comment = "#"  # Comment identifier in Vadere trajectory files
+    vadere_key_id = "pedestrianId"
+    vadere_key_time = "simTime"
+    vadere_key_x = "startX"
+    vadere_key_y = "startY"
     columns_to_keep = [
-        VADERE_KEY_ID,
-        VADERE_KEY_TIME,
-        VADERE_KEY_X,
-        VADERE_KEY_Y,
+        vadere_key_id,
+        vadere_key_time,
+        vadere_key_x,
+        vadere_key_y,
     ]
     name_mapping = {
-        VADERE_KEY_ID: ID_COL,
-        VADERE_KEY_TIME: TIME_COL,
-        VADERE_KEY_X: X_COL,
-        VADERE_KEY_Y: Y_COL,
+        vadere_key_id: ID_COL,
+        vadere_key_time: TIME_COL,
+        vadere_key_x: X_COL,
+        vadere_key_y: Y_COL,
     }
 
     common_error_message = (
@@ -762,13 +749,13 @@ def _load_trajectory_data_from_vadere(
     try:
         vadere_cols = list(
             pd.read_csv(
-                trajectory_file, comment=VADERE_COMMENT, delimiter=" ", nrows=1
+                trajectory_file, comment=vadere_comment, delimiter=" ", nrows=1
             ).columns
         )
-        use_vadere_cols = list()
-        non_unique_cols = dict()
-        missing_cols = list()
-        rename_mapping = dict()
+        use_vadere_cols = []
+        non_unique_cols = {}
+        missing_cols = []
+        rename_mapping = {}
 
         for col in columns_to_keep:
             matching = [vc for vc in vadere_cols if col in vc]
@@ -807,10 +794,10 @@ def _load_trajectory_data_from_vadere(
             usecols=use_vadere_cols,
             comment="#",
             dtype={
-                VADERE_KEY_ID: "int64",
-                VADERE_KEY_TIME: "float64",
-                VADERE_KEY_X: "float64",
-                VADERE_KEY_Y: "float64",
+                vadere_key_id: "int64",
+                vadere_key_time: "float64",
+                vadere_key_x: "float64",
+                vadere_key_y: "float64",
             },
             encoding="utf-8-sig",
         )
@@ -853,8 +840,8 @@ def _event_driven_traj_to_const_frame_rate(
     traj_dataframe_interpolated = pd.DataFrame()
     for ped_id, traj in traj_by_ped:
         t = traj.index
-        t_start = traj.index.values.min()
-        t_stop = traj.index.values.max()
+        t_start = traj.index.to_numpy().min()
+        t_stop = traj.index.to_numpy().max()
 
         # Round t_start up (t_stop down) to nearest multiple of
         # frame period (= 1/frame_rate) to avoid extrapolation of trajectories
@@ -887,12 +874,14 @@ def _event_driven_traj_to_const_frame_rate(
             )
 
             r = pd.Index(equidist_time_steps, name=t.name)
-            traj = traj.reindex(t.union(r)).interpolate(method="index").loc[r]
+            interpolated_traj = (
+                traj.reindex(t.union(r)).interpolate(method="index").loc[r]
+            )
 
-            traj[ID_COL] = traj[ID_COL].astype(int)
+            interpolated_traj[ID_COL] = interpolated_traj[ID_COL].astype(int)
 
             traj_dataframe_interpolated = pd.concat(
-                [traj_dataframe_interpolated, traj]
+                [traj_dataframe_interpolated, interpolated_traj]
             )
 
     if trajectory_too_short_messages and not ignore_too_short_trajectories:
@@ -962,10 +951,10 @@ def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
     if max_deviation > deviation_threshold:
         _log.warning(
             f"The interpolated trajectory potentially deviates up to "
-            f"{str(max_deviation)} m from the original trajectory, at least "
-            f"for the fastest pedestrian with max. speed of {str(max_speed)} m/s. "
+            f"{max_deviation!s} m from the original trajectory, at least "
+            f"for the fastest pedestrian with max. speed of {max_speed!s} m/s. "
             f"If smaller deviations are required, choose a higher frame rate. "
-            f"The current frame rate is {str(frame_rate)} fps."
+            f"The current frame rate is {frame_rate!s} fps."
         )
 
 
@@ -1000,8 +989,10 @@ def load_walkable_area_from_vadere_scenario(
     """
     _validate_is_file(vadere_scenario_file)
 
-    if margin != 0 and margin < 10 ** -decimals:
-        raise LoadTrajectoryError(f"Margin should be greater than 10 ** (-decimals).")
+    if margin != 0 and margin < 10**-decimals:
+        raise LoadTrajectoryError(
+            f"Margin ({margin!s}) should be greater than 10 ** (-{decimals!s})."
+        )
 
     with open(vadere_scenario_file, "r") as f:
         data = json.load(f)
@@ -1028,7 +1019,7 @@ def load_walkable_area_from_vadere_scenario(
         # obstacles
         walkable_area_poly = Polygon(area_poly.exterior.coords)
         obstacles = topography["obstacles"]
-        error_obst_ids = list()
+        error_obst_ids = []
         for obstacle in obstacles:
             obst_points = _vadere_shape_to_point_list(
                 obstacle["shape"], decimals=decimals
@@ -1042,7 +1033,7 @@ def load_walkable_area_from_vadere_scenario(
                 error_obst_ids += [str(obstacle["id"])]
 
         if error_obst_ids:
-            error_obst_ids = {", ".join(error_obst_ids)}
+            error_obst_ids = list({", ".join(error_obst_ids)})
             raise LoadTrajectoryError(
                 f"Cannot convert obstacles with IDs {error_obst_ids} because "
                 f"they touch the bound of the walkable area (inner bound of "
@@ -1055,7 +1046,9 @@ def load_walkable_area_from_vadere_scenario(
     return WalkableArea(walkable_area_poly)
 
 
-def _vadere_shape_to_point_list(shape: dict, decimals: int):
+def _vadere_shape_to_point_list(
+    shape: dict[str, Any], decimals: int
+) -> list[Point]:
     """Transforms dict describing a rectangle or polygon into a list of points.
 
     Args:

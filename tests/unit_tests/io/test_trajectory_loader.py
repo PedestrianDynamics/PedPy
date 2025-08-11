@@ -409,14 +409,15 @@ def write_vadere_scenario_file(
         obst_coords = list(obstacle.coords)
 
         if is_rectangular(shapely.Polygon(obstacle)):
+            minx, miny, maxx, maxy = shapely.Polygon(obstacle).bounds
             obstacles_ += [
                 {
                     "shape": {
                         "type": "RECTANGLE",
                         "x": obst_coords[0][0],
                         "y": obst_coords[0][1],
-                        "width": abs(obst_coords[0][0] - obst_coords[2][0]),
-                        "height": abs(obst_coords[0][1] - obst_coords[2][1]),
+                        "width": abs(maxx - minx),
+                        "height": abs(maxy - miny),
                     }
                 }
             ]
