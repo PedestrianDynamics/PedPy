@@ -113,9 +113,10 @@ def compute_voronoi_density(
     Returns:
         DataFrame containing the columns 'id' and 'density' in :math:`1/m^2`,
         DataFrame containing the columns: 'id', 'frame', 'polygon' which
-        contains the Voronoi polygon of the pedestrian, 'intersection' which
-        contains the intersection area of the Voronoi polygon and the given
-        measurement area.
+        contains the Voronoi polygon of the pedestrian, 'density' in
+        :math:`1/m^2` which contains the individual density of the pedestrian,
+        'intersection' which contains the intersection area of the Voronoi
+        polygon and the given measurement area.
 
     """
     df_intersecting = compute_intersecting_polygons(
@@ -265,7 +266,10 @@ def compute_line_density(
             the species of every pedestrian intersecting the line,
             result from :func:`~speed_calculator.compute_species`
     Returns:
-        Dataframe containing columns 'frame', 'p_sp+1', 'p_sp-1', 'density'
+        Dataframe containing columns 'frame', 'p_sp+1' which contains the
+        density in :math:`1/m^2` for species +1, 'p_sp-1' which contains the
+        density in :math:`1/m^2` for species -1, 'density' which contains the
+        density at the line in :math:`1/m^2`.
     """
     if not is_species_valid(
         species=species,

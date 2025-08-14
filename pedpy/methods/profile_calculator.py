@@ -920,8 +920,8 @@ def compute_grid_cell_polygon_intersection_area(
 
     Returns:
         Tuple containing first the grid cell-polygon intersection areas, and
-            second the reordered data by 'frame', which needs to be used in
-            the next steps.
+        second the reordered data by 'frame', which needs to be used in
+        the next steps.
     """
     (
         grid_intersections_area,
