@@ -316,7 +316,10 @@ def compute_line_flow(
             species of every pedestrian intersecting the line,
             result from :func:`~speed_calculator.compute_species`
     Returns:
-        Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
+        Dataframe containing columns 'frame', 'j_sp+1' which contains the flow
+        in :math:`1/s` for species +1, 'j_sp-1' which contains the flow
+        in :math:`1/s` for species -1, 'flow' which contains the total flow at
+        the line in :math:`1/s`.
     """
     _validate_inputs(
         individual_voronoi_polygons, measurement_line, individual_speed, species

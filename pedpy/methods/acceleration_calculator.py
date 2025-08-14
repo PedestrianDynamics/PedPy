@@ -1,6 +1,6 @@
 """Module containing functions to compute accelerations."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -112,8 +112,8 @@ def compute_individual_acceleration(
 
     Returns:
         DataFrame containing the columns 'id', 'frame', and 'acceleration' in
-        'm/s^2', 'a_x' and 'a_y' with the speed components in x and y direction
-        if :code:`compute_acceleration_components` is True
+        :math:`m/s^2`, 'a_x' and 'a_y' with the acceleration components
+        in x and y direction if :code:`compute_acceleration_components` is True
     """
     df_movement = _compute_individual_movement_acceleration(
         traj_data=traj_data,
@@ -136,7 +136,7 @@ def compute_mean_acceleration_per_frame(
     traj_data: TrajectoryData,
     individual_acceleration: pd.DataFrame,
     measurement_area: MeasurementArea,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     r"""Compute mean acceleration per frame inside a given measurement area.
 
     Computes the mean acceleration :math:`a_{mean}(t)` inside the measurement
@@ -166,7 +166,8 @@ def compute_mean_acceleration_per_frame(
             acceleration is computed
 
     Returns:
-        DataFrame containing the columns 'frame' and 'acceleration' in 'm/s^2'
+        DataFrame containing the columns 'frame' and 'acceleration' in
+        :math:`m/s^2`
     """
     if len(individual_acceleration.index) < len(traj_data.data.index):
         raise AccelerationError(
@@ -240,7 +241,8 @@ def compute_voronoi_acceleration(
             acceleration should be computed
 
     Returns:
-        DataFrame containing the columns 'frame' and 'acceleration' in 'm/s^2'
+        DataFrame containing the columns 'frame' and 'acceleration' in
+        :math:`m/s^2`
     """
     if len(individual_acceleration.index) < len(
         individual_voronoi_intersection.index

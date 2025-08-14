@@ -45,10 +45,9 @@ def compute_pair_distribution_function(
 
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: A tuple of two numpy arrays. The first
-            array contains the bin edges (excluding the first bin edge), and
-            the second array contains the values of the pair-distribution
-            function :math:`g(r)` for each bin.
+        A tuple of two numpy arrays. The first array contains the bin edges
+        (excluding the first bin edge), and the second array contains the values
+        of the pair-distribution function :math:`g(r)` for each bin.
     """
     data_df = traj_data.data
 

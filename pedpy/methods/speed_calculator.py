@@ -560,7 +560,10 @@ def compute_line_speed(
             the species of every pedestrian intersecting the line,
             result from :func:`~speed_calculator.compute_species`
     Returns:
-        Dataframe containing columns 'frame', 's_sp+1', 's_sp-1', 'speed'
+        Dataframe containing columns 'frame', 's_sp+1' which contains the
+        speed in :math:`m/s` for species +1, 's_sp-1' which contains the
+        speed in :math:`m/s` for species -1, 'speed' which contains the
+        density at the line in :math:`1/m^2`.
     """
     _validate_inputs(
         individual_voronoi_polygons, measurement_line, individual_speed, species
