@@ -483,8 +483,8 @@ def compute_time_distance_line(
         measurement_line (MeasurementLine): line which is crossed
 
     Returns:
-        DataFrame containing 'id', 'frame', 'time' (seconds until
-        crossing),  and 'distance' (meters to measurement line)
+        DataFrame containing 'id', 'frame', 'distance' (meters to measurement
+        line), and 'time' (seconds until crossing)
     """
     df_distance_time = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]].copy(
         deep=True
@@ -575,7 +575,7 @@ def compute_individual_voronoi_polygons(
 
     Returns:
         DataFrame containing the columns 'id', 'frame','polygon' (
-        :class:`shapely.Polygon`), and 'individual_density' in :math:`1/m^2`.
+        :class:`shapely.Polygon`), and 'density' in :math:`1/m^2`.
     """
     dfs = []
 
@@ -1434,11 +1434,10 @@ def is_individual_speed_valid(
         measurement_line (MeasurementLine): measurement line
 
     Returns:
-        DATA_CORRECT if all needed data is provided
-            by the individual speed dataframe,
-        COLUMN_MISSING if there is a column missing,
-        ENTRY_MISSING if there is no matching entry
-            for a frame where polygon and line intersect.
+        DATA_CORRECT if all needed data is provided by the individual speed
+        dataframe, COLUMN_MISSING if there is a column missing, ENTRY_MISSING
+        if there is no matching entry for a frame where polygon and line
+        intersect.
     """
     if not all(
         column in individual_speed.columns
