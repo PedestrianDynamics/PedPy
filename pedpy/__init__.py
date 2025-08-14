@@ -66,9 +66,11 @@ from .io.trajectory_loader import (
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
+    load_trajectory_from_vadere,
     load_trajectory_from_viswalk,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
+    load_walkable_area_from_vadere_scenario,
 )
 from .methods.acceleration_calculator import (
     compute_individual_acceleration,
@@ -158,8 +160,10 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "load_trajectory_from_ped_data_archive_hdf5",
     "load_trajectory_from_txt",
     "load_trajectory_from_viswalk",
+    "load_trajectory_from_vadere",
     "load_walkable_area_from_jupedsim_sqlite",
     "load_walkable_area_from_ped_data_archive_hdf5",
+    "load_walkable_area_from_vadere_scenario",
     "compute_classic_density",
     "compute_line_density",
     "compute_passing_density",

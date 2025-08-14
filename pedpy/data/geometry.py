@@ -68,7 +68,7 @@ class WalkableArea:
         """
         if self._frozen:
             raise PedPyAttributeError(
-                "Walkable area can not be changed after " "construction!"
+                "Walkable area can not be changed after construction!"
             )
         return super().__setattr__(attr, value)
 
