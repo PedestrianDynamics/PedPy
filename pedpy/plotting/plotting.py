@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import shapely
 from matplotlib.collections import LineCollection
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, to_rgb
 from matplotlib.patches import Polygon
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.typing import NDArray
@@ -703,10 +703,17 @@ def plot_neighborhood(
             below for list of usable keywords
 
     Keyword Args:
-        hole_color (optional): color of the holes in the walkable area
-        base_color (optional): color of the base pedestrians
-        neighbor_color (optional): color of neighbor pedestrians
-        default_color (optional): color of default pedestrians
+        base_color (optional): color of the base pedestrian, whose neighborhood
+            will be highlighted
+        neighbor_color (optional): color of neighbor pedestrians of the base
+            pedestrian
+        default_color (optional): color of default pedestrians, which are not
+            neighbors of the base pedestrian
+        line_color (optional): color of the borders
+        line_width (optional): line width of the borders
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
+
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
@@ -763,15 +770,21 @@ def _plot_neighborhood(
             below for list of usable keywords
 
     Keyword Args:
-        hole_color (optional): color of the holes in the walkable area
-        base_color (optional): color of the base pedestrians
-        neighbor_color (optional): color of neighbor pedestrians
-        default_color (optional): color of default pedestrians
+        base_color (optional): color of the base pedestrian, whose neighborhood
+            will be highlighted
+        neighbor_color (optional): color of neighbor pedestrians of the base
+            pedestrian
+        default_color (optional): color of default pedestrians, which are not
+            neighbors of the base pedestrian
+        line_color (optional): color of the borders
+        line_width (optional): line width of the borders
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
+
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
     # Extract color settings from kwargs
-    hole_color = kwargs.pop("hole_color", "w")
     base_color = kwargs.pop("base_color", PEDPY_RED)
     neighbor_color = kwargs.pop("neighbor_color", PEDPY_GREEN)
     default_color = kwargs.pop("default_color", PEDPY_GREY)
@@ -788,10 +801,10 @@ def _plot_neighborhood(
     # Set base pedestrian color and neighbors colors
     for idx, ped_id in enumerate(ped_ids):
         if ped_id == pedestrian_id:
-            colors[idx] = base_color
+            colors[idx] = to_rgb(base_color)
             alphas[idx] = 0.5
         elif ped_id in neighbor_ids.get(pedestrian_id, []):
-            colors[idx] = neighbor_color
+            colors[idx] = to_rgb(neighbor_color)
             alphas[idx] = 0.5
 
     # Set up the plot
@@ -803,7 +816,7 @@ def _plot_neighborhood(
     plot_walkable_area(
         axes=axes,
         walkable_area=walkable_area,
-        hole_color=hole_color,
+        kwargs=kwargs,
     )
 
     # Plot each polygon with precomputed colors and alphas
