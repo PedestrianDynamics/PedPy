@@ -1230,7 +1230,7 @@ def load_walkable_area_from_crowdit(
     all_points = []
     walls = []
 
-    # Nur <wall>-Elemente sammeln, keine WunderZone
+    # Get walls from all layers, ignore WunderZone
     for layer in root.findall("layer"):
         for geom in layer.findall("wall"):
             points = [
@@ -1248,64 +1248,11 @@ def load_walkable_area_from_crowdit(
             f"No wall polygons found in Crowdit geometry file: {geometry_file}"
         )
 
-    # Sonderfall: nur eine Wall → direkt als WalkableArea
+    # Exception for single wall → directly as WalkableArea
     if len(walls) == 1:
         return WalkableArea(polygon=walls[0])
 
-    # Normalfall: Bounding Box + alle Walls als Obstacles
-    xs, ys = zip(*all_points)
-    minx, maxx = min(xs), max(xs)
-    miny, maxy = min(ys), max(ys)
-    outer = [
-        (minx - buffer, miny - buffer),
-        (maxx + buffer, miny - buffer),
-        (maxx + buffer, maxy + buffer),
-        (minx - buffer, maxy + buffer),
-        (minx - buffer, miny - buffer),
-    ]
-
-    return WalkableArea(polygon=outer, obstacles=walls)
-
-
-def load_walkable_area_from_crowdit2(
-    *, geometry_file: pathlib.Path, buffer: float = 1e-3
-) -> WalkableArea:
-    _validate_is_file(geometry_file)
-
-    try:
-        tree = ET.parse(geometry_file)
-        root = tree.getroot()
-    except Exception as e:
-        raise LoadTrajectoryError(
-            f"Could not parse Crowdit geometry file: {geometry_file}\n"
-            f"Original error: {e}"
-        ) from e
-
-    all_points = []
-    walls = []
-
-    for layer in root.findall("layer"):
-        for geom in layer.findall("wall"):
-            points = [
-                (float(pt.get("x")), float(pt.get("y")))
-                for pt in geom.findall("point")
-            ]
-            if points:
-                if points[0] != points[-1]:
-                    points.append(points[0])
-                all_points.extend(points)
-                walls.append(points)
-
-    if not all_points:
-        raise LoadTrajectoryError(
-            f"No wall polygons found in Crowdit geometry file: {geometry_file}"
-        )
-
-    # special case: We have only one wall, use it directly as polygon
-    if len(walls) == 1:
-        return WalkableArea(polygon=walls[0])
-
-    # Bounding Box + obstacles
+    # Normal case: Bounding Box + all walls as obstacles
     xs, ys = zip(*all_points)
     minx, maxx = min(xs), max(xs)
     miny, maxy = min(ys), max(ys)
