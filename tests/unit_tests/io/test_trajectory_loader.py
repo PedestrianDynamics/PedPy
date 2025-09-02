@@ -2239,20 +2239,9 @@ def test_load_trajectory_from_crowdit_reference_data_file():
     assert traj.frame_rate > 0
 
 
-import matplotlib.pyplot as plt
-
-import pedpy
-
-
 def test_load_trajectory_from_crowdit_reference_geometry_file():
     geom_file = pathlib.Path(__file__).parent / "test-data/crowdit.floor"
     area = load_walkable_area_from_crowdit(geometry_file=geom_file)
-    fig, ax = plt.subplots()
-    pedpy.plot_walkable_area(walkable_area=area, axes=ax)
-
-    ax.set_aspect("equal")
-
-    fig.savefig("test_load_trajectory_from_crowdit_reference_geometry_file.png")
     assert isinstance(area, WalkableArea)
     assert area.polygon.is_valid
     assert area.polygon.area > 0
