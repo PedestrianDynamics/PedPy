@@ -24,16 +24,16 @@ from pedpy.io.trajectory_loader import (
     _load_trajectory_data_from_txt,
     _load_trajectory_meta_data_from_txt,
     _validate_is_file,
+    load_trajectory_from_crowdit,
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
     load_trajectory_from_vadere,
     load_trajectory_from_viswalk,
+    load_walkable_area_from_crowdit,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
     load_walkable_area_from_vadere_scenario,
-    load_trajectory_from_crowdit,
-    load_walkable_area_from_crowdit,
 )
 
 
@@ -2239,8 +2239,9 @@ def test_load_trajectory_from_crowdit_reference_data_file():
     assert traj.frame_rate > 0
 
 
-import pedpy
 import matplotlib.pyplot as plt
+
+import pedpy
 
 
 def test_load_trajectory_from_crowdit_reference_geometry_file():

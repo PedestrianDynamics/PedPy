@@ -5,6 +5,7 @@ import logging
 import math
 import pathlib
 import sqlite3
+import xml.etree.ElementTree as ET
 from enum import Enum
 from typing import Any, Optional, Tuple
 
@@ -13,8 +14,6 @@ import numpy as np
 import pandas as pd
 import shapely
 from shapely import Point, Polygon
-from shapely.ops import unary_union
-import xml.etree.ElementTree as ET
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, TIME_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
@@ -1107,7 +1106,7 @@ def load_trajectory_from_crowdit(
     *,
     trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
-    """Loads data from Crowdit-CSV file as :class:`~trajectory_data.TrajectoryData`.
+    """Loads data from Crowdit file as :class:`~trajectory_data.TrajectoryData`.
 
     This function reads a CSV file containing trajectory data from Crowdit
     simulations and converts it into a :class:`~trajectory_data.TrajectoryData`
@@ -1150,7 +1149,8 @@ def _load_trajectory_data_from_crowdit(
     Args:
         trajectory_file: The file containing the trajectory data.
             The expected format is a CSV file with comma as delimiter, and it
-            should contain at least the following columns: pedID, time, posX, posY.
+            should contain at least the following columns:
+            pedID, time, posX, posY.
 
     Returns:
         The trajectory data as :class:`DataFrame`, the coordinates are
@@ -1185,7 +1185,8 @@ def _load_trajectory_data_from_crowdit(
     missing_columns = set(columns_to_keep) - set(data.columns)
     if missing_columns:
         raise LoadTrajectoryError(
-            f"{common_error_message} Missing columns: {', '.join(missing_columns)}."
+            f"{common_error_message}"
+            f"Missing columns: {', '.join(missing_columns)}."
         )
 
     try:
@@ -1233,10 +1234,16 @@ def load_walkable_area_from_crowdit(
     # Get walls from all layers, ignore WunderZone
     for layer in root.findall("layer"):
         for geom in layer.findall("wall"):
-            points = [
-                (float(pt.get("x")), float(pt.get("y")))
-                for pt in geom.findall("point")
-            ]
+            points = []
+            for pt in geom.findall("point"):
+                x = pt.get("x")
+                y = pt.get("y")
+                if x is None or y is None:
+                    raise LoadTrajectoryError(
+                        f"Invalid point found in {geometry_file}."
+                        "missing x or y attribute"
+                    )
+                points.append((float(x), float(y)))
             if points:
                 if points[0] != points[-1]:
                     points.append(points[0])
@@ -1253,7 +1260,7 @@ def load_walkable_area_from_crowdit(
         return WalkableArea(polygon=walls[0])
 
     # Normal case: Bounding Box + all walls as obstacles
-    xs, ys = zip(*all_points)
+    xs, ys = zip(*all_points, strict=True)
     minx, maxx = min(xs), max(xs)
     miny, maxy = min(ys), max(ys)
     outer = [
