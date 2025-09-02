@@ -108,8 +108,8 @@ def _load_trajectory_data_from_pathfinder(
         "name, t, x, y, separated by comma. "
         f"Please check your trajectory file: {trajectory_file}."
     )
-    # csv has a unit line. Usually the second line, but not 100% sure is this is always the case.
-    # so we first read and then convert the types
+    # csv has a unit line. Usually the second line,
+    # but not 100% sure if this is always the case.
     try:
         data = pd.read_csv(
             trajectory_file,
@@ -118,7 +118,7 @@ def _load_trajectory_data_from_pathfinder(
     except Exception as e:
         raise LoadTrajectoryError(
             f"{common_error_message}\nOriginal error: {e}"
-        )
+        ) from e
     missing_columns = set(columns_to_keep) - set(data.columns)
     if missing_columns:
         raise LoadTrajectoryError(
@@ -127,12 +127,12 @@ def _load_trajectory_data_from_pathfinder(
         )
     try:
         data = data[columns_to_keep]
-        data.rename(columns=rename_mapping, inplace=True)
+        data = data.rename(columns=rename_mapping)
         data = data.astype(column_types)
     except Exception as e:
         raise LoadTrajectoryError(
             f"{common_error_message}\nOriginal error: {e}"
-        )
+        ) from e
 
     if data.empty:
         raise LoadTrajectoryError(f"{common_error_message}.\n Empty dataframe.")
