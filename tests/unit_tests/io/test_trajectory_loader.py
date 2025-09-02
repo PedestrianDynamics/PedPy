@@ -2322,3 +2322,16 @@ def test_load_trajectory_from_pathfinder_reference_file():
         "test-data/pathfinder.csv"
     )
     load_trajectory_from_pathfinder(trajectory_file=traj_txt)
+
+
+def test_load_trajectory_from_pathfinder_wrong_types(tmp_path: pathlib.Path):
+    trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
+
+    with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
+        f.write("name,t,x,y\n")
+        f.write("not_an_int,not_a_float,1.0,2.0\n")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder(trajectory_file=trajectory_pathfinder)
+
+    assert "Original error" in str(error_info.value)
