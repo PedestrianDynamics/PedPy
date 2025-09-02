@@ -111,14 +111,18 @@ def _load_trajectory_data_from_pathfinder(
     # csv has a unit line. Usually the second line,
     # but not 100% sure if this is always the case.
     try:
-        data = pd.read_csv(
+        raw = pd.read_csv(
             trajectory_file,
             encoding="utf-8-sig",
-        ).dropna()
+        )
     except Exception as e:
         raise LoadTrajectoryError(
             f"{common_error_message}\nOriginal error: {e}"
         ) from e
+    # filter out the unit line
+    data = raw[
+        raw["t"].apply(lambda v: str(v).replace(".", "", 1).isdigit())
+    ].copy()
     missing_columns = set(columns_to_keep) - set(data.columns)
     if missing_columns:
         raise LoadTrajectoryError(

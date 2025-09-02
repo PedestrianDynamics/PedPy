@@ -2145,6 +2145,7 @@ def write_pathfinder_csv_file(
     file: pathlib.Path,
     frame_rate: float = 1,
     start_time: float = 0,
+    unit: str = "m",
 ):
     """Write test data in Pathfinder CSV format."""
     if data is not None:
@@ -2157,8 +2158,13 @@ def write_pathfinder_csv_file(
             }
         )
         data["t"] = start_time + data["t"] / frame_rate
-
-        data.to_csv(file, index=False, encoding="utf-8-sig")
+        with open(file, "w", encoding="utf-8-sig") as f:
+            # Header-Zeile
+            f.write("name,t,x,y\n")
+            # Unit-Zeile (Pathfinder schreibt so etwas rein)
+            f.write(f"unit,,{unit},{unit}\n")
+            # Daten
+            data.to_csv(f, index=False, header=False, encoding="utf-8-sig")
 
 
 @pytest.mark.parametrize(
@@ -2329,7 +2335,8 @@ def test_load_trajectory_from_pathfinder_wrong_types(tmp_path: pathlib.Path):
 
     with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
         f.write("name,t,x,y\n")
-        f.write("not_an_int,not_a_float,1.0,2.0\n")
+        # name="not_an_int" fails astype(int)
+        f.write("not_an_int,0.0,1.0,2.0\n")
 
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_pathfinder(trajectory_file=trajectory_pathfinder)
