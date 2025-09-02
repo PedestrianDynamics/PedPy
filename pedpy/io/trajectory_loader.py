@@ -31,6 +31,113 @@ class TrajectoryUnit(Enum):  # pylint: disable=too-few-public-methods
     """centimeter (cm)"""
 
 
+def load_trajectory_from_pathfinder(
+    *,
+    trajectory_file: pathlib.Path,
+) -> TrajectoryData:
+    """Loads data from Pathfinder-CSV file as :class:`~trajectory_data.TrajectoryData`.
+
+    This function reads a CSV file containing trajectory data from Pathfinder
+    simulations and converts it into a :class:`~trajectory_data.TrajectoryData`
+    object.
+
+    .. note::
+
+        Pathfinder data have a time column, that is going to be converted to a
+        frame column for use with *PedPy*.
+
+    .. warning::
+
+        Currently only Pathfinder files with a time column can be loaded.
+
+    Args:
+        trajectory_file: The full path of the CSV file containing the Pathfinder
+            trajectory data. The expected format is a CSV file with comma
+            as delimiter, and it should contain at least the following
+            columns: name, t, x, y.
+
+    Returns:
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation
+            of the file data
+
+    Raises:
+        LoadTrajectoryError: If the provided path does not exist or is not a
+            file.
+    """  # noqa: E501
+    _validate_is_file(trajectory_file)
+
+    traj_dataframe = _load_trajectory_data_from_pathfinder(
+        trajectory_file=trajectory_file
+    )
+    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
+        traj_dataframe
+    )
+
+    return TrajectoryData(
+        data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
+        frame_rate=traj_frame_rate,
+    )
+
+
+def _load_trajectory_data_from_pathfinder(
+    *, trajectory_file: pathlib.Path
+) -> pd.DataFrame:
+    """Parse the trajectory file for trajectory data.
+
+    Args:
+        trajectory_file (pathlib.Path): The file containing the trajectory data.
+            The expected format is a CSV file with comma as delimiter, and it
+            should contain at least the following columns: name, t, x, y.
+
+    Returns:
+        The trajectory data as :class:`DataFrame`, the coordinates are
+        in meter (m).
+    """
+    columns_to_keep = ["name", "t", "x", "y"]
+    rename_mapping = {
+        "name": ID_COL,
+        "t": "time",
+        "x": X_COL,
+        "y": Y_COL,
+    }
+    common_error_message = (
+        "The given trajectory file seems to be incorrect or empty. "
+        "It should contain at least the following columns: "
+        "name, t, x, y, separated by comma. "
+        f"Please check your trajectory file: {trajectory_file}."
+    )
+
+    try:
+        data = pd.read_csv(
+            trajectory_file,
+            dtype={
+                "name": "int64",
+                "t": "float64",
+                "x": "float64",
+                "y": "float64",
+            },
+            encoding="utf-8-sig",
+        )
+
+        missing_columns = set(columns_to_keep) - set(data.columns)
+        if missing_columns:
+            raise LoadTrajectoryError(
+                f"{common_error_message} "
+                f"Missing columns: {', '.join(missing_columns)}."
+            )
+
+        data = data[columns_to_keep].dropna()
+        data = data.rename(columns=rename_mapping)
+
+        if data.empty:
+            raise LoadTrajectoryError(common_error_message)
+
+        return data
+
+    except pd.errors.ParserError as exc:
+        raise LoadTrajectoryError(common_error_message) from exc
+
+
 def _validate_is_file(file: pathlib.Path) -> None:
     """Validates if the given file is a valid file, if valid raises Exception.
 
