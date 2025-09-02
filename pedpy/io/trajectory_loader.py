@@ -96,46 +96,48 @@ def _load_trajectory_data_from_pathfinder(
     columns_to_keep = ["name", "t", "x", "y"]
     rename_mapping = {
         "name": ID_COL,
-        "t": "time",
+        "t": TIME_COL,
         "x": X_COL,
         "y": Y_COL,
     }
+    column_types = {"id": int, "time": float, "x": float, "y": float}
+
     common_error_message = (
         "The given trajectory file seems to be incorrect or empty. "
         "It should contain at least the following columns: "
         "name, t, x, y, separated by comma. "
         f"Please check your trajectory file: {trajectory_file}."
     )
-
+    # csv has a unit line. Usually the second line, but not 100% sure is this is always the case.
+    # so we first read and then convert the types
     try:
         data = pd.read_csv(
             trajectory_file,
-            dtype={
-                "name": "int64",
-                "t": "float64",
-                "x": "float64",
-                "y": "float64",
-            },
             encoding="utf-8-sig",
+        ).dropna()
+    except Exception as e:
+        raise LoadTrajectoryError(
+            f"{common_error_message}\nOriginal error: {e}"
+        )
+    missing_columns = set(columns_to_keep) - set(data.columns)
+    if missing_columns:
+        raise LoadTrajectoryError(
+            f"{common_error_message} "
+            f"Missing columns: {', '.join(missing_columns)}."
+        )
+    try:
+        data = data[columns_to_keep]
+        data.rename(columns=rename_mapping, inplace=True)
+        data = data.astype(column_types)
+    except Exception as e:
+        raise LoadTrajectoryError(
+            f"{common_error_message}\nOriginal error: {e}"
         )
 
-        missing_columns = set(columns_to_keep) - set(data.columns)
-        if missing_columns:
-            raise LoadTrajectoryError(
-                f"{common_error_message} "
-                f"Missing columns: {', '.join(missing_columns)}."
-            )
+    if data.empty:
+        raise LoadTrajectoryError(f"{common_error_message}.\n Empty dataframe.")
 
-        data = data[columns_to_keep].dropna()
-        data = data.rename(columns=rename_mapping)
-
-        if data.empty:
-            raise LoadTrajectoryError(common_error_message)
-
-        return data
-
-    except pd.errors.ParserError as exc:
-        raise LoadTrajectoryError(common_error_message) from exc
+    return data
 
 
 def _validate_is_file(file: pathlib.Path) -> None:
