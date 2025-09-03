@@ -2151,7 +2151,7 @@ def write_pathfinder_csv_file(
     if data is not None:
         data = data.rename(
             columns={
-                ID_COL: "name",
+                ID_COL: "id",
                 FRAME_COL: "t",
                 X_COL: "x",
                 Y_COL: "y",
@@ -2160,7 +2160,7 @@ def write_pathfinder_csv_file(
         data["t"] = start_time + data["t"] / frame_rate
         with open(file, "w", encoding="utf-8-sig") as f:
             # Header-Zeile
-            f.write("name,t,x,y\n")
+            f.write("id,t,x,y\n")
             # Unit-Zeile (Pathfinder schreibt so etwas rein)
             f.write(f"unit,,{unit},{unit}\n")
             # Daten
@@ -2277,7 +2277,7 @@ def test_load_trajectory_from_pathfinder_columns_missing(
 
     # Create CSV with missing 'y' column
     with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
-        f.write("name,t,x\n")
+        f.write("id,t,x\n")
         f.write("0,0.0,5.0\n")
         f.write("0,0.1,-5.0\n")
 
@@ -2295,7 +2295,7 @@ def test_load_trajectory_from_pathfinder_data_not_parseable(
 
     # Create malformed CSV
     with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
-        f.write("name,t,x,y\n")
+        f.write("id,t,x,y\n")
         f.write("0,0.0,5.0,1.0\n")
         f.write("This,is,a,malformed,line,with,too,many,columns\n")
 
@@ -2334,8 +2334,8 @@ def test_load_trajectory_from_pathfinder_wrong_types(tmp_path: pathlib.Path):
     trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
 
     with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
-        f.write("name,t,x,y\n")
-        # name="not_an_int" fails astype(int)
+        f.write("id,t,x,y\n")
+        # id="not_an_int" fails astype(int)
         f.write("not_an_int,0.0,1.0,2.0\n")
 
     with pytest.raises(LoadTrajectoryError) as error_info:

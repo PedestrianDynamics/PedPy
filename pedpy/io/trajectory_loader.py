@@ -54,7 +54,7 @@ def load_trajectory_from_pathfinder(
         trajectory_file: The full path of the CSV file containing the Pathfinder
             trajectory data. The expected format is a CSV file with comma
             as delimiter, and it should contain at least the following
-            columns: name, t, x, y.
+            columns: id, t, x, y.
 
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation
@@ -93,9 +93,9 @@ def _load_trajectory_data_from_pathfinder(
         The trajectory data as :class:`DataFrame`, the coordinates are
         in meter (m).
     """
-    columns_to_keep = ["name", "t", "x", "y"]
+    columns_to_keep = ["id", "t", "x", "y"]
     rename_mapping = {
-        "name": ID_COL,
+        "id": ID_COL,
         "t": TIME_COL,
         "x": X_COL,
         "y": Y_COL,
@@ -105,7 +105,7 @@ def _load_trajectory_data_from_pathfinder(
     common_error_message = (
         "The given trajectory file seems to be incorrect or empty. "
         "It should contain at least the following columns: "
-        "name, t, x, y, separated by comma. "
+        "id, t, x, y, separated by comma. "
         f"Please check your trajectory file: {trajectory_file}."
     )
     # csv has a unit line. Usually the second line,
