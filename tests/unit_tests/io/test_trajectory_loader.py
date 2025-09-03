@@ -25,7 +25,7 @@ from pedpy.io.trajectory_loader import (
     _load_trajectory_meta_data_from_txt,
     _validate_is_file,
     load_trajectory_from_jupedsim_sqlite,
-    load_trajectory_from_pathfinder,
+    load_trajectory_from_pathfinder_csv,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
     load_trajectory_from_vadere,
@@ -2207,7 +2207,7 @@ def test_load_trajectory_from_pathfinder_success(
     )
 
     expected_data = prepare_data_frame(expected_data)
-    traj_data_from_file = load_trajectory_from_pathfinder(
+    traj_data_from_file = load_trajectory_from_pathfinder_csv(
         trajectory_file=trajectory_pathfinder,
     )
 
@@ -2233,7 +2233,7 @@ def test_load_trajectory_from_pathfinder_no_data(
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder(
+        load_trajectory_from_pathfinder_csv(
             trajectory_file=trajectory_pathfinder,
         )
     assert "The given trajectory file seems to be incorrect or empty." in str(
@@ -2260,7 +2260,7 @@ def test_load_trajectory_from_pathfinder_frame_rate_zero(
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder(
+        load_trajectory_from_pathfinder_csv(
             trajectory_file=trajectory_pathfinder,
         )
 
@@ -2282,7 +2282,7 @@ def test_load_trajectory_from_pathfinder_columns_missing(
         f.write("0,0.1,-5.0\n")
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder(
+        load_trajectory_from_pathfinder_csv(
             trajectory_file=trajectory_pathfinder,
         )
     assert "Missing columns: y." in str(error_info.value)
@@ -2300,7 +2300,7 @@ def test_load_trajectory_from_pathfinder_data_not_parseable(
         f.write("This,is,a,malformed,line,with,too,many,columns\n")
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder(
+        load_trajectory_from_pathfinder_csv(
             trajectory_file=trajectory_pathfinder,
         )
     assert "The given trajectory file seems to be incorrect or empty." in str(
@@ -2310,7 +2310,7 @@ def test_load_trajectory_from_pathfinder_data_not_parseable(
 
 def test_load_trajectory_from_pathfinder_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder(
+        load_trajectory_from_pathfinder_csv(
             trajectory_file=pathlib.Path("non_existing_file")
         )
     assert "does not exist" in str(error_info.value)
@@ -2318,16 +2318,16 @@ def test_load_trajectory_from_pathfinder_non_existing_file():
 
 def test_load_trajectory_from_pathfinder_non_file(tmp_path):
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder(trajectory_file=tmp_path)
+        load_trajectory_from_pathfinder_csv(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
 
 
 def test_load_trajectory_from_pathfinder_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+    traj_csv = pathlib.Path(__file__).parent / pathlib.Path(
         "test-data/pathfinder.csv"
     )
-    load_trajectory_from_pathfinder(trajectory_file=traj_txt)
+    load_trajectory_from_pathfinder_csv(trajectory_file=traj_csv)
 
 
 def test_load_trajectory_from_pathfinder_wrong_types(tmp_path: pathlib.Path):
@@ -2339,6 +2339,8 @@ def test_load_trajectory_from_pathfinder_wrong_types(tmp_path: pathlib.Path):
         f.write("not_an_int,0.0,1.0,2.0\n")
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder(trajectory_file=trajectory_pathfinder)
+        load_trajectory_from_pathfinder_csv(
+            trajectory_file=trajectory_pathfinder
+        )
 
     assert "Original error" in str(error_info.value)
