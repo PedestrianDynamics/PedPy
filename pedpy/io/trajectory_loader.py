@@ -47,7 +47,7 @@ def load_trajectory_from_pathfinder_json(
         converted to a frame column for use with *PedPy*.
 
     Args:
-        trajectory_file: The full path of the JSON file containing the Pathfinder
+        trajectory_file: The full path of the JSON file containing Pathfinder
             trajectory data. The expected format is a JSON file with agent IDs
             as top-level keys, and time-stamped position data as nested objects.
 

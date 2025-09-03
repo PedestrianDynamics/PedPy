@@ -2170,9 +2170,10 @@ def write_pathfinder_csv_file(
 
 import json
 import pathlib
-import pandas as pd
-import numpy as np
 from typing import Optional
+
+import numpy as np
+import pandas as pd
 
 
 def write_pathfinder_json_file(
