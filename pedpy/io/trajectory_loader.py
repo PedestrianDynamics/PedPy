@@ -35,11 +35,11 @@ def load_trajectory_from_pathfinder_json(
     *,
     trajectory_file: pathlib.Path,
 ) -> TrajectoryData:
-    """Loads data from Pathfinder-JSON file as :class:`~trajectory_data.TrajectoryData`.
+    """Loads Pathfinder-JSON as :class:`~trajectory_data.TrajectoryData`.
 
-    This function reads a JSON file containing trajectory data from Pathfinder
-    simulations and converts it into a :class:`~trajectory_data.TrajectoryData`
-    object.
+    This function reads a JSON file containing trajectory data
+    from Pathfinder simulations and converts it
+    into a :class:`~trajectory_data.TrajectoryData` object.
 
     .. note::
 

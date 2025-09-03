@@ -26,6 +26,7 @@ from pedpy.io.trajectory_loader import (
     _validate_is_file,
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_pathfinder_csv,
+    load_trajectory_from_pathfinder_json,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
     load_trajectory_from_vadere,
@@ -2188,7 +2189,7 @@ def write_pathfinder_csv_file(
         ),
     ],
 )
-def test_load_trajectory_from_pathfinder_success(
+def test_load_trajectory_from_pathfinder_success_csv(
     tmp_path: pathlib.Path,
     data: List[npt.NDArray[np.float64]],
     expected_frame_rate: float,
@@ -2218,7 +2219,7 @@ def test_load_trajectory_from_pathfinder_success(
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
-def test_load_trajectory_from_pathfinder_no_data(
+def test_load_trajectory_from_pathfinder_no_data_csv(
     tmp_path: pathlib.Path,
 ):
     data_empty = pd.DataFrame(
@@ -2241,7 +2242,7 @@ def test_load_trajectory_from_pathfinder_no_data(
     )
 
 
-def test_load_trajectory_from_pathfinder_frame_rate_zero(
+def test_load_trajectory_from_pathfinder_frame_rate_zero_csv(
     tmp_path: pathlib.Path,
 ):
     trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
@@ -2270,7 +2271,7 @@ def test_load_trajectory_from_pathfinder_frame_rate_zero(
     )
 
 
-def test_load_trajectory_from_pathfinder_columns_missing(
+def test_load_trajectory_from_pathfinder_columns_missing_csv(
     tmp_path: pathlib.Path,
 ):
     trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
@@ -2288,7 +2289,7 @@ def test_load_trajectory_from_pathfinder_columns_missing(
     assert "Missing columns: y." in str(error_info.value)
 
 
-def test_load_trajectory_from_pathfinder_data_not_parseable(
+def test_load_trajectory_from_pathfinder_data_not_parseable_csv(
     tmp_path: pathlib.Path,
 ):
     trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
@@ -2313,6 +2314,7 @@ def test_load_trajectory_from_pathfinder_non_existing_file():
         load_trajectory_from_pathfinder_csv(
             trajectory_file=pathlib.Path("non_existing_file")
         )
+    # TODO: also for json
     assert "does not exist" in str(error_info.value)
 
 
@@ -2320,17 +2322,21 @@ def test_load_trajectory_from_pathfinder_non_file(tmp_path):
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_pathfinder_csv(trajectory_file=tmp_path)
 
+    # TODO: also for json
+
     assert "is not a file" in str(error_info.value)
 
 
-def test_load_trajectory_from_pathfinder_reference_file():
+def test_load_trajectory_from_pathfinder_reference_file_csv():
     traj_csv = pathlib.Path(__file__).parent / pathlib.Path(
         "test-data/pathfinder.csv"
     )
     load_trajectory_from_pathfinder_csv(trajectory_file=traj_csv)
 
 
-def test_load_trajectory_from_pathfinder_wrong_types(tmp_path: pathlib.Path):
+def test_load_trajectory_from_pathfinder_wrong_types_csv(
+    tmp_path: pathlib.Path,
+):
     trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
 
     with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
@@ -2344,3 +2350,10 @@ def test_load_trajectory_from_pathfinder_wrong_types(tmp_path: pathlib.Path):
         )
 
     assert "Original error" in str(error_info.value)
+
+
+def test_load_trajectory_from_pathfinder_reference_file_json():
+    traj_json = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/pathfinder.json"
+    )
+    load_trajectory_from_pathfinder_json(trajectory_file=traj_json)
