@@ -41,11 +41,6 @@ def load_trajectory_from_pathfinder_json(
     This function reads a JSON file containing trajectory data
     from Pathfinder simulations and converts it
     into a :class:`~trajectory_data.TrajectoryData` object.
-    """Loads data from Pathfinder-JSON file as :class:`~trajectory_data.TrajectoryData`.
-
-    This function reads a JSON file containing trajectory data from Pathfinder
-    simulations and converts it into a :class:`~trajectory_data.TrajectoryData`
-    object.
 
     .. note::
 
@@ -53,7 +48,7 @@ def load_trajectory_from_pathfinder_json(
         converted to a frame column for use with *PedPy*.
 
     Args:
-        trajectory_file: The full path of the JSON file containing the Pathfinder
+        trajectory_file: The full path of the JSON containing the Pathfinder
             trajectory data. The expected format is a JSON file with agent IDs
             as top-level keys, and time-stamped position data as nested objects.
 
