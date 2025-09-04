@@ -71,6 +71,8 @@ from .io.trajectory_loader import (
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
     load_walkable_area_from_vadere_scenario,
+    load_walkable_area_from_crowdit,
+    load_trajectory_from_crowdit,
 )
 from .methods.acceleration_calculator import (
     compute_individual_acceleration,
@@ -164,6 +166,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "load_walkable_area_from_jupedsim_sqlite",
     "load_walkable_area_from_ped_data_archive_hdf5",
     "load_walkable_area_from_vadere_scenario",
+    "load_walkable_area_from_crowdit",
+    "load_trajectory_from_crowdit",
     "compute_classic_density",
     "compute_line_density",
     "compute_passing_density",
