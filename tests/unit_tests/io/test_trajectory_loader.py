@@ -2168,14 +2168,6 @@ def write_pathfinder_csv_file(
             data.to_csv(f, index=False, header=False, encoding="utf-8-sig")
 
 
-import json
-import pathlib
-from typing import Optional
-
-import numpy as np
-import pandas as pd
-
-
 def write_pathfinder_json_file(
     *,
     data: Optional[pd.DataFrame] = None,
