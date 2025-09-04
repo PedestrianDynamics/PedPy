@@ -2138,6 +2138,7 @@ def force_cw(polygon):
 def is_ccw(polygon):
     return LinearRing(polygon.exterior.coords).is_ccw
 
+
 # ------------------ Pathfinder tests ------------------ #
 
 
@@ -2405,6 +2406,34 @@ def test_load_trajectory_from_pathfinder_wrong_types_csv(
             trajectory_file=trajectory_pathfinder
         )
 
+
+# ================== crowd:it ===================
+def test_load_trajectory_from_crowdit_valid(tmp_path: pathlib.Path):
+    trajectory_crowdit = tmp_path / "trajectory.csv"
+
+    with open(trajectory_crowdit, "w", encoding="utf-8-sig") as f:
+        f.write("pedID,time,posX,posY\n")
+        f.write("0,0.0,1.0,2.0\n")
+        f.write("0,0.5,1.5,2.5\n")  # gleicher Agent, späterer Zeitpunkt
+        f.write("1,0.0,3.0,4.0\n")
+
+    traj = load_trajectory_from_crowdit(trajectory_file=trajectory_crowdit)
+
+    assert not traj.data.empty
+    for col in (ID_COL, FRAME_COL, X_COL, Y_COL):
+        assert col in traj.data.columns
+    assert traj.frame_rate > 0
+
+
+def test_load_trajectory_from_crowdit_wrong_types(tmp_path: pathlib.Path):
+    trajectory_crowdit = tmp_path / "trajectory.csv"
+    with open(trajectory_crowdit, "w", encoding="utf-8-sig") as f:
+        f.write("pedID,time,posX,posY\n")
+        f.write("not_an_int,0.0,1.0,2.0\n")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_crowdit(trajectory_file=trajectory_crowdit)
+
     assert "Original error" in str(error_info.value)
 
 
@@ -2465,6 +2494,7 @@ def test_load_trajectory_from_pathfinder_frame_rate_zero_json(
         "Can not determine the frame rate used to write the trajectory file."
         in str(error_info.value)
     )
+
 
 # ================== crowd:it ===================
 def test_load_trajectory_from_crowdit_valid(tmp_path: pathlib.Path):
