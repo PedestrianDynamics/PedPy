@@ -64,6 +64,8 @@ from .io.trajectory_loader import (
     TrajectoryUnit,
     load_trajectory,
     load_trajectory_from_jupedsim_sqlite,
+    load_trajectory_from_pathfinder_csv,
+    load_trajectory_from_pathfinder_json,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
     load_trajectory_from_vadere,
@@ -71,8 +73,6 @@ from .io.trajectory_loader import (
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
     load_walkable_area_from_vadere_scenario,
-    load_trajectory_from_pathfinder_csv,
-    load_trajectory_from_pathfinder_json,
 )
 from .methods.acceleration_calculator import (
     compute_individual_acceleration,
