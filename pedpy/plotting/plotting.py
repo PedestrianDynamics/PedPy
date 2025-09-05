@@ -833,15 +833,25 @@ def _plot_neighborhood(
         axes.set_xlim(x_min - margin_x, x_max + margin_x)
         axes.set_ylim(y_min - margin_y, y_max + margin_y)
 
-    # Plot each polygon with precomputed colors and alphas
-    for poly, color, alpha in zip(polygons, colors, alphas, strict=False):
-        _plot_polygon(
-            axes=axes,
-            polygon=poly,
-            line_color=color,
-            polygon_color=color,
-            polygon_alpha=alpha,
-        )
+    # Create boolean masks for each type of polygon
+    default_mask = np.all(colors == default_color, axis=1)
+    neighbor_mask = np.all(colors == neighbor_color, axis=1)
+    base_mask = np.all(colors == base_color, axis=1)
+
+    # Plot polygons in order: default -> neighbors -> base
+    for mask, color, alpha in [
+        (default_mask, default_color, default_alpha),
+        (neighbor_mask, neighbor_color, neighbor_alpha),
+        (base_mask, base_color, base_alpha),
+    ]:
+        for poly in polygons[mask]:
+            _plot_polygon(
+                axes=axes,
+                polygon=poly,
+                line_color=color,
+                polygon_color=color,
+                polygon_alpha=alpha,
+            )
 
     # Set aspect ratio
     axes.set_aspect("equal")
