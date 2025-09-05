@@ -8,7 +8,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pedpy)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg)](https://doi.org/10.5281/zenodo.7194992)
 [![License](https://img.shields.io/pypi/l/pedpy.svg)](https://github.com/PedestrianDynamics/pedpy/blob/main/LICENSE)
-![ci workflow](https://github.com/PedestrianDynamics/pedestrian-trajectory-analyzer/actions/workflows/ci.yml/badge.svg)
+![ci workflow](https://github.com/PedestrianDynamics/PedPy/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/PedestrianDynamics/PedPy/graph/badge.svg?token=X5C9NTKAVK)](https://codecov.io/gh/PedestrianDynamics/PedPy)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Documentation Status](https://readthedocs.org/projects/pedpy/badge/?version=latest)](http://pedpy.readthedocs.io/?badge=latest)
@@ -21,22 +21,24 @@
 # PedPy
 
 **PedPy** is a Python library for quantitative analysis of pedestrian dynamics from trajectory data.
-It offers multiple measurement methods for computing fundamental diagrams, e.g., density, velocity and flow.
+
+It provides a high-level interface for extracting fundamental measures (density, velocity, flow) and advanced analyses such as Voronoi-based methods, profiles, and pair-distribution functions, which can be combined to derive fundamental diagrams.
 
 
 ## Features
 
-- Pedestrian density, velocity, and flow computation
-- Further analysis methods, e.g., profiles, neighborhoods, pair-distribution fucntion
-- Easy-to-use API for loading and processing trajectory data, directly supports parsing the output of various simulation tools
-- Plotting module to directly view the results of the analysis
-- Open-source, well-documented, and tested
+- Compute core pedestrian measures: density, velocity, flow
+- Advanced analyses: Voronoi-based density, profiles, pair-distribution functions
+- Directly load trajectory data from multiple tools: Crowdit, Viswalk, JuPedSim, Vadere, Pathfinder
+- Easy-to-use API for loading, processing, and visualizing data
+- Built-in plotting for quick inspection and comparison of results
+- Open-source, tested, and aligned with FAIR and OpenSSF best practices
 
 ## Getting Started
 
 ### Installation
 
-PedPy requires Python >= 3.11.  
+**PedPy** requires Python >= 3.11.  
 It is recommended to use a [virtual environment](https://docs.python.org/3/library/venv.html).
 
 Install the latest stable release from PyPI:
@@ -85,7 +87,7 @@ A more extensive documentation and demonstration of **PedPy**'s capabilities can
 
 PedPy is designed to be used in scripts or interactive Jupyter notebooks.
 
-- Explore [getting started](notebooks/getting_started.ipynb), [user guide](notebooks/user_guide.ipynb), and [fundamental diagram](notebooks/fundamental_diagram.ipynb) notebooks.
+- Explore [getting started](notebooks/getting_started.ipynb), [user guide](https://github.com/PedestrianDynamics/PedPy/blob/main/notebooks/user_guide.ipynb), and [fundamental diagram](https://github.com/PedestrianDynamics/PedPy/blob/main/notebooks/fundamental_diagram.ipynb) notebooks.
 - For local usage, clone the repository and install the extra requirements for notebooks and plotting:
 
     ```bash
@@ -154,17 +156,17 @@ If you used a different version, please use Zenodo to get the citation informati
 
 ## Contributing
 
-Contributions are welcome and we looking forward for any contribution from the community!
-Take a look at out [Developer Guide](https://pedpy.readthedocs.io/stable/developer_guide.html) to check out different ways to contribute to **PedPy**.
+Contributions are welcome and we are looking forward to any contribution from the community!
+Take a look at our [Developer Guide](https://pedpy.readthedocs.io/stable/developer_guide.html) to check out different ways to contribute to **PedPy**.
 See the [contributing guidelines](CONTRIBUTING.md) and open an issue or pull request on [GitHub](https://github.com/PedestrianDynamics/PedPy/issues).
 
 ## Getting Help
 
 If you find yourself in a position where you need assistance from us, don't hesitate to contact us. 
-- GitHub Issues: Report bugs
+- GitHub Issues: Report bugs or unexpected behavior
 - GitHub Discussions: Ask questions, share ideas, request features
 
 ## License
 
-PedPy is released under the [MIT License](LICENSE).
+**PedPy** is released under the [MIT License](LICENSE).
 
