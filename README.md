@@ -107,17 +107,17 @@ PedPy is designed to be used in scripts or interactive Jupyter notebooks.
 <div align="center">
 <table style="border-collapse: collapse; border: none;">
   <tr style="border: none;">
-    <td style="border: none;"><img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/bottleneck_setup.png" width="400" alt="Bottleneck Setup Example"/></td>
+    <td style="border: none;"><img src="https://raw.githubusercontent.com/PedestrianDynamics/PedPy/refs/heads/modernize-readme/figs/bottleneck_setup.png" width="400" alt="Bottleneck Setup Example"/></td>
     <td style="border: none;">
-      <img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/voronoi_cells.png" width="400" alt="Voronoi-based Density Analysis"/>
-      <img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/speed_density_profile.png" width="400" alt="Speed-Density Profile"/>
+      <img src="https://raw.githubusercontent.com/PedestrianDynamics/PedPy/refs/heads/modernize-readme/figs/voronoi_cells.png" width="400" alt="Voronoi-based Density Analysis"/>
+      <img src="https://raw.githubusercontent.com/PedestrianDynamics/PedPy/refs/heads/modernize-readme/figs/speed_density_profile.png" width="400" alt="Speed-Density Profile"/>
     </td>
   </tr>
 </table>
 <table style="border-collapse: collapse; border: none;">
   <tr style="border: none;">
-    <td style="border: none;" width="50%"><img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/density_comparison.png" width="500" alt="Density Comparison Methods"/></td>
-    <td style="border: none;" width="50%"><img src="https://github.com/PedestrianDynamics/PedPy/blob/modernize-readme/figs/time_distance.png" width="500" alt="Time-Distance Analysis"/></td>
+    <td style="border: none;" width="50%"><img src="https://raw.githubusercontent.com/PedestrianDynamics/PedPy/refs/heads/modernize-readme/figs/density_comparison.png" width="500" alt="Density Comparison Methods"/></td>
+    <td style="border: none;" width="50%"><img src="https://raw.githubusercontent.com/PedestrianDynamics/PedPy/refs/heads/modernize-readme/figs/time_distance.png" width="500" alt="Time-Distance Analysis"/></td>
   </tr>
 </table>
 </div>
