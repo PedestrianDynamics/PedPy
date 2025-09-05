@@ -2,8 +2,28 @@
 Changelog
 *********
 
-Version 1.4.0 (2025-XX-YY)
+Version 1.4.0 (2025-09-08)
 ==========================
+
+**New features:**
+
+- Add new trajectory loaders for the following simulation tools:
+    * `Vadere <https://www.vadere.org/>`__
+    * `crowd:it <https://www.accu-rate.de/software/crowdit/>`__
+    * `Pathfinder <https://www.pathfinder.com/>`__
+- Compute profiles in specified measurement area
+- Compute neighbor distance
+- Introduce *PedPy* errors
+
+**What's changed:**
+
+- Improved color handling in :code:`plot_neighborhood` function
+- Modernized GitHub ReadMe
+
+**Fixes:**
+
+- Fixed geometry creation issues when obstacles touch boundary edges
+- Resolved time-distance plotting bug to properly include all initial trajectory points
 
 Version 1.3.0 (2025-02-02)
 ==========================
