@@ -2,8 +2,8 @@ name: pedpy-ci
 
 on:
   schedule:
-    # Runs at 2:00 am each day
-    - cron: '00 2 * * *'
+    # Runs at 02:00 a.m. each Sunday
+    - cron: '00 2 * * 0'
   push:
     branches:
       - main
