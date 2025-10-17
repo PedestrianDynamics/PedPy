@@ -1,0 +1,50 @@
+on:
+  schedule:
+    - cron: '0 3 * * 0' # weekly Sunday 03:00 UTC — adjust as needed
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  dispatch-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find latest rls-* branch
+        id: find_branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          latest=$(curl -s -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/branches?per_page=100" \
+            | jq -r '.[] | select(.name|startswith("rls-")) | "\(.name)\t\(.commit.commit.author.date)"' \
+            | sort -t $'\t' -k2 \
+            | tail -n1 \
+            | cut -f1)
+          if [ -z "$latest" ]; then
+            echo "No rls-* branch found, exiting."
+            echo "found_branch=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "found_branch=$latest" >> $GITHUB_OUTPUT
+
+      - name: Dispatch CI workflow on that branch
+        if: steps.find_branch.outputs.found_branch != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Set WORKFLOW_FILE to the workflow filename you want to run on the rls branch.
+          # For example, if the workflow in the release branch is .github/workflows/ci.yml,
+          # set WORKFLOW_FILE="ci.yml"
+          WORKFLOW_FILE="ci.yml"
+          TARGET_REF="${{ steps.find_branch.outputs.found_branch }}"
+
+          echo "Dispatching workflow ${WORKFLOW_FILE} on ref ${TARGET_REF}"
+          curl -s -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/${WORKFLOW_FILE}/dispatches" \
+            -d "{\"ref\":\"${TARGET_REF}\"}" \
+            | jq .
