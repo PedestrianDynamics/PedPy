@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+    rev: v0.14.2
     hooks:
       - id: ruff
         alias: ruff-include-sorting
@@ -15,7 +15,7 @@ repos:
         files: ^pedpy/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0  # Use the latest version of mypy available at the time
+    rev: v1.18.2
     hooks:
       - id: mypy
         name: Check type hints (mypy)
@@ -34,3 +34,15 @@ repos:
     hooks:
       - id: nbstripout
         exclude: ^docs/
+
+  -   repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v6.0.0
+      hooks:
+        - id: end-of-file-fixer
+        - id: trailing-whitespace
+        - id: check-yaml
+        - id: check-json
+        - id: check-executables-have-shebangs
+        - id: check-shebang-scripts-are-executable
+        - id: check-symlinks
+        - id: destroyed-symlinks

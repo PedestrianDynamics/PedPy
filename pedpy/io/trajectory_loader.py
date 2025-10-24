@@ -817,7 +817,7 @@ def _calculate_frames_and_fps(
             "single frame."
         )
 
-    fps = int(round(1 / mean_diff))
+    fps = round(1 / mean_diff)
     frames = traj_dataframe["time"] * fps
     frames = frames.round().astype("int64")
     return frames, fps
