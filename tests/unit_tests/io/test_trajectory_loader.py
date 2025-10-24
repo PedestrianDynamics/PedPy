@@ -485,7 +485,7 @@ def write_header_viswalk(file, data):
                 f"""\
                 $VISION
                 * File: {file.parent.absolute()}/{file.stem}.inpx
-                * Comment: 
+                * Comment:
                 * Date: {datetime.now().strftime("%d/%m/%Y %H:%M:%S")}
                 * Application: PedPy Testing Module
                 *

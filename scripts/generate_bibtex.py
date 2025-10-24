@@ -68,16 +68,16 @@ except Exception as e:
 
 zenodo_record += textwrap.dedent(
     """\
-    
+
         Information to all versions of PedPy can be found on `Zenodo <https://zenodo.org/doi/10.5281/zenodo.7194992>`_.
-    
+
         .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg
             :target: https://doi.org/10.5281/zenodo.7194992
-    
+
         To find your installed version of *PedPy*, you can run:
-        
+
         .. code-block:: bash
-        
+
             import pedpy
             print(pedpy.__version__)
     """
