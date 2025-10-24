@@ -9,8 +9,8 @@
                     <vertex px="10" py="5"/>
                     <vertex px="10" py="0"/>
                     <vertex px="-10" py="0"/>
-                </polygon> 
-            </subroom> 
-        </room> 
-    </rooms> 
-</geometry> 
+                </polygon>
+            </subroom>
+        </room>
+    </rooms>
+</geometry>

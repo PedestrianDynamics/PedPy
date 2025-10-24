@@ -38,7 +38,7 @@ It provides a high-level interface for extracting fundamental measures (density,
 
 ### Installation
 
-**PedPy** requires Python >= 3.11.  
+**PedPy** requires Python >= 3.11.
 It is recommended to use a [virtual environment](https://docs.python.org/3/library/venv.html).
 
 Install the latest stable release from PyPI:
@@ -53,7 +53,7 @@ To install the latest development version from the repository:
 python3 -m pip install --force-reinstall git+https://github.com/PedestrianDynamics/PedPy.git
 ```
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > The latest repository version may be unstable. Use with caution.
 
 ### Quickstart
@@ -152,7 +152,7 @@ For the latest release (v.1.3.2) the BibTeX entry is:
 }
 ```
 
-If you used a different version, please use Zenodo to get the citation information. 
+If you used a different version, please use Zenodo to get the citation information.
 
 ## Contributing
 
@@ -162,11 +162,10 @@ See the [contributing guidelines](CONTRIBUTING.md) and open an issue or pull req
 
 ## Getting Help
 
-If you find yourself in a position where you need assistance from us, don't hesitate to contact us. 
+If you find yourself in a position where you need assistance from us, don't hesitate to contact us.
 - GitHub Issues: Report bugs or unexpected behavior
 - GitHub Discussions: Ask questions, share ideas, request features
 
 ## License
 
 **PedPy** is released under the [MIT License](LICENSE).
-
