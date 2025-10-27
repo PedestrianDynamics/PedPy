@@ -10,9 +10,7 @@ import datetime
 current_year = datetime.datetime.today().year
 
 project = "PedPy"
-copyright = (
-    f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7 & Tobias Schrödter"
-)
+copyright = f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7 & Tobias Schrödter"
 
 import pedpy
 
@@ -135,6 +133,4 @@ html_theme_options = {
     "show_toc_level": 3,
 }
 
-html_sidebars = {
-    "**": ["navbar-logo", "icon-links", "search-field", "sbt-sidebar-nav.html"]
-}
+html_sidebars = {"**": ["navbar-logo", "icon-links", "search-field", "sbt-sidebar-nav.html"]}

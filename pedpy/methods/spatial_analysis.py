@@ -56,14 +56,10 @@ def compute_pair_distribution_function(
 
     # Concatenate the working dataframe (data_df) to match the number of
     # randomization cycles
-    concatenated_random_df = pd.concat(
-        [data_df] * randomisation_stacking, ignore_index=True
-    )
+    concatenated_random_df = pd.concat([data_df] * randomisation_stacking, ignore_index=True)
     # Scramble time-information to mitigate finite-size effects and calculate
     # pairwise distances of scrambled dataset
-    concatenated_random_df.frame = concatenated_random_df.frame.sample(
-        frac=1
-    ).reset_index(drop=True)
+    concatenated_random_df.frame = concatenated_random_df.frame.sample(frac=1).reset_index(drop=True)
     pairwise_dist_ni_array = _calculate_pair_distances(concatenated_random_df)
 
     ## Create the bin for data
@@ -77,9 +73,7 @@ def compute_pair_distribution_function(
     )  # Normalising by the number of pairwise distances in the dataframe
     ## Scrambled distribution
     pd_ni_bins = pd.cut(pairwise_dist_ni_array, radius_bins)
-    pd_ni_bins_normalised = (
-        pd_ni_bins.value_counts().sort_index().to_numpy()
-    ) / len(
+    pd_ni_bins_normalised = (pd_ni_bins.value_counts().sort_index().to_numpy()) / len(
         pairwise_dist_ni_array
     )  # Normalising by the number of pairwise distances in the dataframe
 
@@ -129,14 +123,10 @@ def _calculate_pair_distances(
             y_values = frame_df[Y_COL].to_numpy()
             coordinates = np.stack((x_values, y_values), axis=-1)
             # Calculate pairwise distances for the current frame using cdist
-            frame_distances = cdist(
-                coordinates, coordinates, metric="euclidean"
-            )
+            frame_distances = cdist(coordinates, coordinates, metric="euclidean")
 
             # Extract the upper triangle without the diagonal
-            distances_upper_triangle = frame_distances[
-                np.triu_indices_from(frame_distances, k=1)
-            ]
+            distances_upper_triangle = frame_distances[np.triu_indices_from(frame_distances, k=1)]
 
             distances_list.extend(distances_upper_triangle)
 

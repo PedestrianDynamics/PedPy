@@ -62,12 +62,8 @@ def load_trajectory_from_pathfinder_json(
     """
     _validate_is_file(trajectory_file)
 
-    traj_dataframe = _load_trajectory_data_from_pathfinder_json(
-        trajectory_file=trajectory_file
-    )
-    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
-        traj_dataframe
-    )
+    traj_dataframe = _load_trajectory_data_from_pathfinder_json(trajectory_file=trajectory_file)
+    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(traj_dataframe)
 
     return TrajectoryData(
         data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
@@ -75,9 +71,7 @@ def load_trajectory_from_pathfinder_json(
     )
 
 
-def _load_trajectory_data_from_pathfinder_json(
-    *, trajectory_file: pathlib.Path
-) -> pd.DataFrame:
+def _load_trajectory_data_from_pathfinder_json(*, trajectory_file: pathlib.Path) -> pd.DataFrame:
     """Parse the trajectory JSON file for trajectory data.
 
     Args:
@@ -101,14 +95,10 @@ def _load_trajectory_data_from_pathfinder_json(
         with open(trajectory_file, "r", encoding="utf-8") as file:
             data = json.load(file)
     except (json.JSONDecodeError, FileNotFoundError, PermissionError) as e:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nOriginal error: {e}"
-        ) from e
+        raise LoadTrajectoryError(f"{common_error_message}\nOriginal error: {e}") from e
 
     if not isinstance(data, dict) or not data:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nEmpty or invalid JSON structure."
-        )
+        raise LoadTrajectoryError(f"{common_error_message}\nEmpty or invalid JSON structure.")
 
     trajectory_records = []
 
@@ -143,21 +133,15 @@ def _load_trajectory_data_from_pathfinder_json(
                     )
 
     except (ValueError, KeyError, TypeError) as e:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nError parsing JSON structure: {e}"
-        ) from e
+        raise LoadTrajectoryError(f"{common_error_message}\nError parsing JSON structure: {e}") from e
 
     if not trajectory_records:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nNo valid trajectory data found."
-        )
+        raise LoadTrajectoryError(f"{common_error_message}\nNo valid trajectory data found.")
 
     traj_dataframe = pd.DataFrame(trajectory_records)
 
     # Sort by agent ID and time for consistency
-    traj_dataframe = traj_dataframe.sort_values([ID_COL, TIME_COL]).reset_index(
-        drop=True
-    )
+    traj_dataframe = traj_dataframe.sort_values([ID_COL, TIME_COL]).reset_index(drop=True)
 
     return traj_dataframe
 
@@ -194,15 +178,11 @@ def load_trajectory_from_pathfinder_csv(
     Raises:
         LoadTrajectoryError: If the provided path does not exist or is not a
             file.
-    """  # noqa: E501
+    """
     _validate_is_file(trajectory_file)
 
-    traj_dataframe = _load_trajectory_data_from_pathfinder_csv(
-        trajectory_file=trajectory_file
-    )
-    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
-        traj_dataframe
-    )
+    traj_dataframe = _load_trajectory_data_from_pathfinder_csv(trajectory_file=trajectory_file)
+    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(traj_dataframe)
 
     return TrajectoryData(
         data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
@@ -210,9 +190,7 @@ def load_trajectory_from_pathfinder_csv(
     )
 
 
-def _load_trajectory_data_from_pathfinder_csv(
-    *, trajectory_file: pathlib.Path
-) -> pd.DataFrame:
+def _load_trajectory_data_from_pathfinder_csv(*, trajectory_file: pathlib.Path) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
@@ -247,27 +225,18 @@ def _load_trajectory_data_from_pathfinder_csv(
             encoding="utf-8-sig",
         )
     except Exception as e:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nOriginal error: {e}"
-        ) from e
+        raise LoadTrajectoryError(f"{common_error_message}\nOriginal error: {e}") from e
     # filter out the unit line
-    data = raw[
-        raw["t"].apply(lambda v: str(v).replace(".", "", 1).isdigit())
-    ].copy()
+    data = raw[raw["t"].apply(lambda v: str(v).replace(".", "", 1).isdigit())].copy()
     missing_columns = set(columns_to_keep) - set(data.columns)
     if missing_columns:
-        raise LoadTrajectoryError(
-            f"{common_error_message} "
-            f"Missing columns: {', '.join(missing_columns)}."
-        )
+        raise LoadTrajectoryError(f"{common_error_message} Missing columns: {', '.join(missing_columns)}.")
     try:
         data = data[columns_to_keep]
         data = data.rename(columns=rename_mapping)
         data = data.astype(column_types)
     except Exception as e:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nOriginal error: {e}"
-        ) from e
+        raise LoadTrajectoryError(f"{common_error_message}\nOriginal error: {e}") from e
 
     if data.empty:
         raise LoadTrajectoryError(f"{common_error_message}.\n Empty dataframe.")
@@ -317,7 +286,7 @@ def load_trajectory(
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData`
             representation of the file data
-    """  # noqa: E501
+    """
     return load_trajectory_from_txt(
         trajectory_file=trajectory_file,
         default_frame_rate=default_frame_rate,
@@ -347,7 +316,7 @@ def load_trajectory_from_txt(
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData`
             representation of the file data
-    """  # noqa: E501
+    """
     _validate_is_file(trajectory_file)
 
     traj_frame_rate, traj_unit = _load_trajectory_meta_data_from_txt(
@@ -355,16 +324,12 @@ def load_trajectory_from_txt(
         default_frame_rate=default_frame_rate,
         default_unit=default_unit,
     )
-    traj_dataframe = _load_trajectory_data_from_txt(
-        trajectory_file=trajectory_file, unit=traj_unit
-    )
+    traj_dataframe = _load_trajectory_data_from_txt(trajectory_file=trajectory_file, unit=traj_unit)
 
     return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
 
-def _load_trajectory_data_from_txt(
-    *, trajectory_file: pathlib.Path, unit: TrajectoryUnit
-) -> pd.DataFrame:
+def _load_trajectory_data_from_txt(*, trajectory_file: pathlib.Path, unit: TrajectoryUnit) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
@@ -454,7 +419,7 @@ def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
                     try:
                         if parsed_frame_rate is None:
                             parsed_frame_rate = float(substring)
-                    except ValueError:  # noqa: PERF203
+                    except ValueError:
                         continue
 
             if "x/cm" in line.lower() or "in cm" in line.lower():
@@ -466,10 +431,7 @@ def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
     frame_rate = parsed_frame_rate
     if parsed_frame_rate is None and default_frame_rate is not None:
         if default_frame_rate <= 0:
-            raise PedPyValueError(
-                f"Default frame needs to be positive but is "
-                f"{default_frame_rate}"
-            )
+            raise PedPyValueError(f"Default frame needs to be positive but is {default_frame_rate}")
 
         frame_rate = default_frame_rate
 
@@ -529,7 +491,7 @@ def load_trajectory_from_jupedsim_sqlite(
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData`
             representation of the file data
-    """  # noqa: E501
+    """
     _validate_is_file(trajectory_file)
 
     with sqlite3.connect(trajectory_file) as con:
@@ -545,17 +507,10 @@ def load_trajectory_from_jupedsim_sqlite(
                 "check your file."
             ) from exc
         if data.empty:
-            raise LoadTrajectoryError(
-                "The given sqlite trajectory file seems to be empty. "
-                "Please check your file."
-            )
+            raise LoadTrajectoryError("The given sqlite trajectory file seems to be empty. Please check your file.")
 
         try:
-            fps_query_result = (
-                con.cursor()
-                .execute("select value from metadata where key = 'fps'")
-                .fetchone()
-            )
+            fps_query_result = con.cursor().execute("select value from metadata where key = 'fps'").fetchone()
         except Exception as exc:
             raise LoadTrajectoryError(
                 "The given sqlite trajectory is not a valid JuPedSim format, "
@@ -565,8 +520,7 @@ def load_trajectory_from_jupedsim_sqlite(
 
         if fps_query_result is None:
             raise LoadTrajectoryError(
-                "The given sqlite trajectory file seems not include a frame "
-                "rate. Please check your file."
+                "The given sqlite trajectory file seems not include a frame rate. Please check your file."
             )
         fps = float(fps_query_result[0])
 
@@ -588,7 +542,7 @@ def load_walkable_area_from_jupedsim_sqlite(
 
     Returns:
         WalkableArea: :class:`~geometry.WalkableArea` used in the simulation
-    """  # noqa: E501
+    """
     _validate_is_file(trajectory_file)
 
     with sqlite3.connect(trajectory_file) as connection:
@@ -601,27 +555,20 @@ def load_walkable_area_from_jupedsim_sqlite(
             return _load_walkable_area_from_jupedsim_sqlite_v2(connection)
 
         raise LoadTrajectoryError(
-            f"The given sqlite trajectory has unsupported db version "
-            f"{db_version}. Supported are versions: 1, 2."
+            f"The given sqlite trajectory has unsupported db version {db_version}. Supported are versions: 1, 2."
         )
 
 
 def _get_jupedsim_sqlite_version(connection: sqlite3.Connection) -> int:
     cur = connection.cursor()
-    return int(
-        cur.execute(
-            "SELECT value FROM metadata WHERE key = ?", ("version",)
-        ).fetchone()[0]
-    )
+    return int(cur.execute("SELECT value FROM metadata WHERE key = ?", ("version",)).fetchone()[0])
 
 
 def _load_walkable_area_from_jupedsim_sqlite_v1(
     con: sqlite3.Connection,
 ) -> WalkableArea:
     try:
-        walkable_query_result = (
-            con.cursor().execute("select wkt from geometry").fetchone()
-        )
+        walkable_query_result = con.cursor().execute("select wkt from geometry").fetchone()
     except Exception as exc:
         raise LoadTrajectoryError(
             "The given sqlite trajectory is not a valid JuPedSim format, it "
@@ -630,8 +577,7 @@ def _load_walkable_area_from_jupedsim_sqlite_v1(
 
     if walkable_query_result is None:
         raise LoadTrajectoryError(
-            "The given sqlite trajectory file seems not include a geometry. "
-            "Please check your file."
+            "The given sqlite trajectory file seems not include a geometry. Please check your file."
         )
 
     return WalkableArea(walkable_query_result[0])
@@ -652,8 +598,7 @@ def _load_walkable_area_from_jupedsim_sqlite_v2(
 
     if not geometries:
         raise LoadTrajectoryError(
-            "The given sqlite trajectory file seems not include a geometry. "
-            "Please check your file."
+            "The given sqlite trajectory file seems not include a geometry. Please check your file."
         )
 
     return WalkableArea(shapely.union_all(geometries))
@@ -682,7 +627,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation
             of the file data
-    """  # noqa: E501
+    """
     _validate_is_file(trajectory_file)
 
     with h5py.File(trajectory_file, "r") as hdf5_file:
@@ -690,8 +635,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
         dataset_name = "trajectory"
         if dataset_name not in hdf5_file:
             raise LoadTrajectoryError(
-                f"{trajectory_file} seems to be not a supported hdf5 file, "
-                f"it does not contain a 'trajectory' dataset."
+                f"{trajectory_file} seems to be not a supported hdf5 file, it does not contain a 'trajectory' dataset."
             )
 
         trajectory_dataset = hdf5_file[dataset_name]
@@ -713,9 +657,7 @@ def load_trajectory_from_ped_data_archive_hdf5(
                 f"the 'trajectory' dataset does not contain a 'fps' attribute."
             )
 
-        df_trajectory = pd.DataFrame(
-            trajectory_dataset[:], columns=column_names
-        )
+        df_trajectory = pd.DataFrame(trajectory_dataset[:], columns=column_names)
         fps = trajectory_dataset.attrs["fps"]
 
     return TrajectoryData(data=df_trajectory, frame_rate=fps)
@@ -740,7 +682,7 @@ def load_walkable_area_from_ped_data_archive_hdf5(
 
     Returns:
         WalkableArea: :class:`~geometry.WalkableArea` used in the experiment
-    """  # noqa: E501
+    """
     _validate_is_file(trajectory_file)
 
     with h5py.File(trajectory_file, "r") as hdf5_file:
@@ -789,15 +731,11 @@ def load_trajectory_from_viswalk(
     Raises:
         LoadTrajectoryError: If the provided path does not exist or is not a
             file.
-    """  # noqa: E501
+    """
     _validate_is_file(trajectory_file)
 
-    traj_dataframe = _load_trajectory_data_from_viswalk(
-        trajectory_file=trajectory_file
-    )
-    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
-        traj_dataframe
-    )
+    traj_dataframe = _load_trajectory_data_from_viswalk(trajectory_file=trajectory_file)
+    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(traj_dataframe)
 
     return TrajectoryData(
         data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
@@ -823,9 +761,7 @@ def _calculate_frames_and_fps(
     return frames, fps
 
 
-def _load_trajectory_data_from_viswalk(
-    *, trajectory_file: pathlib.Path
-) -> pd.DataFrame:
+def _load_trajectory_data_from_viswalk(*, trajectory_file: pathlib.Path) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
@@ -868,17 +804,12 @@ def _load_trajectory_data_from_viswalk(
             encoding="utf-8-sig",
         )
         got_columns = data.columns
-        cleaned_columns = got_columns.map(
-            lambda x: x.replace("$PEDESTRIAN:", "")
-        )
+        cleaned_columns = got_columns.map(lambda x: x.replace("$PEDESTRIAN:", ""))
         set_columns_to_keep = set(columns_to_keep)
         set_cleaned_columns = set(cleaned_columns)
         missing_columns = set_columns_to_keep - set_cleaned_columns
         if missing_columns:
-            raise LoadTrajectoryError(
-                f"{common_error_message}"
-                f"Missing columns: {', '.join(missing_columns)}."
-            )
+            raise LoadTrajectoryError(f"{common_error_message}Missing columns: {', '.join(missing_columns)}.")
 
         data.columns = cleaned_columns
         data = data[columns_to_keep]
@@ -928,9 +859,7 @@ def load_trajectory_from_vadere(
     """
     _validate_is_file(trajectory_file)
 
-    traj_dataframe = _load_trajectory_data_from_vadere(
-        trajectory_file=trajectory_file
-    )
+    traj_dataframe = _load_trajectory_data_from_vadere(trajectory_file=trajectory_file)
 
     traj_dataframe = _event_driven_traj_to_const_frame_rate(
         traj_dataframe=traj_dataframe,
@@ -944,9 +873,7 @@ def load_trajectory_from_vadere(
     )
 
 
-def _load_trajectory_data_from_vadere(
-    *, trajectory_file: pathlib.Path
-) -> pd.DataFrame:
+def _load_trajectory_data_from_vadere(*, trajectory_file: pathlib.Path) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
@@ -991,11 +918,7 @@ def _load_trajectory_data_from_vadere(
         f"Please check your trajectory file: {trajectory_file}."
     )
     try:
-        vadere_cols = list(
-            pd.read_csv(
-                trajectory_file, comment=vadere_comment, delimiter=" ", nrows=1
-            ).columns
-        )
+        vadere_cols = list(pd.read_csv(trajectory_file, comment=vadere_comment, delimiter=" ", nrows=1).columns)
         use_vadere_cols = []
         non_unique_cols = {}
         missing_cols = []
@@ -1016,8 +939,7 @@ def _load_trajectory_data_from_vadere(
                 f"{common_error_message} "
                 + ". ".join(
                     [
-                        "The identifier '{0}' is non-unique. "
-                        "It is contained in the columns: {1}".format(
+                        "The identifier '{0}' is non-unique. It is contained in the columns: {1}".format(
                             k, ", ".join(v)
                         )
                         for k, v in non_unique_cols.items()
@@ -1027,10 +949,7 @@ def _load_trajectory_data_from_vadere(
             )
 
         if missing_cols:
-            raise LoadTrajectoryError(
-                f"{common_error_message} "
-                f"Missing columns: {', '.join(missing_cols)}."
-            )
+            raise LoadTrajectoryError(f"{common_error_message} Missing columns: {', '.join(missing_cols)}.")
 
         data = pd.read_csv(
             trajectory_file,
@@ -1074,9 +993,7 @@ def _event_driven_traj_to_const_frame_rate(
         The trajectory data as :class:`DataFrame` with positions x and y being
         linearly interpolated for frames between two recorded time steps.
     """
-    _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
-        traj_dataframe, frame_rate
-    )
+    _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(traj_dataframe, frame_rate)
 
     trajectory_too_short_messages = []
     traj_dataframe = traj_dataframe.set_index(TIME_COL)
@@ -1091,12 +1008,8 @@ def _event_driven_traj_to_const_frame_rate(
         # frame period (= 1/frame_rate) to avoid extrapolation of trajectories
         # to times before first (after last) pedestrian step.
         precision = 14
-        t_start_ = (
-            math.ceil(np.round(t_start * frame_rate, precision)) / frame_rate
-        )
-        t_stop_ = (
-            math.floor(np.round(t_stop * frame_rate, precision)) / frame_rate
-        )
+        t_start_ = math.ceil(np.round(t_start * frame_rate, precision)) / frame_rate
+        t_stop_ = math.floor(np.round(t_stop * frame_rate, precision)) / frame_rate
 
         if t_start == t_stop:
             msg = (
@@ -1118,21 +1031,16 @@ def _event_driven_traj_to_const_frame_rate(
             )
 
             r = pd.Index(equidist_time_steps, name=t.name)
-            interpolated_traj = (
-                traj.reindex(t.union(r)).interpolate(method="index").loc[r]
-            )
+            interpolated_traj = traj.reindex(t.union(r)).interpolate(method="index").loc[r]
 
             interpolated_traj[ID_COL] = interpolated_traj[ID_COL].astype(int)
 
-            traj_dataframe_interpolated = pd.concat(
-                [traj_dataframe_interpolated, interpolated_traj]
-            )
+            traj_dataframe_interpolated = pd.concat([traj_dataframe_interpolated, interpolated_traj])
 
     if trajectory_too_short_messages and not ignore_too_short_trajectories:
         raise LoadTrajectoryError(
             "One or more pedestrian trajectories are too short to be captured "
-            f"at frame rate {frame_rate}:\n- "
-            + "\n- ".join(trajectory_too_short_messages)
+            f"at frame rate {frame_rate}:\n- " + "\n- ".join(trajectory_too_short_messages)
         )
 
     if traj_dataframe_interpolated.empty:
@@ -1141,17 +1049,11 @@ def _event_driven_traj_to_const_frame_rate(
     traj_dataframe_interpolated = traj_dataframe_interpolated.reset_index()
 
     traj_dataframe_interpolated[FRAME_COL] = (
-        (traj_dataframe_interpolated[TIME_COL] * frame_rate)
-        .round(decimals=0)
-        .astype(int)
+        (traj_dataframe_interpolated[TIME_COL] * frame_rate).round(decimals=0).astype(int)
     )
-    traj_dataframe_interpolated = traj_dataframe_interpolated.drop(
-        labels=TIME_COL, axis="columns"
-    )
+    traj_dataframe_interpolated = traj_dataframe_interpolated.drop(labels=TIME_COL, axis="columns")
 
-    traj_dataframe_interpolated = traj_dataframe_interpolated.sort_values(
-        by=[FRAME_COL, ID_COL], ignore_index=True
-    )
+    traj_dataframe_interpolated = traj_dataframe_interpolated.sort_values(by=[FRAME_COL, ID_COL], ignore_index=True)
     return traj_dataframe_interpolated
 
 
@@ -1186,9 +1088,7 @@ def _validate_is_deviation_vadere_pedpy_traj_transform_below_threshold(
     max_speed = 0  # max pedestrian speed that actually reads from the traj file
     for _, traj in traj_groups:
         diff = traj.diff().dropna()
-        dx_dt = (np.sqrt(diff[[X_COL, Y_COL]].pow(2).sum(axis=1))).divide(
-            diff[TIME_COL]
-        )
+        dx_dt = (np.sqrt(diff[[X_COL, Y_COL]].pow(2).sum(axis=1))).divide(diff[TIME_COL])
         max_speed = max([max_speed, round(max(dx_dt), 2)])
 
     max_deviation = round(max_speed / frame_rate, 2)
@@ -1234,9 +1134,7 @@ def load_walkable_area_from_vadere_scenario(
     _validate_is_file(vadere_scenario_file)
 
     if margin != 0 and margin < 10**-decimals:
-        raise LoadTrajectoryError(
-            f"Margin ({margin!s}) should be greater than 10 ** (-{decimals!s})."
-        )
+        raise LoadTrajectoryError(f"Margin ({margin!s}) should be greater than 10 ** (-{decimals!s}).")
 
     with open(vadere_scenario_file, "r") as f:
         data = json.load(f)
@@ -1248,16 +1146,10 @@ def load_walkable_area_from_vadere_scenario(
         bounding_box_with = scenario_attributes["boundingBoxWidth"]
         complete_area["x"] = complete_area["x"] + bounding_box_with - margin
         complete_area["y"] = complete_area["y"] + bounding_box_with - margin
-        complete_area["width"] = complete_area["width"] - 2 * (
-            bounding_box_with - margin
-        )
-        complete_area["height"] = complete_area["height"] - 2 * (
-            bounding_box_with - margin
-        )
+        complete_area["width"] = complete_area["width"] - 2 * (bounding_box_with - margin)
+        complete_area["height"] = complete_area["height"] - 2 * (bounding_box_with - margin)
         complete_area["type"] = "RECTANGLE"
-        complete_area_points = _vadere_shape_to_point_list(
-            complete_area, decimals=decimals
-        )
+        complete_area_points = _vadere_shape_to_point_list(complete_area, decimals=decimals)
         area_poly = shapely.Polygon(complete_area_points)
 
         # obstacles
@@ -1265,14 +1157,10 @@ def load_walkable_area_from_vadere_scenario(
         obstacles = topography["obstacles"]
         error_obst_ids = []
         for obstacle in obstacles:
-            obst_points = _vadere_shape_to_point_list(
-                obstacle["shape"], decimals=decimals
-            )
+            obst_points = _vadere_shape_to_point_list(obstacle["shape"], decimals=decimals)
             obstacle_polygon = shapely.Polygon(obst_points)
             if area_poly.contains_properly(obstacle_polygon):
-                walkable_area_poly = walkable_area_poly.difference(
-                    obstacle_polygon
-                )
+                walkable_area_poly = walkable_area_poly.difference(obstacle_polygon)
             else:
                 error_obst_ids += [str(obstacle["id"])]
 
@@ -1290,9 +1178,7 @@ def load_walkable_area_from_vadere_scenario(
     return WalkableArea(walkable_area_poly)
 
 
-def _vadere_shape_to_point_list(
-    shape: dict[str, Any], decimals: int
-) -> list[Point]:
+def _vadere_shape_to_point_list(shape: dict[str, Any], decimals: int) -> list[Point]:
     """Transforms dict describing a rectangle or polygon into a list of points.
 
     Args:
@@ -1313,10 +1199,7 @@ def _vadere_shape_to_point_list(
 
     shape_type = shape["type"]
     if shape_type not in _supported_types:
-        raise LoadTrajectoryError(
-            f"The given Vadere scenario contains an unsupported obstacle "
-            f"shape '{shape_type}'. "
-        )
+        raise LoadTrajectoryError(f"The given Vadere scenario contains an unsupported obstacle shape '{shape_type}'. ")
 
     if shape_type == "RECTANGLE":
         # lower left corner (x1, y1)
@@ -1338,10 +1221,7 @@ def _vadere_shape_to_point_list(
         points = [shapely.Point(p["x"], p["y"]) for p in shape["points"]]
 
     # handle floating point errors
-    points = [
-        shapely.Point(np.round(p.x, decimals), np.round(p.y, decimals))
-        for p in points
-    ]
+    points = [shapely.Point(np.round(p.x, decimals), np.round(p.y, decimals)) for p in points]
     return points
 
 
@@ -1371,12 +1251,8 @@ def load_trajectory_from_crowdit(
     """
     _validate_is_file(trajectory_file)
 
-    traj_dataframe = _load_trajectory_data_from_crowdit(
-        trajectory_file=trajectory_file
-    )
-    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(
-        traj_dataframe
-    )
+    traj_dataframe = _load_trajectory_data_from_crowdit(trajectory_file=trajectory_file)
+    traj_dataframe["frame"], traj_frame_rate = _calculate_frames_and_fps(traj_dataframe)
 
     return TrajectoryData(
         data=traj_dataframe[[ID_COL, FRAME_COL, X_COL, Y_COL]],
@@ -1384,9 +1260,7 @@ def load_trajectory_from_crowdit(
     )
 
 
-def _load_trajectory_data_from_crowdit(
-    *, trajectory_file: pathlib.Path
-) -> pd.DataFrame:
+def _load_trajectory_data_from_crowdit(*, trajectory_file: pathlib.Path) -> pd.DataFrame:
     """Parse the Crowdit trajectory file for trajectory data.
 
     Args:
@@ -1421,25 +1295,18 @@ def _load_trajectory_data_from_crowdit(
             encoding="utf-8-sig",
         ).dropna()
     except Exception as e:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nOriginal error: {e}"
-        ) from e
+        raise LoadTrajectoryError(f"{common_error_message}\nOriginal error: {e}") from e
 
     missing_columns = set(columns_to_keep) - set(data.columns)
     if missing_columns:
-        raise LoadTrajectoryError(
-            f"{common_error_message}"
-            f"Missing columns: {', '.join(missing_columns)}."
-        )
+        raise LoadTrajectoryError(f"{common_error_message}Missing columns: {', '.join(missing_columns)}.")
 
     try:
         data = data[columns_to_keep]
         data = data.rename(columns=rename_mapping)
         data = data.astype(column_types)
     except Exception as e:
-        raise LoadTrajectoryError(
-            f"{common_error_message}\nOriginal error: {e}"
-        ) from e
+        raise LoadTrajectoryError(f"{common_error_message}\nOriginal error: {e}") from e
 
     if data.empty:
         raise LoadTrajectoryError(common_error_message)
@@ -1447,9 +1314,7 @@ def _load_trajectory_data_from_crowdit(
     return data
 
 
-def load_walkable_area_from_crowdit(
-    *, geometry_file: pathlib.Path, buffer: float = 1e-3
-) -> WalkableArea:
+def load_walkable_area_from_crowdit(*, geometry_file: pathlib.Path, buffer: float = 1e-3) -> WalkableArea:
     """Load walkable area from a Crowdit XML geometry file.
 
     Args:
@@ -1466,10 +1331,7 @@ def load_walkable_area_from_crowdit(
         tree = ET.parse(geometry_file)
         root = tree.getroot()
     except Exception as e:
-        raise LoadTrajectoryError(
-            f"Could not parse Crowdit geometry file: {geometry_file}\n"
-            f"Original error: {e}"
-        ) from e
+        raise LoadTrajectoryError(f"Could not parse Crowdit geometry file: {geometry_file}\nOriginal error: {e}") from e
 
     all_points = []
     walls = []
@@ -1482,10 +1344,7 @@ def load_walkable_area_from_crowdit(
                 x = pt.get("x")
                 y = pt.get("y")
                 if x is None or y is None:
-                    raise LoadTrajectoryError(
-                        f"Invalid point found in {geometry_file}."
-                        "missing x or y attribute"
-                    )
+                    raise LoadTrajectoryError(f"Invalid point found in {geometry_file}.missing x or y attribute")
                 points.append((float(x), float(y)))
             if points:
                 if points[0] != points[-1]:
@@ -1494,9 +1353,7 @@ def load_walkable_area_from_crowdit(
                 walls.append(points)
 
     if not all_points:
-        raise LoadTrajectoryError(
-            f"No wall polygons found in Crowdit geometry file: {geometry_file}"
-        )
+        raise LoadTrajectoryError(f"No wall polygons found in Crowdit geometry file: {geometry_file}")
 
     # Exception for single wall → directly as WalkableArea
     if len(walls) == 1:
