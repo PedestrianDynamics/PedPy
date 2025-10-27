@@ -57,9 +57,7 @@ def compute_classic_density(
         DataFrame containing the columns 'frame' and 'density' in :math:`1/m^2`
     """
     peds_in_area = TrajectoryData(
-        traj_data.data[
-            shapely.contains(measurement_area.polygon, traj_data.data.point)
-        ],
+        traj_data.data[shapely.contains(measurement_area.polygon, traj_data.data.point)],
         traj_data.frame_rate,
     )
     peds_in_area_per_frame = _get_num_peds_per_frame(peds_in_area)
@@ -131,14 +129,9 @@ def compute_voronoi_density(
     )
 
     relation_col = "relation"
-    df_combined[relation_col] = shapely.area(
-        df_combined.intersection
-    ) / shapely.area(df_combined.polygon)
+    df_combined[relation_col] = shapely.area(df_combined.intersection) / shapely.area(df_combined.polygon)
 
-    df_voronoi_density = (
-        df_combined.groupby(df_combined.frame).relation.sum()
-        / measurement_area.area
-    ).to_frame()
+    df_voronoi_density = (df_combined.groupby(df_combined.frame).relation.sum() / measurement_area.area).to_frame()
 
     # Rename column and add missing zero values
     df_voronoi_density.columns = [DENSITY_COL]
@@ -158,9 +151,7 @@ def compute_voronoi_density(
     )
 
 
-def compute_passing_density(
-    *, density_per_frame: pd.DataFrame, frames: pd.DataFrame
-) -> pd.DataFrame:
+def compute_passing_density(*, density_per_frame: pd.DataFrame, frames: pd.DataFrame) -> pd.DataFrame:
     r"""Compute the individual density of the pedestrian who pass the area.
 
     The passing density for each pedestrian :math:`\rho_{passing}(i)` is the
@@ -223,9 +214,7 @@ def _get_num_peds_per_frame(traj_data: TrajectoryData) -> pd.DataFrame:
         DataFrame containing the columns: 'frame' (as index) and 'num_peds'.
     """
     num_peds_per_frame = (
-        traj_data.data.groupby(traj_data.data.frame)
-        .agg({ID_COL: "count"})
-        .rename(columns={ID_COL: COUNT_COL})
+        traj_data.data.groupby(traj_data.data.frame).agg({ID_COL: "count"}).rename(columns={ID_COL: COUNT_COL})
     )
 
     return num_peds_per_frame
@@ -288,14 +277,11 @@ def compute_line_density(
         measurement_line=measurement_line,
         species=species,
         lambda_for_group=lambda group, line: (
-            group[DENSITY_COL]
-            * (_compute_partial_line_length(group[POLYGON_COL], line))
+            group[DENSITY_COL] * (_compute_partial_line_length(group[POLYGON_COL], line))
         ).sum(),
         column_id_sp1=DENSITY_SP1_COL,
         column_id_sp2=DENSITY_SP2_COL,
     )
 
-    result[DENSITY_COL] = result[DENSITY_SP1_COL].fillna(0) + result[
-        DENSITY_SP2_COL
-    ].fillna(0)
+    result[DENSITY_COL] = result[DENSITY_SP1_COL].fillna(0) + result[DENSITY_SP2_COL].fillna(0)
     return result

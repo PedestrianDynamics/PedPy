@@ -59,28 +59,18 @@ class TrajectoryData:
         """
         if isinstance(key, slice):
             # Handle cases where start or stop might be None
-            start = (
-                key.start
-                if key.start is not None
-                else self.data[FRAME_COL].min()
-            )
-            stop = (
-                key.stop if key.stop is not None else self.data[FRAME_COL].max()
-            )
+            start = key.start if key.start is not None else self.data[FRAME_COL].min()
+            stop = key.stop if key.stop is not None else self.data[FRAME_COL].max()
 
             # Ensure the slice does not go beyond the data bounds
             start = max(start, self.data[FRAME_COL].min())
             stop = min(stop, self.data[FRAME_COL].max())
 
             # Filter the dataframe for the specified frame range
-            filtered_data = self.data[
-                self.data.frame.between(start, stop, inclusive="left")
-            ]
+            filtered_data = self.data[self.data.frame.between(start, stop, inclusive="left")]
 
             # Return a new TrajectoryData instance with the filtered data
-            return TrajectoryData(
-                filtered_data.reset_index(drop=True), self.frame_rate
-            )
+            return TrajectoryData(filtered_data.reset_index(drop=True), self.frame_rate)
 
         raise PedPyTypeError("Slicing requires a 'slice' object.")
 

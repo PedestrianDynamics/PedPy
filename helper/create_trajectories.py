@@ -87,9 +87,7 @@ def setup_arg_parser() -> argparse.ArgumentParser:
         default=1.0,
     )
 
-    sub_parsers = parser.add_subparsers(
-        help="sub-command help", required=True, dest="cmd"
-    )
+    sub_parsers = parser.add_subparsers(help="sub-command help", required=True, dest="cmd")
 
     grid_parser = sub_parsers.add_parser("grid")
     grid_parser.add_argument(
@@ -124,9 +122,7 @@ def write_trajectory(
         write_trajectory_data(trajectory_file, traj)
 
 
-def write_header(
-    trajectory_file: TextIO, fps: int, geometry_file: str, num_pedestrians: int
-) -> None:
+def write_header(trajectory_file: TextIO, fps: int, geometry_file: str, num_pedestrians: int) -> None:
     version = "0.0.1"
 
     header = f"""#description: jpscore ({version})
@@ -147,9 +143,7 @@ def write_header(
     trajectory_file.write(header)
 
 
-def write_trajectory_data(
-    trajectory_file: TextIO, trajectory_data: pd.DataFrame
-) -> None:
+def write_trajectory_data(trajectory_file: TextIO, trajectory_data: pd.DataFrame) -> None:
     trajectory_data["Z"] = 0.0
     trajectory_data["A"] = 0.5
     trajectory_data["B"] = 0.5
@@ -157,9 +151,7 @@ def write_trajectory_data(
     trajectory_data["COLOR"] = 220
 
     trajectory_data.sort_values(["FR", "ID"], inplace=True, ascending=True)
-    trajectory_file.write(
-        trajectory_data.to_csv(sep="\t", header=False, index=False)
-    )
+    trajectory_file.write(trajectory_data.to_csv(sep="\t", header=False, index=False))
 
 
 def get_grid_trajectory(
@@ -208,9 +200,7 @@ def get_grid_trajectory(
     return pd.DataFrame(traj, columns=[ID_COL, FRAME_COL, X_COL, Y_COL])
 
 
-def filter_pedestrians(
-    traj: pd.DataFrame, x_range: List[float], y_range: List[float]
-) -> pd.DataFrame:
+def filter_pedestrians(traj: pd.DataFrame, x_range: List[float], y_range: List[float]) -> pd.DataFrame:
     """Filters the given trajectory, such that all the pedestrians are within the given range
 
     Args:
@@ -223,14 +213,10 @@ def filter_pedestrians(
     """
     filtered = traj
     if x_range is not None:
-        filtered = filtered.loc[
-            (x_range[0] <= filtered.X) & (filtered.X <= x_range[1])
-        ]
+        filtered = filtered.loc[(x_range[0] <= filtered.X) & (filtered.X <= x_range[1])]
 
     if y_range is not None:
-        filtered = filtered.loc[
-            (y_range[0] <= filtered.Y) & (filtered.Y <= y_range[1])
-        ]
+        filtered = filtered.loc[(y_range[0] <= filtered.Y) & (filtered.Y <= y_range[1])]
 
     return filtered
 
@@ -259,9 +245,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     num_frames = args.sim_time * args.fps
-    movement = get_movement_per_frame(
-        np.asarray(args.movement_direction), args.velocity, args.fps
-    )
+    movement = get_movement_per_frame(np.asarray(args.movement_direction), args.velocity, args.fps)
 
     if args.cmd == "grid":
         num_peds = args.shape[0] * args.shape[1]

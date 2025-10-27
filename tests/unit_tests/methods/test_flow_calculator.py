@@ -11,9 +11,7 @@ from pedpy.methods.flow_calculator import compute_line_flow
 
 @pytest.fixture
 def example_data():
-    species = pd.DataFrame(
-        {ID_COL: [1, 2, 3, 4], SPECIES_COL: [1, -1, np.nan, 1]}
-    )
+    species = pd.DataFrame({ID_COL: [1, 2, 3, 4], SPECIES_COL: [1, -1, np.nan, 1]})
     speed = pd.DataFrame(
         {
             ID_COL: [1, 2, 3, 4],
@@ -55,16 +53,10 @@ def test_compute_line_flow(example_data):
 
     n = line.normal_vector()
     assert flow_on_line.shape[0] == 1
-    assert flow_on_line[FLOW_SP1_COL].values[0] == pytest.approx(
-        (n[0] * 1 + n[1] * 1) * 0.5 * 3
-    )
-    assert flow_on_line[FLOW_SP2_COL].values[0] == pytest.approx(
-        (n[0] * -1 + n[1] * -1) * 0.5 * -1 * 3
-    )
+    assert flow_on_line[FLOW_SP1_COL].values[0] == pytest.approx((n[0] * 1 + n[1] * 1) * 0.5 * 3)
+    assert flow_on_line[FLOW_SP2_COL].values[0] == pytest.approx((n[0] * -1 + n[1] * -1) * 0.5 * -1 * 3)
 
-    assert flow_on_line[FLOW_COL].values[0] == pytest.approx(
-        (n[0] * 1 + n[1] * 1) * 3
-    )
+    assert flow_on_line[FLOW_COL].values[0] == pytest.approx((n[0] * 1 + n[1] * 1) * 3)
 
 
 def test_compute_line_flow_invalid_species(example_data):
@@ -101,9 +93,7 @@ def test_compute_line_flow_missing_velocity_columns(example_data):
     species, speed, voronoi, line = example_data
     # Remove velocity columns
     invalid_speed = speed.copy()
-    invalid_speed = invalid_speed.drop(
-        [V_X_COL, V_Y_COL], axis=1
-    )  # Assuming these are your velocity columns
+    invalid_speed = invalid_speed.drop([V_X_COL, V_Y_COL], axis=1)  # Assuming these are your velocity columns
 
     with pytest.raises(InputError, match="Required velocity columns missing"):
         compute_line_flow(
