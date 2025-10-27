@@ -8,17 +8,7 @@ import numpy as np
 import shapely
 from numpy.typing import NDArray
 
-
-class GeometryError(Exception):
-    """Class reflecting errors when creating PedPy geometry objects."""
-
-    def __init__(self, message):
-        """Create GeometryError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
+from pedpy.errors import GeometryError, PedPyAttributeError
 
 
 @dataclass
@@ -77,8 +67,8 @@ class WalkableArea:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
-                "Walkable area can not be changed after " "construction!"
+            raise PedPyAttributeError(
+                "Walkable area can not be changed after construction!"
             )
         return super().__setattr__(attr, value)
 
@@ -177,7 +167,7 @@ class MeasurementArea:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Measurement area can not be changed after construction!"
             )
         return super().__setattr__(attr, value)
@@ -208,6 +198,87 @@ class MeasurementArea:
             Measurement area as :class:`shapely.Polygon`.
         """
         return self._polygon
+
+    @property
+    def bounds(self):
+        """Minimum bounding region (minx, miny, maxx, maxy).
+
+        Returns:
+            Minimum bounding region (minx, miny, maxx, maxy)
+        """
+        return self._polygon.bounds
+
+
+###############################################################################
+# Axis Aligned MeasurmentArea
+###############################################################################
+class AxisAlignedMeasurementArea(MeasurementArea):
+    """Axis-aligned areas to study pedestrian dynamics.
+
+    An axis aligned measurement area is defined as an area, which is
+    axis-algined, convex, simple, and covers a non-zero area.
+    """
+
+    _frozen = False
+
+    def __init__(self, x_min: float, y_min: float, x_max: float, y_max: float):
+        """Create an axis-aligned measurement area from the given input.
+
+        Creates a rectangular axis-aligned measurement area using the provided
+        coordinates. The resulting area must be valid and have a non-zero area.
+        Raises a GeometryError if the polygon cannot be created or is invalid.
+
+        Args:
+            x_min (float): Minimum x-coordinate of the measurement area.
+            y_min (float): Minimum y-coordinate of the measurement area.
+            x_max (float): Maximum x-coordinate of the measurement area.
+            y_max (float): Maximum y-coordinate of the measurement area.
+
+        Raises:
+            GeometryError: If the measurement area cannot be created or is
+                invalid.
+        """
+        self._polygon = shapely.box(
+            xmin=x_min, ymin=y_min, xmax=x_max, ymax=y_max
+        )
+
+        if self._polygon.area == 0:
+            raise GeometryError(
+                "Axis-aligned measurement area needs to cover a non-zero area."
+            )
+
+        shapely.prepare(self._polygon)
+        self._frozen = True
+
+    @classmethod
+    def from_measurement_area(
+        cls, measurement_area: MeasurementArea
+    ) -> "AxisAlignedMeasurementArea":
+        """Create an AxisAlignedMeasurementArea from a MeasurementArea.
+
+        This method creates an axis-aligned measurement area that bounds the
+        given measurement area. Given the blue measurement area in the
+        following figure, the axis-aligned measurement area is the red rectangle
+        that covers the blue area. The axis-aligned measurement area is defined
+        by the minimum and maximum x and y coordinates of the measurement area.
+
+        .. image:: /images/axis_aligned_measurement_area_from_ma.svg
+            :width: 60 %
+            :align: center
+
+        Args:
+            measurement_area (MeasurementArea): The measurement area from which
+                to create the axis-aligned measurement area.
+
+        Returns:
+            AxisAlignedMeasurementArea: An instance of
+                AxisAlignedMeasurementArea that bounds the given measurement
+                area.
+
+
+        """
+        bounds = measurement_area.bounds
+        return cls(*bounds)
 
 
 ###############################################################################
@@ -274,7 +345,7 @@ class MeasurementLine:
             value: value to be set to attribute
         """
         if self._frozen:
-            raise AttributeError(
+            raise PedPyAttributeError(
                 "Measurement line can not be changed after construction!"
             )
         return super().__setattr__(attr, value)
@@ -437,7 +508,15 @@ def _polygon_from_coordinates(
     *,
     holes: Optional[List[Tuple[Number]] | shapely.Point] = None,
 ) -> shapely.Polygon:
-    return shapely.Polygon(coordinates, holes=holes)
+    poly = shapely.Polygon(coordinates)
+    if holes is None:
+        return poly
+
+    for hole in holes:
+        obs = shapely.Polygon(hole)
+        poly = poly.difference(obs)
+
+    return poly
 
 
 def _create_polygon_from_input(

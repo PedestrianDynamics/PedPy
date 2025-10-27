@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import shapely
 from matplotlib.collections import LineCollection
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, to_rgb
 from matplotlib.patches import Polygon
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.typing import NDArray
@@ -40,8 +40,14 @@ from pedpy.column_identifier import (
     X_COL,
     Y_COL,
 )
-from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
+from pedpy.data.geometry import (
+    AxisAlignedMeasurementArea,
+    MeasurementArea,
+    MeasurementLine,
+    WalkableArea,
+)
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyRuntimeError
 
 _log = logging.getLogger(__name__)
 
@@ -673,7 +679,7 @@ def plot_neighborhood(
     neighbors: pd.DataFrame,
     frame: int,
     voronoi_data: pd.DataFrame,
-    walkable_area: WalkableArea,
+    walkable_area: Optional[WalkableArea] = None,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -697,10 +703,20 @@ def plot_neighborhood(
             below for list of usable keywords
 
     Keyword Args:
-        hole_color (optional): color of the holes in the walkable area
-        base_color (optional): color of the base pedestrians
-        neighbor_color (optional): color of neighbor pedestrians
-        default_color (optional): color of default pedestrians
+        base_color (optional): color of the base pedestrian, whose neighborhood
+            will be highlighted
+        base_alpha (optional): alpha of the base pedestrian
+        neighbor_color (optional): color of neighbor pedestrians of the base
+            pedestrian
+        neighbor_alpha (optional): alpha of the neighbor pedestrians
+        default_color (optional): color of default pedestrians, which are not
+            neighbors of the base pedestrian
+        default_alpha (optional): alpha of the default pedestrians
+        line_color (optional): color of the borders
+        line_width (optional): line width of the borders
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
+
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
@@ -719,7 +735,7 @@ def plot_neighborhood(
             .to_dict()
         )
     else:
-        raise RuntimeError("Unknown neighbor data format")
+        raise PedPyRuntimeError("Unknown neighbor data format")
 
     return _plot_neighborhood(
         pedestrian_id=pedestrian_id,
@@ -738,7 +754,7 @@ def _plot_neighborhood(
     neighbor_ids: dict[int, List[int]],
     frame: int,
     voronoi_data: pd.DataFrame,
-    walkable_area: WalkableArea,
+    walkable_area: Optional[WalkableArea] = None,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -757,18 +773,30 @@ def _plot_neighborhood(
             below for list of usable keywords
 
     Keyword Args:
-        hole_color (optional): color of the holes in the walkable area
-        base_color (optional): color of the base pedestrians
-        neighbor_color (optional): color of neighbor pedestrians
-        default_color (optional): color of default pedestrians
+        base_color (optional): color of the base pedestrian, whose neighborhood
+            will be highlighted
+        base_alpha (optional): alpha of the base pedestrian
+        neighbor_color (optional): color of neighbor pedestrians of the base
+            pedestrian
+        neighbor_alpha (optional): alpha of the neighbor pedestrians
+        default_color (optional): color of default pedestrians, which are not
+            neighbors of the base pedestrian
+        default_alpha (optional): alpha of the default pedestrians
+        line_color (optional): color of the borders
+        line_width (optional): line width of the borders
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
+
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
     """
     # Extract color settings from kwargs
-    hole_color = kwargs.pop("hole_color", "w")
-    base_color = kwargs.pop("base_color", PEDPY_RED)
-    neighbor_color = kwargs.pop("neighbor_color", PEDPY_GREEN)
-    default_color = kwargs.pop("default_color", PEDPY_GREY)
+    base_color = to_rgb(kwargs.pop("base_color", PEDPY_RED))
+    base_alpha = kwargs.pop("base_alpha", 0.5)
+    neighbor_color = to_rgb(kwargs.pop("neighbor_color", PEDPY_GREEN))
+    neighbor_alpha = kwargs.pop("neighbor_alpha", 0.5)
+    default_color = to_rgb(kwargs.pop("default_color", PEDPY_GREY))
+    default_alpha = kwargs.pop("default_alpha", 0.2)
 
     # Filter voronoi_data for polygons in the same frame
     voronoi_neighbors = voronoi_data[voronoi_data[FRAME_COL] == frame]
@@ -777,16 +805,16 @@ def _plot_neighborhood(
     ped_ids = voronoi_neighbors[ID_COL].to_numpy()
     polygons = voronoi_neighbors[POLYGON_COL].to_numpy()
     colors = np.full((len(ped_ids), 3), default_color, dtype=float)
-    alphas = np.full(len(ped_ids), 0.2)
+    alphas = np.full(len(ped_ids), default_alpha)
 
     # Set base pedestrian color and neighbors colors
     for idx, ped_id in enumerate(ped_ids):
         if ped_id == pedestrian_id:
             colors[idx] = base_color
-            alphas[idx] = 0.5
+            alphas[idx] = base_alpha
         elif ped_id in neighbor_ids.get(pedestrian_id, []):
             colors[idx] = neighbor_color
-            alphas[idx] = 0.5
+            alphas[idx] = neighbor_alpha
 
     # Set up the plot
     if axes is None:
@@ -794,21 +822,36 @@ def _plot_neighborhood(
     axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
 
     # Plot the walkable area
-    plot_walkable_area(
-        axes=axes,
-        walkable_area=walkable_area,
-        hole_color=hole_color,
-    )
-
-    # Plot each polygon with precomputed colors and alphas
-    for poly, color, alpha in zip(polygons, colors, alphas, strict=False):
-        _plot_polygon(
-            axes=axes,
-            polygon=poly,
-            line_color=color,
-            polygon_color=color,
-            polygon_alpha=alpha,
+    if walkable_area is not None:
+        axes = plot_walkable_area(
+            axes=axes, walkable_area=walkable_area, **kwargs
         )
+    else:
+        x_min, y_min, x_max, y_max = shapely.MultiPolygon(polygons).bounds
+        margin_x = 0.05 * (x_max - x_min)
+        margin_y = 0.05 * (y_max - y_min)
+        axes.set_xlim(x_min - margin_x, x_max + margin_x)
+        axes.set_ylim(y_min - margin_y, y_max + margin_y)
+
+    # Create boolean masks for each type of polygon
+    default_mask = np.all(colors == default_color, axis=1)
+    neighbor_mask = np.all(colors == neighbor_color, axis=1)
+    base_mask = np.all(colors == base_color, axis=1)
+
+    # Plot polygons in order: default -> neighbors -> base
+    for mask, color, alpha in [
+        (default_mask, default_color, default_alpha),
+        (neighbor_mask, neighbor_color, neighbor_alpha),
+        (base_mask, base_color, base_alpha),
+    ]:
+        for poly in polygons[mask]:
+            _plot_polygon(
+                axes=axes,
+                polygon=poly,
+                line_color=color,
+                polygon_color=color,
+                polygon_alpha=alpha,
+            )
 
     # Set aspect ratio
     axes.set_aspect("equal")
@@ -1051,6 +1094,7 @@ def plot_time_distance(  # noqa: PLR0915
 def plot_profiles(
     *,
     walkable_area: WalkableArea,
+    measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     profiles: list[NDArray[np.float64]],
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
@@ -1059,6 +1103,9 @@ def plot_profiles(
 
     Args:
         walkable_area(WalkableArea): walkable area of the plot
+        measurement_area (MeasurementArea): Measurement area for which the
+            profiles are computed.
+
         profiles(list): List of profiles like speed or density profiles
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be
             created
@@ -1079,6 +1126,9 @@ def plot_profiles(
         mean_profiles = np.nanmean(profiles, axis=0)
 
     bounds = walkable_area.bounds
+
+    if measurement_area is not None:
+        bounds = measurement_area.bounds
 
     title = kwargs.pop("title", "")
     walkable_color = kwargs.pop("walkable_color", "w")

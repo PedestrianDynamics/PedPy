@@ -7,8 +7,9 @@ is divided into square grid cells.
     :width: 60 %
     :align: center
 
-Each of these grid cells is then used as a :class:`~geometry.MeasurementArea`
-in which the mean speed and density can be computed with different methods.
+Each of these grid cells is then used as a
+:class:`~geometry.AxisAlignedMeasurementArea` in which the mean speed and
+density can be computed with different methods.
 """
 
 from enum import Enum, auto
@@ -20,7 +21,12 @@ import pandas as pd
 import shapely
 
 from pedpy.column_identifier import FRAME_COL
-from pedpy.data.geometry import WalkableArea
+from pedpy.data.geometry import (
+    AxisAlignedMeasurementArea,
+    MeasurementArea,
+    WalkableArea,
+)
+from pedpy.errors import PedPyRuntimeError, PedPyTypeError, PedPyValueError
 from pedpy.internal.utils import alias
 
 
@@ -159,11 +165,12 @@ class DensityMethod(Enum):  # pylint: disable=too-few-public-methods
 def compute_profiles(  # noqa: D417
     *,
     data: pd.DataFrame = None,
-    walkable_area: WalkableArea,
+    walkable_area: Optional[WalkableArea] = None,
     grid_size: float,
     speed_method: SpeedMethod,
     density_method: DensityMethod = DensityMethod.VORONOI,
     gaussian_width: Optional[float] = None,
+    axis_aligned_measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     # pylint: disable=unused-argument,too-many-arguments
     **kwargs: Any,
 ) -> Tuple[
@@ -205,6 +212,8 @@ def compute_profiles(  # noqa: D417
         gaussian_width: full width at half maximum for Gaussian
             approximation of the density, only needed when using
             :attr:`DensityMethod.GAUSSIAN`.
+        axis_aligned_measurement_area (AxisAlignedMeasurementArea): Measurement
+            area for which the profiles are computed.
         individual_voronoi_speed_data: deprecated alias for
             :code:`data`. Please use :code:`data` in the future.
 
@@ -217,6 +226,7 @@ def compute_profiles(  # noqa: D417
         _,
     ) = get_grid_cells(
         walkable_area=walkable_area,
+        axis_aligned_measurement_area=axis_aligned_measurement_area,
         grid_size=grid_size,
     )
 
@@ -233,6 +243,7 @@ def compute_profiles(  # noqa: D417
         grid_intersections_area=grid_intersections_area,
         density_method=density_method,
         walkable_area=walkable_area,
+        axis_aligned_measurement_area=axis_aligned_measurement_area,
         grid_size=grid_size,
         gaussian_width=gaussian_width,
     )
@@ -242,6 +253,7 @@ def compute_profiles(  # noqa: D417
         grid_intersections_area=grid_intersections_area,
         speed_method=speed_method,
         walkable_area=walkable_area,
+        axis_aligned_measurement_area=axis_aligned_measurement_area,
         grid_size=grid_size,
     )
 
@@ -254,11 +266,12 @@ def compute_profiles(  # noqa: D417
 def compute_density_profile(
     *,
     data: pd.DataFrame,
-    walkable_area: WalkableArea,
+    walkable_area: Optional[WalkableArea] = None,
     grid_size: float,
     density_method: DensityMethod,
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     gaussian_width: Optional[float] = None,
+    axis_aligned_measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     # pylint: disable=too-many-arguments
 ) -> Sequence[npt.NDArray[np.float64]]:
     """Compute the density profile.
@@ -278,6 +291,8 @@ def compute_density_profile(
             :func:`pandas.merge`).
         walkable_area (WalkableArea): geometry for which the profiles are
             computed
+        axis_aligned_measurement_area (AxisAlignedMeasurementArea): Measurement
+            area for which the profiles are computed.
         grid_size (float): resolution of the grid used for computing the
             profiles
         density_method: density method to compute the density
@@ -298,6 +313,7 @@ def compute_density_profile(
         cols,
     ) = get_grid_cells(
         walkable_area=walkable_area,
+        axis_aligned_measurement_area=axis_aligned_measurement_area,
         grid_size=grid_size,
     )
 
@@ -314,7 +330,7 @@ def compute_density_profile(
     ) in data_grouped_by_frame:
         if density_method == DensityMethod.VORONOI:
             if grid_intersections_area is None:
-                raise RuntimeError(
+                raise PedPyRuntimeError(
                     "Computing a Voronoi density profile needs the parameter "
                     "`grid_intersections_area`."
                 )
@@ -330,14 +346,19 @@ def compute_density_profile(
                 grid_area=grid_cells[0].area,
             )
         elif density_method == DensityMethod.CLASSIC:
+            if walkable_area is not None:
+                bounds = walkable_area.bounds
+            if axis_aligned_measurement_area is not None:
+                bounds = axis_aligned_measurement_area.bounds
+
             density = _compute_classic_density_profile(
                 frame_data=frame_data,
-                walkable_area=walkable_area,
+                bounds=bounds,
                 grid_size=grid_size,
             )
         elif density_method == DensityMethod.GAUSSIAN:
             if gaussian_width is None:
-                raise ValueError(
+                raise PedPyValueError(
                     "Computing a Gaussian density profile needs a parameter "
                     "'gaussian_width'."
                 )
@@ -349,7 +370,7 @@ def compute_density_profile(
                 width=gaussian_width,
             )
         else:
-            raise ValueError("density method not accepted.")
+            raise PedPyValueError("density method not accepted.")
 
         density_profiles.append(
             density.reshape(
@@ -380,7 +401,7 @@ def _compute_voronoi_density_profile(
 def _compute_classic_density_profile(
     *,
     frame_data: pd.DataFrame,
-    walkable_area: WalkableArea,
+    bounds: tuple[float, float, float, float],
     grid_size: float,
 ) -> npt.NDArray[np.float64]:
     (
@@ -388,7 +409,7 @@ def _compute_classic_density_profile(
         min_y,
         max_x,
         max_y,
-    ) = walkable_area.bounds
+    ) = bounds
 
     x_coords = np.arange(
         min_x,
@@ -477,12 +498,13 @@ def _compute_gaussian_density_profile(
 def compute_speed_profile(
     *,
     data: pd.DataFrame,
-    walkable_area: WalkableArea,
+    walkable_area: Optional[WalkableArea] = None,
     grid_size: float,
     speed_method: SpeedMethod,
     grid_intersections_area: Optional[npt.NDArray[np.float64]] = None,
     fill_value: float = np.nan,
     gaussian_width: float = 0.5,
+    axis_aligned_measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     # pylint: disable=too-many-arguments
 ) -> Sequence[npt.NDArray[np.float64]]:
     """Computes the speed profile for pedestrians within an area.
@@ -512,6 +534,8 @@ def compute_speed_profile(
             :func:`pandas.merge`).
         walkable_area (WalkableArea): geometry for which the speed profiles are
             computed.
+        axis_aligned_measurement_area (AxisAlignedMeasurementArea): Measurement
+            area for which the profiles are computed.
         grid_size: The resolution of the grid used for computing the
             profiles, expressed in the same units as the `walkable_area`.
         speed_method: The speed method used to compute the
@@ -540,6 +564,7 @@ def compute_speed_profile(
         cols,
     ) = get_grid_cells(
         walkable_area=walkable_area,
+        axis_aligned_measurement_area=axis_aligned_measurement_area,
         grid_size=grid_size,
     )
 
@@ -553,7 +578,7 @@ def compute_speed_profile(
     ) in data_grouped_by_frame:
         if speed_method == SpeedMethod.VORONOI:
             if grid_intersections_area is None:
-                raise RuntimeError(
+                raise PedPyRuntimeError(
                     "Computing a Arithmetic speed profile needs the parameter "
                     "`grid_intersections_area`."
                 )
@@ -569,7 +594,7 @@ def compute_speed_profile(
             )
         elif speed_method == SpeedMethod.ARITHMETIC:
             if grid_intersections_area is None:
-                raise RuntimeError(
+                raise PedPyRuntimeError(
                     "Computing a Arithmetic speed profile needs the parameter "
                     "`grid_intersections_area`."
                 )
@@ -583,9 +608,14 @@ def compute_speed_profile(
                 grid_intersections_area=grid_intersections_area_frame,
             )
         elif speed_method == SpeedMethod.MEAN:
+            if walkable_area is not None:
+                bounds = walkable_area.bounds
+            if axis_aligned_measurement_area is not None:
+                bounds = axis_aligned_measurement_area.bounds
+
             speed = _compute_mean_speed_profile(
                 frame_data=frame_data,
-                walkable_area=walkable_area,
+                bounds=bounds,
                 grid_size=grid_size,
                 fill_value=fill_value,
             )
@@ -600,7 +630,7 @@ def compute_speed_profile(
                 fwhm=gaussian_width,
             )
         else:
-            raise ValueError("Speed method not accepted.")
+            raise PedPyValueError("Speed method not accepted.")
 
         speed_profiles.append(
             speed.reshape(
@@ -789,7 +819,7 @@ def _compute_voronoi_speed_profile(
 def _compute_mean_speed_profile(
     *,
     frame_data: pd.DataFrame,
-    walkable_area: WalkableArea,
+    bounds: tuple[float, float, float, float],
     grid_size: float,
     fill_value: float,
 ) -> npt.NDArray[np.float64]:
@@ -798,7 +828,7 @@ def _compute_mean_speed_profile(
         min_y,
         max_x,
         max_y,
-    ) = walkable_area.bounds
+    ) = bounds
 
     x_coords = np.arange(
         min_x,
@@ -890,8 +920,8 @@ def compute_grid_cell_polygon_intersection_area(
 
     Returns:
         Tuple containing first the grid cell-polygon intersection areas, and
-            second the reordered data by 'frame', which needs to be used in
-            the next steps.
+        second the reordered data by 'frame', which needs to be used in
+        the next steps.
     """
     (
         grid_intersections_area,
@@ -935,33 +965,77 @@ def _compute_grid_polygon_intersection(
 
 def get_grid_cells(
     *,
-    walkable_area: WalkableArea,
+    walkable_area: Optional[WalkableArea] = None,
+    axis_aligned_measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     grid_size: float,
 ) -> Tuple[
     npt.NDArray[shapely.Polygon],
     int,
     int,
 ]:
-    """Creates a list of square grid cells covering the geometry.
+    """Creates a list of square grid cells covering the given geometry.
+
+    The grid cells are created in a way that they cover either the whole
+    walkable area or axis-aligned measurement area. The cells are created
+    starting from the top left corner of the geometry and are aligned with the
+    x and y axes. The grid cells are squares with the given size.
+
+    If you create the for a :class:`WalkableArea` the resulting grid will look
+    like this:
 
     .. image:: /images/profile_grid.svg
         :width: 60 %
         :align: center
+
+    If you create the for a :class:`AxisAlignedMeasurementArea` the resulting
+    grid will look like this:
+
+    .. image:: /images/profile_axis_aligned_measurement_area_with_grid.svg
+        :width: 60 %
+        :align: center
+
 
     Args:
         walkable_area (WalkableArea): geometry for which the profiles are
             computed.
         grid_size (float): resolution of the grid used for computing the
             profiles.
+        axis_aligned_measurement_area (AxisAlignedMeasurementArea): Measurement
+            area for which the profiles are computed.
+
 
     Returns:
         (List of grid cells, number of grid rows, number of grid columns)
     """
-    bounds = walkable_area.bounds
-    min_x = bounds[0]
-    min_y = bounds[1]
-    max_x = bounds[2]
-    max_y = bounds[3]
+    if walkable_area is None and axis_aligned_measurement_area is None:
+        raise PedPyValueError(
+            "Either `walkable_area` or `axis_aligned_measurement_area` must be "
+            "provided."
+        )
+    if walkable_area is not None:
+        min_x, min_y, max_x, max_y = walkable_area.bounds
+    if axis_aligned_measurement_area is not None:
+        if isinstance(
+            axis_aligned_measurement_area, MeasurementArea
+        ) and not isinstance(
+            axis_aligned_measurement_area, AxisAlignedMeasurementArea
+        ):
+            raise PedPyTypeError(
+                "`axis_aligned_measurement_area` must be an instance of "
+                "AxisAlignedMeasurementArea. To convert the measurement area "
+                "to an AxisAlignedMeasurementArea, you can use "
+                "AxisAlignedMeasurementArea.from_measurement_area()."
+            )
+        if not isinstance(
+            axis_aligned_measurement_area, AxisAlignedMeasurementArea
+        ):
+            raise PedPyTypeError(
+                "`axis_aligned_measurement_area` must be an instance of "
+                "AxisAlignedMeasurementArea, got "
+                f"{type(axis_aligned_measurement_area).__name__}."
+            )
+
+        min_x, min_y, max_x, max_y = axis_aligned_measurement_area.bounds
 
     x_coords = np.arange(
         min_x,

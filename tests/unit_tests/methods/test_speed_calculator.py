@@ -7,15 +7,14 @@ from tests.utils.utils import get_trajectory
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import InputError, SpeedError
 from pedpy.methods.method_utils import (
     Cutoff,
-    InputError,
     SpeedCalculation,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
 )
 from pedpy.methods.speed_calculator import (
-    SpeedError,
     compute_individual_speed,
     compute_line_speed,
     compute_mean_speed_per_frame,

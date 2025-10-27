@@ -262,10 +262,12 @@ To simplify and automate formatting, linting, and type checking, we use pre-comm
 
 To set up the pre-commit hooks locally, run the following command:
 
-```bash
-pip install pre-commit
-pre-commit install
-```
+.. code-block:: bash
+
+   pip install pre-commit
+   pre-commit install
+
+
 Now, every time you commit changes, the hooks will automatically run, checking for issues related to formatting, linting, and type hints.
 
 .. note ::

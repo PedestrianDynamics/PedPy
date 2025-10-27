@@ -40,6 +40,7 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyValueError
 
 _log = logging.getLogger(__name__)
 
@@ -87,18 +88,6 @@ class Cutoff:
 
     radius: float
     quad_segments: int = 3
-
-
-class InputError(Exception):
-    """Class reflecting errors when incorrect input was given."""
-
-    def __init__(self, message):
-        """Create InputError with the given message.
-
-        Args:
-            message: Error message
-        """
-        self.message = message
 
 
 def is_trajectory_valid(
@@ -441,7 +430,7 @@ def compute_neighbor_distance(
             with parameter :code:`as_list=False` can be used here as input.
 
     Raises:
-        ValueError: When passing a result of :func:`~compute_neighbors`
+        PedPyValueError: When passing a result of :func:`~compute_neighbors`
             with parameter :code:`as_list=True`.
 
     Returns:
@@ -449,7 +438,7 @@ def compute_neighbor_distance(
         'distance'.
     """
     if NEIGHBORS_COL in neighborhood.columns:
-        raise ValueError(
+        raise PedPyValueError(
             "Cannot compute distance between neighbors with list-format data. "
             "Please use the result of compute_neighbors with parameter "
             "as_list=False."
@@ -494,8 +483,8 @@ def compute_time_distance_line(
         measurement_line (MeasurementLine): line which is crossed
 
     Returns:
-        DataFrame containing 'id', 'frame', 'time' (seconds until
-        crossing),  and 'distance' (meters to measurement line)
+        DataFrame containing 'id', 'frame', 'distance' (meters to measurement
+        line), and 'time' (seconds until crossing)
     """
     df_distance_time = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]].copy(
         deep=True
@@ -586,7 +575,7 @@ def compute_individual_voronoi_polygons(
 
     Returns:
         DataFrame containing the columns 'id', 'frame','polygon' (
-        :class:`shapely.Polygon`), and 'individual_density' in :math:`1/m^2`.
+        :class:`shapely.Polygon`), and 'density' in :math:`1/m^2`.
     """
     dfs = []
 
@@ -888,7 +877,7 @@ def _compute_individual_movement(
             traj_data, frame_step, bidirectional
         )
 
-    raise ValueError("speed border method not accepted")
+    raise PedPyValueError("speed border method not accepted")
 
 
 def _compute_movement_exclude_border(
@@ -1119,7 +1108,7 @@ def _compute_individual_movement_acceleration(
             traj_data, frame_step
         )
 
-    raise ValueError("acceleration border method not accepted")
+    raise PedPyValueError("acceleration border method not accepted")
 
 
 def _compute_movement_acceleration_exclude_border(
@@ -1366,7 +1355,10 @@ def _apply_lambda_for_intersecting_frames(
     if not species_1.empty:
         species_1 = (
             species_1.groupby(FRAME_COL, group_keys=False)
-            .apply(lambda group: lambda_for_group(group, measurement_line))
+            .apply(
+                lambda group: lambda_for_group(group, measurement_line),
+                include_groups=False,
+            )
             .reset_index()
         )
         species_1.columns = [FRAME_COL, column_id_sp1]
@@ -1376,7 +1368,10 @@ def _apply_lambda_for_intersecting_frames(
     if not species_2.empty:
         species_2 = (
             species_2.groupby(FRAME_COL, group_keys=False)
-            .apply(lambda group: lambda_for_group(group, measurement_line))
+            .apply(
+                lambda group: lambda_for_group(group, measurement_line),
+                include_groups=False,
+            )
             .reset_index()
         )
         species_2.columns = [FRAME_COL, column_id_sp2]
@@ -1439,11 +1434,10 @@ def is_individual_speed_valid(
         measurement_line (MeasurementLine): measurement line
 
     Returns:
-        DATA_CORRECT if all needed data is provided
-            by the individual speed dataframe,
-        COLUMN_MISSING if there is a column missing,
-        ENTRY_MISSING if there is no matching entry
-            for a frame where polygon and line intersect.
+        DATA_CORRECT if all needed data is provided by the individual speed
+        dataframe, COLUMN_MISSING if there is a column missing, ENTRY_MISSING
+        if there is no matching entry for a frame where polygon and line
+        intersect.
     """
     if not all(
         column in individual_speed.columns

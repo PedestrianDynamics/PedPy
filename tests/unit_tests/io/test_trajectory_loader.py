@@ -1,3 +1,5 @@
+import json
+import math
 import pathlib
 import re
 import sqlite3
@@ -12,6 +14,7 @@ import pandas as pd
 import pytest
 import shapely
 from numpy import dtype
+from shapely import LinearRing, Polygon
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import WalkableArea
@@ -21,12 +24,18 @@ from pedpy.io.trajectory_loader import (
     _load_trajectory_data_from_txt,
     _load_trajectory_meta_data_from_txt,
     _validate_is_file,
+    load_trajectory_from_crowdit,
     load_trajectory_from_jupedsim_sqlite,
+    load_trajectory_from_pathfinder_csv,
+    load_trajectory_from_pathfinder_json,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
+    load_trajectory_from_vadere,
     load_trajectory_from_viswalk,
+    load_walkable_area_from_crowdit,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
+    load_walkable_area_from_vadere_scenario,
 )
 
 
@@ -360,6 +369,108 @@ def write_viswalk_csv_file(
     data.to_csv(file, sep=";", index=False, mode="a", encoding="utf-8-sig")
 
 
+def write_vadere_csv_file(
+    *,
+    data: Optional[pd.DataFrame] = None,
+    file: pathlib.Path,
+    frame_rate: float,
+):
+    data = data.rename(
+        columns={
+            ID_COL: "pedestrianId",
+            FRAME_COL: "simTime",
+            X_COL: "startX-PID1",  # "-PID1" stands for processor id 1 and is used in Vadere
+            # outputs as extension of the generic column name startX
+            Y_COL: "startY-PID1",  # "-PID1" see comment above
+        }
+    )
+    data["simTime"] = data["simTime"] / frame_rate
+
+    vadere_traj_header = "#IDXCOL=2,DATACOL=2,SEP=' '\n"
+    with open(file, "w", encoding="utf-8-sig") as writer:
+        writer.write(vadere_traj_header)
+
+    data.to_csv(file, sep=" ", index=False, mode="a", encoding="utf-8-sig")
+
+
+def is_rectangular(poly: shapely.Polygon):
+    return math.isclose(
+        a=poly.area,
+        b=poly.minimum_rotated_rectangle.area,
+        abs_tol=0,
+    )
+
+
+def write_vadere_scenario_file(
+    file,
+    complete_area,
+    obstacles,
+    bounding_box_width,
+):
+    obstacles_ = list()
+
+    for obstacle in obstacles:
+        obst_coords = list(obstacle.coords)
+
+        if is_rectangular(shapely.Polygon(obstacle)):
+            minx, miny, maxx, maxy = shapely.Polygon(obstacle).bounds
+            obstacles_ += [
+                {
+                    "shape": {
+                        "type": "RECTANGLE",
+                        "x": obst_coords[0][0],
+                        "y": obst_coords[0][1],
+                        "width": abs(maxx - minx),
+                        "height": abs(maxy - miny),
+                    }
+                }
+            ]
+        else:  # is polygon
+            obstacles_ += [
+                {
+                    "shape": {
+                        "type": "POLYGON",
+                        "points": [{"x": p[0], "y": p[1]} for p in obst_coords],
+                    }
+                }
+            ]
+
+    if is_rectangular(shapely.Polygon(complete_area)):
+        scenario = {
+            "name": "vadere_test",
+            "release": str(),
+            "scenario": {
+                "topography": {
+                    "attributes": {
+                        "bounds": {
+                            "x": complete_area.bounds[0],
+                            "y": complete_area.bounds[1],
+                            "width": abs(
+                                complete_area.bounds[2]
+                                - complete_area.bounds[0]
+                            ),
+                            "height": abs(
+                                complete_area.bounds[3]
+                                - complete_area.bounds[1]
+                            ),
+                        },
+                        "boundingBoxWidth": bounding_box_width,
+                    },
+                    "obstacles": obstacles_,
+                }
+            },
+        }
+    else:
+        raise RuntimeError(
+            "Internal Error: Trying to write non-rectangular shape as Vadere "
+            "scenario bound."
+        )
+
+    # Convert and write JSON object to file
+    with open(file, "w") as f:
+        json.dump(scenario, f, indent=2)
+
+
 def write_header_viswalk(file, data):
     column_description = {
         "$PEDESTRIAN:NO": "No, Number (Unique pedestrian number)",
@@ -399,14 +510,14 @@ def write_header_viswalk(file, data):
         for column in data.columns[:-1]:
             if column in column_description:
                 description = column_description[column]
-                writer.write(f"{description[:description.find(',')]};")
+                writer.write(f"{description[: description.find(',')]};")
             else:
                 writer.write(f"{column.capitalize()}")
 
         column = data.columns[-1]
         if column in column_description:
             description = column_description[column]
-            writer.write(f"{description[:description.find(',')]};")
+            writer.write(f"{description[: description.find(',')]};")
         else:
             writer.write(f"{column.capitalize()}")
         writer.write("\n")
@@ -1762,3 +1873,699 @@ def test_load_trajectory_from_viswalk_non_file(tmp_path):
         load_trajectory_from_viswalk(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
+
+
+def test_load_trajectory_from_vadere_reference_file():
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/vadere_postvis.traj"
+    )
+    load_trajectory_from_vadere(trajectory_file=traj_txt, frame_rate=24.0)
+
+
+def test_load_trajectory_from_vadere_no_data(
+    tmp_path: pathlib.Path,
+):
+    data_empty = pd.DataFrame(
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    written_data = get_data_frame_to_write(data_empty, TrajectoryUnit.METER)
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        data=written_data,
+        frame_rate=24.0,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_viswalk(
+            trajectory_file=trajectory_vadere,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
+
+
+@pytest.mark.parametrize(
+    "data, expected_frame_rate",
+    [
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            7.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            15.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            50.0,
+        ),
+    ],
+)
+def test_load_trajectory_from_vadere_success(
+    tmp_path: pathlib.Path,
+    data: List[npt.NDArray[np.float64]],
+    expected_frame_rate: float,
+):
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    expected_data = pd.DataFrame(
+        data=data,
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        frame_rate=expected_frame_rate,
+        data=written_data,
+    )
+    expected_data = prepare_data_frame(expected_data)
+
+    traj_data_from_file = load_trajectory_from_vadere(
+        trajectory_file=trajectory_vadere,
+        frame_rate=expected_frame_rate,
+    )
+
+    assert (
+        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
+        == expected_data.to_numpy()
+    ).all()
+    assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+def test_load_trajectory_from_vadere_columns_missing(
+    tmp_path: pathlib.Path,
+):
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    data_with_missing_column = pd.DataFrame(
+        data=np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+        columns=[ID_COL, FRAME_COL, X_COL, "FOO!"],
+    )
+
+    written_data = get_data_frame_to_write(
+        data_with_missing_column, TrajectoryUnit.METER
+    )
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        data=written_data,
+        frame_rate=24.0,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_vadere(
+            trajectory_file=trajectory_vadere, frame_rate=24.0
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
+
+
+def test_load_trajectory_from_vadere_columns_non_unique(
+    tmp_path: pathlib.Path,
+):
+    trajectory_vadere = pathlib.Path(tmp_path / "postvis.traj")
+
+    data_with_missing_column = pd.DataFrame(
+        data=np.array([[0, 0, 5, 5, 1], [0, 1, -5, -5, -1]]),
+        columns=[ID_COL, FRAME_COL, X_COL, "startX-PID2", Y_COL],
+    )
+
+    written_data = get_data_frame_to_write(
+        data_with_missing_column, TrajectoryUnit.METER
+    )
+    write_vadere_csv_file(
+        file=trajectory_vadere,
+        data=written_data,
+        frame_rate=24.0,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_vadere(
+            trajectory_file=trajectory_vadere,
+            frame_rate=24.0,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
+
+
+@pytest.mark.parametrize(
+    "area_poly, margin, bounding_box",
+    [
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            0,
+            0,
+        ),
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            1e-6,
+            0,
+        ),
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            0,
+            0.5,
+        ),
+        (
+            shapely.Polygon([(0, 0), (10, 0), (10, 10), (0, 10)]),
+            1e-6,
+            0.5,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+            0,
+            0,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+            1e-6,
+            0,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 1), (2, 0)], [(-2, -2), (-3, -3), (-4, -2)]],
+            ),
+            0,
+            0.5,
+        ),
+        (
+            shapely.Polygon(
+                [(-10, -10), (-10, 10), (10, 10), (10, -10)],
+                [[(0, 0), (1, 0), (1, 1), (0, 1)]],  # rectangular hole
+            ),
+            1e-6,
+            0.5,
+        ),
+    ],
+)
+def test_load_walkable_area_from_vadere_scenario_success(
+    tmp_path: pathlib.Path,
+    area_poly: shapely.Polygon,
+    margin: bool,
+    bounding_box: float,
+):
+    file_path = pathlib.Path(tmp_path / "vadere_test.scenario")
+    decimals = 6
+
+    complete_area = area_poly.exterior
+    if len(area_poly.interiors) > 0:
+        obstacles = area_poly.interiors
+    else:
+        obstacles = []
+
+    write_vadere_scenario_file(
+        file=file_path,
+        complete_area=complete_area,
+        obstacles=obstacles,
+        bounding_box_width=bounding_box,
+    )
+    walkable_area_from_file = load_walkable_area_from_vadere_scenario(
+        file_path,
+        margin=margin,
+        decimals=decimals,
+    )
+
+    # convert test input to expected WalkableArea
+    # 1) shrink expected walkable area to area without bounding box
+    expected_shell = shapely.Polygon(area_poly.exterior)
+    expected_shell = expected_shell.buffer(
+        distance=-bounding_box + margin,
+        single_sided=True,
+        join_style="mitre",
+    )
+    # convert polygon shell to points to use it as input to WalkableArea
+    expected_shell_points = list(expected_shell.exterior.coords)
+    # handle floating point errors
+    expected_shell_points = np.round(expected_shell_points, decimals)
+    # 2) treat holes separately to avoid buffering of holes
+    expected_holes = [list(p.coords) for p in area_poly.interiors]
+    expected_walkable_area = WalkableArea(
+        expected_shell_points, obstacles=expected_holes
+    )
+
+    expected_walkable_area_polygon = force_cw(expected_walkable_area.polygon)
+    walkable_area_from_file_polygon = force_cw(walkable_area_from_file.polygon)
+
+    # The polygons coordinates may differ by up to 'margin' on both axes.
+    # The maximum possible difference between coordinates is therefore the diagonal of the square formed
+    maximum_coordinate_difference_due_to_margin = math.sqrt(
+        margin * margin + margin * margin
+    )
+
+    assert expected_walkable_area_polygon.equals_exact(
+        walkable_area_from_file_polygon,
+        maximum_coordinate_difference_due_to_margin,
+    )
+
+
+def force_cw(polygon):
+    if is_ccw(polygon):
+        return Polygon(polygon.exterior.coords[::-1])
+    else:
+        return polygon
+
+
+def is_ccw(polygon):
+    return LinearRing(polygon.exterior.coords).is_ccw
+
+
+# ------------------ Pathfinder tests ------------------ #
+
+
+def write_pathfinder_csv_file(
+    *,
+    data: Optional[pd.DataFrame] = None,
+    file: pathlib.Path,
+    frame_rate: float = 1,
+    start_time: float = 0,
+    unit: str = "m",
+):
+    """Write test data in Pathfinder CSV format."""
+    if data is not None:
+        data = data.rename(
+            columns={
+                ID_COL: "id",
+                FRAME_COL: "t",
+                X_COL: "x",
+                Y_COL: "y",
+            }
+        )
+        data["t"] = start_time + data["t"] / frame_rate
+        with open(file, "w", encoding="utf-8-sig") as f:
+            # Header-Zeile
+            f.write("id,t,x,y\n")
+            # Unit-Zeile (Pathfinder schreibt so etwas rein)
+            f.write(f"unit,,{unit},{unit}\n")
+            # Daten
+            data.to_csv(f, index=False, header=False, encoding="utf-8-sig")
+
+
+def write_pathfinder_json_file(
+    *,
+    data: Optional[pd.DataFrame] = None,
+    file: pathlib.Path,
+    frame_rate: float = 1,
+    start_time: float = 0.0,
+    unit: str = "m",
+):
+    """Write test data in Pathfinder JSON format."""
+    result = {}
+
+    if data is not None:
+        data = data.rename(
+            columns={
+                "id": "id",
+                "t": "t",
+                "x": "x",
+                "y": "y",
+            }
+        )
+
+        for _, row in data.iterrows():
+            agent_id = str(int(row["id"])).zfill(5)
+            frame_time = start_time + row["t"] / frame_rate
+            frame_key = f"{frame_time:.1f}"
+
+            if agent_id not in result:
+                result[agent_id] = {}
+
+            result[agent_id][frame_key] = {
+                "name": agent_id,
+                "isActive": True,
+                "position": {
+                    "x": float(row["x"]),
+                    "y": float(row["y"]),
+                    "z": 0.0,
+                },
+                "velocity": {
+                    "x": 0.0,
+                    "y": 0.0,
+                    "z": 0.0,
+                    "magnitude": 0.0,
+                },
+                "distance": 0.0,
+                "location": f"Floor 0.0 {unit}->Room00",
+                "terrainType": "level",
+                "trigger": "None",
+                "target": "None",
+                "tagsApplied": [],
+            }
+
+    with open(file, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2)
+
+
+@pytest.mark.parametrize(
+    "data, expected_frame_rate",
+    [
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            7.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            50.0,
+        ),
+        (
+            np.array([[0, 0, 5, 1], [0, 1, -5, -1]]),
+            15.0,
+        ),
+        (
+            np.array([[1, 0, 5, 1], [1, 1, 6, 2], [1, 2, 7, 3]]),
+            10.0,
+        ),
+    ],
+)
+def test_load_trajectory_from_pathfinder_success_csv(
+    tmp_path: pathlib.Path,
+    data: List[npt.NDArray[np.float64]],
+    expected_frame_rate: float,
+):
+    trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
+
+    expected_data = pd.DataFrame(
+        data=data,
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
+    write_pathfinder_csv_file(
+        file=trajectory_pathfinder,
+        frame_rate=expected_frame_rate,
+        data=written_data,
+    )
+
+    expected_data = prepare_data_frame(expected_data)
+    traj_data_from_file = load_trajectory_from_pathfinder_csv(
+        trajectory_file=trajectory_pathfinder,
+    )
+
+    assert (
+        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
+        == expected_data.to_numpy()
+    ).all()
+    assert traj_data_from_file.frame_rate == expected_frame_rate
+
+
+def test_load_trajectory_from_pathfinder_no_data_csv(
+    tmp_path: pathlib.Path,
+):
+    data_empty = pd.DataFrame(
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+    trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
+
+    written_data = get_data_frame_to_write(data_empty, TrajectoryUnit.METER)
+    write_pathfinder_csv_file(
+        file=trajectory_pathfinder,
+        data=written_data,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder_csv(
+            trajectory_file=trajectory_pathfinder,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
+
+
+def test_load_trajectory_from_pathfinder_frame_rate_zero_csv(
+    tmp_path: pathlib.Path,
+):
+    trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
+
+    data_in_single_frame = pd.DataFrame(
+        data=np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+        columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
+    )
+
+    written_data = get_data_frame_to_write(
+        data_in_single_frame, TrajectoryUnit.METER
+    )
+    write_pathfinder_csv_file(
+        file=trajectory_pathfinder,
+        data=written_data,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder_csv(
+            trajectory_file=trajectory_pathfinder,
+        )
+
+    assert (
+        "Can not determine the frame rate used to write the trajectory file."
+        in str(error_info.value)
+    )
+
+
+def test_load_trajectory_from_pathfinder_columns_missing_csv(
+    tmp_path: pathlib.Path,
+):
+    trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
+
+    # Create CSV with missing 'y' column
+    with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
+        f.write("id,t,x\n")
+        f.write("0,0.0,5.0\n")
+        f.write("0,0.1,-5.0\n")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder_csv(
+            trajectory_file=trajectory_pathfinder,
+        )
+    assert "Missing columns: y." in str(error_info.value)
+
+
+def test_load_trajectory_from_pathfinder_data_not_parseable_csv(
+    tmp_path: pathlib.Path,
+):
+    trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
+
+    # Create malformed CSV
+    with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
+        f.write("id,t,x,y\n")
+        f.write("0,0.0,5.0,1.0\n")
+        f.write("This,is,a,malformed,line,with,too,many,columns\n")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder_csv(
+            trajectory_file=trajectory_pathfinder,
+        )
+    assert "The given trajectory file seems to be incorrect or empty." in str(
+        error_info.value
+    )
+
+
+def test_load_trajectory_from_pathfinder_non_existing_file():
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder_csv(
+            trajectory_file=pathlib.Path("non_existing_file")
+        )
+
+    assert "does not exist" in str(error_info.value)
+
+
+def test_load_trajectory_from_pathfinder_reference_file_csv():
+    traj_csv = pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/pathfinder.csv"
+    )
+    load_trajectory_from_pathfinder_csv(trajectory_file=traj_csv)
+
+
+def test_load_trajectory_from_pathfinder_wrong_types_csv(
+    tmp_path: pathlib.Path,
+):
+    trajectory_pathfinder = pathlib.Path(tmp_path / "trajectory.csv")
+
+    with open(trajectory_pathfinder, "w", encoding="utf-8-sig") as f:
+        f.write("id,t,x,y\n")
+        # id="not_an_int" fails astype(int)
+        f.write("not_an_int,0.0,1.0,2.0\n")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder_csv(
+            trajectory_file=trajectory_pathfinder
+        )
+        assert (
+            "The given trajectory file seems to be incorrect or empty."
+            in str(error_info.value)
+        )
+
+
+@pytest.fixture
+def json_file_path():
+    return pathlib.Path(__file__).parent / pathlib.Path(
+        "test-data/pathfinder.json"
+    )
+
+
+def test_load_trajectory_from_pathfinder_reference_file_json(json_file_path):
+    load_trajectory_from_pathfinder_json(trajectory_file=json_file_path)
+
+
+def test_load_pathfinder_json_not_empty(json_file_path):
+    traj = load_trajectory_from_pathfinder_json(trajectory_file=json_file_path)
+    assert len(traj.data) > 0, "JSON loader should return non-empty data"
+
+
+def test_pathfinder_json_contains_expected_fields(json_file_path):
+    traj = load_trajectory_from_pathfinder_json(trajectory_file=json_file_path)
+    data = traj.data
+    expected_cols = {"id", "frame", "x", "y"}
+    missing = expected_cols - set(data.columns)
+    assert not missing, f"Missing fields: {missing}"
+
+
+def test_pathfinder_json_at_least_one_agent(json_file_path):
+    traj = load_trajectory_from_pathfinder_json(trajectory_file=json_file_path)
+    data = traj.data
+    agents = data["id"].astype(str).unique()
+
+    assert "0" in agents
+
+
+def test_load_trajectory_from_pathfinder_frame_rate_zero_json(
+    tmp_path: pathlib.Path,
+):
+    trajectory_pathfinder = tmp_path / "trajectory.json"
+
+    data_in_single_frame = pd.DataFrame(
+        np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
+        columns=["id", "t", "x", "y"],
+    )
+
+    write_pathfinder_json_file(
+        data=data_in_single_frame,
+        file=trajectory_pathfinder,
+        frame_rate=1,
+    )
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_pathfinder_json(
+            trajectory_file=trajectory_pathfinder,
+        )
+
+    assert (
+        "Can not determine the frame rate used to write the trajectory file."
+        in str(error_info.value)
+    )
+
+
+# ================== crowd:it ===================
+def test_load_trajectory_from_crowdit_valid(tmp_path: pathlib.Path):
+    trajectory_crowdit = tmp_path / "trajectory.csv"
+
+    with open(trajectory_crowdit, "w", encoding="utf-8-sig") as f:
+        f.write("pedID,time,posX,posY\n")
+        f.write("0,0.0,1.0,2.0\n")
+        f.write("0,0.5,1.5,2.5\n")  # gleicher Agent, späterer Zeitpunkt
+        f.write("1,0.0,3.0,4.0\n")
+
+    traj = load_trajectory_from_crowdit(trajectory_file=trajectory_crowdit)
+
+    assert not traj.data.empty
+    for col in (ID_COL, FRAME_COL, X_COL, Y_COL):
+        assert col in traj.data.columns
+    assert traj.frame_rate > 0
+
+
+def test_load_trajectory_from_crowdit_wrong_types(tmp_path: pathlib.Path):
+    trajectory_crowdit = tmp_path / "trajectory.csv"
+    with open(trajectory_crowdit, "w", encoding="utf-8-sig") as f:
+        f.write("pedID,time,posX,posY\n")
+        f.write("not_an_int,0.0,1.0,2.0\n")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_crowdit(trajectory_file=trajectory_crowdit)
+
+    assert "Original error" in str(error_info.value)
+
+
+def test_load_trajectory_from_crowdit_missing_columns(tmp_path: pathlib.Path):
+    trajectory_crowdit = tmp_path / "trajectory.csv"
+    with open(trajectory_crowdit, "w", encoding="utf-8-sig") as f:
+        f.write("pedID,time,posX\n")  # posY fehlt
+        f.write("0,0.0,1.0\n")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_trajectory_from_crowdit(trajectory_file=trajectory_crowdit)
+
+    assert "Missing columns: posY" in str(error_info.value)
+
+
+def test_load_walkable_area_from_crowdit_non_existing_file():
+    with pytest.raises(LoadTrajectoryError):
+        load_walkable_area_from_crowdit(
+            geometry_file=pathlib.Path("non_existing_geometry.xml")
+        )
+
+
+def test_load_walkable_area_from_crowdit_no_walls(tmp_path: pathlib.Path):
+    geometry_file = tmp_path / "geometry.xml"
+    xml_content = "<geometry><layer></layer></geometry>"
+    geometry_file.write_text(xml_content, encoding="utf-8")
+
+    with pytest.raises(LoadTrajectoryError) as error_info:
+        load_walkable_area_from_crowdit(geometry_file=geometry_file)
+
+    assert "No wall polygons found" in str(error_info.value)
+
+
+def test_load_walkable_area_from_crowdit_invalid_xml(tmp_path: pathlib.Path):
+    geometry_file = tmp_path / "geometry.xml"
+    geometry_file.write_text("Not valid XML", encoding="utf-8")
+
+    with pytest.raises(LoadTrajectoryError):
+        load_walkable_area_from_crowdit(geometry_file=geometry_file)
+
+
+def test_load_walkable_area_from_crowdit_valid(
+    tmp_path: pathlib.Path, buffer=0
+):
+    geometry_file = tmp_path / "geometry.xml"
+    xml_content = """
+    <geometry>
+        <layer>
+            <wall>
+                <point x="0" y="0"/>
+                <point x="10" y="0"/>
+                <point x="10" y="10"/>
+                <point x="0" y="10"/>
+            </wall>
+        </layer>
+    </geometry>
+    """
+    geometry_file.write_text(xml_content, encoding="utf-8")
+
+    area = load_walkable_area_from_crowdit(geometry_file=geometry_file)
+
+    assert isinstance(area, WalkableArea)
+    assert area.polygon.area == 100.0
+
+
+def test_load_trajectory_from_crowdit_reference_data_file():
+    traj_file = pathlib.Path(__file__).parent / "test-data/crowdit.csv.gz"
+
+    traj = load_trajectory_from_crowdit(trajectory_file=traj_file)
+    assert not traj.data.empty
+    for col in (ID_COL, FRAME_COL, X_COL, Y_COL):
+        assert col in traj.data.columns
+    assert traj.frame_rate > 0
+
+
+def test_load_trajectory_from_crowdit_reference_geometry_file():
+    geom_file = pathlib.Path(__file__).parent / "test-data/crowdit.floor"
+    area = load_walkable_area_from_crowdit(geometry_file=geom_file)
+    assert isinstance(area, WalkableArea)
+    assert area.polygon.is_valid
+    assert area.polygon.area > 0

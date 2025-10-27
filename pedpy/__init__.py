@@ -42,18 +42,39 @@ from .column_identifier import (
     X_COL,
     Y_COL,
 )
-from .data.geometry import MeasurementArea, MeasurementLine, WalkableArea
+from .data.geometry import (
+    AxisAlignedMeasurementArea,
+    MeasurementArea,
+    MeasurementLine,
+    WalkableArea,
+)
 from .data.trajectory_data import TrajectoryData
+from .errors import (
+    AccelerationError,
+    GeometryError,
+    InputError,
+    PedPyAttributeError,
+    PedPyError,
+    PedPyRuntimeError,
+    PedPyTypeError,
+    PedPyValueError,
+    SpeedError,
+)
 from .io.trajectory_loader import (
-    LoadTrajectoryError,
     TrajectoryUnit,
     load_trajectory,
+    load_trajectory_from_crowdit,
     load_trajectory_from_jupedsim_sqlite,
+    load_trajectory_from_pathfinder_csv,
+    load_trajectory_from_pathfinder_json,
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
+    load_trajectory_from_vadere,
     load_trajectory_from_viswalk,
+    load_walkable_area_from_crowdit,
     load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
+    load_walkable_area_from_vadere_scenario,
 )
 from .methods.acceleration_calculator import (
     compute_individual_acceleration,
@@ -135,6 +156,7 @@ from .plotting.plotting import (
 )
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
+    "AxisAlignedMeasurementArea",
     "MeasurementArea",
     "MeasurementLine",
     "WalkableArea",
@@ -146,8 +168,16 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "load_trajectory_from_ped_data_archive_hdf5",
     "load_trajectory_from_txt",
     "load_trajectory_from_viswalk",
+    "load_trajectory_from_vadere",
     "load_walkable_area_from_jupedsim_sqlite",
     "load_walkable_area_from_ped_data_archive_hdf5",
+    "load_walkable_area_from_vadere_scenario",
+    "load_trajectory_from_pathfinder_csv",
+    "load_trajectory_from_pathfinder_json",
+    "load_walkable_area_from_crowdit",
+    "load_trajectory_from_crowdit",
+    "load_trajectory_from_pathfinder_csv",
+    "load_trajectory_from_pathfinder_json",
     "compute_classic_density",
     "compute_line_density",
     "compute_passing_density",
@@ -240,4 +270,13 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "END_POSITION_COL",
     "WINDOW_SIZE_COL",
     "__version__",
+    "AccelerationError",
+    "GeometryError",
+    "InputError",
+    "PedPyAttributeError",
+    "PedPyError",
+    "PedPyRuntimeError",
+    "PedPyTypeError",
+    "PedPyValueError",
+    "SpeedError",
 ]

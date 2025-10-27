@@ -18,9 +18,9 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import InputError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
-    InputError,
     _apply_lambda_for_intersecting_frames,
     _compute_orthogonal_speed_in_relation_to_proportion,
     compute_crossing_frames,
@@ -316,7 +316,10 @@ def compute_line_flow(
             species of every pedestrian intersecting the line,
             result from :func:`~speed_calculator.compute_species`
     Returns:
-        Dataframe containing columns 'frame', 'j_sp+1', 'j_sp-1', 'flow'
+        Dataframe containing columns 'frame', 'j_sp+1' which contains the flow
+        in :math:`1/s` for species +1, 'j_sp-1' which contains the flow
+        in :math:`1/s` for species -1, 'flow' which contains the total flow at
+        the line in :math:`1/s`.
     """
     _validate_inputs(
         individual_voronoi_polygons, measurement_line, individual_speed, species
