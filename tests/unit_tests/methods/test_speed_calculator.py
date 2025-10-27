@@ -35,9 +35,7 @@ def test_mean_speed_needs_same_length_speed_and_polygon_data():
         frame_rate=25.0,
     )
 
-    walkable_area = WalkableArea(
-        [(-100, -100), (100, -100), (100, 100), (-100, 100)]
-    )
+    walkable_area = WalkableArea([(-100, -100), (100, -100), (100, 100), (-100, 100)])
     measurement_area = MeasurementArea([(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5)])
 
     speed = compute_individual_speed(
@@ -67,9 +65,7 @@ def test_voronoi_speed_needs_same_length_speed_and_polygon_data():
         frame_rate=25.0,
     )
 
-    walkable_area = WalkableArea(
-        [(-100, -100), (100, -100), (100, 100), (-100, 100)]
-    )
+    walkable_area = WalkableArea([(-100, -100), (100, -100), (100, 100), (-100, 100)])
     measurement_area = MeasurementArea([(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5)])
 
     speed = compute_individual_speed(
@@ -82,9 +78,7 @@ def test_voronoi_speed_needs_same_length_speed_and_polygon_data():
         traj_data=traj_data,
         walkable_area=walkable_area,
     )
-    intersection = compute_intersecting_polygons(
-        individual_voronoi_data=polygons, measurement_area=measurement_area
-    )
+    intersection = compute_intersecting_polygons(individual_voronoi_data=polygons, measurement_area=measurement_area)
 
     assert len(speed.index) != len(intersection.index)
     with pytest.raises(SpeedError, match=".*Voronoi speed.*"):
@@ -98,9 +92,7 @@ def test_voronoi_speed_needs_same_length_speed_and_polygon_data():
 
 @pytest.fixture
 def example_data():
-    species = pd.DataFrame(
-        {ID_COL: [1, 2, 3, 4], SPECIES_COL: [1, -1, np.nan, 1]}
-    )
+    species = pd.DataFrame({ID_COL: [1, 2, 3, 4], SPECIES_COL: [1, -1, np.nan, 1]})
     speed = pd.DataFrame(
         {
             ID_COL: [1, 2, 3, 4],
@@ -142,12 +134,8 @@ def test_compute_line_speed(example_data):
 
     n = line.normal_vector()
     assert speed_on_line.shape[0] == 1
-    assert speed_on_line[SPEED_SP1_COL].values[0] == pytest.approx(
-        (n[0] * 1 + n[1] * 1) * 0.5
-    )
-    assert speed_on_line[SPEED_SP2_COL].values[0] == pytest.approx(
-        (n[0] * -1 + n[1] * -1) * 0.5 * -1
-    )
+    assert speed_on_line[SPEED_SP1_COL].values[0] == pytest.approx((n[0] * 1 + n[1] * 1) * 0.5)
+    assert speed_on_line[SPEED_SP2_COL].values[0] == pytest.approx((n[0] * -1 + n[1] * -1) * 0.5 * -1)
 
     assert speed_on_line[SPEED_COL].values[0] == pytest.approx(
         ((n[0] * 1 + n[1] * 1) * 0.5) + (n[0] * -1 + n[1] * -1) * 0.5 * -1
@@ -184,9 +172,7 @@ def bidirectional_traj():
         ped_distance=2.0,
     )
     traj_down[ID_COL] += 25
-    return TrajectoryData(
-        data=pd.concat([traj_up, traj_down], ignore_index=True), frame_rate=10.0
-    )
+    return TrajectoryData(data=pd.concat([traj_up, traj_down], ignore_index=True), frame_rate=10.0)
 
 
 @pytest.fixture
@@ -196,9 +182,7 @@ def bidirectional_measurement_line():
 
 @pytest.fixture
 def bidirectional_walkable_area():
-    return WalkableArea(
-        [(-0.5, -0.5), (10.5, -0.5), (10.5, 50.5), (-0.5, 50.5)]
-    )
+    return WalkableArea([(-0.5, -0.5), (10.5, -0.5), (10.5, 50.5), (-0.5, 50.5)])
 
 
 def test_compute_species_correct_with_cutoff(bidirectional_setup):
@@ -206,9 +190,7 @@ def test_compute_species_correct_with_cutoff(bidirectional_setup):
 
     min_idx = traj.data.groupby(ID_COL)[FRAME_COL].idxmin()
     expected_species = traj.data.loc[min_idx, [ID_COL]]
-    expected_species[SPECIES_COL] = np.where(
-        expected_species[ID_COL] < 25, -1, 1
-    )
+    expected_species[SPECIES_COL] = np.where(expected_species[ID_COL] < 25, -1, 1)
 
     individual_cutoff = compute_individual_voronoi_polygons(
         traj_data=traj,
@@ -223,13 +205,9 @@ def test_compute_species_correct_with_cutoff(bidirectional_setup):
     )
 
     suffixes = ("_expected", "_species")
-    non_matching = expected_species.merge(
-        actual_species, on="id", suffixes=suffixes
-    )
+    non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes)
     columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
-    non_matching = non_matching[
-        non_matching[columnnames[0]] != non_matching[columnnames[1]]
-    ]
+    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
     assert non_matching.shape[0] == 0
 
 
@@ -238,9 +216,7 @@ def test_compute_species_correct_without_cutoff(bidirectional_setup):
 
     min_idx = traj.data.groupby(ID_COL)[FRAME_COL].idxmin()
     expected_species = traj.data.loc[min_idx, [ID_COL]]
-    expected_species[SPECIES_COL] = np.where(
-        expected_species[ID_COL] < 25, -1, 1
-    )
+    expected_species[SPECIES_COL] = np.where(expected_species[ID_COL] < 25, -1, 1)
 
     individual_cutoff = compute_individual_voronoi_polygons(
         traj_data=traj,
@@ -254,13 +230,9 @@ def test_compute_species_correct_without_cutoff(bidirectional_setup):
     )
 
     suffixes = ("_expected", "_species")
-    non_matching = expected_species.merge(
-        actual_species, on="id", suffixes=suffixes, how="outer"
-    )
+    non_matching = expected_species.merge(actual_species, on="id", suffixes=suffixes, how="outer")
     columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
-    non_matching = non_matching[
-        non_matching[columnnames[0]] != non_matching[columnnames[1]]
-    ]
+    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
     assert non_matching.shape[0] == 0
 
 
@@ -359,9 +331,7 @@ def test_compute_species_correct_for_not_intersecting(non_intersecting_setup):
         walkable_area=walkable_area,
         cut_off=Cutoff(radius=1.0, quad_segments=3),
     )
-    expected = pd.DataFrame(
-        data=[[0, -1], [1, -1], [2, -1], [3, -1]], columns=[ID_COL, SPECIES_COL]
-    )
+    expected = pd.DataFrame(data=[[0, -1], [1, -1], [2, -1], [3, -1]], columns=[ID_COL, SPECIES_COL])
     actual = compute_species(
         individual_voronoi_polygons=individual_cutoff,
         measurement_line=measurement_line,
@@ -370,13 +340,9 @@ def test_compute_species_correct_for_not_intersecting(non_intersecting_setup):
     )
 
     suffixes = ("expected", "actual")
-    non_matching = expected.merge(
-        actual, on="id", suffixes=suffixes, how="outer"
-    )
+    non_matching = expected.merge(actual, on="id", suffixes=suffixes, how="outer")
     columnnames = (SPECIES_COL + suffixes[0], SPECIES_COL + suffixes[1])
-    non_matching = non_matching[
-        non_matching[columnnames[0]] != non_matching[columnnames[1]]
-    ]
+    non_matching = non_matching[non_matching[columnnames[0]] != non_matching[columnnames[1]]]
     assert non_matching.shape[0] == 0
 
 
@@ -414,9 +380,7 @@ def test_compute_line_speed_missing_velocity_columns(example_data):
     species, speed, voronoi, line = example_data
     # Remove velocity columns
     invalid_speed = speed.copy()
-    invalid_speed = invalid_speed.drop(
-        [V_X_COL, V_Y_COL], axis=1
-    )  # Assuming these are your velocity columns
+    invalid_speed = invalid_speed.drop([V_X_COL, V_Y_COL], axis=1)  # Assuming these are your velocity columns
 
     with pytest.raises(InputError, match="Required velocity columns missing"):
         compute_line_speed(

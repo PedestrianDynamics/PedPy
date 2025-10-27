@@ -331,8 +331,7 @@ def compute_density_profile(
         if density_method == DensityMethod.VORONOI:
             if grid_intersections_area is None:
                 raise PedPyRuntimeError(
-                    "Computing a Voronoi density profile needs the parameter "
-                    "`grid_intersections_area`."
+                    "Computing a Voronoi density profile needs the parameter `grid_intersections_area`."
                 )
 
             grid_intersections_area_frame = grid_intersections_area[
@@ -358,10 +357,7 @@ def compute_density_profile(
             )
         elif density_method == DensityMethod.GAUSSIAN:
             if gaussian_width is None:
-                raise PedPyValueError(
-                    "Computing a Gaussian density profile needs a parameter "
-                    "'gaussian_width'."
-                )
+                raise PedPyValueError("Computing a Gaussian density profile needs a parameter 'gaussian_width'.")
 
             density = _compute_gaussian_density_profile(
                 frame_data=frame_data,
@@ -390,8 +386,7 @@ def _compute_voronoi_density_profile(
 ) -> npt.NDArray[np.float64]:
     return (
         np.sum(
-            grid_intersections_area
-            * (1 / shapely.area(frame_data.polygon.values)),
+            grid_intersections_area * (1 / shapely.area(frame_data.polygon.values)),
             axis=1,
         )
         / grid_area
@@ -579,8 +574,7 @@ def compute_speed_profile(
         if speed_method == SpeedMethod.VORONOI:
             if grid_intersections_area is None:
                 raise PedPyRuntimeError(
-                    "Computing a Arithmetic speed profile needs the parameter "
-                    "`grid_intersections_area`."
+                    "Computing a Arithmetic speed profile needs the parameter `grid_intersections_area`."
                 )
             grid_intersections_area_frame = grid_intersections_area[
                 :,
@@ -595,8 +589,7 @@ def compute_speed_profile(
         elif speed_method == SpeedMethod.ARITHMETIC:
             if grid_intersections_area is None:
                 raise PedPyRuntimeError(
-                    "Computing a Arithmetic speed profile needs the parameter "
-                    "`grid_intersections_area`."
+                    "Computing a Arithmetic speed profile needs the parameter `grid_intersections_area`."
                 )
             grid_intersections_area_frame = grid_intersections_area[
                 :,
@@ -698,9 +691,7 @@ def _compute_gaussian_speed_profile(
             Gaussian density corresponding to the given values and FWHM.
         """
         sigma = fwhm / (2 * np.sqrt(2 * np.log(2)))
-        return (
-            1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(-(x**2) / (2 * sigma**2))
-        )
+        return 1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(-(x**2) / (2 * sigma**2))
 
     # pedestrians' position and speed
     positions_x = frame_data.x.to_numpy()
@@ -1008,16 +999,11 @@ def get_grid_cells(
         (List of grid cells, number of grid rows, number of grid columns)
     """
     if walkable_area is None and axis_aligned_measurement_area is None:
-        raise PedPyValueError(
-            "Either `walkable_area` or `axis_aligned_measurement_area` must be "
-            "provided."
-        )
+        raise PedPyValueError("Either `walkable_area` or `axis_aligned_measurement_area` must be provided.")
     if walkable_area is not None:
         min_x, min_y, max_x, max_y = walkable_area.bounds
     if axis_aligned_measurement_area is not None:
-        if isinstance(
-            axis_aligned_measurement_area, MeasurementArea
-        ) and not isinstance(
+        if isinstance(axis_aligned_measurement_area, MeasurementArea) and not isinstance(
             axis_aligned_measurement_area, AxisAlignedMeasurementArea
         ):
             raise PedPyTypeError(
@@ -1026,9 +1012,7 @@ def get_grid_cells(
                 "to an AxisAlignedMeasurementArea, you can use "
                 "AxisAlignedMeasurementArea.from_measurement_area()."
             )
-        if not isinstance(
-            axis_aligned_measurement_area, AxisAlignedMeasurementArea
-        ):
+        if not isinstance(axis_aligned_measurement_area, AxisAlignedMeasurementArea):
             raise PedPyTypeError(
                 "`axis_aligned_measurement_area` must be an instance of "
                 "AxisAlignedMeasurementArea, got "
