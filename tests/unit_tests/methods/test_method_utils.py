@@ -56,18 +56,14 @@ def test_compute_orthogonal_speed_in_relation_to_proportion():
     n = [0.5**0.5, -(0.5**0.5)]
     line = MeasurementLine([(0, 0), (1, 1)])
     assert np.allclose(n, line.normal_vector())
-    actual = _compute_orthogonal_speed_in_relation_to_proportion(
-        group=group, measurement_line=line
-    )
+    actual = _compute_orthogonal_speed_in_relation_to_proportion(group=group, measurement_line=line)
     assert _compute_partial_line_length(poly, line) == 0.5
     expected = (v_x * n[0] + v_y * n[1]) * 0.5
     assert np.isclose(actual, expected)
 
 
 def test_is_species_valid_for_correct_species():
-    species = pd.DataFrame(
-        data={ID_COL: [1, 2, 3, 4, 5, 6], SPECIES_COL: [1, 1, 1, -1, -1, -1]}
-    )
+    species = pd.DataFrame(data={ID_COL: [1, 2, 3, 4, 5, 6], SPECIES_COL: [1, 1, 1, -1, -1, -1]})
     intersecting_poly = Polygon([(0, 0), (1, 0), (1, 0.5), (0, 0.5)])
     non_intersecting_poly = Polygon([(0, -1), (1, -1), (1, -0.5), (0, -0.5)])
     voronoi_polys = pd.DataFrame(
@@ -89,9 +85,7 @@ def test_is_species_valid_for_correct_species():
 
 
 def test_is_species_valid_for_incorrect_species():
-    species = pd.DataFrame(
-        data={ID_COL: [1, 2, 3, 4, 5, 6], SPECIES_COL: [1, 1, 1, -1, -1, -1]}
-    )
+    species = pd.DataFrame(data={ID_COL: [1, 2, 3, 4, 5, 6], SPECIES_COL: [1, 1, 1, -1, -1, -1]})
     intersecting_poly = Polygon([(0, 0), (1, 0), (1, 0.5), (0, 0.5)])
     voronoi_polys = pd.DataFrame(
         data={
@@ -210,9 +204,7 @@ def create_single_straight_trajectory_crossing_zero_line(
 ):
     x = np.concatenate(
         [
-            np.linspace(
-                start_x, -0.1 if frames_on_line == 0 else 0, frames_before
-            ),
+            np.linspace(start_x, -0.1 if frames_on_line == 0 else 0, frames_before),
             np.linspace(0, 0, frames_on_line - 1 if frames_on_line > 0 else 0),
             np.linspace(0.1 if frames_on_line == 0 else 0, end_x, frames_after),
         ]
@@ -233,16 +225,10 @@ def create_single_straight_trajectory_crossing_zero_line(
         (1, 10),
     ],
 )
-def test_compute_crossing_frame_movement_across_line(
-    frames_before, frames_after
-):
-    traj = create_single_straight_trajectory_crossing_zero_line(
-        frames_before=frames_before, frames_after=frames_after
-    )
+def test_compute_crossing_frame_movement_across_line(frames_before, frames_after):
+    traj = create_single_straight_trajectory_crossing_zero_line(frames_before=frames_before, frames_after=frames_after)
     ml = MeasurementLine([(0, -0.5), (0, 0.5)])
-    crossing_frames = compute_crossing_frames(
-        traj_data=traj, measurement_line=ml
-    )
+    crossing_frames = compute_crossing_frames(traj_data=traj, measurement_line=ml)
 
     assert len(crossing_frames) == 1
     assert crossing_frames.iloc[0].id == 1
@@ -259,9 +245,7 @@ def test_compute_crossing_frame_movement_across_line(
         (0, 10),
     ],
 )
-def test_compute_crossing_frame_movement_stops_on_line(
-    frames_before, frames_on_line
-):
+def test_compute_crossing_frame_movement_stops_on_line(frames_before, frames_on_line):
     traj = create_single_straight_trajectory_crossing_zero_line(
         frames_before=frames_before,
         frames_after=5,
@@ -269,9 +253,7 @@ def test_compute_crossing_frame_movement_stops_on_line(
     )
     ml = MeasurementLine([(0, -0.5), (0, 0.5)])
 
-    crossing_frames = compute_crossing_frames(
-        traj_data=traj, measurement_line=ml
-    )
+    crossing_frames = compute_crossing_frames(traj_data=traj, measurement_line=ml)
 
     assert len(crossing_frames) == 1
     assert crossing_frames.iloc[0].id == 1
@@ -293,9 +275,7 @@ def test_compute_crossing_frame_trajectory_ends_on_line(frames_on_line):
         frames_on_line=frames_on_line,
     )
     ml = MeasurementLine([(0, -0.5), (0, 0.5)])
-    crossing_frames = compute_crossing_frames(
-        traj_data=traj, measurement_line=ml
-    )
+    crossing_frames = compute_crossing_frames(traj_data=traj, measurement_line=ml)
 
     assert len(crossing_frames) == 0
 
@@ -335,9 +315,7 @@ def test_compute_neighbors_as_list(sample_voronoi_data: pd.DataFrame):
         }
     )
 
-    pd.testing.assert_frame_equal(
-        result.sort_values(by=ID_COL).reset_index(drop=True), expected
-    )
+    pd.testing.assert_frame_equal(result.sort_values(by=ID_COL).reset_index(drop=True), expected)
 
 
 def test_compute_neighbors_single(sample_voronoi_data):
@@ -385,12 +363,10 @@ def test_compute_neighbors_single_pedestrian():
     result_list = compute_neighbors(df, as_list=True)
     result_single = compute_neighbors(df, as_list=False)
 
-    expected_list = pd.DataFrame(
-        {ID_COL: [1], FRAME_COL: [0], NEIGHBORS_COL: [[]]}
+    expected_list = pd.DataFrame({ID_COL: [1], FRAME_COL: [0], NEIGHBORS_COL: [[]]})
+    expected_single = pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL]).astype(
+        {ID_COL: "int64", FRAME_COL: "int64", NEIGHBOR_ID_COL: "int64"}
     )
-    expected_single = pd.DataFrame(
-        columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL]
-    ).astype({ID_COL: "int64", FRAME_COL: "int64", NEIGHBOR_ID_COL: "int64"})
     pd.testing.assert_frame_equal(result_list, expected_list)
     pd.testing.assert_frame_equal(result_single, expected_single)
 
@@ -422,9 +398,7 @@ def test_compute_neighbors_multiple_frames():
         }
     )
 
-    pd.testing.assert_frame_equal(
-        result_list.sort_values(by=ID_COL).reset_index(drop=True), expected_list
-    )
+    pd.testing.assert_frame_equal(result_list.sort_values(by=ID_COL).reset_index(drop=True), expected_list)
 
 
 @pytest.mark.filterwarnings(
@@ -443,9 +417,7 @@ def test_compute_neighbors_no_touching():
     )
 
     result_list = compute_neighbors(df, as_list=True)
-    expected_list = pd.DataFrame(
-        {ID_COL: [1, 2], FRAME_COL: [0, 0], NEIGHBORS_COL: [[], []]}
-    )
+    expected_list = pd.DataFrame({ID_COL: [1, 2], FRAME_COL: [0, 0], NEIGHBORS_COL: [[], []]})
 
     pd.testing.assert_frame_equal(result_list, expected_list)
 
@@ -453,9 +425,7 @@ def test_compute_neighbors_no_touching():
 def test_compute_neighbors_deprecation_warning():
     dummy_data = pd.DataFrame(columns=[ID_COL, FRAME_COL, POLYGON_COL])
 
-    with pytest.warns(
-        DeprecationWarning, match="The parameter 'as_list=True' is deprecated"
-    ):
+    with pytest.warns(DeprecationWarning, match="The parameter 'as_list=True' is deprecated"):
         compute_neighbors(dummy_data, as_list=True)
 
 
@@ -480,9 +450,7 @@ def test_compute_neighbor_distance():
         }
     )
 
-    result = compute_neighbor_distance(
-        traj_data=traj_data, neighborhood=neighborhood
-    )
+    result = compute_neighbor_distance(traj_data=traj_data, neighborhood=neighborhood)
 
     expected_result = pd.DataFrame(
         {
@@ -513,27 +481,19 @@ def test_compute_neighbor_distance_invalid_list_input():
         ValueError,
         match="Cannot compute distance between neighbors with list-format data.",
     ):
-        compute_neighbor_distance(
-            traj_data=traj_data, neighborhood=neighborhood
-        )
+        compute_neighbor_distance(traj_data=traj_data, neighborhood=neighborhood)
 
 
 def test_compute_neighbor_distance_empty_input():
     traj_data = TrajectoryData(
-        data=pd.DataFrame(columns=[ID_COL, FRAME_COL, X_COL, Y_COL]).astype(
-            {X_COL: "float64", Y_COL: "float64"}
-        ),
+        data=pd.DataFrame(columns=[ID_COL, FRAME_COL, X_COL, Y_COL]).astype({X_COL: "float64", Y_COL: "float64"}),
         frame_rate=1,
     )
     neighborhood = pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL])
 
-    result = compute_neighbor_distance(
-        traj_data=traj_data, neighborhood=neighborhood
-    )
+    result = compute_neighbor_distance(traj_data=traj_data, neighborhood=neighborhood)
 
-    expected_result = pd.DataFrame(
-        columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL, DISTANCE_COL]
-    )
+    expected_result = pd.DataFrame(columns=[ID_COL, FRAME_COL, NEIGHBOR_ID_COL, DISTANCE_COL])
 
     pd.testing.assert_frame_equal(result, expected_result, check_dtype=False)
 
@@ -559,9 +519,7 @@ def test_compute_neighbor_distance_different_distances():
         }
     )
 
-    result = compute_neighbor_distance(
-        traj_data=traj_data, neighborhood=neighborhood
-    )
+    result = compute_neighbor_distance(traj_data=traj_data, neighborhood=neighborhood)
 
     expected_result = pd.DataFrame(
         {
@@ -572,6 +530,4 @@ def test_compute_neighbor_distance_different_distances():
         }
     )
 
-    pd.testing.assert_frame_equal(
-        result, expected_result, check_dtype=False, atol=1e-6
-    )
+    pd.testing.assert_frame_equal(result, expected_result, check_dtype=False, atol=1e-6)

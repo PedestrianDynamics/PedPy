@@ -76,6 +76,4 @@ def test_get_grid_cells_axis_aligned_measurement_area_not_instance():
         PedPyTypeError,
         match="`axis_aligned_measurement_area` must be an instance of AxisAlignedMeasurementArea",
     ):
-        get_grid_cells(
-            axis_aligned_measurement_area="not_an_area", grid_size=1.0
-        )
+        get_grid_cells(axis_aligned_measurement_area="not_an_area", grid_size=1.0)

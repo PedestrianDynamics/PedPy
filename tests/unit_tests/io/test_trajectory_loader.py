@@ -58,9 +58,7 @@ def prepare_data_frame(data_frame: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def get_data_frame_to_write(
-    data_frame: pd.DataFrame, unit: TrajectoryUnit
-) -> pd.DataFrame:
+def get_data_frame_to_write(data_frame: pd.DataFrame, unit: TrajectoryUnit) -> pd.DataFrame:
     """Get the data frame which should be written to file.
 
     Args:
@@ -119,9 +117,7 @@ def prepare_jupedsim_sqlite_trajectory_file_v1(
 
     if create_meta_data:
         cur.execute("DROP TABLE IF EXISTS metadata")
-        cur.execute(
-            "CREATE TABLE metadata(key TEXT NOT NULL UNIQUE PRIMARY KEY, value TEXT NOT NULL)"
-        )
+        cur.execute("CREATE TABLE metadata(key TEXT NOT NULL UNIQUE PRIMARY KEY, value TEXT NOT NULL)")
         cur.execute(
             "INSERT INTO metadata VALUES(?, ?)",
             (("version", "1")),
@@ -155,9 +151,7 @@ def prepare_jupedsim_sqlite_trajectory_file_v2(
 
     if create_meta_data:
         cur.execute("DROP TABLE IF EXISTS metadata")
-        cur.execute(
-            "CREATE TABLE metadata(key TEXT NOT NULL UNIQUE PRIMARY KEY, value TEXT NOT NULL)"
-        )
+        cur.execute("CREATE TABLE metadata(key TEXT NOT NULL UNIQUE PRIMARY KEY, value TEXT NOT NULL)")
         cur.execute(
             "INSERT INTO metadata VALUES(?, ?)",
             (("version", "2")),
@@ -165,17 +159,9 @@ def prepare_jupedsim_sqlite_trajectory_file_v2(
 
     if create_geometry:
         cur.execute("DROP TABLE IF EXISTS geometry")
-        cur.execute(
-            "CREATE TABLE geometry("
-            "   hash INTEGER NOT NULL, "
-            "   wkt TEXT NOT NULL)"
-        )
+        cur.execute("CREATE TABLE geometry(   hash INTEGER NOT NULL,    wkt TEXT NOT NULL)")
     cur.execute("DROP TABLE IF EXISTS frame_data")
-    cur.execute(
-        "CREATE TABLE frame_data("
-        "   frame INTEGER NOT NULL,"
-        "   geometry_hash INTEGER NOT NULL)"
-    )
+    cur.execute("CREATE TABLE frame_data(   frame INTEGER NOT NULL,   geometry_hash INTEGER NOT NULL)")
 
     cur.execute("COMMIT")
 
@@ -309,9 +295,7 @@ def write_jupedsim_sqlite_trajectory_file(
             create_geometry=create_geometry,
         )
     else:
-        raise RuntimeError(
-            f"Internal Error: Trying to write unsupported JuPedSim Version {version}."
-        )
+        raise RuntimeError(f"Internal Error: Trying to write unsupported JuPedSim Version {version}.")
 
 
 def write_data_archive_hdf5_file(
@@ -325,15 +309,11 @@ def write_data_archive_hdf5_file(
         dt = h5py.special_dtype(vlen=str)
         h5_file.attrs["file_version"] = "1.0.0"
         if geometry:
-            h5_file.attrs["wkt_geometry"] = shapely.to_wkt(
-                geometry.normalize(), rounding_precision=-1
-            )
+            h5_file.attrs["wkt_geometry"] = shapely.to_wkt(geometry.normalize(), rounding_precision=-1)
         if data is not None:
             records = data.to_records(
                 index=False,
-                column_dtypes={
-                    col: dt for col in data.columns[data.dtypes == "object"]
-                },
+                column_dtypes={col: dt for col in data.columns[data.dtypes == "object"]},
             )
             ds_traj = h5_file.create_dataset(
                 "trajectory",
@@ -445,14 +425,8 @@ def write_vadere_scenario_file(
                         "bounds": {
                             "x": complete_area.bounds[0],
                             "y": complete_area.bounds[1],
-                            "width": abs(
-                                complete_area.bounds[2]
-                                - complete_area.bounds[0]
-                            ),
-                            "height": abs(
-                                complete_area.bounds[3]
-                                - complete_area.bounds[1]
-                            ),
+                            "width": abs(complete_area.bounds[2] - complete_area.bounds[0]),
+                            "height": abs(complete_area.bounds[3] - complete_area.bounds[1]),
                         },
                         "boundingBoxWidth": bounding_box_width,
                     },
@@ -461,10 +435,7 @@ def write_vadere_scenario_file(
             },
         }
     else:
-        raise RuntimeError(
-            "Internal Error: Trying to write non-rectangular shape as Vadere "
-            "scenario bound."
-        )
+        raise RuntimeError("Internal Error: Trying to write non-rectangular shape as Vadere scenario bound.")
 
     # Convert and write JSON object to file
     with open(file, "w") as f:
@@ -497,13 +468,9 @@ def write_header_viswalk(file, data):
 
         for column in data.columns:
             if column in column_description:
-                writer.write(
-                    f"* {column.replace('$PEDESTRIAN:', '')}: {column_description[column]}\n"
-                )
+                writer.write(f"* {column.replace('$PEDESTRIAN:', '')}: {column_description[column]}\n")
             else:
-                writer.write(
-                    f"* {column.replace('$PEDESTRIAN:', '')}: Dummy description\n"
-                )
+                writer.write(f"* {column.replace('$PEDESTRIAN:', '')}: Dummy description\n")
         writer.write("*\n")
 
         writer.write("* ")
@@ -525,18 +492,14 @@ def write_header_viswalk(file, data):
         writer.write("* ")
         for column in data.columns[:-1]:
             if column in column_description:
-                res = re.search(
-                    r"(?<=, ).*(?= \([A-Z])", column_description[column]
-                )
+                res = re.search(r"(?<=, ).*(?= \([A-Z])", column_description[column])
                 writer.write(f"{res.group(0)};")
             else:
                 writer.write(f"{column.capitalize()}")
 
         column = data.columns[-1]
         if column in column_description:
-            res = re.search(
-                r"(?<=, ).*(?= \([A-Z])", column_description[column]
-            )
+            res = re.search(r"(?<=, ).*(?= \([A-Z])", column_description[column])
             writer.write(f"{res.group(0)};")
         else:
             writer.write(f"{column.capitalize()}")
@@ -622,17 +585,12 @@ def test_load_trajectory_from_txt_success(
         default_frame_rate=None,
     )
 
-    assert (
-        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
-        == expected_data.to_numpy()
-    ).all()
+    assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy() == expected_data.to_numpy()).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
 def test_load_trajectory_from_txt_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/ped_data_archive_text.txt"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/ped_data_archive_text.txt")
     load_trajectory_from_txt(trajectory_file=traj_txt)
 
 
@@ -692,9 +650,7 @@ def test_parse_trajectory_data_from_txt_success(
 
     expected_data = prepare_data_frame(expected_data)
 
-    data_from_file = _load_trajectory_data_from_txt(
-        trajectory_file=trajectory_txt, unit=expected_unit
-    )
+    data_from_file = _load_trajectory_data_from_txt(trajectory_file=trajectory_txt, unit=expected_unit)
 
     assert list(data_from_file.dtypes.values) == [
         dtype("int64"),
@@ -702,10 +658,7 @@ def test_parse_trajectory_data_from_txt_success(
         dtype("float64"),
         dtype("float64"),
     ]
-    assert (
-        data_from_file[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
-        == expected_data.to_numpy()
-    ).all()
+    assert (data_from_file[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy() == expected_data.to_numpy()).all()
 
 
 @pytest.mark.parametrize(
@@ -839,64 +792,56 @@ def test_load_trajectory_meta_data_from_txt_success(
 
 
 @pytest.mark.parametrize(
-    "file_content, default_frame_rate, default_unit, expected_exception, "
-    "expected_message",
+    "file_content, default_frame_rate, default_unit, expected_exception, expected_message",
     [
         (
             "",
             None,
             None,
             ValueError,
-            "Frame rate is needed, but none could be found in the trajectory "
-            "file.",
+            "Frame rate is needed, but none could be found in the trajectory file.",
         ),
         (
             "framerate: -8.00",
             None,
             None,
             ValueError,
-            "Frame rate is needed, but none could be found in the trajectory "
-            "file.",
+            "Frame rate is needed, but none could be found in the trajectory file.",
         ),
         (
             "#framerate:",
             None,
             None,
             ValueError,
-            "Frame rate is needed, but none could be found in the trajectory "
-            "file.",
+            "Frame rate is needed, but none could be found in the trajectory file.",
         ),
         (
             "#framerate: asdasd",
             None,
             None,
             ValueError,
-            "Frame rate is needed, but none could be found in the trajectory "
-            "file.",
+            "Frame rate is needed, but none could be found in the trajectory file.",
         ),
         (
             "framerate: 25 fps",
             None,
             None,
             ValueError,
-            "Frame rate is needed, but none could be found in the trajectory "
-            "file.",
+            "Frame rate is needed, but none could be found in the trajectory file.",
         ),
         (
             "#framerate: fps",
             None,
             None,
             ValueError,
-            "Frame rate is needed, but none could be found in the trajectory "
-            "file.",
+            "Frame rate is needed, but none could be found in the trajectory file.",
         ),
         (
             "#framerate: asdasd fps",
             None,
             None,
             ValueError,
-            "Frame rate is needed, but none could be found in the trajectory "
-            "file.",
+            "Frame rate is needed, but none could be found in the trajectory file.",
         ),
         (
             "#framerate: 0",
@@ -931,8 +876,7 @@ def test_load_trajectory_meta_data_from_txt_success(
             30.0,
             None,
             ValueError,
-            "The given default frame rate seems to differ from the frame rate "
-            "given in",
+            "The given default frame rate seems to differ from the frame rate given in",
         ),
         (
             "#framerate: asdasd fps",
@@ -974,32 +918,28 @@ def test_load_trajectory_meta_data_from_txt_success(
             None,
             TrajectoryUnit.CENTIMETER,
             ValueError,
-            "The given default unit seems to differ from the unit given in the "
-            "trajectory file:",
+            "The given default unit seems to differ from the unit given in the trajectory file:",
         ),
         (
             "#framerate: 8.00\n#ID frame x/cm y/cm z/cm",
             None,
             TrajectoryUnit.METER,
             ValueError,
-            "The given default unit seems to differ from the unit given in the "
-            "trajectory file:",
+            "The given default unit seems to differ from the unit given in the trajectory file:",
         ),
         (
             "#framerate: 8.00\n#ID frame x[in m] y[in m] z[in m]",
             None,
             TrajectoryUnit.CENTIMETER,
             ValueError,
-            "The given default unit seems to differ from the unit given in the "
-            "trajectory file:",
+            "The given default unit seems to differ from the unit given in the trajectory file:",
         ),
         (
             "#framerate: 8.00\n#ID frame x[in cm] y[in cm] z[in cm]",
             None,
             TrajectoryUnit.METER,
             ValueError,
-            "The given default unit seems to differ from the unit given in the "
-            "trajectory file:",
+            "The given default unit seems to differ from the unit given in the trajectory file:",
         ),
     ],
 )
@@ -1028,9 +968,7 @@ def test_load_trajectory_meta_data_from_txt_failure(
 
 def test_load_trajectory_from_txt_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_jupedsim_sqlite(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
+        load_trajectory_from_jupedsim_sqlite(trajectory_file=pathlib.Path("non_existing_file"))
     assert "does not exist" in str(error_info.value)
 
 
@@ -1076,15 +1014,11 @@ def test_load_trajectory_from_jupedsim_sqlite_success(
     expected_frame_rate: float,
 ) -> None:
     for version in [1, 2]:
-        trajectory_sqlite = pathlib.Path(
-            tmp_path / f"trajectory-v{version}.sqlite"
-        )
+        trajectory_sqlite = pathlib.Path(tmp_path / f"trajectory-v{version}.sqlite")
 
         expected_data = pd.DataFrame(data=data)
 
-        written_data = get_data_frame_to_write(
-            expected_data, TrajectoryUnit.METER
-        )
+        written_data = get_data_frame_to_write(expected_data, TrajectoryUnit.METER)
 
         write_jupedsim_sqlite_trajectory_file(
             file=trajectory_sqlite,
@@ -1098,25 +1032,18 @@ def test_load_trajectory_from_jupedsim_sqlite_success(
         )
 
         assert (
-            traj_data_from_file.data[
-                [ID_COL, FRAME_COL, X_COL, Y_COL]
-            ].to_numpy()
-            == expected_data.to_numpy()
+            traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy() == expected_data.to_numpy()
         ).all()
         assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
 def test_load_trajectory_from_jupedsim_sqlite_v1_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/jupedsim_v1.sqlite"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/jupedsim_v1.sqlite")
     load_trajectory_from_jupedsim_sqlite(trajectory_file=traj_txt)
 
 
 def test_load_trajectory_from_jupedsim_sqlite_v2_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/jupedsim_v2.sqlite"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/jupedsim_v2.sqlite")
     load_trajectory_from_jupedsim_sqlite(trajectory_file=traj_txt)
 
 
@@ -1124,9 +1051,7 @@ def test_load_trajectory_from_jupedsim_sqlite_v2_reference_file():
     "version",
     [1, 2],
 )
-def test_load_trajectory_from_jupedsim_sqlite_no_trajectory_data(
-    tmp_path: pathlib.Path, version
-):
+def test_load_trajectory_from_jupedsim_sqlite_no_trajectory_data(tmp_path: pathlib.Path, version):
     trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
     write_jupedsim_sqlite_trajectory_file(
         file=trajectory_sqlite,
@@ -1138,18 +1063,14 @@ def test_load_trajectory_from_jupedsim_sqlite_no_trajectory_data(
         load_trajectory_from_jupedsim_sqlite(
             trajectory_file=trajectory_sqlite,
         )
-    assert "The given sqlite trajectory is not a valid JuPedSim format" in str(
-        error_info.value
-    )
+    assert "The given sqlite trajectory is not a valid JuPedSim format" in str(error_info.value)
 
 
 @pytest.mark.parametrize(
     "version",
     [1, 2],
 )
-def test_load_trajectory_from_jupedsim_sqlite_empty_trajectory_data(
-    tmp_path: pathlib.Path, version
-):
+def test_load_trajectory_from_jupedsim_sqlite_empty_trajectory_data(tmp_path: pathlib.Path, version):
     trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
 
     empty_data = pd.DataFrame(columns=[ID_COL, FRAME_COL, X_COL, Y_COL])
@@ -1165,18 +1086,14 @@ def test_load_trajectory_from_jupedsim_sqlite_empty_trajectory_data(
         load_trajectory_from_jupedsim_sqlite(
             trajectory_file=trajectory_sqlite,
         )
-    assert "The given sqlite trajectory file seems to be empty." in str(
-        error_info.value
-    )
+    assert "The given sqlite trajectory file seems to be empty." in str(error_info.value)
 
 
 @pytest.mark.parametrize(
     "version",
     [1, 2],
 )
-def test_load_trajectory_from_jupedsim_sqlite_no_meta_data(
-    tmp_path: pathlib.Path, version
-):
+def test_load_trajectory_from_jupedsim_sqlite_no_meta_data(tmp_path: pathlib.Path, version):
     trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
     data = pd.DataFrame(
         data=np.array([[0, 0, 5, 1], [1, 0, -5, -1]]),
@@ -1194,18 +1111,14 @@ def test_load_trajectory_from_jupedsim_sqlite_no_meta_data(
         load_trajectory_from_jupedsim_sqlite(
             trajectory_file=trajectory_sqlite,
         )
-    assert "The given sqlite trajectory is not a valid JuPedSim format" in str(
-        error_info.value
-    )
+    assert "The given sqlite trajectory is not a valid JuPedSim format" in str(error_info.value)
 
 
 @pytest.mark.parametrize(
     "version",
     [1, 2],
 )
-def test_load_trajectory_from_jupedsim_sqlite_no_frame_rate_in_meta_data(
-    tmp_path: pathlib.Path, version
-):
+def test_load_trajectory_from_jupedsim_sqlite_no_frame_rate_in_meta_data(tmp_path: pathlib.Path, version):
     trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
 
     data = pd.DataFrame(
@@ -1213,25 +1126,18 @@ def test_load_trajectory_from_jupedsim_sqlite_no_frame_rate_in_meta_data(
         columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
     )
 
-    write_jupedsim_sqlite_trajectory_file(
-        file=trajectory_sqlite, data=data, version=version
-    )
+    write_jupedsim_sqlite_trajectory_file(file=trajectory_sqlite, data=data, version=version)
 
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_trajectory_from_jupedsim_sqlite(
             trajectory_file=trajectory_sqlite,
         )
-    assert (
-        "The given sqlite trajectory file seems not include a frame rate."
-        in str(error_info.value)
-    )
+    assert "The given sqlite trajectory file seems not include a frame rate." in str(error_info.value)
 
 
 def test_load_trajectory_from_jupedsim_sqlite_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_jupedsim_sqlite(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
+        load_trajectory_from_jupedsim_sqlite(trajectory_file=pathlib.Path("non_existing_file"))
     assert "does not exist" in str(error_info.value)
 
 
@@ -1343,16 +1249,12 @@ def test_load_walkable_area_from_jupedsim_sqlite_v2_multiple_geometries_success(
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_v1_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/jupedsim_v1.sqlite"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/jupedsim_v1.sqlite")
     load_walkable_area_from_jupedsim_sqlite(trajectory_file=traj_txt)
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_v2_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/jupedsim_v2.sqlite"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/jupedsim_v2.sqlite")
     load_walkable_area_from_jupedsim_sqlite(trajectory_file=traj_txt)
 
 
@@ -1360,9 +1262,7 @@ def test_load_walkable_area_from_jupedsim_sqlite_v2_reference_file():
     "version",
     [1, 2],
 )
-def test_load_walkable_area_from_jupedsim_sqlite_no_geometry_table(
-    tmp_path: pathlib.Path, version
-):
+def test_load_walkable_area_from_jupedsim_sqlite_no_geometry_table(tmp_path: pathlib.Path, version):
     trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
 
     expected_data = pd.DataFrame(
@@ -1380,18 +1280,14 @@ def test_load_walkable_area_from_jupedsim_sqlite_no_geometry_table(
 
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_walkable_area_from_jupedsim_sqlite(trajectory_sqlite)
-    assert "The given sqlite trajectory is not a valid JuPedSim format" in str(
-        error_info.value
-    )
+    assert "The given sqlite trajectory is not a valid JuPedSim format" in str(error_info.value)
 
 
 @pytest.mark.parametrize(
     "version",
     [1, 2],
 )
-def test_load_walkable_area_from_jupedsim_sqlite_no_geometry(
-    tmp_path: pathlib.Path, version
-):
+def test_load_walkable_area_from_jupedsim_sqlite_no_geometry(tmp_path: pathlib.Path, version):
     trajectory_sqlite = pathlib.Path(tmp_path / "trajectory.sqlite")
 
     expected_data = pd.DataFrame(
@@ -1408,10 +1304,7 @@ def test_load_walkable_area_from_jupedsim_sqlite_no_geometry(
 
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_walkable_area_from_jupedsim_sqlite(trajectory_sqlite)
-    assert (
-        "The given sqlite trajectory file seems not include a geometry"
-        in str(error_info.value)
-    )
+    assert "The given sqlite trajectory file seems not include a geometry" in str(error_info.value)
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_non_supported_version(
@@ -1430,16 +1323,12 @@ def test_load_walkable_area_from_jupedsim_sqlite_non_supported_version(
 
     with pytest.raises(LoadTrajectoryError) as error_info:
         load_walkable_area_from_jupedsim_sqlite(trajectory_sqlite)
-    assert "The given sqlite trajectory has unsupported db version" in str(
-        error_info.value
-    )
+    assert "The given sqlite trajectory has unsupported db version" in str(error_info.value)
 
 
 def test_load_walkable_area_from_jupedsim_sqlite_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_walkable_area_from_jupedsim_sqlite(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
+        load_walkable_area_from_jupedsim_sqlite(trajectory_file=pathlib.Path("non_existing_file"))
     assert "does not exist" in str(error_info.value)
 
 
@@ -1502,17 +1391,12 @@ def test_load_trajectory_from_data_archive_hdf5_success(
         trajectory_file=trajectory_hdf5,
     )
 
-    assert (
-        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
-        == expected_data.to_numpy()
-    ).all()
+    assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy() == expected_data.to_numpy()).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
 def test_load_trajectory_from_data_archive_hdf5_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/ped_data_archive_hdf5.h5"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/ped_data_archive_hdf5.h5")
     load_trajectory_from_ped_data_archive_hdf5(trajectory_file=traj_txt)
 
 
@@ -1526,13 +1410,9 @@ def test_load_trajectory_from_ped_data_archive_hdf5_no_trajectory_dataset(
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_ped_data_archive_hdf5(
-            trajectory_file=trajectory_hdf5
-        )
+        load_trajectory_from_ped_data_archive_hdf5(trajectory_file=trajectory_hdf5)
 
-    assert "it does not contain a 'trajectory' dataset." in str(
-        error_info.value
-    )
+    assert "it does not contain a 'trajectory' dataset." in str(error_info.value)
 
 
 def test_load_trajectory_from_ped_data_archive_hdf5_trajectory_wrong_columns(
@@ -1551,13 +1431,10 @@ def test_load_trajectory_from_ped_data_archive_hdf5_trajectory_wrong_columns(
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_ped_data_archive_hdf5(
-            trajectory_file=trajectory_hdf5
-        )
+        load_trajectory_from_ped_data_archive_hdf5(trajectory_file=trajectory_hdf5)
 
-    assert (
-        "'trajectory' dataset does not contain the following columns: 'id', 'frame', 'x', and 'y'"
-        in str(error_info.value)
+    assert "'trajectory' dataset does not contain the following columns: 'id', 'frame', 'x', and 'y'" in str(
+        error_info.value
     )
 
 
@@ -1576,20 +1453,14 @@ def test_load_trajectory_from_ped_data_archive_hdf5_trajectory_dataset_no_fps(
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_ped_data_archive_hdf5(
-            trajectory_file=trajectory_hdf5
-        )
+        load_trajectory_from_ped_data_archive_hdf5(trajectory_file=trajectory_hdf5)
 
-    assert "the 'trajectory' dataset does not contain a 'fps' attribute" in str(
-        error_info.value
-    )
+    assert "the 'trajectory' dataset does not contain a 'fps' attribute" in str(error_info.value)
 
 
 def test_load_trajectory_from_ped_data_archive_hdf5_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_ped_data_archive_hdf5(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
+        load_trajectory_from_ped_data_archive_hdf5(trajectory_file=pathlib.Path("non_existing_file"))
     assert "does not exist" in str(error_info.value)
 
 
@@ -1618,9 +1489,7 @@ def test_load_trajectory_from_ped_data_archive_hdf5_non_file(tmp_path):
         ),
     ],
 )
-def test_load_walkable_area_from_ped_data_archive_hdf5_success(
-    tmp_path: pathlib.Path, data, frame_rate, walkable_area
-):
+def test_load_walkable_area_from_ped_data_archive_hdf5_success(tmp_path: pathlib.Path, data, frame_rate, walkable_area):
     trajectory_hdf5 = pathlib.Path(tmp_path / "trajectory.sqlite")
 
     expected_data = pd.DataFrame(data=data)
@@ -1634,16 +1503,12 @@ def test_load_walkable_area_from_ped_data_archive_hdf5_success(
     )
 
     expected_walkable_area = WalkableArea(walkable_area)
-    walkable_area = load_walkable_area_from_ped_data_archive_hdf5(
-        trajectory_hdf5
-    )
+    walkable_area = load_walkable_area_from_ped_data_archive_hdf5(trajectory_hdf5)
     assert expected_walkable_area.polygon.equals(walkable_area.polygon)
 
 
 def test_load_walkable_area_from_data_archive_hdf5_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/ped_data_archive_hdf5.h5"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/ped_data_archive_hdf5.h5")
     load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=traj_txt)
 
 
@@ -1663,20 +1528,14 @@ def test_load_walkable_area_from_ped_data_archive_hdf5_no_wkt_in_file(
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_walkable_area_from_ped_data_archive_hdf5(
-            trajectory_file=trajectory_hdf5
-        )
+        load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=trajectory_hdf5)
 
-    assert "it does not contain a 'wkt_geometry' attribute" in str(
-        error_info.value
-    )
+    assert "it does not contain a 'wkt_geometry' attribute" in str(error_info.value)
 
 
 def test_load_walkable_area_from_ped_data_archive_hdf5_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_walkable_area_from_ped_data_archive_hdf5(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
+        load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=pathlib.Path("non_existing_file"))
     assert "does not exist" in str(error_info.value)
 
 
@@ -1739,17 +1598,12 @@ def test_load_trajectory_from_viswalk_success(
         trajectory_file=trajectory_viswalk,
     )
 
-    assert (
-        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
-        == expected_data.to_numpy()
-    ).all()
+    assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy() == expected_data.to_numpy()).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
 def test_load_trajectory_from_viswalk_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/viswalk.pp"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/viswalk.pp")
     load_trajectory_from_viswalk(trajectory_file=traj_txt)
 
 
@@ -1771,9 +1625,7 @@ def test_load_trajectory_from_viswalk_no_data(
         load_trajectory_from_viswalk(
             trajectory_file=trajectory_viswalk,
         )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 def test_load_trajectory_from_viswalk_frame_rate_zero(
@@ -1786,9 +1638,7 @@ def test_load_trajectory_from_viswalk_frame_rate_zero(
         columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
     )
 
-    written_data = get_data_frame_to_write(
-        data_in_single_frame, TrajectoryUnit.METER
-    )
+    written_data = get_data_frame_to_write(data_in_single_frame, TrajectoryUnit.METER)
     write_viswalk_csv_file(
         file=trajectory_viswalk,
         data=written_data,
@@ -1798,10 +1648,7 @@ def test_load_trajectory_from_viswalk_frame_rate_zero(
         load_trajectory_from_viswalk(
             trajectory_file=trajectory_viswalk,
         )
-    assert (
-        "Can not determine the frame rate used to write the trajectory file."
-        in str(error_info.value)
-    )
+    assert "Can not determine the frame rate used to write the trajectory file." in str(error_info.value)
 
 
 def test_load_trajectory_from_viswalk_columns_missing(
@@ -1814,9 +1661,7 @@ def test_load_trajectory_from_viswalk_columns_missing(
         columns=[ID_COL, FRAME_COL, X_COL, "FOO!"],
     )
 
-    written_data = get_data_frame_to_write(
-        data_with_missing_column, TrajectoryUnit.METER
-    )
+    written_data = get_data_frame_to_write(data_with_missing_column, TrajectoryUnit.METER)
     write_viswalk_csv_file(
         file=trajectory_viswalk,
         data=written_data,
@@ -1826,9 +1671,7 @@ def test_load_trajectory_from_viswalk_columns_missing(
         load_trajectory_from_viswalk(
             trajectory_file=trajectory_viswalk,
         )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 def test_load_trajectory_from_viswalk_data_not_parseable(
@@ -1841,9 +1684,7 @@ def test_load_trajectory_from_viswalk_data_not_parseable(
         columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
     )
 
-    written_data = get_data_frame_to_write(
-        data_with_missing_column, TrajectoryUnit.METER
-    )
+    written_data = get_data_frame_to_write(data_with_missing_column, TrajectoryUnit.METER)
     write_viswalk_csv_file(
         file=trajectory_viswalk,
         data=written_data,
@@ -1855,16 +1696,12 @@ def test_load_trajectory_from_viswalk_data_not_parseable(
         load_trajectory_from_viswalk(
             trajectory_file=trajectory_viswalk,
         )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 def test_load_trajectory_from_viswalk_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_viswalk(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
+        load_trajectory_from_viswalk(trajectory_file=pathlib.Path("non_existing_file"))
     assert "does not exist" in str(error_info.value)
 
 
@@ -1876,9 +1713,7 @@ def test_load_trajectory_from_viswalk_non_file(tmp_path):
 
 
 def test_load_trajectory_from_vadere_reference_file():
-    traj_txt = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/vadere_postvis.traj"
-    )
+    traj_txt = pathlib.Path(__file__).parent / pathlib.Path("test-data/vadere_postvis.traj")
     load_trajectory_from_vadere(trajectory_file=traj_txt, frame_rate=24.0)
 
 
@@ -1901,9 +1736,7 @@ def test_load_trajectory_from_vadere_no_data(
         load_trajectory_from_viswalk(
             trajectory_file=trajectory_vadere,
         )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 @pytest.mark.parametrize(
@@ -1947,10 +1780,7 @@ def test_load_trajectory_from_vadere_success(
         frame_rate=expected_frame_rate,
     )
 
-    assert (
-        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
-        == expected_data.to_numpy()
-    ).all()
+    assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy() == expected_data.to_numpy()).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
@@ -1964,9 +1794,7 @@ def test_load_trajectory_from_vadere_columns_missing(
         columns=[ID_COL, FRAME_COL, X_COL, "FOO!"],
     )
 
-    written_data = get_data_frame_to_write(
-        data_with_missing_column, TrajectoryUnit.METER
-    )
+    written_data = get_data_frame_to_write(data_with_missing_column, TrajectoryUnit.METER)
     write_vadere_csv_file(
         file=trajectory_vadere,
         data=written_data,
@@ -1974,12 +1802,8 @@ def test_load_trajectory_from_vadere_columns_missing(
     )
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_vadere(
-            trajectory_file=trajectory_vadere, frame_rate=24.0
-        )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+        load_trajectory_from_vadere(trajectory_file=trajectory_vadere, frame_rate=24.0)
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 def test_load_trajectory_from_vadere_columns_non_unique(
@@ -1992,9 +1816,7 @@ def test_load_trajectory_from_vadere_columns_non_unique(
         columns=[ID_COL, FRAME_COL, X_COL, "startX-PID2", Y_COL],
     )
 
-    written_data = get_data_frame_to_write(
-        data_with_missing_column, TrajectoryUnit.METER
-    )
+    written_data = get_data_frame_to_write(data_with_missing_column, TrajectoryUnit.METER)
     write_vadere_csv_file(
         file=trajectory_vadere,
         data=written_data,
@@ -2006,9 +1828,7 @@ def test_load_trajectory_from_vadere_columns_non_unique(
             trajectory_file=trajectory_vadere,
             frame_rate=24.0,
         )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 @pytest.mark.parametrize(
@@ -2109,18 +1929,14 @@ def test_load_walkable_area_from_vadere_scenario_success(
     expected_shell_points = np.round(expected_shell_points, decimals)
     # 2) treat holes separately to avoid buffering of holes
     expected_holes = [list(p.coords) for p in area_poly.interiors]
-    expected_walkable_area = WalkableArea(
-        expected_shell_points, obstacles=expected_holes
-    )
+    expected_walkable_area = WalkableArea(expected_shell_points, obstacles=expected_holes)
 
     expected_walkable_area_polygon = force_cw(expected_walkable_area.polygon)
     walkable_area_from_file_polygon = force_cw(walkable_area_from_file.polygon)
 
     # The polygons coordinates may differ by up to 'margin' on both axes.
     # The maximum possible difference between coordinates is therefore the diagonal of the square formed
-    maximum_coordinate_difference_due_to_margin = math.sqrt(
-        margin * margin + margin * margin
-    )
+    maximum_coordinate_difference_due_to_margin = math.sqrt(margin * margin + margin * margin)
 
     assert expected_walkable_area_polygon.equals_exact(
         walkable_area_from_file_polygon,
@@ -2269,10 +2085,7 @@ def test_load_trajectory_from_pathfinder_success_csv(
         trajectory_file=trajectory_pathfinder,
     )
 
-    assert (
-        traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy()
-        == expected_data.to_numpy()
-    ).all()
+    assert (traj_data_from_file.data[[ID_COL, FRAME_COL, X_COL, Y_COL]].to_numpy() == expected_data.to_numpy()).all()
     assert traj_data_from_file.frame_rate == expected_frame_rate
 
 
@@ -2294,9 +2107,7 @@ def test_load_trajectory_from_pathfinder_no_data_csv(
         load_trajectory_from_pathfinder_csv(
             trajectory_file=trajectory_pathfinder,
         )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 def test_load_trajectory_from_pathfinder_frame_rate_zero_csv(
@@ -2309,9 +2120,7 @@ def test_load_trajectory_from_pathfinder_frame_rate_zero_csv(
         columns=[ID_COL, FRAME_COL, X_COL, Y_COL],
     )
 
-    written_data = get_data_frame_to_write(
-        data_in_single_frame, TrajectoryUnit.METER
-    )
+    written_data = get_data_frame_to_write(data_in_single_frame, TrajectoryUnit.METER)
     write_pathfinder_csv_file(
         file=trajectory_pathfinder,
         data=written_data,
@@ -2322,10 +2131,7 @@ def test_load_trajectory_from_pathfinder_frame_rate_zero_csv(
             trajectory_file=trajectory_pathfinder,
         )
 
-    assert (
-        "Can not determine the frame rate used to write the trajectory file."
-        in str(error_info.value)
-    )
+    assert "Can not determine the frame rate used to write the trajectory file." in str(error_info.value)
 
 
 def test_load_trajectory_from_pathfinder_columns_missing_csv(
@@ -2361,24 +2167,18 @@ def test_load_trajectory_from_pathfinder_data_not_parseable_csv(
         load_trajectory_from_pathfinder_csv(
             trajectory_file=trajectory_pathfinder,
         )
-    assert "The given trajectory file seems to be incorrect or empty." in str(
-        error_info.value
-    )
+    assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 def test_load_trajectory_from_pathfinder_non_existing_file():
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder_csv(
-            trajectory_file=pathlib.Path("non_existing_file")
-        )
+        load_trajectory_from_pathfinder_csv(trajectory_file=pathlib.Path("non_existing_file"))
 
     assert "does not exist" in str(error_info.value)
 
 
 def test_load_trajectory_from_pathfinder_reference_file_csv():
-    traj_csv = pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/pathfinder.csv"
-    )
+    traj_csv = pathlib.Path(__file__).parent / pathlib.Path("test-data/pathfinder.csv")
     load_trajectory_from_pathfinder_csv(trajectory_file=traj_csv)
 
 
@@ -2393,20 +2193,13 @@ def test_load_trajectory_from_pathfinder_wrong_types_csv(
         f.write("not_an_int,0.0,1.0,2.0\n")
 
     with pytest.raises(LoadTrajectoryError) as error_info:
-        load_trajectory_from_pathfinder_csv(
-            trajectory_file=trajectory_pathfinder
-        )
-        assert (
-            "The given trajectory file seems to be incorrect or empty."
-            in str(error_info.value)
-        )
+        load_trajectory_from_pathfinder_csv(trajectory_file=trajectory_pathfinder)
+        assert "The given trajectory file seems to be incorrect or empty." in str(error_info.value)
 
 
 @pytest.fixture
 def json_file_path():
-    return pathlib.Path(__file__).parent / pathlib.Path(
-        "test-data/pathfinder.json"
-    )
+    return pathlib.Path(__file__).parent / pathlib.Path("test-data/pathfinder.json")
 
 
 def test_load_trajectory_from_pathfinder_reference_file_json(json_file_path):
@@ -2455,10 +2248,7 @@ def test_load_trajectory_from_pathfinder_frame_rate_zero_json(
             trajectory_file=trajectory_pathfinder,
         )
 
-    assert (
-        "Can not determine the frame rate used to write the trajectory file."
-        in str(error_info.value)
-    )
+    assert "Can not determine the frame rate used to write the trajectory file." in str(error_info.value)
 
 
 # ================== crowd:it ===================
@@ -2505,9 +2295,7 @@ def test_load_trajectory_from_crowdit_missing_columns(tmp_path: pathlib.Path):
 
 def test_load_walkable_area_from_crowdit_non_existing_file():
     with pytest.raises(LoadTrajectoryError):
-        load_walkable_area_from_crowdit(
-            geometry_file=pathlib.Path("non_existing_geometry.xml")
-        )
+        load_walkable_area_from_crowdit(geometry_file=pathlib.Path("non_existing_geometry.xml"))
 
 
 def test_load_walkable_area_from_crowdit_no_walls(tmp_path: pathlib.Path):
@@ -2529,9 +2317,7 @@ def test_load_walkable_area_from_crowdit_invalid_xml(tmp_path: pathlib.Path):
         load_walkable_area_from_crowdit(geometry_file=geometry_file)
 
 
-def test_load_walkable_area_from_crowdit_valid(
-    tmp_path: pathlib.Path, buffer=0
-):
+def test_load_walkable_area_from_crowdit_valid(tmp_path: pathlib.Path, buffer=0):
     geometry_file = tmp_path / "geometry.xml"
     xml_content = """
     <geometry>

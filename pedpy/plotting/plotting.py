@@ -722,18 +722,12 @@ def plot_neighborhood(
     """
     if NEIGHBORS_COL in neighbors.columns:
         # Extract neighbors from when they are stored as list in a column
-        neighbors_in_frame = neighbors[neighbors[FRAME_COL] == frame].set_index(
-            ID_COL
-        )
+        neighbors_in_frame = neighbors[neighbors[FRAME_COL] == frame].set_index(ID_COL)
         neighbor_ids = neighbors_in_frame[NEIGHBORS_COL].to_dict()
     elif NEIGHBOR_ID_COL in neighbors.columns:
         # Extract neighbors from when they are stored as one neighbor per row
         neighbors_in_frame = neighbors[neighbors[FRAME_COL] == frame]
-        neighbor_ids = (
-            neighbors_in_frame.groupby(ID_COL)[NEIGHBOR_ID_COL]
-            .apply(set)
-            .to_dict()
-        )
+        neighbor_ids = neighbors_in_frame.groupby(ID_COL)[NEIGHBOR_ID_COL].apply(set).to_dict()
     else:
         raise PedPyRuntimeError("Unknown neighbor data format")
 
@@ -823,9 +817,7 @@ def _plot_neighborhood(
 
     # Plot the walkable area
     if walkable_area is not None:
-        axes = plot_walkable_area(
-            axes=axes, walkable_area=walkable_area, **kwargs
-        )
+        axes = plot_walkable_area(axes=axes, walkable_area=walkable_area, **kwargs)
     else:
         x_min, y_min, x_max, y_max = shapely.MultiPolygon(polygons).bounds
         margin_x = 0.05 * (x_max - x_min)
@@ -1001,9 +993,7 @@ def plot_time_distance(  # noqa: PLR0915
             ]
             for i in range(len(points) - 1)
         ]
-        line_collection = LineCollection(
-            segments, cmap="jet", alpha=0.7, norm=norm
-        )
+        line_collection = LineCollection(segments, cmap="jet", alpha=0.7, norm=norm)
         line_collection.set_array(speed_id)
         line_collection.set_linewidth(0.5)
         axes.add_collection(line_collection)
@@ -1049,9 +1039,7 @@ def plot_time_distance(  # noqa: PLR0915
         frame_rate: Frame rate used to adjust time values.
         """
         time_distance = time_distance.merge(speed, on=[ID_COL, FRAME_COL])
-        norm = Normalize(
-            vmin=time_distance.speed.min(), vmax=time_distance.speed.max()
-        )
+        norm = Normalize(vmin=time_distance.speed.min(), vmax=time_distance.speed.max())
 
         for _, ped_data in time_distance.groupby(ID_COL):
             _plot_colored_line(axes, ped_data, norm)
@@ -1261,9 +1249,7 @@ def plot_trajectories(
         axes = plt.gca()
 
     if walkable_area is not None:
-        axes = plot_walkable_area(
-            walkable_area=walkable_area, axes=axes, **kwargs
-        )
+        axes = plot_walkable_area(walkable_area=walkable_area, axes=axes, **kwargs)
 
     for _, ped in traj.data.groupby(ID_COL):
         axes.plot(
@@ -1449,9 +1435,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
         axes = plt.gca()
 
     if measurement_area is not None:
-        plot_measurement_setup(
-            measurement_areas=[measurement_area], axes=axes, **kwargs
-        )
+        plot_measurement_setup(measurement_areas=[measurement_area], axes=axes, **kwargs)
 
     if traj_data:
         data = traj_data.data.merge(
@@ -1470,9 +1454,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             if not vmax:
                 vmax = voronoi_data[color_by_column].max()
             norm = mpl.colors.Normalize(vmin, vmax)
-            scalar_mappable = mpl.cm.ScalarMappable(
-                norm=norm, cmap=voronoi_colormap
-            )
+            scalar_mappable = mpl.cm.ScalarMappable(norm=norm, cmap=voronoi_colormap)
             color_mapper = scalar_mappable.to_rgba
         elif typ == "int64":
             voronoi_colormap = plt.get_cmap("tab20c")
@@ -1484,9 +1466,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
                 return forward(values)
 
             norm = mpl.colors.FuncNorm((forward, inverse), 0, 19)
-            scalar_mappable = mpl.cm.ScalarMappable(
-                norm=norm, cmap=voronoi_colormap
-            )
+            scalar_mappable = mpl.cm.ScalarMappable(norm=norm, cmap=voronoi_colormap)
             color_mapper = scalar_mappable.to_rgba
         else:
             pass
