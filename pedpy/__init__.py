@@ -53,6 +53,7 @@ from .errors import (
     AccelerationError,
     GeometryError,
     InputError,
+    LoadTrajectoryError,
     PedPyAttributeError,
     PedPyError,
     PedPyRuntimeError,
@@ -60,22 +61,20 @@ from .errors import (
     PedPyValueError,
     SpeedError,
 )
-from .io.trajectory_loader import (
-    TrajectoryUnit,
-    load_trajectory,
-    load_trajectory_from_crowdit,
-    load_trajectory_from_jupedsim_sqlite,
-    load_trajectory_from_pathfinder_csv,
-    load_trajectory_from_pathfinder_json,
+from .io.crowdit_loader import load_trajectory_from_crowdit, load_walkable_area_from_crowdit
+from .io.helper import TrajectoryUnit
+from .io.jupedsim_loader import load_trajectory_from_jupedsim_sqlite, load_walkable_area_from_jupedsim_sqlite
+from .io.pathfinder_loader import load_trajectory_from_pathfinder_csv, load_trajectory_from_pathfinder_json
+from .io.ped_data_archive_loader import (
     load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
-    load_trajectory_from_vadere,
-    load_trajectory_from_viswalk,
-    load_walkable_area_from_crowdit,
-    load_walkable_area_from_jupedsim_sqlite,
     load_walkable_area_from_ped_data_archive_hdf5,
-    load_walkable_area_from_vadere_scenario,
 )
+from .io.trajectory_loader import (
+    load_trajectory,
+)
+from .io.vadere_loader import load_trajectory_from_vadere, load_walkable_area_from_vadere_scenario
+from .io.viswalk_loader import load_trajectory_from_viswalk
 from .methods.acceleration_calculator import (
     compute_individual_acceleration,
     compute_mean_acceleration_per_frame,

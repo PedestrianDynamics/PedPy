@@ -60,11 +60,11 @@ autoapi_options = [
     "show-inheritance",
 ]
 autoapi_ignore = ["**/tests/**"]
-autoapi_member_order = ["groupwise"]
-autodoc_typehints = "description"
 autoapi_generate_api_docs = False
 autoapi_python_class_content = "both"
 autoapi_member_order = "bysource"
+autodoc_member_order = "bysource"
+autodoc_typehints = "description"
 
 add_module_names = False
 
