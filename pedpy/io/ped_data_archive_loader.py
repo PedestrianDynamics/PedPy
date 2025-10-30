@@ -1,0 +1,292 @@
+"""Load trajectories from the Pedestrian Dynamics Data Archive to the internal trajectory data format."""
+
+import pathlib
+from typing import Any, Optional, Tuple
+
+import h5py
+import pandas as pd
+
+from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.data.geometry import WalkableArea
+from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import LoadTrajectoryError, PedPyValueError
+from pedpy.io.helper import TrajectoryUnit, _validate_is_file
+
+
+def load_trajectory_from_txt(
+    *,
+    trajectory_file: pathlib.Path,
+    default_frame_rate: Optional[float] = None,
+    default_unit: Optional[TrajectoryUnit] = None,
+) -> TrajectoryData:
+    """Loads the trajectory file in the internal :class:`~trajectory_data.TrajectoryData` format.
+
+    Loads the relevant data: trajectory data, frame rate, and type of
+    trajectory from the given trajectory file. If the file does not contain
+    some data, defaults can be submitted.
+
+    Args:
+        trajectory_file: file containing the trajectory
+        default_frame_rate: frame rate of the file, None if frame rate
+            from file is used
+        default_unit: unit in which the coordinates are stored
+                in the file, None if unit should be parsed from the file
+
+    Returns:
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData`
+        representation of the file data
+    """
+    _validate_is_file(trajectory_file)
+
+    traj_frame_rate, traj_unit = _load_trajectory_meta_data_from_txt(
+        trajectory_file=trajectory_file,
+        default_frame_rate=default_frame_rate,
+        default_unit=default_unit,
+    )
+    traj_dataframe = _load_trajectory_data_from_txt(trajectory_file=trajectory_file, unit=traj_unit)
+
+    return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
+
+
+def _load_trajectory_data_from_txt(*, trajectory_file: pathlib.Path, unit: TrajectoryUnit) -> pd.DataFrame:
+    """Parse the trajectory file for trajectory data.
+
+    Args:
+        trajectory_file: file containing the trajectory
+        unit: unit in which the coordinates are stored in the file, None if unit should be parsed from the file
+
+    Returns:
+        The trajectory data as :class:`DataFrame`, the coordinates are
+        converted to meter (m).
+    """
+    try:
+        data = pd.read_csv(
+            trajectory_file,
+            sep=r"\s+",
+            comment="#",
+            header=None,
+            names=[ID_COL, FRAME_COL, X_COL, Y_COL],
+            usecols=[0, 1, 2, 3],
+            dtype={
+                ID_COL: "int64",
+                FRAME_COL: "int64",
+                X_COL: "float64",
+                Y_COL: "float64",
+            },
+        )
+
+        if data.empty:
+            raise PedPyValueError(
+                "The given trajectory file seem to be empty. It should "
+                "contain at least 5 columns: ID, frame, X, Y, Z. The values "
+                "should be separated by any white space. Comment line may "
+                "start with a '#' and will be ignored. "
+                f"Please check your trajectory file: {trajectory_file}."
+            )
+
+        if unit == TrajectoryUnit.CENTIMETER:
+            data.x = data.x.div(100)
+            data.y = data.y.div(100)
+
+        return data
+    except pd.errors.ParserError as exc:
+        raise PedPyValueError(
+            "The given trajectory file could not be parsed. It should "
+            "contain at least 5 columns: ID, frame, X, Y, Z. The values "
+            "should be separated by any white space. Comment line may start "
+            "with a '#' and will be ignored. "
+            f"Please check your trajectory file: {trajectory_file}."
+        ) from exc
+
+
+def _load_trajectory_meta_data_from_txt(  # noqa: PLR0912
+    *,
+    trajectory_file: pathlib.Path,
+    default_frame_rate: Optional[float],
+    default_unit: Optional[TrajectoryUnit],
+) -> Tuple[float, TrajectoryUnit]:
+    """Extract the trajectory metadata from file, use defaults if none found.
+
+    Check the given trajectory file for the used unit and frame-rate, if none
+    were found, return the provided default values.
+
+    In cases that there are differences between the found and given default
+    values, an exception is raised. If no metadata found and no defaults given
+    also an exception will be raised.
+
+    Args:
+        trajectory_file: file containing the trajectory
+        default_frame_rate: frame rate of the file, None if frame rate
+            from file is used
+        default_unit: unit in which the coordinates are stored
+                in the file, None if unit should be parsed from the file
+
+    Returns:
+        Tuple containing the frame-rate and used unit.
+    """
+    parsed_frame_rate: Any = None
+    parsed_unit: Any = None
+
+    with open(trajectory_file, "r", encoding="utf-8-sig") as file_content:
+        for line in file_content:
+            if not line.startswith("#"):
+                break
+
+            if "framerate" in line:
+                for substring in line.split():
+                    try:
+                        if parsed_frame_rate is None:
+                            parsed_frame_rate = float(substring)
+                    except ValueError:
+                        continue
+
+            if "x/cm" in line.lower() or "in cm" in line.lower():
+                parsed_unit = TrajectoryUnit.CENTIMETER
+
+            if "x/m" in line.lower() or "in m" in line.lower():
+                parsed_unit = TrajectoryUnit.METER
+
+    frame_rate = parsed_frame_rate
+    if parsed_frame_rate is None and default_frame_rate is not None:
+        if default_frame_rate <= 0:
+            raise PedPyValueError(f"Default frame needs to be positive but is {default_frame_rate}")
+
+        frame_rate = default_frame_rate
+
+    if parsed_frame_rate is None and default_frame_rate is None:
+        raise PedPyValueError(
+            "Frame rate is needed, but none could be found in the trajectory "
+            "file. "
+            f"Please check your trajectory file: {trajectory_file} or provide "
+            "a default frame rate."
+        )
+
+    if parsed_frame_rate is not None and default_frame_rate is None:
+        if parsed_frame_rate <= 0:
+            raise PedPyValueError(
+                "Frame rate needs to be a positive value, but is "
+                f"{parsed_frame_rate}. "
+                "Please check your trajectory file: {trajectory_file}."
+            )
+    if parsed_frame_rate is not None and default_frame_rate is not None:
+        if parsed_frame_rate != default_frame_rate:
+            raise PedPyValueError(
+                "The given default frame rate seems to differ from the frame "
+                "rate given in the trajectory file: "
+                f"{default_frame_rate} != {parsed_frame_rate}"
+            )
+
+    unit = parsed_unit
+    if parsed_unit is None and default_unit is not None:
+        unit = default_unit
+
+    if parsed_unit is None and default_unit is None:
+        raise PedPyValueError(
+            "Unit is needed, but none could be found in the trajectory file. "
+            f"Please check your trajectory file: {trajectory_file} or provide "
+            "a default unit."
+        )
+
+    if parsed_unit is not None and default_unit is not None:
+        if parsed_unit != default_unit:
+            raise PedPyValueError(
+                "The given default unit seems to differ from the unit given "
+                "in the trajectory file: "
+                f"{default_unit} != {parsed_unit}"
+            )
+
+    return frame_rate, unit
+
+
+def load_trajectory_from_ped_data_archive_hdf5(
+    *,
+    trajectory_file: pathlib.Path,
+) -> TrajectoryData:
+    """Loads data from the hdf5 file as :class:`~trajectory_data.TrajectoryData`.
+
+    Loads data from files in the
+    `Pedestrian Dynamics Data Archive <https://ped.fz-juelich.de/da/doku.php>`_
+    HDF5 format. The format is explained in more detail
+    `here <https://ped.fz-juelich.de/da/doku.php?id=info>`_.
+
+    In short: The file format includes the trajectory data in a data set
+    `trajectory` which contains the trajectory data, e.g., x, y, z coordinates,
+    frame number and a person identifier. The dataset is additionally annotated
+    with an attribute `fps` which gives the frame rate in which the data was
+    recorded.
+
+    Args:
+        trajectory_file: trajectory file in Pedestrian Dynamics Data Archive
+            HDF5 format
+
+    Returns:
+        TrajectoryData: :class:`~trajectory_data.TrajectoryData` representation
+        of the file data
+    """
+    _validate_is_file(trajectory_file)
+
+    with h5py.File(trajectory_file, "r") as hdf5_file:
+        dataset_name = "trajectory"
+        if dataset_name not in hdf5_file:
+            raise LoadTrajectoryError(
+                f"{trajectory_file} seems to be not a supported hdf5 file, it does not contain a 'trajectory' dataset."
+            )
+
+        trajectory_dataset = hdf5_file[dataset_name]
+
+        # pylint: disable-next=no-member
+        column_names = trajectory_dataset.dtype.names
+
+        if not {ID_COL, FRAME_COL, X_COL, Y_COL}.issubset(set(column_names)):
+            raise LoadTrajectoryError(
+                f"{trajectory_file} seems to be not a supported hdf5 file, "
+                f"the 'trajectory' dataset does not contain the following "
+                f"columns: '{ID_COL}', '{FRAME_COL}', '{X_COL}', and "
+                f"'{Y_COL}'."
+            )
+
+        if "fps" not in trajectory_dataset.attrs:
+            raise LoadTrajectoryError(
+                f"{trajectory_file} seems to be not a supported hdf5 file, "
+                f"the 'trajectory' dataset does not contain a 'fps' attribute."
+            )
+
+        df_trajectory = pd.DataFrame(trajectory_dataset[:], columns=column_names)
+        fps = trajectory_dataset.attrs["fps"]
+
+    return TrajectoryData(data=df_trajectory, frame_rate=fps)
+
+
+def load_walkable_area_from_ped_data_archive_hdf5(
+    *,
+    trajectory_file: pathlib.Path,
+) -> WalkableArea:
+    """Loads the walkable area from the hdf5 file as :class:`~geometry.WalkableArea`.
+
+    Loads walkable area from files in the
+    `Pedestrian Dynamics Data Archive <https://ped.fz-juelich.de/da/doku.php>`_
+    HDF5 format. The format is explained in more detail
+    `here <https://ped.fz-juelich.de/da/doku.php?id=info>`_.
+
+    In short: The file format includes an attribute `wkt_geometry` at root
+    level, which contains the walkable area of the experiments.
+
+    Args:
+        trajectory_file: trajectory file in Pedestrian Dynamics Data Archive
+            HDF5 format
+
+    Returns:
+        WalkableArea: :class:`~geometry.WalkableArea` used in the experiment
+    """
+    _validate_is_file(trajectory_file)
+
+    with h5py.File(trajectory_file, "r") as hdf5_file:
+        if "wkt_geometry" not in hdf5_file.attrs:
+            raise LoadTrajectoryError(
+                f"{trajectory_file} seems to be not a supported hdf5 file, "
+                f"it does not contain a 'wkt_geometry' attribute."
+            )
+
+        walkable_area = WalkableArea(hdf5_file.attrs["wkt_geometry"])
+
+    return walkable_area
