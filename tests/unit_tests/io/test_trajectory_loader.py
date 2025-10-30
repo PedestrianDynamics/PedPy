@@ -16,26 +16,28 @@ import shapely
 from numpy import dtype
 from shapely import LinearRing, Polygon
 
-from pedpy.column_identifier import *
-from pedpy.data.geometry import WalkableArea
-from pedpy.io.trajectory_loader import (
+from pedpy import (
     LoadTrajectoryError,
     TrajectoryUnit,
-    _load_trajectory_data_from_txt,
-    _load_trajectory_meta_data_from_txt,
-    _validate_is_file,
     load_trajectory_from_crowdit,
     load_trajectory_from_jupedsim_sqlite,
     load_trajectory_from_pathfinder_csv,
     load_trajectory_from_pathfinder_json,
-    load_trajectory_from_ped_data_archive_hdf5,
     load_trajectory_from_txt,
     load_trajectory_from_vadere,
     load_trajectory_from_viswalk,
     load_walkable_area_from_crowdit,
     load_walkable_area_from_jupedsim_sqlite,
-    load_walkable_area_from_ped_data_archive_hdf5,
     load_walkable_area_from_vadere_scenario,
+)
+from pedpy.column_identifier import *
+from pedpy.data.geometry import WalkableArea
+from pedpy.io.helper import _validate_is_file
+from pedpy.io.ped_data_archive_loader import (
+    _load_trajectory_data_from_txt,
+    _load_trajectory_meta_data_from_txt,
+    load_trajectory_from_ped_data_archive_hdf5,
+    load_walkable_area_from_ped_data_archive_hdf5,
 )
 
 
@@ -313,7 +315,7 @@ def write_data_archive_hdf5_file(
         if data is not None:
             records = data.to_records(
                 index=False,
-                column_dtypes={col: dt for col in data.columns[data.dtypes == "object"]},
+                column_dtypes=dict.fromkeys(data.columns[data.dtypes == "object"], dt),
             )
             ds_traj = h5_file.create_dataset(
                 "trajectory",
