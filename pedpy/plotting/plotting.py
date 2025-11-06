@@ -95,15 +95,6 @@ def _plot_polygon(
 
     # Plot the exterior of the polygon
     exterior_coords = list(polygon.exterior.coords)
-    exterior_polygon_border = Polygon(
-        exterior_coords,
-        edgecolor=line_color,
-        facecolor="none",
-        linewidth=line_width,
-        closed=True,
-        zorder=zorder,
-    )
-    axes.add_patch(exterior_polygon_border)
 
     exterior_polygon_fill = Polygon(
         exterior_coords,
@@ -116,19 +107,19 @@ def _plot_polygon(
     )
     axes.add_patch(exterior_polygon_fill)
 
+    exterior_polygon_border = Polygon(
+        exterior_coords,
+        edgecolor=line_color,
+        facecolor="none",
+        linewidth=line_width,
+        closed=True,
+        zorder=zorder,
+    )
+    axes.add_patch(exterior_polygon_border)
+
     # Plot the interiors (holes) of the polygon
     for interior in polygon.interiors:
         interior_coords = list(interior.coords)
-        interior_polygon_border = Polygon(
-            interior_coords,
-            edgecolor=line_color,
-            facecolor="none",
-            linewidth=line_width,
-            alpha=1,
-            closed=True,
-            zorder=zorder,
-        )
-        axes.add_patch(interior_polygon_border)
 
         interior_polygon_fill = Polygon(
             interior_coords,
@@ -140,6 +131,17 @@ def _plot_polygon(
             zorder=zorder,
         )
         axes.add_patch(interior_polygon_fill)
+        
+        interior_polygon_border = Polygon(
+            interior_coords,
+            edgecolor=line_color,
+            facecolor="none",
+            linewidth=line_width,
+            alpha=1,
+            closed=True,
+            zorder=zorder,
+        )
+        axes.add_patch(interior_polygon_border)
 
     return axes
 
