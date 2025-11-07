@@ -131,7 +131,7 @@ def _plot_polygon(
             zorder=zorder,
         )
         axes.add_patch(interior_polygon_fill)
-        
+
         interior_polygon_border = Polygon(
             interior_coords,
             edgecolor=line_color,
