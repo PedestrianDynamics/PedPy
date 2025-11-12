@@ -72,6 +72,8 @@ def compute_n_t(
 
     # frame number is the index
     n_t[TIME_COL] = n_t.index / traj_data.frame_rate
+    n_t = n_t.reset_index()
+    n_t.columns = [FRAME_COL, "cumulative_pedestrians", TIME_COL]
     return n_t, crossing_frames
 
 
