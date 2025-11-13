@@ -65,11 +65,12 @@ def compute_classic_density(
     density = peds_in_area_per_frame / measurement_area.area
 
     # Rename column and add missing zero values
-    density.columns = [DENSITY_COL]
     density = density.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
+    density = density.reset_index()
+    density.columns = [FRAME_COL, DENSITY_COL]
 
     return density
 
@@ -109,7 +110,7 @@ def compute_voronoi_density(
             computed
 
     Returns:
-        DataFrame containing the columns 'id' and 'density' in :math:`1/m^2`,
+        DataFrame containing the columns 'frame' and 'density' in :math:`1/m^2`,
         DataFrame containing the columns: 'id', 'frame', 'polygon' which
         contains the Voronoi polygon of the pedestrian, 'density' in
         :math:`1/m^2` which contains the individual density of the pedestrian,
@@ -134,7 +135,6 @@ def compute_voronoi_density(
     df_voronoi_density = (df_combined.groupby(df_combined.frame).relation.sum() / measurement_area.area).to_frame()
 
     # Rename column and add missing zero values
-    df_voronoi_density.columns = [DENSITY_COL]
     df_voronoi_density = df_voronoi_density.reindex(
         list(
             range(
@@ -144,6 +144,8 @@ def compute_voronoi_density(
         ),
         fill_value=0.0,
     )
+    df_voronoi_density = df_voronoi_density.reset_index()
+    df_voronoi_density.columns = [FRAME_COL, DENSITY_COL]
 
     return (
         df_voronoi_density,
@@ -201,6 +203,7 @@ def compute_passing_density(*, density_per_frame: pd.DataFrame, frames: pd.DataF
             ].mean()
         )
     density.density = np.array(densities)
+
     return density
 
 

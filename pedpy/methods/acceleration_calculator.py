@@ -187,6 +187,8 @@ def compute_mean_acceleration_per_frame(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
+    df_mean = df_mean.reset_index()
+    df_mean.columns = [FRAME_COL, ACC_COL]
     return df_mean
 
 
@@ -261,7 +263,9 @@ def compute_voronoi_acceleration(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
-    return pd.DataFrame(df_voronoi_acceleration)
+    df_voronoi_acceleration = df_voronoi_acceleration.reset_index()
+    df_voronoi_acceleration.columns = [FRAME_COL, ACC_COL]
+    return df_voronoi_acceleration
 
 
 def _compute_individual_acceleration(
