@@ -53,14 +53,18 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
 
     expected_density = pd.DataFrame.from_dict(
         {frame: [num_peds / measurement_area.area] for frame, num_peds in num_peds_in_area_per_frame.items()},
-        orient="index",
-        columns=[DENSITY_COL],
+        # orient="index",
+        orient=[FRAME_COL],
+        columns=[FRAME_COL, DENSITY_COL],
     )
-    expected_density.index.name = FRAME_COL
+    #    expected_density.index.name = FRAME_COL
 
-    assert computed_density.index.min() == 0
-    assert computed_density.index.max() == num_frames - 1
-    assert expected_density.equals(computed_density)
+    #    assert computed_density.index.min() == 0
+    #    assert computed_density.index.max() == num_frames - 1
+    #    assert expected_density.equals(computed_density)
+    assert computed_density[FRAME_COL].min() == 0
+    assert computed_density[FRAME_COL].max() == num_frames - 1
+    assert expected_density[DENSITY_COL].equals(computed_density)
 
 
 @pytest.mark.parametrize(
