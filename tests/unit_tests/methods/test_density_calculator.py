@@ -53,8 +53,8 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
 
     expected_density = pd.DataFrame.from_dict(
         {frame: [num_peds / measurement_area.area] for frame, num_peds in num_peds_in_area_per_frame.items()},
-        orient=[FRAME_COL],
-        columns=[FRAME_COL, DENSITY_COL],
+        orient="index",
+        columns=[DENSITY_COL],
     )
 
     assert computed_density[FRAME_COL].min() == 0
