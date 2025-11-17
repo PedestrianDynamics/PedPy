@@ -68,12 +68,12 @@ def compute_n_t(
     n_t = n_t.reindex(list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1))).ffill().fillna(0)
 
     n_t = n_t.to_frame()
-    n_t.cumulative_pedestrians = n_t.cumulative_pedestrians.astype(int)
+    n_t[CUMULATED_COL] = n_t.cumulative_pedestrians.astype(int)
 
     # frame number is the index
     n_t[TIME_COL] = n_t.index / traj_data.frame_rate
     n_t = n_t.reset_index()
-    n_t.columns = [FRAME_COL, "cumulative_pedestrians", TIME_COL]
+    n_t.columns = [FRAME_COL, CUMULATED_COL, TIME_COL]
     return n_t, crossing_frames
 
 
