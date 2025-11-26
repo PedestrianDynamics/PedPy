@@ -195,12 +195,12 @@ def compute_passing_density(*, density_per_frame: pd.DataFrame, frames: pd.DataF
     for _, row in frames.iterrows():
         densities.append(
             density_per_frame[
-                density_per_frame.index.to_series().between(
+                density_per_frame.frame.between(
                     int(row.entering_frame),
                     int(row.leaving_frame),
                     inclusive="left",
                 )
-            ].mean()
+            ].density.mean()
         )
     density.density = np.array(densities)
 
