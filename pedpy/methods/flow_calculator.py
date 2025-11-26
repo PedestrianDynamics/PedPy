@@ -151,13 +151,13 @@ def compute_flow(
 
     # Get frame where the first person passes the line
     num_passed_before = 0
-    passed_frame_before = nt[nt[CUMULATED_COL] > 0].index.min()
+    passed_frame_before = nt[nt[CUMULATED_COL] > 0].frame.min()
 
     rows = []
 
-    for frame in range(passed_frame_before + delta_frame, nt.index.max(), delta_frame):
-        passed_num_peds = nt.loc[frame][CUMULATED_COL]
-        passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].index.min() + 1
+    for frame in range(passed_frame_before + delta_frame, nt.frame.max(), delta_frame):
+        passed_num_peds = nt[CUMULATED_COL][nt[FRAME_COL] == frame].to_numpy()[0]
+        passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].frame.min() + 1
 
         if passed_num_peds != num_passed_before:
             num_passing_peds = passed_num_peds - num_passed_before
