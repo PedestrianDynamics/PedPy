@@ -1,3 +1,4 @@
+from distlib.database import new_dist_class
 
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.data.geometry import WalkableArea
@@ -54,27 +55,30 @@ def correct_invalid_trajectories(
 
 
     x' is the new distance to the wall \n
-    x is the old distance to the wall, which is either from the inside or not far enough away \n
+    x is the old distance to the wall,
+    which is either from the inside or not far enough away \n
     a is equal to back_distance \n
     b is equal to start_distance  \n
     c is equal to end_distance  \n
 
 
     Args:
-        trajectory_data (pedpy.TrajectoryData): The trajectory data to be tested and corrected
+        trajectory_data (pedpy.TrajectoryData): The trajectory data to be tested and
+            corrected
         walkable_area (pedpy.WalkableArea): The belonging walkable area
-        back_distance_wall (float): Has to be <0. The distance behind the wall, till which the
-            points inside  the walls should be corrected. Points, which are further
-            inside the walls, are ignored. The parameter is needed for the interpolation for the correcting.
-        start_distance_wall (float): Has to be >0. The minimum distance, where the points should be moved
-            outside the wall
-        end_distance_wall (float): Has to be >0 and >= start_distance_wall. Points, which lay nearer
-            to the wall than endDistance_wall will be also moved away. A value >0 ist needed for the
-            linear interpolation, else the calculations do not work.
-        back_distance_obst (float): Has to be <0. Equivalent to backDistance_wall, but value the concerns
-            the obstacles
-        start_distance_obst (float): Has to be >0. Equivalent to startDistance_wall, but the value
-            concerns the obstacles
+        back_distance_wall (float): Has to be <0. The distance behind the wall, till
+            which the points inside  the walls should be corrected. Points, which are
+            further inside the walls, are ignored. The parameter is needed for the
+            interpolation for the correcting.
+        start_distance_wall (float): Has to be >0. The minimum distance, where the points
+            should be moved outside the wall
+        end_distance_wall (float): Has to be >0 and >= start_distance_wall. Points, which
+            lay nearer to the wall than endDistance_wall will be also moved away. A value
+            >0 ist needed for the linear interpolation, else the calculations do not work.
+        back_distance_obst (float): Has to be <0. Equivalent to backDistance_wall, but the
+            value the concerns the obstacles
+        start_distance_obst (float): Has to be >0. Equivalent to startDistance_wall, but
+            the value concerns the obstacles
         end_distance_obst (float): Has to be >0 and >= start_distance_obst. Equivalent to
             endDistance_wall, but the value concerns the obstacles
 
@@ -86,28 +90,42 @@ def correct_invalid_trajectories(
     traj_valid = is_trajectory_valid(traj_data=trajectory_data,
                                      walkable_area=walkable_area)
     print("trajectory valid at beginning: ", traj_valid)
-    end_distance_all = max(end_distance_wall, end_distance_obst)
-    # end_distance_wall and end_distance_obst do not necessarily have the same value.
-    #In the next step, it is important to use the larger one to identify all points that
-    # may lie within the area surrounding the geometry, where corrections should also be applied.
-    walkArea_with_end_distance_all = shapely.buffer(walkable_area._polygon,
-                                                    -end_distance_all)
-    all_points_for_correcting = get_invalid_trajectory(traj_data=trajectory_data,
-                                                       walkable_area=WalkableArea(
-                                                           walkArea_with_end_distance_all)).index
-    print("Number of points that are going to be corrected:  ",
-          len(all_points_for_correcting))
-    # to get an impression of the number of points, that need to be corrected.
+
     if not traj_valid:
+
+        end_distance_all = max(end_distance_wall, end_distance_obst)
+        # end_distance_wall and end_distance_obst do not necessarily have the same value.
+        # In the next step, it is important to use the larger one to identify all points
+        # that may lie within the area surrounding the geometry, where corrections should
+        # also be applied.
+        walk_area_with_end_distance_all = shapely.buffer(walkable_area._polygon,
+                                                        -end_distance_all)
+        all_points_for_correcting = get_invalid_trajectory(
+            traj_data=trajectory_data,
+            walkable_area=WalkableArea(walk_area_with_end_distance_all)
+        ).index
+
+        print("Number of points that are going to be corrected:  ",
+              len(all_points_for_correcting))
+        # to get an impression of the number of points, that need to be corrected.
+
         geo_data = _convert_walk_Area_into_geoData(walkable_area)
         # walkable area is converted into a list of lists like
         # [type="obstacle"|"walls",direction,list of [p1x, p1y, p2x, p2y]]
-        new_trajectories_df = _handle_all_point(trajectory_data, geo_data,
-                                                all_points_for_correcting,
-                                                back_distance_wall, start_distance_wall,
-                                                end_distance_wall,
-                                                back_distance_obst, start_distance_obst,
-                                                end_distance_obst, walkable_area)
+
+        new_trajectories_df = _handle_all_point(
+            traj_data= trajectory_data,
+            geo_data= geo_data,
+            all_points_for_correcting= all_points_for_correcting,
+            back_distance_wall= back_distance_wall,
+            start_distance_wall= start_distance_wall,
+            end_distance_wall= end_distance_wall,
+            back_distance_obst= back_distance_obst,
+            start_distance_obst= start_distance_obst,
+            end_distance_obst= end_distance_obst,
+            walkable_area=walkable_area
+        )
+
         trajectory_data = TrajectoryData(new_trajectories_df,
                                          frame_rate=trajectory_data.frame_rate)
         traj_valid = is_trajectory_valid(traj_data=trajectory_data,
@@ -135,29 +153,33 @@ def _handle_all_point(
         area + end_distance.
 
         Args:
-            traj_data (pedpy.TrajectoryData): The trajectory data to be tested and corrected
+            traj_data (pedpy.TrajectoryData): The trajectory data to be tested and
+                corrected
             geo_data (list):  The walkableArea modelled like list of
                 [type="obstacle"|"walls",direction,list of [p1x, p1y, p2x, p2y]]
-            all_points_for_correcting(list): A list, with every index of the trajData.data, where a point is,
-                which may have to be corrected.
-            back_distance_wall (float): Has to be <0. The distance behind the wall, till which the
-                points inside  the walls should be corrected. Points, which are further
-                inside the walls, are ignored. The parameter is needed for the interpolation for the correcting.
-            start_distance_wall (float): Has to be >0. The minimum distance, where the points should be moved
-                outside the wall
-            end_distance_wall (float): Has to be >0 and >= start_distance_wall. Points, which lay nearer
-                to the wall than endDistance_wall will be also moved away. A value >0 ist needed for the
-                linear interpolation, else the calculations do not work.
-            back_distance_obst (float): Has to be <0. Equivalent to backDistance_wall, but value concerns
-                the obstacles
-            start_distance_obst (float): Has to be >0. Equivalent to startDistance_wall, but value
-                concerns the obstacles
-            end_distance_obst (float): Has to be >0 and >= start_distance_obst. Equivalent to
-                endDistance_wall, but value concerns the obstacles
+            all_points_for_correcting(list): A list, with every index of the trajData.data,
+                where a point is, which may have to be corrected.
+            back_distance_wall (float): Has to be <0. The distance behind the wall, till
+                which the points inside  the walls should be corrected. Points, which are
+                further inside the walls, are ignored. The parameter is needed for the
+                interpolation for the correcting.
+            start_distance_wall (float): Has to be >0. The minimum distance, where the
+                points should be moved outside the wall
+            end_distance_wall (float): Has to be >0 and >= start_distance_wall. Points,
+                which lay nearer to the wall than endDistance_wall will be also moved away.
+                A value >0 ist needed for the linear interpolation, else the calculations
+                do not work.
+            back_distance_obst (float): Has to be <0. Equivalent to backDistance_wall,
+                but the value concerns the obstacles
+            start_distance_obst (float): Has to be >0. Equivalent to startDistance_wall,
+                but the value concerns the obstacles
+            end_distance_obst (float): Has to be >0 and >= start_distance_obst. Equivalent
+                to endDistance_wall, but value concerns the obstacles
 
 
         Returns:
-             pedpy.TrajectoryData, either the corrected version of the trajectory or the original trajectory, if the original trajectory was valid
+             pedpy.TrajectoryData, either the corrected version of the trajectory or
+             the original trajectory, if the original trajectory was valid
     """
 
     #reminder: geoData is modelled like list of [type="obstacle"|"walls",direction,list of [p1x, p1y, p2x, p2y]]
@@ -213,20 +235,22 @@ def _handle_single_point(
             y (float): The y coordinate of the point which should be tested
             geo_data (list):  The walkableArea modelled like list of
                 [type="obstacle"|"walls",direction,list of [p1x, p1y, p2x, p2y]]
-            back_distance_wall (float): Has to be <0. The distance behind the wall, till which the
-                points inside  the walls should be corrected. Points, which are further
-                inside the walls, are ignored. The parameter is needed for the interpolation for the correcting.
-            start_distance_wall (float): Has to be >0. The minimum distance, where the points should be moved
-                outside the wall
-            end_distance_wall (float): Has to be >0 and >= start_distance_wall. Points, which lay nearer
-                to the wall than endDistance_wall will be also moved away. A value >0 ist needed for the
-                linear interpolation, else the calculations do not work.
-            back_distance_obst (float): Has to be <0. Equivalent to backDistance_wall, but value concerns
-                the obstacles
-            start_distance_obst (float): Has to be >0. Equivalent to startDistance_wall, but value
-                concerns the obstacles
-            end_distance_obst (float): Has to be >0 and >= start_distance_obst. Equivalent to
-                endDistance_wall, but value concerns the obstacles
+            back_distance_wall (float): Has to be <0. The distance behind the wall, till
+                which the points inside  the walls should be corrected. Points, which are
+                further inside the walls, are ignored. The parameter is needed for the
+                interpolation for the correcting.
+            start_distance_wall (float): Has to be >0. The minimum distance, where the
+                points should be moved outside the wall
+            end_distance_wall (float): Has to be >0 and >= start_distance_wall. Points,
+                which lay nearer to the wall than endDistance_wall will be also moved away.
+                A value >0 ist needed for the linear interpolation, else the calculations
+                do not work.
+            back_distance_obst (float): Has to be <0. Equivalent to backDistance_wall,
+                but the value concerns the obstacles
+            start_distance_obst (float): Has to be >0. Equivalent to startDistance_wall,
+                but the value concerns the obstacles
+            end_distance_obst (float): Has to be >0 and >= start_distance_obst. Equivalent
+                to endDistance_wall, but the value concerns the obstacles
 
 
         Returns:
@@ -252,8 +276,8 @@ def _handle_single_point(
 
 
 def _push_out_of_obstacles(
-        direction,
-        geometry,
+        direction:float,
+        geometry:list,
         back_distance_obst: float,
         end_distance_obst: float,
         start_distance_obst: float,
@@ -261,6 +285,7 @@ def _push_out_of_obstacles(
         y: float,
         is_valid: bool
 ) -> tuple[float, float]:
+
     # moving points away from inside the walls
     for edge in geometry[2]:
         if ((_close_from_wall_triangle(x, y, edge[0], edge[1], edge[2], edge[3])
@@ -279,8 +304,8 @@ def _push_out_of_obstacles(
 
 
 def _push_gentle_around_corners(
-        direction,
-        geometry,
+        direction:float,
+        geometry:list,
         back_distance_obst: float,
         end_distance_obst: float,
         start_distance_obst: float,
@@ -314,26 +339,27 @@ def _push_gentle_around_corners(
 
 
 def _push_out_of_wall(
-        direction,
-        geometry,
+        direction:float,
+        geometry:list,
         back_distance_wall: float,
         end_distance_wall: float,
         start_distance_wall: float,
         x: float,
         y: float
 ) -> tuple[float, float]:
-
     for edge in geometry[2]:
         if (_close_from_wall(x, y, edge[0], edge[1], edge[2], edge[3])):
-            distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], direction)
+            distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2], edge[3],
+                                           direction)
             if (back_distance_wall <= distance and distance <= end_distance_wall):
                 # x' = (x-a)*((c-b)/(c-a))+b
-                newDistance = ((distance - back_distance_wall) *
+                new_distance = ((distance - back_distance_wall) *
                                ((end_distance_wall - start_distance_wall) /
                                 (end_distance_wall - back_distance_wall))
                                + start_distance_wall)
 
-                x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], newDistance, direction)
+                x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3],
+                                       new_distance, direction)
     return x, y
 
 
@@ -400,9 +426,7 @@ def _move_from_wall(
         xSq = ((aSq + bSq - cSq) * (aSq + bSq - cSq)) / (4 * aSq)
         h = _distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction)
         dist_x = math.sqrt(math.fabs(xSq))
-    #ratio = new_distance / h
-    #x = intersect_point_x + ratio * (x - intersect_point_x)
-    #y = intersect_point_y + ratio * (y - intersect_point_y)
+
     v = np.array([x - intersect_point_x, y - intersect_point_y])
     v_norm = np.linalg.norm(v)
 
