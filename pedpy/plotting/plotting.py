@@ -19,6 +19,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.typing import NDArray
 
 from pedpy.column_identifier import (
+    ACC_COL,
     CUMULATED_COL,
     DENSITY_COL,
     DENSITY_SP1_COL,
@@ -152,12 +153,13 @@ def _plot_series(  # pylint: disable=too-many-arguments
     x: pd.Series,
     y: pd.Series,
     color: str,
+    line_width: str,
     x_label: str,
     y_label: str,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     axes.set_title(title)
-    axes.plot(x, y, color=color, **kwargs)
+    axes.plot(x, y, color=color, linewidth=line_width, **kwargs)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
@@ -424,6 +426,7 @@ def plot_density(
     Keyword Args:
         color (optional): color of the plot
         title (optional): title of the plot
+        line_width (optional): line width of the density timeseries
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -434,16 +437,18 @@ def plot_density(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "density over time")
+    line_width = kwargs.pop("line_width", 1.0)
+    title = kwargs.pop("title", "")
     x_label = kwargs.pop("x_label", "frame")
     y_label = kwargs.pop("y_label", "$\\rho$ / 1/$m^2$")
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=density.index,
+        x=density[FRAME_COL],
         y=density[DENSITY_COL],
         color=color,
+        linewidth=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
@@ -452,7 +457,7 @@ def plot_density(
 
 def plot_speed(
     *,
-    speed: pd.Series,
+    speed: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -467,6 +472,7 @@ def plot_speed(
 
     Keyword Args:
         color (optional): color of the plot
+        line_width (optional): line width of the speed timeseries
         title (optional): title of the plot
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
@@ -478,16 +484,18 @@ def plot_speed(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "speed over time")
+    line_width = kwargs.pop("line_width", 1.5)
+    title = kwargs.pop("title", "")
     x_label = kwargs.pop("x_label", "frame")
     y_label = kwargs.pop("y_label", "v / m/s")
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=speed.index,
-        y=speed,
+        x=speed[FRAME_COL],
+        y=speed[SPEED_COL],
         color=color,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
@@ -633,7 +641,7 @@ def plot_flow(
 
 def plot_acceleration(
     *,
-    acceleration: pd.Series,
+    acceleration: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -648,6 +656,7 @@ def plot_acceleration(
 
     Keyword Args:
         color (optional): color of the plot
+        line_width (optional): line width of the acceleration time series
         title (optional): title of the plot
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
@@ -659,16 +668,18 @@ def plot_acceleration(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "acceleration over time")
+    line_width = kwargs.pop("line_width", 1.5)
+    title = kwargs.pop("title", "")
     x_label = kwargs.pop("x_label", "frame")
     y_label = kwargs.pop("y_label", "a / $m/s^2$")
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=acceleration.index,
-        y=acceleration,
+        x=acceleration[FRAME_COL],
+        y=acceleration[ACC_COL],
         color=color,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
