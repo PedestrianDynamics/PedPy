@@ -209,6 +209,10 @@ def plot_speed_at_line(
         label_species1 (optional): tag of species 1 in the legend
         label_species2 (optional): tag of species 2 in the legend
         label_total (optional): tag of total speed in the legend
+        line_width (optional): line width of the density timeseries
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
          matplotlib.axes.Axes instance where the speeds are plotted
@@ -219,13 +223,13 @@ def plot_speed_at_line(
     color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
-    title = kwargs.get("title", "Speed at Line")
+    title = kwargs.get("title", "")
     x_label = kwargs.get("x_label", "Frame")
     y_label = kwargs.get("y_label", "v / m/s")
     label_sp1 = kwargs.get("lable_species1", "species 1")
     label_sp2 = kwargs.get("lable_species2", "species 2")
     label_total = kwargs.get("lable_total", "total")
-    line_width = kwargs.get("line_width", 0.5)
+    line_width = kwargs.get("line_width", 1.5)
 
     return _plot_multiple_series(
         axes=axes,
@@ -268,6 +272,9 @@ def plot_density_at_line(
         label_species1 (optional): tag of species 1 in the legend
         label_species2 (optional): tag of species 2 in the legend
         label_total (optional): tag of total speed in the legend
+        line_width (optional): line width of the density timeseries
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
          matplotlib.axes.Axes instance where the densities are plotted
@@ -278,13 +285,13 @@ def plot_density_at_line(
     color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
-    title = kwargs.get("title", "Density at Line")
+    title = kwargs.get("title", "")
     x_label = kwargs.get("x_label", "Frame")
     y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
-    label_sp1 = kwargs.get("lable_species1", "species 1")
-    label_sp2 = kwargs.get("lable_species2", "species 2")
-    label_total = kwargs.get("lable_total", "total")
-    line_width = kwargs.get("line_width", 0.5)
+    label_sp1 = kwargs.get("label_species1", "species 1")
+    label_sp2 = kwargs.get("label_species2", "species 2")
+    label_total = kwargs.get("label_total", "total")
+    line_width = kwargs.get("line_width", 1.5)
 
     return _plot_multiple_series(
         axes=axes,
@@ -327,6 +334,9 @@ def plot_flow_at_line(
         label_species1 (optional): tag of species 1 in the legend
         label_species2 (optional): tag of species 2 in the legend
         label_total (optional): tag of total speed in the legend
+        line_width (optional): line width of the density timeseries
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
          matplotlib.axes.Axes instance where the profiles are plotted
@@ -337,13 +347,13 @@ def plot_flow_at_line(
     color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
-    title = kwargs.get("title", "Flow at Line")
+    title = kwargs.get("title", "")
     x_label = kwargs.get("x_label", "Frame")
     y_label = kwargs.get("y_label", "J / 1/s")
     label_sp1 = kwargs.get("lable_species1", "species 1")
     label_sp2 = kwargs.get("lable_species2", "species 2")
     label_total = kwargs.get("lable_total", "total")
-    line_width = kwargs.get("line_width", 0.5)
+    line_width = kwargs.get("line_width", 1.5)
 
     return _plot_multiple_series(
         axes=axes,
