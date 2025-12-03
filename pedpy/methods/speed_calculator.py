@@ -1,6 +1,6 @@
 """Module containing functions to compute velocities."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -201,7 +201,7 @@ def compute_mean_speed_per_frame(
     traj_data: TrajectoryData,
     individual_speed: pd.DataFrame,
     measurement_area: MeasurementArea,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     r"""Compute mean speed per frame inside a given measurement area.
 
     Computes the mean speed :math:`v_{mean}(t)` inside the measurement area
@@ -250,6 +250,9 @@ def compute_mean_speed_per_frame(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
+    df_mean = df_mean.reset_index()
+    df_mean.columns = [FRAME_COL, SPEED_COL]
+
     return df_mean
 
 
@@ -325,6 +328,8 @@ def compute_voronoi_speed(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
+    df_voronoi_speed = df_voronoi_speed.reset_index()
+    df_voronoi_speed.columns = [FRAME_COL, SPEED_COL]
     return pd.DataFrame(df_voronoi_speed)
 
 

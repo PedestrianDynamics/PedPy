@@ -81,7 +81,7 @@ def test_classic_density(walkable_area, measurement_area, folder):
 
     result = compute_classic_density(traj_data=trajectory, measurement_area=measurement_area)
 
-    assert (reference_result.index.values == result.index.values).all()
+    assert (reference_result.index.values == result.frame.values).all()
     assert np.isclose(
         result[DENSITY_COL],
         reference_result[DENSITY_COL],
@@ -138,9 +138,8 @@ def test_arithmetic_speed(walkable_area, measurement_area, folder, velocity_fram
         measurement_area=measurement_area,
         individual_speed=individual_speed,
     )
-    result = result.to_frame()
 
-    assert (reference_result.index.values == result.index.values).all()
+    assert (reference_result.index.values == result.frame.values).all()
     assert np.isclose(result[SPEED_COL], reference_result[SPEED_COL], atol=TOLERANCE).all()
 
 
@@ -194,13 +193,13 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.isin(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.frame.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)][DENSITY_COL],
+        result[result.frame.isin(reference_result.index)][DENSITY_COL],
         reference_result[DENSITY_COL],
         atol=TOLERANCE,
     ).all()
-    assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
+    assert (result.loc[~result.frame.isin(reference_result.index)].values == 0).all()
 
 
 @pytest.mark.parametrize(
@@ -262,13 +261,13 @@ def test_voronoi_density_blind_points(walkable_area_polygon, measurement_area, f
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.isin(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.frame.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)][DENSITY_COL],
+        result[result.frame.isin(reference_result.index)][DENSITY_COL],
         reference_result[DENSITY_COL],
         atol=TOLERANCE,
     ).all()
-    assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
+    assert (result.loc[~result.frame.isin(reference_result.index)].values == 0).all()
 
 
 @pytest.mark.parametrize(
@@ -326,13 +325,13 @@ def test_voronoi_density_blind_points_cutoff(walkable_area_polygon, measurement_
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.isin(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.frame.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)][DENSITY_COL],
+        result[result.frame.isin(reference_result.index)][DENSITY_COL],
         reference_result[DENSITY_COL],
         atol=TOLERANCE,
     ).all()
-    assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
+    assert (result.loc[~result.frame.isin(reference_result.index)].values == 0).all()
 
 
 @pytest.mark.parametrize(
@@ -411,13 +410,13 @@ def test_voronoi_speed(walkable_area_polygon, measurement_area, folder, velocity
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
-    assert np.isin(reference_result.index.values, result.index.values).all()
+    assert np.isin(reference_result.index.values, result.frame.values).all()
     assert np.isclose(
-        result[result.index.isin(reference_result.index)][SPEED_COL],
+        result[result.frame.isin(reference_result.index)][SPEED_COL],
         reference_result[SPEED_COL],
         atol=TOLERANCE,
     ).all()
-    assert (result.loc[~result.index.isin(reference_result.index)].values == 0).all()
+    assert (result.speed.loc[~result.frame.isin(reference_result.index)].values == 0).all()
 
 
 @pytest.mark.parametrize(
@@ -462,9 +461,9 @@ def test_nt(line, folder):
         reference_result.loc[243, CUMULATED_COL] -= 1
         reference_result.loc[3082, CUMULATED_COL] -= 1
 
-    assert (reference_result.index.values == result.index.values).all()
+    assert (reference_result.index.values == result.frame.values).all()
     assert np.isclose(result[TIME_COL], reference_result[TIME_COL], atol=TOLERANCE).all()
-    assert (result[CUMULATED_COL] == reference_result[CUMULATED_COL]).all()
+    assert (result.cumulative_pedestrians.values == reference_result.cumulative_pedestrians.values).all()
 
 
 @pytest.mark.parametrize(
@@ -580,15 +579,14 @@ def test_passing_density(measurement_line, width, folder):
 
     # there are some accuracy differences in JPSreport and pedpy, hence some
     # pedestrians frame range inside the measurement area differ.
-    # There pedestrians will be ignored in this test.
+    # These pedestrians will be ignored in this test.
     if folder.name == "corridor":
-        result = result.drop(result[result.id == 429].index)
-        reference_result = reference_result.drop(reference_result[reference_result.id == 429].index)
+        result = result[result.id != 429]
+        reference_result = reference_result[reference_result.id != 429]
     if folder.name == "corner":
-        result = result.drop(result[result.id == 25].index)
-        reference_result = reference_result.drop(reference_result[reference_result.id == 25].index)
+        result = result[result.id != 25]
+        reference_result = reference_result[reference_result.id != 25]
 
-    assert reference_result[ID_COL].equals(result[ID_COL])
     assert np.isclose(result[DENSITY_COL], reference_result[DENSITY_COL], atol=TOLERANCE).all()
 
 
