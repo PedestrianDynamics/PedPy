@@ -153,7 +153,7 @@ def _plot_series(  # pylint: disable=too-many-arguments
     x: pd.Series,
     y: pd.Series,
     color: str,
-    line_width: str,
+    line_width: float,
     x_label: str,
     y_label: str,
     **kwargs: Any,
@@ -447,7 +447,7 @@ def plot_density(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    line_width = kwargs.pop("line_width", 1.0)
+    line_width = kwargs.pop("line_width", 1.5)
     title = kwargs.pop("title", "")
     x_label = kwargs.pop("x_label", "frame")
     y_label = kwargs.pop("y_label", "$\\rho$ / 1/$m^2$")
@@ -458,7 +458,7 @@ def plot_density(
         x=density[FRAME_COL],
         y=density[DENSITY_COL],
         color=color,
-        linewidth=line_width,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
@@ -611,13 +611,13 @@ def plot_density_distribution(
     return _plot_violin_xy(data=density.density, axes=axes, **kwargs)
 
 
-def plot_flow(
+def plot_crossing_speed_flow(
     *,
     flow: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the flow.
+    """Plot the relationship of mean speed and flow while crossing a measurement line.
 
     Args:
         flow(pd.DataFrame): flow for some given crossing_frames and nt
@@ -631,6 +631,8 @@ def plot_flow(
         title (optional): title of the plot
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
+        marker (optional): Markerstyle
+        marker_size (optional): Size of the markers
 
     Returns:
         matplotlib.axes.Axes instance where the flow is plotted
@@ -639,11 +641,13 @@ def plot_flow(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "flow")
+    title = kwargs.pop("title", "")
     x_label = kwargs.pop("x_label", "J / 1/s")
     y_label = kwargs.pop("y_label", "v / m/s")
+    marker = kwargs.get("marker", "o")
+    marker_size = kwargs.get("marker_size", 16)
     axes.set_title(title)
-    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color, **kwargs)
+    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color, s=marker_size, marker=marker, **kwargs)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
