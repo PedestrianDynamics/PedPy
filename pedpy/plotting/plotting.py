@@ -378,7 +378,7 @@ def plot_nt(
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the number of pedestrians over time.
+    """Plot the number of pedestrians crossing a line over time.
 
     Args:
         nt (pd.DataFrame): cumulative number of pedestrians over time
@@ -390,6 +390,7 @@ def plot_nt(
     Keyword Args:
         color (optional): color of the plot
         title (optional): title of the plot
+        line_width (optional): line width of the N-t diagram
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -400,18 +401,17 @@ def plot_nt(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "N-t")
+    title = kwargs.pop("title", "")
+    line_width = kwargs.pop("line_width", 1.5)
     x_label = kwargs.pop("x_label", "t / s")
-    y_label = kwargs.pop(
-        "y_label",
-        r"\# pedestrians" if plt.rcParams["text.usetex"] else "# pedestrians",
-    )
+    y_label = kwargs.pop("y_label", "cumulative pedestrians")
     return _plot_series(
         axes=axes,
         title=title,
         x=nt[TIME_COL],
         y=nt[CUMULATED_COL],
         color=color,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
