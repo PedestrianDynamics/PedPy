@@ -448,7 +448,7 @@ def _move_from_wall(
 
 
 def _convert_walk_Area_into_geoData(
-        walkArea: WalkableArea
+        walk_area: WalkableArea
 ) -> list:
     """
 
@@ -465,18 +465,18 @@ def _convert_walk_Area_into_geoData(
     [p1x, p1y, p2x, p2y] contain two vertices, which are directly connected to each other.
 
     Args:
-        walkArea (WalkableArea): The belonging pedpy.WalkableArea for the trajectories:
+        walk_area (WalkableArea): The belonging pedpy.WalkableArea for the trajectories:
     Returns:
         geoData (list), the WalkableArea is converted into a list of
         [type="obstacle"|"walls",direction,list of [p1x, p1y, p2x, p2y]]
     """
     obstacle_list = []
-    obstacles = list(walkArea._polygon.interiors)
+    obstacles = list(walk_area._polygon.interiors)
     for hole in obstacles:
         coords = np.array(hole.coords)
         obstacle_list.append(coords)
 
-    wall_coords = walkArea.coords._coords
+    wall_coords = walk_area.coords._coords
 
     geometry_list = []
     i = 0
@@ -497,7 +497,7 @@ def _convert_walk_Area_into_geoData(
     i = 0
     while i < len(wall_coords) - 1:
         vertice = [float(wall_coords[i][0])
-            ,float (wall_coords[i][1])
+            , float (wall_coords[i][1])
             , float(wall_coords[i + 1][0])
             , float(wall_coords[i + 1][1])]
         vertices.append(vertice)
@@ -561,6 +561,19 @@ def _distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction):
     return np.sign(sinP) * math.sqrt(math.fabs(b - xSq))
 
 
+def distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction):
+    P, A, B = map(np.asarray, ([x,y], [p1x,p1y], [p2x,p2y]))
+    distance=  np.linalg.norm(np.cross(P - A, B - A)) / np.linalg.norm(B - A)
+    if distance > np.linalg.norm(P - A):
+        distance = np.linalg.norm(P - A)
+    if distance > np.linalg.norm(P - B):
+        distance = np.linalg.norm(P - B)
+    return distance
+
+
+
+
+
 # return 1 if close from wall (in a circle shape), else 0
 def _close_from_wall(x, y, p1x, p1y, p2x, p2y, bias=0):
     a = _distance_squared(p1x, p1y, p2x, p2y)
@@ -570,6 +583,10 @@ def _close_from_wall(x, y, p1x, p1y, p2x, p2y, bias=0):
         return 1
     else:
         return 0
+
+
+def new_close_from_wall():
+    ...
 
 
 # return 1 if close from wall (in a triangle shape), else 0
