@@ -1,5 +1,6 @@
 from distlib.database import new_dist_class
 
+from pedpy import InputError
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.data.geometry import WalkableArea
 
@@ -91,6 +92,9 @@ def correct_invalid_trajectories(
                                      walkable_area=walkable_area)
     print("trajectory valid at beginning: ", traj_valid)
 
+    check_distance_parameters(back_distance_obst, back_distance_wall, end_distance_obst,
+                              end_distance_wall, start_distance_obst, start_distance_wall)
+
     if not traj_valid:
 
         end_distance_all = max(end_distance_wall, end_distance_obst)
@@ -100,10 +104,10 @@ def correct_invalid_trajectories(
         # also be applied.
         walk_area_with_end_distance_all = shapely.buffer(walkable_area._polygon,
                                                         -end_distance_all)
-        all_points_for_correcting = get_invalid_trajectory(
+        all_points_for_correcting = list(get_invalid_trajectory(
             traj_data=trajectory_data,
             walkable_area=WalkableArea(walk_area_with_end_distance_all)
-        ).index
+        ).index)
 
         print("Number of points that are going to be corrected:  ",
               len(all_points_for_correcting))
@@ -133,6 +137,31 @@ def correct_invalid_trajectories(
         print("trajectory valid after : ", traj_valid)
     return trajectory_data
 
+
+def check_distance_parameters(
+
+        back_distance_obst: float,
+        back_distance_wall: float,
+        end_distance_obst: float,
+        end_distance_wall: float,
+        start_distance_obst: float,
+        start_distance_wall: float
+
+):
+    if back_distance_wall >= 0:
+        raise InputError(
+            f"back_distance_wall has to be <0, is currently {back_distance_wall}")
+    if back_distance_obst >= 0:
+        raise InputError(
+            f"back_distance_obst has to be <0, is currently {back_distance_obst}")
+    if start_distance_wall > 0 and start_distance_wall > end_distance_wall:
+        raise InputError(
+            f"start_distance_wall and end_distance_wall have to be >= 0 and "
+            f"end_distance_wall has to be >=  start_distance_wall")
+    if start_distance_obst > 0 and start_distance_obst > end_distance_obst:
+        raise InputError(
+            f"start_distance_obst and end_distance_obst have to be > 0 and "
+            f"end_distance_obst has to be >=  start_distance_obst")
 
 
 def _handle_all_point(
@@ -182,13 +211,8 @@ def _handle_all_point(
              the original trajectory, if the original trajectory was valid
     """
 
-    #reminder: geoData is modelled like list of [type="obstacle"|"walls",direction,list of [p1x, p1y, p2x, p2y]]
+    #geo_data is modelled like list of [type="obstacle"|"walls",direction,list of [p1x, p1y, p2x, p2y]]
     data_trajectories = traj_data.data
-
-    dataframe_test_point = pd.DataFrame(columns=['id', "frame", 'x', 'y'])
-    dataframe_test_point.loc[0] = [1, 1, 1.0, 1.0]
-    traj_data_test_point = TrajectoryData(dataframe_test_point,
-                                          frame_rate=traj_data.frame_rate)
 
     for i in range(len(data_trajectories)):
         # The loop goes through the whole len of the trajectory, but only, if the index is
@@ -204,8 +228,7 @@ def _handle_all_point(
                                                back_distance_obst= back_distance_obst,
                                                start_distance_obst= start_distance_obst,
                                                end_distance_obst= end_distance_obst,
-                                               walkable_area= walkable_area,
-                                               test_traj_data= traj_data_test_point)
+                                               walkable_area= walkable_area)
             data_trajectories.loc[i, ["x", "y"]] = [float(new_x), float(new_y)]
 
     return data_trajectories
@@ -222,7 +245,6 @@ def _handle_single_point(
         start_distance_obst: float,
         end_distance_obst: float,
         walkable_area: WalkableArea,
-        test_traj_data: TrajectoryData
 )-> tuple[float,float]:
     """
         The function goes through the different sides of the geometry and tests for each
@@ -252,7 +274,6 @@ def _handle_single_point(
             end_distance_obst (float): Has to be >0 and >= start_distance_obst. Equivalent
                 to endDistance_wall, but the value concerns the obstacles
 
-
         Returns:
             tuple[float,float]: The corrected x, y values
 
@@ -261,81 +282,25 @@ def _handle_single_point(
 
         direction = geometry[1]
 
-        if (geometry[0] == "walls"):  #first, testing all the sides, which are walls.
+        if (geometry[0] == "walls"):  # first, testing all the sides, which are walls.
             x, y = _push_out_of_wall(direction, geometry, back_distance_wall,
                                      end_distance_wall, start_distance_wall, x, y)
-        else:  #testing obstacles
-            is_valid = True
-            x, y, is_valid = _push_gentle_around_corners(direction,geometry, back_distance_obst,
-                                              end_distance_obst,  start_distance_obst,
-                                              x, y, walkable_area, test_traj_data, is_valid)
+        else:  # testing obstacles
+            x, y = _adjust_around_corners(direction, geometry,
+                                          back_distance_obst,
+                                          end_distance_obst,
+                                          start_distance_obst,
+                                          x, y)
 
             x, y = _push_out_of_obstacles(direction, geometry, back_distance_obst,
-                                          end_distance_obst, start_distance_obst, x, y, is_valid)
+                                          end_distance_obst, start_distance_obst,
+                                          x, y)
+
+    x, y = point_valid_test(start_distance_wall, end_distance_wall, back_distance_wall,
+                            start_distance_obst, end_distance_obst, back_distance_obst,
+                            geo_data, walkable_area, x, y)
+
     return x, y
-
-
-def _push_out_of_obstacles(
-        direction:float,
-        geometry:list,
-        back_distance_obst: float,
-        end_distance_obst: float,
-        start_distance_obst: float,
-        x: float,
-        y: float,
-        is_valid: bool
-) -> tuple[float, float]:
-
-    # moving points away from inside the walls
-    for edge in geometry[2]:
-        if ((_close_from_wall_triangle(x, y, edge[0], edge[1], edge[2], edge[3])
-                and _wall_facing_point(0, 0, edge[0], edge[1], edge[2], edge[3], direction))
-                or not is_valid):
-            distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], direction)
-            if (back_distance_obst <= distance and distance <= end_distance_obst):
-                # x' = (x-a)*((c-b)/(c-a))+b
-                newDistance = ((distance - back_distance_obst)
-                               * ((end_distance_obst - start_distance_obst) /
-                                  (end_distance_obst - back_distance_obst))
-                               + start_distance_obst)
-
-                x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], newDistance, direction)
-    return x, y
-
-
-def _push_gentle_around_corners(
-        direction:float,
-        geometry:list,
-        back_distance_obst: float,
-        end_distance_obst: float,
-        start_distance_obst: float,
-        x: float,
-        y: float,
-        walkable_area: WalkableArea,
-        test_traj_data: TrajectoryData,
-        is_valid: bool
-) -> tuple[float, float, bool]:
-
-    # gently pushing the points to avoid jumps around corners
-    for edge in geometry[2]:
-        if (_close_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], 4.0 * end_distance_obst)
-                and _wall_facing_point(0, 0, edge[0], edge[1], edge[2], edge[3], direction)):
-
-            distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], direction)
-            if (back_distance_obst <= distance and distance <= start_distance_obst):
-                # x' =((c-a)/(b-a))*(x-a)+a, a slightly different calculation to have a
-                # more gentle push concerning corners
-                newDistance = (((end_distance_obst - back_distance_obst) /
-                                (start_distance_obst - back_distance_obst)) *
-                               (distance - back_distance_obst)
-                               + back_distance_obst)
-
-                test_traj_data.data.loc[0] = [1, 1, x, y, shapely.Point(x, y)]
-                is_valid = is_trajectory_valid(traj_data=test_traj_data,
-                                               walkable_area=walkable_area)
-
-                x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], newDistance, direction)
-    return x, y, is_valid
 
 
 def _push_out_of_wall(
@@ -351,15 +316,121 @@ def _push_out_of_wall(
         if (_close_from_wall(x, y, edge[0], edge[1], edge[2], edge[3])):
             distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2], edge[3],
                                            direction)
-            if (back_distance_wall <= distance and distance <= end_distance_wall):
-                # x' = (x-a)*((c-b)/(c-a))+b
-                new_distance = ((distance - back_distance_wall) *
-                               ((end_distance_wall - start_distance_wall) /
-                                (end_distance_wall - back_distance_wall))
-                               + start_distance_wall)
+            x, y = _calculating_movement_wall(edge, direction, distance,
+                                              back_distance_wall,
+                                              end_distance_wall,
+                                              start_distance_wall, x, y)
+    return x, y
 
-                x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3],
-                                       new_distance, direction)
+def _push_out_of_obstacles(
+        direction:float,
+        geometry:list,
+        back_distance_obst: float,
+        end_distance_obst: float,
+        start_distance_obst: float,
+        x: float,
+        y: float,
+) -> tuple[float, float]:
+
+    # moving points away from inside the walls
+    for edge in geometry[2]:
+        if (_close_from_wall_triangle(x, y, edge[0], edge[1], edge[2], edge[3])
+                and _wall_facing_point(0, 0, edge[0], edge[1], edge[2], edge[3], direction)):
+            distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], direction)
+            x, y = _calculating_movement_obstacle(edge, direction, distance,
+                                                  back_distance_obst,
+                                                  end_distance_obst,
+                                                  start_distance_obst, x, y)
+    return x, y
+
+
+
+
+def _adjust_around_corners(
+        direction:float,
+        geometry:list,
+        back_distance_obst: float,
+        end_distance_obst: float,
+        start_distance_obst: float,
+        x: float,
+        y: float,
+) -> tuple[float, float]:
+
+    # gently pushing the points to avoid jumps around corners
+    for edge in geometry[2]:
+        if (_close_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], 4.0 * end_distance_obst)
+                and _wall_facing_point(0, 0, edge[0], edge[1], edge[2], edge[3], direction)):
+
+            distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], direction)
+            x, y = _calculating_movement_adjusting(edge, direction, distance,
+                                                   back_distance_obst, end_distance_obst,
+                                                   start_distance_obst, x, y)
+    return x, y
+
+
+def _calculating_movement_wall(
+        edge,
+        direction,
+        distance: float,
+        back_distance_wall: float,
+        end_distance_wall: float,
+        start_distance_wall: float,
+        x: float,
+        y: float
+) -> tuple[float, float]:
+    if (back_distance_wall <= distance and distance <= end_distance_wall):
+        new_distance = ((distance - back_distance_wall) * (
+                (end_distance_wall - start_distance_wall)
+                / (end_distance_wall - back_distance_wall))
+                        + start_distance_wall)
+        x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3],
+                               new_distance, direction)
+    return x, y
+
+
+def _calculating_movement_obstacle(
+        edge,
+        direction,
+        distance: float,
+        back_distance_obst: float,
+        end_distance_obst: float,
+        start_distance_obst: float,
+        x: float,
+        y: float
+) -> tuple[float, float]:
+    if (back_distance_obst <= distance and distance <= end_distance_obst):
+        # x' = (x-a)*((c-b)/(c-a))+b
+        new_distance = ((distance - back_distance_obst) * (
+                (end_distance_obst - start_distance_obst)
+                / (end_distance_obst - back_distance_obst))
+                        + start_distance_obst)
+        x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2],
+                               edge[3],
+                               new_distance, direction)
+    return x, y
+
+
+def _calculating_movement_adjusting(
+        edge:list,
+        direction: float,
+        distance: float ,
+        back_distance_obst: float,
+        end_distance_obst: float,
+        start_distance_obst: float,
+        x: float,
+        y: float
+) -> tuple[float, float]:
+
+    if (back_distance_obst <= distance and distance <= start_distance_obst):
+        # x' =((c-a)/(b-a))*(x-a)+a, a slightly different calculation to have a
+        # more gentle push concerning corners
+        new_distance = (((end_distance_obst - back_distance_obst) /
+                         (start_distance_obst - back_distance_obst)) *
+                        (distance - back_distance_obst)
+                        + back_distance_obst)
+
+        x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], new_distance,
+                               direction)
     return x, y
 
 
@@ -446,6 +517,40 @@ def _move_from_wall(
 
     return x, y
 
+def point_valid_test(
+
+        start_distance_wall: float,
+        end_distance_wall: float,
+        back_distance_wall: float,
+        start_distance_obst: float,
+        end_distance_obst: float,
+        back_distance_obst: float,
+        geo_data: list,
+        walkable_area: WalkableArea,
+        x: float,
+        y: float
+
+) -> tuple[ float, float]:
+
+    point_is_valid = shapely.within(shapely.Point(x, y), walkable_area._polygon)
+    if not point_is_valid:
+        for geometry in geo_data:
+            direction = geometry[1]
+            for edge in geometry[2]:
+                if ((_close_from_wall(x, y, edge[0], edge[1], edge[2], edge[3]))):
+                    distance = _distance_from_wall(x, y, edge[0], edge[1], edge[2],
+                                                   edge[3], direction)
+                    if (geometry[0] == "obstacles"):
+                        x, y = _calculating_movement_obstacle(edge, direction, distance,
+                                                              back_distance_obst,
+                                                              end_distance_obst,
+                                                              start_distance_obst, x, y)
+                    else: #geometry type = wall
+                        x, y = _calculating_movement_wall(edge, direction, distance,
+                                                          back_distance_wall,
+                                                          end_distance_wall,
+                                                          start_distance_wall, x, y)
+    return x, y
 
 def _convert_walk_Area_into_geoData(
         walk_area: WalkableArea
@@ -561,7 +666,7 @@ def _distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction):
     return np.sign(sinP) * math.sqrt(math.fabs(b - xSq))
 
 
-def distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction):
+def _new_distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction):
     P, A, B = map(np.asarray, ([x,y], [p1x,p1y], [p2x,p2y]))
     distance=  np.linalg.norm(np.cross(P - A, B - A)) / np.linalg.norm(B - A)
     if distance > np.linalg.norm(P - A):

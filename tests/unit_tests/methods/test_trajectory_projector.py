@@ -1,9 +1,12 @@
 import pathlib
 
+import numpy as np
+
 from pedpy.data.geometry import WalkableArea
 from pedpy.io.trajectory_loader import load_trajectory, TrajectoryUnit
 from pedpy.methods.method_utils import is_trajectory_valid
 from pedpy.preprocessing.trajectory_projector import correct_invalid_trajectories
+from pedpy.preprocessing.trajectory_projector import _distance_from_wall, _new_distance_from_wall
 
 
 def test_correct_invalid_trajectories():
@@ -71,6 +74,3 @@ def test_correct_invalid_trajectories_invalid_paramters():
     assert is_trajectory_valid(traj_data=corrected_trajectory_data,
                                walkable_area=walk_area) == False
 #TODO exceptions schreiben invalid paramenters
-
-
-
