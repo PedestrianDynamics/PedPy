@@ -1181,6 +1181,8 @@ def plot_profiles(
 
     Keyword Args:
         title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
         walkable_color (optional): color of the walkable area in the plot
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
