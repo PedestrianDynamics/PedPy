@@ -1493,22 +1493,29 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             below for list of usable keywords
 
     Keyword Args:
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
         ped_color (optional): color used to display current ped positions
+        ped_size (optional): size of the marker of the current ped positions
         voronoi_border_color (optional): border color of Voronoi cells
+        voronoi_border_width (optional): border width of the Voronoi cells
         voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell
             inside the measurement area, data needs to contain column
             "intersection"!
         voronoi_outside_ma_alpha (optional): alpha of part of Voronoi cell
             outside the measurement area
-        color_by_column (str, optional): Optioanlly provide a column name to
+        color_by_column (str, optional): Optionally provide a column name to
             specify the data to color the cell. Only supports Integer and
             Float data types. E.g. color_by_column `DENSITY_COL`
         vmin (optional): vmin of colormap, only used when color_mode != "id"
         vmax (optional): vmax of colormap, only used when color_mode != "id"
+        cmap (optional): colormap used for
         show_colorbar (optional): colorbar is displayed, only used when
             color_mode != "id"
         cb_location (optional): location of the colorbar, only used when
             color_mode != "id"
+        cb_label (optional): label of colorbar
         ma_line_color (optional): color of the measurement areas borders
         ma_line_width (optional): line width of the measurement areas borders
         ma_color (optional): fill color of the measurement areas
@@ -1519,13 +1526,18 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
         line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
-        cmap (optional): colormap used for
+
     Returns:
         matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
+
     ped_color = kwargs.pop("ped_color", PEDPY_BLUE)
     ped_size = kwargs.pop("ped_size", 5)
     voronoi_border_color = kwargs.pop("voronoi_border_color", PEDPY_BLUE)
+    voronoi_border_width = kwargs.pop("voronoi_border_width", 1)
     voronoi_inside_ma_alpha = kwargs.pop("voronoi_inside_ma_alpha", 1)
     voronoi_outside_ma_alpha = kwargs.pop("voronoi_outside_ma_alpha", 1)
 
@@ -1533,6 +1545,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
     vmax = kwargs.pop("vmax", None)
     cb_location = kwargs.pop("cb_location", "right")
     show_colorbar = kwargs.pop("show_colorbar", True)
+    cb_label = kwargs.pop("cb_label", None)
     color_by_column = kwargs.pop("color_by_column", None)
     voronoi_colormap = plt.get_cmap(kwargs.pop("cmap", "YlGn"))
 
@@ -1588,6 +1601,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             axes=axes,
             polygon=poly,
             line_color=voronoi_border_color,
+            line_width=voronoi_border_width,
             polygon_color=color,
             polygon_alpha=voronoi_outside_ma_alpha,
             zorder=1,
@@ -1608,15 +1622,20 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
         if traj_data:
             axes.scatter(row[X_COL], row[Y_COL], color=ped_color, s=ped_size)
 
-    if show_colorbar and color_by_column and typ == "float64":
-        if color_by_column == DENSITY_COL:
-            label = "$\\rho$ / $\\frac{1}{m^2}$"
-        elif color_by_column == SPEED_COL:
-            label = r"v / $\frac{m}{s}$"
-        elif color_by_column == ID_COL:
-            label = "Id"
-        else:
-            label = ""
+    if show_colorbar:
+        if color_by_column and typ == "float64":
+            if color_by_column == DENSITY_COL:
+                label = "$\\rho$ / $\\frac{1}{m^2}$"
+            elif color_by_column == SPEED_COL:
+                label = r"v / $\frac{m}{s}$"
+            elif color_by_column == ID_COL:
+                label = "Id"
+            else:
+                label = " "
+
+            if cb_label is not None:
+                label = cb_label
+
         plt.colorbar(
             scalar_mappable,
             ax=axes,
@@ -1627,6 +1646,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
 
     if walkable_area is not None:
         plot_walkable_area(axes=axes, walkable_area=walkable_area, **kwargs)
-    axes.set_xlabel(r"x / m")
-    axes.set_ylabel(r"y / m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
     return axes
