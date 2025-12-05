@@ -1228,10 +1228,14 @@ def plot_walkable_area(
             below for list of usable keywords
 
     Keyword Args:
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the lines of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
         matplotlib.axes.Axes instance where the walkable area is plotted
@@ -1239,24 +1243,29 @@ def plot_walkable_area(
     if axes is None:
         axes = plt.gca()
 
-    line_color = kwargs.pop("line_color", PEDPY_GREY)
-    line_width = kwargs.pop("line_width", 1.0)
+    border_line_color = kwargs.pop("border_line_color", PEDPY_GREY)
+    border_line_width = kwargs.pop("border_line_width", 1.0)
 
     hole_color = kwargs.pop("hole_color", "lightgrey")
     hole_alpha = kwargs.pop("hole_alpha", 1.0)
 
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
+
     axes = _plot_polygon(
         polygon=walkable_area.polygon,
         polygon_color="none",
-        line_color=line_color,
-        line_width=line_width,
+        line_color=border_line_color,
+        line_width=border_line_width,
         hole_color=hole_color,
         hole_alpha=hole_alpha,
         axes=axes,
     )
 
-    axes.set_xlabel(r"x/m")
-    axes.set_ylabel(r"y/m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
     axes.autoscale_view()
 
@@ -1287,10 +1296,14 @@ def plot_trajectories(
         traj_start_marker (optional): marker to indicate the start of the
             trajectory
         traj_end_marker (optional): marker to indicate the end of the trajectory
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
         matplotlib.axes.Axes instance where the trajectories are plotted
@@ -1301,6 +1314,10 @@ def plot_trajectories(
 
     traj_start_marker = kwargs.pop("traj_start_marker", "")
     traj_end_marker = kwargs.pop("traj_end_marker", "")
+
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
 
     if axes is None:
         axes = plt.gca()
@@ -1329,8 +1346,9 @@ def plot_trajectories(
             marker=traj_end_marker,
         )
 
-    axes.set_xlabel(r"x/m")
-    axes.set_ylabel(r"y/m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
     return axes
 
@@ -1372,10 +1390,13 @@ def plot_measurement_setup(
             trajectory
         traj_end_marker (optional): marker to indicate the end of the
             trajectory
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
-        hole_color (optional): background color of holes
-        hole_alpha (optional): alpha of background color for holes
+        border_line_color (optional): color of the lines of the borders
+        border_line_width (optional): line width of the lines of the borders
+        hole_color (optional): background color of holes/geometries
+        hole_alpha (optional): alpha of background color for holes/geometries
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes instance where the measurement setup is plotted
@@ -1387,6 +1408,10 @@ def plot_measurement_setup(
 
     ml_color = kwargs.pop("ml_color", PEDPY_BLUE)
     ml_width = kwargs.pop("ml_width", 1.0)
+
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
 
     if axes is None:
         axes = plt.gca()
@@ -1412,8 +1437,9 @@ def plot_measurement_setup(
         for measurement_line in measurement_lines:
             axes.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
 
-    axes.set_xlabel(r"x / m")
-    axes.set_ylabel(r"y / m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
     return axes
 
