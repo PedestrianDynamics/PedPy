@@ -66,11 +66,9 @@ def _plot_polygon(
     polygon: shapely.Polygon,
     polygon_color: Any,
     polygon_alpha: float = 1,
-    line_color: Any = PEDPY_GREY,
-    line_width: float = 1,
-    hole_color: Any = "lightgrey",
     hole_alpha: float = 1,
     zorder: float = 1000,
+    **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the shapely polygon (including holes).
 
@@ -80,12 +78,18 @@ def _plot_polygon(
             created
         polygon_color (Any): background color of the polygon
         polygon_alpha (float): alpha of the background for the polygon
-        line_color (Any): color of the borders
-        line_width (float): line width of the borders
-        hole_color (Any): background color of holes
         hole_alpha (float): alpha of background color for holes
         zorder (float): Specifies the drawing order of the polygon,
             lower values are drawn first
+
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        line_color (optional, Any): color of the borders
+        line_width (optional, float): line width of the borders
+        hole_color (optional, Any): background color of holes
+
 
     Returns:
         matplotlib.axes.Axes instance where the polygon is plotted
@@ -93,6 +97,10 @@ def _plot_polygon(
     """
     # Plot the boundary of the polygon/holes separately to get the same color
     # as the outside as alpha modifies all colors
+
+    line_color = kwargs.pop("line_color", PEDPY_GREY)
+    line_width = kwargs.pop("line_width", 1)
+    hole_color = kwargs.pop("hole_color", "lightgrey")
 
     # Plot the exterior of the polygon
     exterior_coords = list(polygon.exterior.coords)
@@ -739,10 +747,14 @@ def plot_neighborhood(
         default_color (optional): color of default pedestrians, which are not
             neighbors of the base pedestrian
         default_alpha (optional): alpha of the default pedestrians
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
@@ -803,10 +815,13 @@ def _plot_neighborhood(
         default_color (optional): color of default pedestrians, which are not
             neighbors of the base pedestrian
         default_alpha (optional): alpha of the default pedestrians
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
@@ -818,6 +833,9 @@ def _plot_neighborhood(
     neighbor_alpha = kwargs.pop("neighbor_alpha", 0.5)
     default_color = to_rgb(kwargs.pop("default_color", PEDPY_GREY))
     default_alpha = kwargs.pop("default_alpha", 0.2)
+
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
 
     # Filter voronoi_data for polygons in the same frame
     voronoi_neighbors = voronoi_data[voronoi_data[FRAME_COL] == frame]
@@ -840,7 +858,6 @@ def _plot_neighborhood(
     # Set up the plot
     if axes is None:
         axes = plt.gca()
-    axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
 
     # Plot the walkable area
     if walkable_area is not None:
@@ -874,6 +891,11 @@ def _plot_neighborhood(
 
     # Set aspect ratio
     axes.set_aspect("equal")
+
+    title = kwargs.pop("title", "Neighbors of pedestrian {}".format(pedestrian_id))
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
     return axes
 
