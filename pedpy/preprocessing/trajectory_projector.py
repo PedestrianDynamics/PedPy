@@ -1,4 +1,3 @@
-from distlib.database import new_dist_class
 
 from pedpy import InputError
 from pedpy.data.trajectory_data import TrajectoryData
@@ -74,7 +73,7 @@ def correct_invalid_trajectories(
         start_distance_wall (float): Has to be >0. The minimum distance, where the points
             should be moved outside the wall
         end_distance_wall (float): Has to be >0 and >= start_distance_wall. Points, which
-            lay nearer to the wall than endDistance_wall will be also moved away. A value
+            lay nearer to the wall than end_distance_wall will be also moved away. A value
             >0 ist needed for the linear interpolation, else the calculations do not work.
         back_distance_obst (float): Has to be <0. Equivalent to backDistance_wall, but the
             value the concerns the obstacles
@@ -92,8 +91,13 @@ def correct_invalid_trajectories(
                                      walkable_area=walkable_area)
     print("trajectory valid at beginning: ", traj_valid)
 
-    _check_distance_parameters(back_distance_obst, back_distance_wall, end_distance_obst,
-                               end_distance_wall, start_distance_obst, start_distance_wall)
+    _check_distance_parameters(back_distance_obst= back_distance_obst,
+                               back_distance_wall=back_distance_wall,
+                               end_distance_obst=end_distance_obst,
+                               end_distance_wall=end_distance_wall,
+                               start_distance_obst=start_distance_obst,
+                               start_distance_wall=start_distance_wall
+                               )
 
     if not traj_valid:
 
@@ -289,18 +293,26 @@ def _handle_single_point(
         direction = geometry[1]
 
         if (geometry[0] == "walls"):  # first, testing all the sides, which are walls.
-            x, y = _push_out_of_wall(direction, geometry, back_distance_wall,
-                                     end_distance_wall, start_distance_wall, x, y)
+            x, y = _push_out_of_wall(direction = direction,
+                                     geometry =geometry,
+                                     back_distance_wall=back_distance_wall,
+                                     end_distance_wall=end_distance_wall,
+                                     start_distance_wall=start_distance_wall,
+                                     x=x, y=y)
         else:  # testing obstacles
-            x, y = _adjust_around_corners(direction, geometry,
-                                          back_distance_obst,
-                                          end_distance_obst,
-                                          start_distance_obst,
-                                          x, y)
+            x, y = _adjust_around_corners(direction = direction,
+                                          geometry= geometry,
+                                          back_distance_obst=back_distance_obst,
+                                          end_distance_obst=end_distance_obst,
+                                          start_distance_obst=start_distance_obst,
+                                          x=x, y=y)
 
-            x, y = _push_out_of_obstacles(direction, geometry, back_distance_obst,
-                                          end_distance_obst, start_distance_obst,
-                                          x, y)
+            x, y = _push_out_of_obstacles(direction = direction,
+                                          geometry= geometry,
+                                          back_distance_obst=back_distance_obst,
+                                          end_distance_obst=end_distance_obst,
+                                          start_distance_obst=start_distance_obst,
+                                          x=x, y=y)
 
     x, y = point_valid_test(start_distance_wall, end_distance_wall, back_distance_wall,
                             start_distance_obst, end_distance_obst, back_distance_obst,
@@ -310,7 +322,7 @@ def _handle_single_point(
 
 
 def _push_out_of_wall(
-        direction:float,
+        direction:int,
         geometry:list,
         back_distance_wall: float,
         end_distance_wall: float,
@@ -345,7 +357,7 @@ def _push_out_of_wall(
     return x, y
 
 def _push_out_of_obstacles(
-        direction:float,
+        direction:int,
         geometry:list,
         back_distance_obst: float,
         end_distance_obst: float,
@@ -383,7 +395,7 @@ def _push_out_of_obstacles(
 
 
 def _adjust_around_corners(
-        direction:float,
+        direction:int,
         geometry:list,
         back_distance_obst: float,
         end_distance_obst: float,
@@ -489,8 +501,8 @@ def _calculating_movement_obstacle(
 
 
 def _calculating_movement_adjusting(
-        edge:list,
-        direction: float,
+        edges:list,
+        direction: int,
         distance: float ,
         back_distance_obst: float,
         end_distance_obst: float,
@@ -521,7 +533,7 @@ def _calculating_movement_adjusting(
                         (distance - back_distance_obst)
                         + back_distance_obst)
 
-        x, y = _move_from_wall(x, y, edge[0], edge[1], edge[2], edge[3], new_distance,
+        x, y = _move_from_wall(x, y, edges[0], edges[1], edges[2], edges[3], new_distance,
                                direction)
     return x, y
 
@@ -534,7 +546,7 @@ def _move_from_wall(
         p2x: float,
         p2y: float,
         new_distance: float,
-        direction: float
+        direction: int
 )-> tuple[float,float]:
     """
     This function moves the points out of the obstacles/walls by
@@ -739,11 +751,24 @@ def _compute_direction(
         return total_angle
 
 
-def _distance_squared(x1, y1, x2, y2):
+def _distance_squared(
+        x1:float,
+        y1:float,
+        x2:float,
+        y2:float
+) -> float:
     return (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)
 
 # calculate distance between point and closest point on wall, the distance is signed according to direction
-def _distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction):
+def _distance_from_wall(
+        x:float,
+        y:float,
+        p1x:float,
+        p1y:float,
+        p2x:float,
+        p2y:float,
+        direction: int
+) -> float:
     # detect
     vect_A = [p2x - p1x, p2y - p1y]
     vect_B = [x - p1x, y - p1y]
@@ -760,7 +785,15 @@ def _distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction):
 
 
 # return 1 if close from wall (in a circle shape), else 0
-def _close_from_wall(x, y, p1x, p1y, p2x, p2y, bias=0):
+def _close_from_wall(
+        x:float,
+        y:float,
+        p1x:float,
+        p1y:float,
+        p2x:float,
+        p2y:float,
+        bias: float=0
+)-> int:
     a = _distance_squared(p1x, p1y, p2x, p2y)
     b = _distance_squared(p1x, p1y, x, y)
     c = _distance_squared(x, y, p2x, p2y)
@@ -772,7 +805,14 @@ def _close_from_wall(x, y, p1x, p1y, p2x, p2y, bias=0):
 
 
 # return 1 if close from wall (in a triangle shape), else 0
-def _close_from_wall_triangle(x, y, p1x, p1y, p2x, p2y):
+def _close_from_wall_triangle(
+        x:float,
+        y:float,
+        p1x:float,
+        p1y:float,
+        p2x:float,
+        p2y:float
+) -> int:
     a = [p2x - p1x, p2y - p1y]
     b = [x - p1x, y - p1y]
     c = [x - p2x, y - p2y]
@@ -786,7 +826,15 @@ def _close_from_wall_triangle(x, y, p1x, p1y, p2x, p2y):
 
 
 # return true if the outside of the wall is in sight of the point
-def _wall_facing_point(x, y, p1x, p1y, p2x, p2y, direction):
+def _wall_facing_point(
+        x:float,
+        y:float,
+        p1x:float,
+        p1y:float,
+        p2x:float,
+        p2y:float,
+        direction: int
+) -> int:
     h = _distance_from_wall(x, y, p1x, p1y, p2x, p2y, direction)
     if (h >= 0):
         return 1
