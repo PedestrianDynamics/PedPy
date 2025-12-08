@@ -10,9 +10,7 @@ import datetime
 current_year = datetime.datetime.today().year
 
 project = "PedPy"
-copyright = (
-    f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7 & Tobias Schrödter"
-)
+copyright = f"{current_year}, Forschungszentrum Jülich GmbH, IAS-7 & Tobias Schrödter"
 
 import pedpy
 
@@ -62,11 +60,11 @@ autoapi_options = [
     "show-inheritance",
 ]
 autoapi_ignore = ["**/tests/**"]
-autoapi_member_order = ["groupwise"]
-autodoc_typehints = "description"
 autoapi_generate_api_docs = False
 autoapi_python_class_content = "both"
 autoapi_member_order = "bysource"
+autodoc_member_order = "bysource"
+autodoc_typehints = "description"
 
 add_module_names = False
 
@@ -135,6 +133,4 @@ html_theme_options = {
     "show_toc_level": 3,
 }
 
-html_sidebars = {
-    "**": ["navbar-logo", "icon-links", "search-field", "sbt-sidebar-nav.html"]
-}
+html_sidebars = {"**": ["navbar-logo", "icon-links", "search-field", "sbt-sidebar-nav.html"]}

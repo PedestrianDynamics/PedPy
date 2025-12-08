@@ -56,44 +56,24 @@ def compute_n_t(
         measurement line.
 
     """
-    crossing_frames = compute_crossing_frames(
-        traj_data=traj_data, measurement_line=measurement_line
-    )
-    crossing_frames = (
-        crossing_frames.groupby(by=ID_COL)[FRAME_COL]
-        .min()
-        .sort_values()
-        .reset_index()
-    )
+    crossing_frames = compute_crossing_frames(traj_data=traj_data, measurement_line=measurement_line)
+    crossing_frames = crossing_frames.groupby(by=ID_COL)[FRAME_COL].min().sort_values().reset_index()
 
-    n_t = (
-        crossing_frames.groupby(by=FRAME_COL)[FRAME_COL]
-        .size()
-        .cumsum()
-        .rename(CUMULATED_COL)
-    )
+    n_t = crossing_frames.groupby(by=FRAME_COL)[FRAME_COL].size().cumsum().rename(CUMULATED_COL)
 
     # add missing values, to get values for each frame. First fill everything
     # with the previous valid value (fillna('ffill')). When this is done only
     # the frame at the beginning where no one has passed the line yet area
     # missing (fillna(0)).
-    n_t = (
-        n_t.reindex(
-            list(
-                range(
-                    traj_data.data.frame.min(), traj_data.data.frame.max() + 1
-                )
-            )
-        )
-        .ffill()
-        .fillna(0)
-    )
+    n_t = n_t.reindex(list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1))).ffill().fillna(0)
 
     n_t = n_t.to_frame()
-    n_t.cumulative_pedestrians = n_t.cumulative_pedestrians.astype(int)
+    n_t[CUMULATED_COL] = n_t.cumulative_pedestrians.astype(int)
 
     # frame number is the index
     n_t[TIME_COL] = n_t.index / traj_data.frame_rate
+    n_t = n_t.reset_index()
+    n_t.columns = [FRAME_COL, CUMULATED_COL, TIME_COL]
     return n_t, crossing_frames
 
 
@@ -167,21 +147,17 @@ def compute_flow(
     Returns:
         DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
     """
-    crossing_speeds = crossing_frames.merge(
-        individual_speed, on=[ID_COL, FRAME_COL]
-    )
+    crossing_speeds = crossing_frames.merge(individual_speed, on=[ID_COL, FRAME_COL])
 
     # Get frame where the first person passes the line
     num_passed_before = 0
-    passed_frame_before = nt[nt[CUMULATED_COL] > 0].index.min()
+    passed_frame_before = nt[nt[CUMULATED_COL] > 0].frame.min()
 
     rows = []
 
-    for frame in range(
-        passed_frame_before + delta_frame, nt.index.max(), delta_frame
-    ):
-        passed_num_peds = nt.loc[frame][CUMULATED_COL]
-        passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].index.min() + 1
+    for frame in range(passed_frame_before + delta_frame, nt.frame.max(), delta_frame):
+        passed_num_peds = nt[CUMULATED_COL][nt[FRAME_COL] == frame].to_numpy()[0]
+        passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].frame.min() + 1
 
         if passed_num_peds != num_passed_before:
             num_passing_peds = passed_num_peds - num_passed_before
@@ -189,9 +165,7 @@ def compute_flow(
 
             flow_rate = num_passing_peds / time_range * frame_rate
             velocity = crossing_speeds[
-                crossing_speeds.frame.between(
-                    passed_frame_before, passed_frame, inclusive="both"
-                )
+                crossing_speeds.frame.between(passed_frame_before, passed_frame, inclusive="both")
             ][SPEED_COL].mean()
 
             num_passed_before = passed_num_peds
@@ -267,8 +241,7 @@ def _validate_inputs(
     if speed_status != DataValidationStatus.DATA_CORRECT:
         error_msg = error_messages.get(
             speed_status,
-            "Individual speed doesn't contain all data required to calculate "
-            "the line speed.",
+            "Individual speed doesn't contain all data required to calculate the line speed.",
         )
         raise InputError(error_msg)
 
@@ -321,23 +294,18 @@ def compute_line_flow(
         in :math:`1/s` for species -1, 'flow' which contains the total flow at
         the line in :math:`1/s`.
     """
-    _validate_inputs(
-        individual_voronoi_polygons, measurement_line, individual_speed, species
-    )
+    _validate_inputs(individual_voronoi_polygons, measurement_line, individual_speed, species)
     result = _apply_lambda_for_intersecting_frames(
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,
         species=species,
         lambda_for_group=lambda group, line: (
-            _compute_orthogonal_speed_in_relation_to_proportion(group, line)
-            * group[DENSITY_COL]
+            _compute_orthogonal_speed_in_relation_to_proportion(group, line) * group[DENSITY_COL]
         ).sum(),
         column_id_sp1=FLOW_SP1_COL,
         column_id_sp2=FLOW_SP2_COL,
         individual_speed=individual_speed,
     )
     result[FLOW_SP2_COL] *= -1
-    result[FLOW_COL] = result[FLOW_SP1_COL].fillna(0) + result[
-        FLOW_SP2_COL
-    ].fillna(0)
+    result[FLOW_COL] = result[FLOW_SP1_COL].fillna(0) + result[FLOW_SP2_COL].fillna(0)
     return result

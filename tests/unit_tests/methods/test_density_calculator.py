@@ -21,18 +21,14 @@ from pedpy.methods.density_calculator import (
     [
         (MeasurementArea([(-5, -5), (-5, 5), (5, 5), (5, -5)]), 1.0, 5, 5),
         (
-            MeasurementArea(
-                [(0.1, -0.1), (-0.1, 0.1), (0.1, 0.1), (0.1, -0.1)]
-            ),
+            MeasurementArea([(0.1, -0.1), (-0.1, 0.1), (0.1, 0.1), (0.1, -0.1)]),
             0.5,
             5,
             5,
         ),
     ],
 )
-def test_compute_classic_density(
-    measurement_area, ped_distance, num_ped_col, num_ped_row
-):
+def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, num_ped_row):
     velocity = 1
     movement_direction = np.array([velocity, 0])
     num_frames = 50
@@ -46,9 +42,7 @@ def test_compute_classic_density(
         fps=25,
     )
 
-    computed_density = compute_classic_density(
-        traj_data=trajectory_data, measurement_area=measurement_area
-    )
+    computed_density = compute_classic_density(traj_data=trajectory_data, measurement_area=measurement_area)
 
     num_peds_in_area_per_frame = {frame: 0 for frame in range(num_frames)}
 
@@ -58,18 +52,14 @@ def test_compute_classic_density(
             num_peds_in_area_per_frame[row.frame] += 1
 
     expected_density = pd.DataFrame.from_dict(
-        {
-            frame: [num_peds / measurement_area.area]
-            for frame, num_peds in num_peds_in_area_per_frame.items()
-        },
+        {frame: [num_peds / measurement_area.area] for frame, num_peds in num_peds_in_area_per_frame.items()},
         orient="index",
         columns=[DENSITY_COL],
     )
-    expected_density.index.name = FRAME_COL
 
-    assert computed_density.index.min() == 0
-    assert computed_density.index.max() == num_frames - 1
-    assert expected_density.equals(computed_density)
+    assert computed_density[FRAME_COL].min() == 0
+    assert computed_density[FRAME_COL].max() == num_frames - 1
+    assert expected_density[DENSITY_COL].equals(computed_density[DENSITY_COL])
 
 
 @pytest.mark.parametrize(
@@ -100,9 +90,7 @@ def test_get_num_peds_per_frame(num_peds_row, num_peds_col, num_frames):
 
 @pytest.fixture
 def example_data():
-    species = pd.DataFrame(
-        {ID_COL: [1, 2, 3, 4], SPECIES_COL: [1, -1, np.nan, 1]}
-    )
+    species = pd.DataFrame({ID_COL: [1, 2, 3, 4], SPECIES_COL: [1, -1, np.nan, 1]})
     speed = pd.DataFrame(
         {
             ID_COL: [1, 2, 3, 4],

@@ -185,9 +185,7 @@ def test_create_walkable_area_from_points(point_input):
                 [(0.7, -7.5), (2.1, -6.5), (2.5, -4.7)],
             ],
         ),
-        shapely.Polygon(
-            [(-1.1, -2.1), (-2.3, 3.1), (2.5, 4.2), (1.2, -3.4), (0.1, 1.1)]
-        ),
+        shapely.Polygon([(-1.1, -2.1), (-2.3, 3.1), (2.5, 4.2), (1.2, -3.4), (0.1, 1.1)]),
     ],
 )
 def test_create_walkable_area_from_polygon(reference_polygon):
@@ -274,9 +272,7 @@ def test_create_walkable_area_from_geometry_collection(geometry_collection):
             )
         ),
         shapely.to_wkt(
-            shapely.Polygon(
-                [(-1.1, -2.1), (-2.3, 3.1), (2.5, 4.2), (1.2, -3.4), (0.1, 1.1)]
-            ),
+            shapely.Polygon([(-1.1, -2.1), (-2.3, 3.1), (2.5, 4.2), (1.2, -3.4), (0.1, 1.1)]),
         ),
         shapely.to_wkt(
             shapely.GeometryCollection(
@@ -317,9 +313,7 @@ def test_create_walkable_area_from_wkt(wkt):
     "area_input, message",
     [
         (
-            shapely.Polygon(
-                [(-1, -1), (-1, 1), (1, 1), (1, -1)], [[(5, 5), (4, 5), (4, 4)]]
-            ),
+            shapely.Polygon([(-1, -1), (-1, 1), (1, 1), (1, -1)], [[(5, 5), (4, 5), (4, 4)]]),
             "Holes need to be inside the walkable area",
         ),
         (
@@ -356,13 +350,9 @@ def test_changing_walkable_area_fails():
         AttributeError,
         match=r"Walkable area can not be changed after construction!",
     ):
-        walkable_area = WalkableArea(
-            shapely.Polygon([(-1, -1), (-1, 1), (1, 1), (1, -1)])
-        )
+        walkable_area = WalkableArea(shapely.Polygon([(-1, -1), (-1, 1), (1, 1), (1, -1)]))
 
-        walkable_area._polygon = shapely.LinearRing(
-            ((0, 0), (0, 1), (1, 1), (1, 0))
-        )
+        walkable_area._polygon = shapely.LinearRing(((0, 0), (0, 1), (1, 1), (1, 0)))
 
 
 ###############################################################################
@@ -621,9 +611,7 @@ def test_changing_measurement_area_fails():
         match=r"Measurement area can not be changed after construction!",
     ):
         measurement_area = MeasurementArea(((0, 0), (0, 1), (1, 1), (1, 0)))
-        measurement_area._polygon = shapely.LinearRing(
-            ((0, 0), (0, 1), (1, 1), (1, 0))
-        )
+        measurement_area._polygon = shapely.LinearRing(((0, 0), (0, 1), (1, 1), (1, 0)))
 
 
 ###############################################################################
@@ -667,9 +655,7 @@ def test_create_axis_aligned_measurement_area_error(area_input, message):
 )
 def test_axis_aligned_measurement_area_from_measurement_area(coordinates):
     measurement_area = MeasurementArea(coordinates)
-    axis_aligned_area = AxisAlignedMeasurementArea.from_measurement_area(
-        measurement_area
-    )
+    axis_aligned_area = AxisAlignedMeasurementArea.from_measurement_area(measurement_area)
     minx, miny, maxx, maxy = measurement_area.bounds
 
     # The axis aligned area should be a rectangle with the same bounds

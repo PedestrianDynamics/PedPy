@@ -1,6 +1,6 @@
 """Module containing functions to compute velocities."""
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -201,7 +201,7 @@ def compute_mean_speed_per_frame(
     traj_data: TrajectoryData,
     individual_speed: pd.DataFrame,
     measurement_area: MeasurementArea,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> pd.DataFrame:
     r"""Compute mean speed per frame inside a given measurement area.
 
     Computes the mean speed :math:`v_{mean}(t)` inside the measurement area
@@ -245,15 +245,14 @@ def compute_mean_speed_per_frame(
         )
 
     combined = traj_data.data.merge(individual_speed, on=[ID_COL, FRAME_COL])
-    df_mean = (
-        combined[shapely.within(combined.point, measurement_area.polygon)]
-        .groupby(by=FRAME_COL)
-        .speed.mean()
-    )
+    df_mean = combined[shapely.within(combined.point, measurement_area.polygon)].groupby(by=FRAME_COL).speed.mean()
     df_mean = df_mean.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
+    df_mean = df_mean.reset_index()
+    df_mean.columns = [FRAME_COL, SPEED_COL]
+
     return df_mean
 
 
@@ -323,22 +322,18 @@ def compute_voronoi_speed(
         individual_speed,
         on=[ID_COL, FRAME_COL],
     )
-    df_voronoi[SPEED_COL] = (
-        shapely.area(df_voronoi.intersection)
-        * df_voronoi.speed
-        / measurement_area.area
-    )
+    df_voronoi[SPEED_COL] = shapely.area(df_voronoi.intersection) * df_voronoi.speed / measurement_area.area
     df_voronoi_speed = df_voronoi.groupby(by=df_voronoi.frame).speed.sum()
     df_voronoi_speed = df_voronoi_speed.reindex(
         list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
         fill_value=0.0,
     )
+    df_voronoi_speed = df_voronoi_speed.reset_index()
+    df_voronoi_speed.columns = [FRAME_COL, SPEED_COL]
     return pd.DataFrame(df_voronoi_speed)
 
 
-def compute_passing_speed(
-    *, frames_in_area: pd.DataFrame, frame_rate: float, distance: float
-) -> pd.DataFrame:
+def compute_passing_speed(*, frames_in_area: pd.DataFrame, frame_rate: float, distance: float) -> pd.DataFrame:
     r"""Compute the individual speed of the pedestrian who pass the area.
 
     The individual speed, :math:`v^i_{passing}`, is calculated as the speed at
@@ -371,11 +366,7 @@ def compute_passing_speed(
         DataFrame containing the columns 'id' and 'speed' in m/s
     """
     speed = pd.DataFrame(frames_in_area.id, columns=[ID_COL, SPEED_COL])
-    speed[SPEED_COL] = (
-        frame_rate
-        * distance
-        / (np.abs(frames_in_area.leaving_frame - frames_in_area.entering_frame))
-    )
+    speed[SPEED_COL] = frame_rate * distance / (np.abs(frames_in_area.leaving_frame - frames_in_area.entering_frame))
     return speed
 
 
@@ -406,21 +397,17 @@ def _compute_individual_speed(
     time_interval = movement_data.window_size / frame_rate
 
     # Compute displacements in x and y direction
-    movement_data[["d_x", "d_y"]] = shapely.get_coordinates(
-        movement_data.end_position
-    ) - shapely.get_coordinates(movement_data.start_position)
-
-    movement_data[SPEED_COL] = (
-        np.linalg.norm(movement_data[["d_x", "d_y"]], axis=1) / time_interval
+    movement_data[["d_x", "d_y"]] = shapely.get_coordinates(movement_data.end_position) - shapely.get_coordinates(
+        movement_data.start_position
     )
+
+    movement_data[SPEED_COL] = np.linalg.norm(movement_data[["d_x", "d_y"]], axis=1) / time_interval
 
     if movement_direction is not None:
         # Projection of the displacement onto the movement direction
         norm_movement_direction = np.dot(movement_direction, movement_direction)
         movement_data[["d_x", "d_y"]] = (
-            np.dot(
-                movement_data[["d_x", "d_y"]].to_numpy(), movement_direction
-            )[:, None]
+            np.dot(movement_data[["d_x", "d_y"]].to_numpy(), movement_direction)[:, None]
             * movement_direction
             * norm_movement_direction
         )
@@ -510,8 +497,7 @@ def _validate_inputs(
     if speed_status != DataValidationStatus.DATA_CORRECT:
         error_msg = error_messages.get(
             speed_status,
-            "Individual speed doesn't contain all data required to calculate "
-            "the line speed.",
+            "Individual speed doesn't contain all data required to calculate the line speed.",
         )
         raise InputError(error_msg)
 
@@ -565,25 +551,19 @@ def compute_line_speed(
         speed in :math:`m/s` for species -1, 'speed' which contains the
         density at the line in :math:`1/m^2`.
     """
-    _validate_inputs(
-        individual_voronoi_polygons, measurement_line, individual_speed, species
-    )
+    _validate_inputs(individual_voronoi_polygons, measurement_line, individual_speed, species)
 
     result = _apply_lambda_for_intersecting_frames(
         individual_voronoi_polygons=individual_voronoi_polygons,
         measurement_line=measurement_line,
         species=species,
-        lambda_for_group=lambda group, line: (
-            _compute_orthogonal_speed_in_relation_to_proportion(group, line)
-        ).sum(),
+        lambda_for_group=lambda group, line: (_compute_orthogonal_speed_in_relation_to_proportion(group, line)).sum(),
         column_id_sp1=SPEED_SP1_COL,
         column_id_sp2=SPEED_SP2_COL,
         individual_speed=individual_speed,
     )
     result[SPEED_SP2_COL] *= -1
-    result[SPEED_COL] = result[SPEED_SP1_COL].fillna(0) + result[
-        SPEED_SP2_COL
-    ].fillna(0)
+    result[SPEED_COL] = result[SPEED_SP1_COL].fillna(0) + result[SPEED_SP2_COL].fillna(0)
     return result
 
 
@@ -644,13 +624,9 @@ def compute_species(
     # create dataframe with id and first frame
     # where Voronoi polygon intersects measurement line
     intersecting_polys = individual_voronoi_polygons[
-        shapely.intersects(
-            individual_voronoi_polygons[POLYGON_COL], measurement_line.line
-        )
+        shapely.intersects(individual_voronoi_polygons[POLYGON_COL], measurement_line.line)
     ]
-    first_frames = (
-        intersecting_polys.groupby(ID_COL)[FRAME_COL].min().reset_index()
-    )
+    first_frames = intersecting_polys.groupby(ID_COL)[FRAME_COL].min().reset_index()
 
     normal_vector = measurement_line.normal_vector()
 
@@ -662,8 +638,6 @@ def compute_species(
         movement_direction=normal_vector,
     )
     # create dataframe with 'id' and 'species'
-    result = first_frames.merge(
-        initial_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL]
-    )
+    result = first_frames.merge(initial_speed, left_on=[ID_COL, FRAME_COL], right_on=[ID_COL, FRAME_COL])
     result[SPECIES_COL] = np.sign(result[SPEED_COL])
     return result[[ID_COL, SPECIES_COL]]
