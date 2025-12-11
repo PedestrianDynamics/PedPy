@@ -220,6 +220,8 @@ def plot_speed_at_line(
         line_width (optional): line width of the density timeseries
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
 
 
     Returns:
@@ -232,17 +234,34 @@ def plot_speed_at_line(
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
     title = kwargs.get("title", "")
-    x_label = kwargs.get("x_label", "Frame")
+    x_axis = kwargs.get("x_axis", "frame")
     y_label = kwargs.get("y_label", "v / m/s")
-    label_sp1 = kwargs.get("lable_species1", "species 1")
-    label_sp2 = kwargs.get("lable_species2", "species 2")
-    label_total = kwargs.get("lable_total", "total")
+    label_sp1 = kwargs.get("label_species1", "species 1")
+    label_sp2 = kwargs.get("label_species2", "species 2")
+    label_total = kwargs.get("label_total", "total")
     line_width = kwargs.get("line_width", 1.5)
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in speed_at_line.columns:
+            x = speed_at_line[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = speed_at_line[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = speed_at_line[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = speed_at_line[FRAME_COL]
 
     return _plot_multiple_series(
         axes=axes,
         title=title,
-        x=speed_at_line[FRAME_COL],
+        x=x,
         y_s=[
             speed_at_line[SPEED_SP1_COL],
             speed_at_line[SPEED_SP2_COL],
@@ -283,6 +302,8 @@ def plot_density_at_line(
         line_width (optional): line width of the density timeseries
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
 
     Returns:
          matplotlib.axes.Axes instance where the densities are plotted
@@ -294,17 +315,34 @@ def plot_density_at_line(
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
     title = kwargs.get("title", "")
-    x_label = kwargs.get("x_label", "Frame")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
     label_sp1 = kwargs.get("label_species1", "species 1")
     label_sp2 = kwargs.get("label_species2", "species 2")
     label_total = kwargs.get("label_total", "total")
     line_width = kwargs.get("line_width", 1.5)
 
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in density_at_line.columns:
+            x = density_at_line[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = density_at_line[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = density_at_line[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = density_at_line[FRAME_COL]
+
     return _plot_multiple_series(
         axes=axes,
         title=title,
-        x=density_at_line[FRAME_COL],
+        x=x,
         y_s=[
             density_at_line[DENSITY_SP1_COL],
             density_at_line[DENSITY_SP2_COL],
@@ -345,6 +383,8 @@ def plot_flow_at_line(
         line_width (optional): line width of the density timeseries
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
 
     Returns:
          matplotlib.axes.Axes instance where the profiles are plotted
@@ -356,17 +396,34 @@ def plot_flow_at_line(
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
     title = kwargs.get("title", "")
-    x_label = kwargs.get("x_label", "Frame")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.get("y_label", "J / 1/s")
     label_sp1 = kwargs.get("lable_species1", "species 1")
     label_sp2 = kwargs.get("lable_species2", "species 2")
     label_total = kwargs.get("lable_total", "total")
     line_width = kwargs.get("line_width", 1.5)
 
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in flow_at_line.columns:
+            x = flow_at_line[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = flow_at_line[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = flow_at_line[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = flow_at_line[FRAME_COL]
+
     return _plot_multiple_series(
         axes=axes,
         title=title,
-        x=flow_at_line[FRAME_COL],
+        x=x,
         y_s=[
             flow_at_line[FLOW_SP1_COL],
             flow_at_line[FLOW_SP2_COL],
@@ -444,6 +501,8 @@ def plot_density(
     Keyword Args:
         color (optional): color of the plot
         title (optional): title of the plot
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
         line_width (optional): line width of the density timeseries
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
@@ -457,13 +516,30 @@ def plot_density(
     color = kwargs.pop("color", PEDPY_BLUE)
     line_width = kwargs.pop("line_width", 1.5)
     title = kwargs.pop("title", "")
-    x_label = kwargs.pop("x_label", "frame")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.pop("y_label", "$\\rho$ / 1/$m^2$")
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in density.columns:
+            x = density[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = density[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = density[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = density[FRAME_COL]
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=density[FRAME_COL],
+        x=x,
         y=density[DENSITY_COL],
         color=color,
         line_width=line_width,
@@ -492,6 +568,8 @@ def plot_speed(
         color (optional): color of the plot
         line_width (optional): line width of the speed timeseries
         title (optional): title of the plot
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -504,13 +582,30 @@ def plot_speed(
     color = kwargs.pop("color", PEDPY_BLUE)
     line_width = kwargs.pop("line_width", 1.5)
     title = kwargs.pop("title", "")
-    x_label = kwargs.pop("x_label", "frame")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.pop("y_label", "v / m/s")
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in speed.columns:
+            x = speed[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = speed[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = speed[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = speed[FRAME_COL]
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=speed[FRAME_COL],
+        x=x,
         y=speed[SPEED_COL],
         color=color,
         line_width=line_width,
@@ -680,6 +775,8 @@ def plot_acceleration(
         color (optional): color of the plot
         line_width (optional): line width of the acceleration time series
         title (optional): title of the plot
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -692,13 +789,30 @@ def plot_acceleration(
     color = kwargs.pop("color", PEDPY_BLUE)
     line_width = kwargs.pop("line_width", 1.5)
     title = kwargs.pop("title", "")
-    x_label = kwargs.pop("x_label", "frame")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.pop("y_label", "a / $m/s^2$")
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in acceleration.columns:
+            x = acceleration[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = acceleration[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = acceleration[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = acceleration[FRAME_COL]
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=acceleration[FRAME_COL],
+        x=x,
         y=acceleration[ACC_COL],
         color=color,
         line_width=line_width,
