@@ -19,6 +19,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from numpy.typing import NDArray
 
 from pedpy.column_identifier import (
+    ACC_COL,
     CUMULATED_COL,
     DENSITY_COL,
     DENSITY_SP1_COL,
@@ -65,11 +66,9 @@ def _plot_polygon(
     polygon: shapely.Polygon,
     polygon_color: Any,
     polygon_alpha: float = 1,
-    line_color: Any = PEDPY_GREY,
-    line_width: float = 1,
-    hole_color: Any = "lightgrey",
     hole_alpha: float = 1,
     zorder: float = 1000,
+    **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     """Plot the shapely polygon (including holes).
 
@@ -79,12 +78,18 @@ def _plot_polygon(
             created
         polygon_color (Any): background color of the polygon
         polygon_alpha (float): alpha of the background for the polygon
-        line_color (Any): color of the borders
-        line_width (float): line width of the borders
-        hole_color (Any): background color of holes
         hole_alpha (float): alpha of background color for holes
         zorder (float): Specifies the drawing order of the polygon,
             lower values are drawn first
+
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        line_color (optional, Any): color of the borders
+        line_width (optional, float): line width of the borders
+        hole_color (optional, Any): background color of holes
+
 
     Returns:
         matplotlib.axes.Axes instance where the polygon is plotted
@@ -92,6 +97,10 @@ def _plot_polygon(
     """
     # Plot the boundary of the polygon/holes separately to get the same color
     # as the outside as alpha modifies all colors
+
+    line_color = kwargs.pop("line_color", PEDPY_GREY)
+    line_width = kwargs.pop("line_width", 1)
+    hole_color = kwargs.pop("hole_color", "lightgrey")
 
     # Plot the exterior of the polygon
     exterior_coords = list(polygon.exterior.coords)
@@ -152,12 +161,13 @@ def _plot_series(  # pylint: disable=too-many-arguments
     x: pd.Series,
     y: pd.Series,
     color: str,
+    line_width: float,
     x_label: str,
     y_label: str,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
     axes.set_title(title)
-    axes.plot(x, y, color=color, **kwargs)
+    axes.plot(x, y, color=color, linewidth=line_width, **kwargs)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
@@ -207,6 +217,12 @@ def plot_speed_at_line(
         label_species1 (optional): tag of species 1 in the legend
         label_species2 (optional): tag of species 2 in the legend
         label_total (optional): tag of total speed in the legend
+        line_width (optional): line width of the density timeseries
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
+
 
     Returns:
          matplotlib.axes.Axes instance where the speeds are plotted
@@ -217,18 +233,35 @@ def plot_speed_at_line(
     color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
-    title = kwargs.get("title", "Speed at Line")
-    x_label = kwargs.get("x_label", "Frame")
+    title = kwargs.get("title", "")
+    x_axis = kwargs.get("x_axis", "frame")
     y_label = kwargs.get("y_label", "v / m/s")
-    label_sp1 = kwargs.get("lable_species1", "species 1")
-    label_sp2 = kwargs.get("lable_species2", "species 2")
-    label_total = kwargs.get("lable_total", "total")
-    line_width = kwargs.get("line_width", 0.5)
+    label_sp1 = kwargs.get("label_species1", "species 1")
+    label_sp2 = kwargs.get("label_species2", "species 2")
+    label_total = kwargs.get("label_total", "total")
+    line_width = kwargs.get("line_width", 1.5)
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in speed_at_line.columns:
+            x = speed_at_line[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = speed_at_line[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = speed_at_line[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = speed_at_line[FRAME_COL]
 
     return _plot_multiple_series(
         axes=axes,
         title=title,
-        x=speed_at_line[FRAME_COL],
+        x=x,
         y_s=[
             speed_at_line[SPEED_SP1_COL],
             speed_at_line[SPEED_SP2_COL],
@@ -266,6 +299,11 @@ def plot_density_at_line(
         label_species1 (optional): tag of species 1 in the legend
         label_species2 (optional): tag of species 2 in the legend
         label_total (optional): tag of total speed in the legend
+        line_width (optional): line width of the density timeseries
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
 
     Returns:
          matplotlib.axes.Axes instance where the densities are plotted
@@ -276,18 +314,35 @@ def plot_density_at_line(
     color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
-    title = kwargs.get("title", "Density at Line")
-    x_label = kwargs.get("x_label", "Frame")
+    title = kwargs.get("title", "")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.get("y_label", "$\\rho$ / 1/$m^2$")
-    label_sp1 = kwargs.get("lable_species1", "species 1")
-    label_sp2 = kwargs.get("lable_species2", "species 2")
-    label_total = kwargs.get("lable_total", "total")
-    line_width = kwargs.get("line_width", 0.5)
+    label_sp1 = kwargs.get("label_species1", "species 1")
+    label_sp2 = kwargs.get("label_species2", "species 2")
+    label_total = kwargs.get("label_total", "total")
+    line_width = kwargs.get("line_width", 1.5)
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in density_at_line.columns:
+            x = density_at_line[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = density_at_line[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = density_at_line[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = density_at_line[FRAME_COL]
 
     return _plot_multiple_series(
         axes=axes,
         title=title,
-        x=density_at_line[FRAME_COL],
+        x=x,
         y_s=[
             density_at_line[DENSITY_SP1_COL],
             density_at_line[DENSITY_SP2_COL],
@@ -325,6 +380,11 @@ def plot_flow_at_line(
         label_species1 (optional): tag of species 1 in the legend
         label_species2 (optional): tag of species 2 in the legend
         label_total (optional): tag of total speed in the legend
+        line_width (optional): line width of the density timeseries
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
 
     Returns:
          matplotlib.axes.Axes instance where the profiles are plotted
@@ -335,18 +395,35 @@ def plot_flow_at_line(
     color_sp1 = kwargs.get("color_species1", PEDPY_BLUE)
     color_sp2 = kwargs.get("color_species2", PEDPY_ORANGE)
     color_total = kwargs.get("color_total", PEDPY_GREEN)
-    title = kwargs.get("title", "Flow at Line")
-    x_label = kwargs.get("x_label", "Frame")
+    title = kwargs.get("title", "")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.get("y_label", "J / 1/s")
     label_sp1 = kwargs.get("lable_species1", "species 1")
     label_sp2 = kwargs.get("lable_species2", "species 2")
     label_total = kwargs.get("lable_total", "total")
-    line_width = kwargs.get("line_width", 0.5)
+    line_width = kwargs.get("line_width", 1.5)
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in flow_at_line.columns:
+            x = flow_at_line[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = flow_at_line[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = flow_at_line[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = flow_at_line[FRAME_COL]
 
     return _plot_multiple_series(
         axes=axes,
         title=title,
-        x=flow_at_line[FRAME_COL],
+        x=x,
         y_s=[
             flow_at_line[FLOW_SP1_COL],
             flow_at_line[FLOW_SP2_COL],
@@ -366,7 +443,7 @@ def plot_nt(
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the number of pedestrians over time.
+    """Plot the number of pedestrians crossing a line over time.
 
     Args:
         nt (pd.DataFrame): cumulative number of pedestrians over time
@@ -378,6 +455,7 @@ def plot_nt(
     Keyword Args:
         color (optional): color of the plot
         title (optional): title of the plot
+        line_width (optional): line width of the N-t diagram
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -388,18 +466,17 @@ def plot_nt(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "N-t")
+    title = kwargs.pop("title", "")
+    line_width = kwargs.pop("line_width", 1.5)
     x_label = kwargs.pop("x_label", "t / s")
-    y_label = kwargs.pop(
-        "y_label",
-        r"\# pedestrians" if plt.rcParams["text.usetex"] else "# pedestrians",
-    )
+    y_label = kwargs.pop("y_label", "cumulative pedestrians")
     return _plot_series(
         axes=axes,
         title=title,
         x=nt[TIME_COL],
         y=nt[CUMULATED_COL],
         color=color,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
@@ -424,6 +501,9 @@ def plot_density(
     Keyword Args:
         color (optional): color of the plot
         title (optional): title of the plot
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
+        line_width (optional): line width of the density timeseries
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -434,16 +514,35 @@ def plot_density(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "density over time")
-    x_label = kwargs.pop("x_label", "frame")
+    line_width = kwargs.pop("line_width", 1.5)
+    title = kwargs.pop("title", "")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.pop("y_label", "$\\rho$ / 1/$m^2$")
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in density.columns:
+            x = density[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = density[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = density[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = density[FRAME_COL]
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=density.index,
+        x=x,
         y=density[DENSITY_COL],
         color=color,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
@@ -452,7 +551,7 @@ def plot_density(
 
 def plot_speed(
     *,
-    speed: pd.Series,
+    speed: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -467,7 +566,10 @@ def plot_speed(
 
     Keyword Args:
         color (optional): color of the plot
+        line_width (optional): line width of the speed timeseries
         title (optional): title of the plot
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -478,16 +580,35 @@ def plot_speed(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "speed over time")
-    x_label = kwargs.pop("x_label", "frame")
+    line_width = kwargs.pop("line_width", 1.5)
+    title = kwargs.pop("title", "")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.pop("y_label", "v / m/s")
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in speed.columns:
+            x = speed[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = speed[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = speed[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = speed[FRAME_COL]
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=speed.index,
-        y=speed,
+        x=x,
+        y=speed[SPEED_COL],
         color=color,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
@@ -593,13 +714,13 @@ def plot_density_distribution(
     return _plot_violin_xy(data=density.density, axes=axes, **kwargs)
 
 
-def plot_flow(
+def plot_crossing_speed_flow(
     *,
     flow: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
-    """Plot the flow.
+    """Plot the relationship of mean speed and flow while crossing a measurement line.
 
     Args:
         flow(pd.DataFrame): flow for some given crossing_frames and nt
@@ -613,6 +734,8 @@ def plot_flow(
         title (optional): title of the plot
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
+        marker (optional): Markerstyle
+        marker_size (optional): Size of the markers
 
     Returns:
         matplotlib.axes.Axes instance where the flow is plotted
@@ -621,11 +744,13 @@ def plot_flow(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "flow")
+    title = kwargs.pop("title", "")
     x_label = kwargs.pop("x_label", "J / 1/s")
     y_label = kwargs.pop("y_label", "v / m/s")
+    marker = kwargs.get("marker", "o")
+    marker_size = kwargs.get("marker_size", 16)
     axes.set_title(title)
-    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color, **kwargs)
+    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color, s=marker_size, marker=marker, **kwargs)
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
@@ -633,7 +758,7 @@ def plot_flow(
 
 def plot_acceleration(
     *,
-    acceleration: pd.Series,
+    acceleration: pd.DataFrame,
     axes: Optional[matplotlib.axes.Axes] = None,
     **kwargs: Any,
 ) -> matplotlib.axes.Axes:
@@ -648,7 +773,10 @@ def plot_acceleration(
 
     Keyword Args:
         color (optional): color of the plot
+        line_width (optional): line width of the acceleration time series
         title (optional): title of the plot
+        x_axis (optional): chose whether the 'frame' (default) or 'time' is plotted on the x-axis
+        framerate (optional): give the framerate, when x-axis=='time'
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
 
@@ -659,16 +787,35 @@ def plot_acceleration(
         axes = plt.gca()
 
     color = kwargs.pop("color", PEDPY_BLUE)
-    title = kwargs.pop("title", "acceleration over time")
-    x_label = kwargs.pop("x_label", "frame")
+    line_width = kwargs.pop("line_width", 1.5)
+    title = kwargs.pop("title", "")
+    x_axis = kwargs.pop("x_axis", "frame")
     y_label = kwargs.pop("y_label", "a / $m/s^2$")
+
+    if x_axis == "time":
+        x_label = kwargs.pop("x_label", "time / $s$")
+        if TIME_COL in acceleration.columns:
+            x = acceleration[TIME_COL]
+        else:
+            framerate = kwargs.pop("framerate", 1)
+            if framerate == 1:
+                title = "Attention: no framerate was available to calculate time from frame!"
+                x = acceleration[FRAME_COL]
+                x_label = "frame"
+            else:
+                x = acceleration[FRAME_COL] / framerate
+
+    else:
+        x_label = kwargs.pop("x_label", "frame")
+        x = acceleration[FRAME_COL]
 
     return _plot_series(
         axes=axes,
         title=title,
-        x=acceleration.index,
-        y=acceleration,
+        x=x,
+        y=acceleration[ACC_COL],
         color=color,
+        line_width=line_width,
         x_label=x_label,
         y_label=y_label,
         **kwargs,
@@ -714,10 +861,14 @@ def plot_neighborhood(
         default_color (optional): color of default pedestrians, which are not
             neighbors of the base pedestrian
         default_alpha (optional): alpha of the default pedestrians
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
@@ -778,10 +929,13 @@ def _plot_neighborhood(
         default_color (optional): color of default pedestrians, which are not
             neighbors of the base pedestrian
         default_alpha (optional): alpha of the default pedestrians
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes: instances where the neighborhood is plotted
@@ -793,6 +947,9 @@ def _plot_neighborhood(
     neighbor_alpha = kwargs.pop("neighbor_alpha", 0.5)
     default_color = to_rgb(kwargs.pop("default_color", PEDPY_GREY))
     default_alpha = kwargs.pop("default_alpha", 0.2)
+
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
 
     # Filter voronoi_data for polygons in the same frame
     voronoi_neighbors = voronoi_data[voronoi_data[FRAME_COL] == frame]
@@ -815,7 +972,6 @@ def _plot_neighborhood(
     # Set up the plot
     if axes is None:
         axes = plt.gca()
-    axes.set_title(f"Neighbors of pedestrian {pedestrian_id}")
 
     # Plot the walkable area
     if walkable_area is not None:
@@ -850,6 +1006,11 @@ def _plot_neighborhood(
     # Set aspect ratio
     axes.set_aspect("equal")
 
+    title = kwargs.pop("title", "Neighbors of pedestrian {}".format(pedestrian_id))
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
+
     return axes
 
 
@@ -868,7 +1029,7 @@ def plot_time_distance(  # noqa: PLR0915
     Args:
         time_distance (pd.DataFrame): DataFrame containing information on time
             and distance to some target
-        speed (pd.DataFrame): DataFrame containing speed calculation.
+        speed (pd.DataFrame, optional): DataFrame containing speed calculation.
         axes (matplotlib.axes.Axes): Axes to plot on, if None new will be
             created
         kwargs: Additional parameters to change the plot appearance, see
@@ -876,7 +1037,11 @@ def plot_time_distance(  # noqa: PLR0915
 
     Keyword Args:
         marker_color (optional): color of the markers on the plot
+        marker_size (optional): size of the markers
+        marker (optional): type of the markers
         line_color (optional): color of the lines on the plot
+        line_width (optional): width of the line sof the plot
+        line_alpha (optional): alpha value of the plotted lines
         title (optional): title of the plot
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
@@ -893,7 +1058,7 @@ def plot_time_distance(  # noqa: PLR0915
         **kwargs: Keyword arguments containing
         'title', 'x_label' and 'y_label'.
         """
-        title = kwargs.get("title", "Distance Plot")
+        title = kwargs.get("title", "")
         x_label = kwargs.get("x_label", "Distance / m")
         y_label = kwargs.get("y_label", "Time / s")
 
@@ -905,6 +1070,8 @@ def plot_time_distance(  # noqa: PLR0915
         axes: matplotlib.axes.Axes,
         ped_data: pd.DataFrame,
         color: str,
+        marker_size: float,
+        marker: str,
     ) -> None:
         """Adds a scatter plot marker at the start of a pedestrian's line.
 
@@ -912,20 +1079,24 @@ def plot_time_distance(  # noqa: PLR0915
         axes: The matplotlib axes to plot on.
         ped_data: DataFrame containing pedestrian data.
         color: Color of the scatter plot marker.
+        marker_size: Size of the markers.
+        marker: Type of marker.
         """
         min_data = ped_data.loc[ped_data.groupby(ID_COL)[FRAME_COL].idxmin()]
         axes.scatter(
             min_data.distance,
             min_data.time,
             color=color,
-            s=5,
-            marker="o",
+            s=marker_size,
+            marker=marker,
         )
 
     def _scatter_min_data_with_color(
         axes: matplotlib.axes.Axes,
         ped_data: pd.DataFrame,
         norm: Normalize,
+        marker_size: float,
+        marker: str,
     ) -> None:
         """Adds a scatter plot marker at the start of a pedestrian's line.
 
@@ -936,6 +1107,8 @@ def plot_time_distance(  # noqa: PLR0915
         cmap: The colormap to use for coloring the line based on speed.
         frame_rate: Frame rate used to adjust time values.
         color: Color of the scatter plot marker.
+        marker_size: Size of the markers.
+        marker: Type of marker.
         """
         min_data = ped_data.loc[ped_data.groupby(ID_COL)[FRAME_COL].idxmin()]
         axes.scatter(
@@ -944,14 +1117,16 @@ def plot_time_distance(  # noqa: PLR0915
             c=min_data.speed,
             cmap="jet",
             norm=norm,
-            s=5,
-            marker="o",
+            s=marker_size,
+            marker=marker,
         )
 
     def _plot_line(
         axes: matplotlib.axes.Axes,
         ped_data: pd.DataFrame,
         color: str,
+        line_width: float,
+        line_alpha: float,
     ) -> None:
         """Plots a line for a single pedestrian's data.
 
@@ -960,19 +1135,23 @@ def plot_time_distance(  # noqa: PLR0915
         ped_data: DataFrame containing a single pedestrian's distance and time
             data.
         color: Color of the line.
+        line_width: Width of the line.
+        line_alpha: Alpha of the lines.
         """
         axes.plot(
             ped_data.distance,
             ped_data.time,
             color=color,
-            alpha=0.7,
-            lw=0.25,
+            alpha=line_alpha,
+            lw=line_width,
         )
 
     def _plot_colored_line(
         axes: matplotlib.axes.Axes,
         ped_data: pd.DataFrame,
         norm: Normalize,
+        line_width: float,
+        line_alpha: float,
     ) -> None:
         """Plots a line for a single pedestrian's data.
 
@@ -985,6 +1164,8 @@ def plot_time_distance(  # noqa: PLR0915
             data.
         norm: Normalization for the colormap based on speed.
         cmap: The colormap to use for coloring the line based on speed.
+        line_width: Width of the lines.
+        line_alpha: Alpha of the lines.
         """
         points = ped_data[["distance", "time"]].to_numpy()
         speed_id = ped_data.speed.to_numpy()
@@ -995,9 +1176,9 @@ def plot_time_distance(  # noqa: PLR0915
             ]
             for i in range(len(points) - 1)
         ]
-        line_collection = LineCollection(segments, cmap="jet", alpha=0.7, norm=norm)
+        line_collection = LineCollection(segments, cmap="jet", alpha=line_alpha, norm=norm)
         line_collection.set_array(speed_id)
-        line_collection.set_linewidth(0.5)
+        line_collection.set_linewidth(line_width)
         axes.add_collection(line_collection)
 
     def _add_colorbar(axes: matplotlib.axes.Axes, norm: Normalize) -> None:
@@ -1031,6 +1212,7 @@ def plot_time_distance(  # noqa: PLR0915
         axes: matplotlib.axes.Axes,
         time_distance: pd.DataFrame,
         speed: pd.DataFrame,
+        **kwargs: Any,
     ) -> None:
         """Plots pedestrian data with lines colored according to speed.
 
@@ -1039,14 +1221,19 @@ def plot_time_distance(  # noqa: PLR0915
         time_distance: DataFrame containing the pedestrian data.
         speed: DataFrame containing speed calculations.
         frame_rate: Frame rate used to adjust time values.
+        **kwargs: Additional customization options (line_width, line_alpha, marker_size, marker).
         """
+        line_width = kwargs.pop("line_width", 0.5)
+        line_alpha = kwargs.pop("line_alpha", 0.7)
+        marker_size = kwargs.pop("marker_size", 5)
+        marker = kwargs.pop("marker", "o")
         time_distance = time_distance.merge(speed, on=[ID_COL, FRAME_COL])
         norm = Normalize(vmin=time_distance.speed.min(), vmax=time_distance.speed.max())
 
         for _, ped_data in time_distance.groupby(ID_COL):
-            _plot_colored_line(axes, ped_data, norm)
+            _plot_colored_line(axes, ped_data, norm, line_width, line_alpha)
 
-        _scatter_min_data_with_color(axes, time_distance, norm)
+        _scatter_min_data_with_color(axes, time_distance, norm, marker_size, marker)
         _add_colorbar(axes, norm)
 
     def _plot_without_colors(
@@ -1060,19 +1247,23 @@ def plot_time_distance(  # noqa: PLR0915
         axes: The matplotlib axes to plot on.
         time_distance: DataFrame containing the pedestrian data.
         frame_rate: Frame rate used to adjust time values.
-        **kwargs: Additional customization options (line_color, marker_color).
+        **kwargs: Additional customization options (line_color, line_width, marker_color, marker_size, marker).
         """
         line_color = kwargs.pop("line_color", PEDPY_GREY)
+        line_width = kwargs.pop("line_width", 0.5)
+        line_alpha = kwargs.pop("line_alpha", 0.7)
         marker_color = kwargs.pop("marker_color", PEDPY_GREY)
+        marker_size = kwargs.pop("marker_size", 5)
+        marker = kwargs.pop("marker", "o")
         for _, ped_data in time_distance.groupby(ID_COL):
-            _plot_line(axes, ped_data, line_color)
+            _plot_line(axes, ped_data, line_color, line_width, line_alpha)
 
-        _scatter_min_data(axes, time_distance, marker_color)
+        _scatter_min_data(axes, time_distance, marker_color, marker_size, marker)
 
     axes = axes or plt.gca()
     _setup_plot(axes, **kwargs)
     if speed is not None:
-        _plot_with_speed_colors(axes, time_distance, speed)
+        _plot_with_speed_colors(axes, time_distance, speed, **kwargs)
     else:
         _plot_without_colors(axes, time_distance, **kwargs)
 
@@ -1104,6 +1295,8 @@ def plot_profiles(
 
     Keyword Args:
         title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
         walkable_color (optional): color of the walkable area in the plot
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
@@ -1173,10 +1366,14 @@ def plot_walkable_area(
             below for list of usable keywords
 
     Keyword Args:
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the lines of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
         matplotlib.axes.Axes instance where the walkable area is plotted
@@ -1184,24 +1381,29 @@ def plot_walkable_area(
     if axes is None:
         axes = plt.gca()
 
-    line_color = kwargs.pop("line_color", PEDPY_GREY)
-    line_width = kwargs.pop("line_width", 1.0)
+    border_line_color = kwargs.pop("border_line_color", PEDPY_GREY)
+    border_line_width = kwargs.pop("border_line_width", 1.0)
 
     hole_color = kwargs.pop("hole_color", "lightgrey")
     hole_alpha = kwargs.pop("hole_alpha", 1.0)
 
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
+
     axes = _plot_polygon(
         polygon=walkable_area.polygon,
         polygon_color="none",
-        line_color=line_color,
-        line_width=line_width,
+        line_color=border_line_color,
+        line_width=border_line_width,
         hole_color=hole_color,
         hole_alpha=hole_alpha,
         axes=axes,
     )
 
-    axes.set_xlabel(r"x/m")
-    axes.set_ylabel(r"y/m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
     axes.autoscale_view()
 
@@ -1232,10 +1434,14 @@ def plot_trajectories(
         traj_start_marker (optional): marker to indicate the start of the
             trajectory
         traj_end_marker (optional): marker to indicate the end of the trajectory
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
+        border_line_color (optional): color of the borders
+        border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
 
     Returns:
         matplotlib.axes.Axes instance where the trajectories are plotted
@@ -1246,6 +1452,10 @@ def plot_trajectories(
 
     traj_start_marker = kwargs.pop("traj_start_marker", "")
     traj_end_marker = kwargs.pop("traj_end_marker", "")
+
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
 
     if axes is None:
         axes = plt.gca()
@@ -1274,8 +1484,9 @@ def plot_trajectories(
             marker=traj_end_marker,
         )
 
-    axes.set_xlabel(r"x/m")
-    axes.set_ylabel(r"y/m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
     return axes
 
@@ -1317,10 +1528,13 @@ def plot_measurement_setup(
             trajectory
         traj_end_marker (optional): marker to indicate the end of the
             trajectory
-        line_color (optional): color of the borders
-        line_width (optional): line width of the borders
-        hole_color (optional): background color of holes
-        hole_alpha (optional): alpha of background color for holes
+        border_line_color (optional): color of the lines of the borders
+        border_line_width (optional): line width of the lines of the borders
+        hole_color (optional): background color of holes/geometries
+        hole_alpha (optional): alpha of background color for holes/geometries
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
 
     Returns:
         matplotlib.axes.Axes instance where the measurement setup is plotted
@@ -1332,6 +1546,10 @@ def plot_measurement_setup(
 
     ml_color = kwargs.pop("ml_color", PEDPY_BLUE)
     ml_width = kwargs.pop("ml_width", 1.0)
+
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
 
     if axes is None:
         axes = plt.gca()
@@ -1357,8 +1575,9 @@ def plot_measurement_setup(
         for measurement_line in measurement_lines:
             axes.plot(*measurement_line.xy, color=ml_color, linewidth=ml_width)
 
-    axes.set_xlabel(r"x / m")
-    axes.set_ylabel(r"y / m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
 
     return axes
 
@@ -1390,22 +1609,29 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             below for list of usable keywords
 
     Keyword Args:
+        title (optional): title of the plot
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
         ped_color (optional): color used to display current ped positions
+        ped_size (optional): size of the marker of the current ped positions
         voronoi_border_color (optional): border color of Voronoi cells
+        voronoi_border_width (optional): border width of the Voronoi cells
         voronoi_inside_ma_alpha (optional): alpha of part of Voronoi cell
             inside the measurement area, data needs to contain column
             "intersection"!
         voronoi_outside_ma_alpha (optional): alpha of part of Voronoi cell
             outside the measurement area
-        color_by_column (str, optional): Optioanlly provide a column name to
+        color_by_column (str, optional): Optionally provide a column name to
             specify the data to color the cell. Only supports Integer and
             Float data types. E.g. color_by_column `DENSITY_COL`
         vmin (optional): vmin of colormap, only used when color_mode != "id"
         vmax (optional): vmax of colormap, only used when color_mode != "id"
+        cmap (optional): colormap used for
         show_colorbar (optional): colorbar is displayed, only used when
             color_mode != "id"
         cb_location (optional): location of the colorbar, only used when
             color_mode != "id"
+        cb_label (optional): label of colorbar
         ma_line_color (optional): color of the measurement areas borders
         ma_line_width (optional): line width of the measurement areas borders
         ma_color (optional): fill color of the measurement areas
@@ -1416,13 +1642,18 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
         line_width (optional): line width of the borders
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
-        cmap (optional): colormap used for
+
     Returns:
         matplotlib.axes.Axes instance where the Voronoi cells are plotted
     """
+    title = kwargs.pop("title", "")
+    x_label = kwargs.pop("x_label", r"x / m")
+    y_label = kwargs.pop("y_label", r"y / m")
+
     ped_color = kwargs.pop("ped_color", PEDPY_BLUE)
     ped_size = kwargs.pop("ped_size", 5)
     voronoi_border_color = kwargs.pop("voronoi_border_color", PEDPY_BLUE)
+    voronoi_border_width = kwargs.pop("voronoi_border_width", 1)
     voronoi_inside_ma_alpha = kwargs.pop("voronoi_inside_ma_alpha", 1)
     voronoi_outside_ma_alpha = kwargs.pop("voronoi_outside_ma_alpha", 1)
 
@@ -1430,6 +1661,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
     vmax = kwargs.pop("vmax", None)
     cb_location = kwargs.pop("cb_location", "right")
     show_colorbar = kwargs.pop("show_colorbar", True)
+    cb_label = kwargs.pop("cb_label", None)
     color_by_column = kwargs.pop("color_by_column", None)
     voronoi_colormap = plt.get_cmap(kwargs.pop("cmap", "YlGn"))
 
@@ -1485,6 +1717,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
             axes=axes,
             polygon=poly,
             line_color=voronoi_border_color,
+            line_width=voronoi_border_width,
             polygon_color=color,
             polygon_alpha=voronoi_outside_ma_alpha,
             zorder=1,
@@ -1505,15 +1738,20 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
         if traj_data:
             axes.scatter(row[X_COL], row[Y_COL], color=ped_color, s=ped_size)
 
-    if show_colorbar and color_by_column and typ == "float64":
-        if color_by_column == DENSITY_COL:
-            label = "$\\rho$ / $\\frac{1}{m^2}$"
-        elif color_by_column == SPEED_COL:
-            label = r"v / $\frac{m}{s}$"
-        elif color_by_column == ID_COL:
-            label = "Id"
-        else:
-            label = ""
+    if show_colorbar:
+        if color_by_column and typ == "float64":
+            if color_by_column == DENSITY_COL:
+                label = "$\\rho$ / $\\frac{1}{m^2}$"
+            elif color_by_column == SPEED_COL:
+                label = r"v / $\frac{m}{s}$"
+            elif color_by_column == ID_COL:
+                label = "Id"
+            else:
+                label = " "
+
+            if cb_label is not None:
+                label = cb_label
+
         plt.colorbar(
             scalar_mappable,
             ax=axes,
@@ -1524,6 +1762,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
 
     if walkable_area is not None:
         plot_walkable_area(axes=axes, walkable_area=walkable_area, **kwargs)
-    axes.set_xlabel(r"x / m")
-    axes.set_ylabel(r"y / m")
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
     return axes
