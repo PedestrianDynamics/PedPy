@@ -114,7 +114,7 @@ jobs:
         with:
           name: demos_usage
           path: |
-            notebooks/
+            docs/source/notebooks/
 
   test:
     needs: build

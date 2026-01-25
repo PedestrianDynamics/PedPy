@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 320 320">
+  <g fill="none" stroke="#4aa3c4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Funnel outline -->
+    <path d="M 40 50 L 280 50 L 185 180 L 185 255 L 135 280 L 135 180 Z" stroke-width="14"/>
+    <!-- Filter lines -->
+    <line x1="88" y1="95" x2="232" y2="95" stroke-width="10"/>
+    <line x1="118" y1="138" x2="202" y2="138" stroke-width="10"/>
+  </g>
+</svg>

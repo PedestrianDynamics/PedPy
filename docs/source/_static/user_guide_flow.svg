@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="934" height="340" viewBox="248 70 934 340" role="img" aria-label="PedPy user guide workflow">
+  <defs>
+    <style><![CDATA[
+      .card {
+        fill: none;
+        stroke: #d1d5db;
+        stroke-width: 1.5;
+      }
+      .card-click:hover .card {
+        fill: #ffffff;
+        stroke: #4AA3C4;
+        stroke-width: 2;
+      }
+      .label {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        fill: #4AA3C4;
+        text-anchor: middle;
+      }
+      .arrow {
+        stroke: #4AA3C4;
+        stroke-width: 2.2;
+        fill: none;
+        marker-end: url(#arrowhead);
+      }
+      .arrow-dashed {
+        stroke: #4AA3C4;
+        stroke-width: 2.2;
+        stroke-dasharray: 8 5;
+        fill: none;
+        marker-end: url(#arrowhead);
+      }
+      .connector {
+        stroke: #4AA3C4;
+        stroke-width: 2.2;
+        fill: none;
+      }
+      .group-box {
+        fill: none;
+        stroke: #9ca3af;
+        stroke-width: 1.2;
+        stroke-dasharray: 6 4;
+      }
+      .group-label {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 12px;
+        font-style: italic;
+        fill: #9ca3af;
+        text-anchor: middle;
+      }
+    ]]></style>
+    <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4AA3C4" />
+    </marker>
+  </defs>
+
+  <!-- Main flow arrows -->
+  <path class="arrow" d="M 430 210 H 500" />
+  <path class="arrow" d="M 680 210 H 750" />
+
+  <!-- Dashed arrows to advanced applications -->
+  <path class="arrow-dashed" d="M 930 210 H 965 V 120 H 1000" />
+  <path class="arrow-dashed" d="M 930 210 H 965 V 300 H 1000" />
+
+  <!-- Group box around FD cards -->
+  <rect class="group-box" x="988" y="56" rx="12" ry="12" width="204" height="308" />
+  <text class="group-label" x="1090" y="380">Application Examples</text>
+
+  <a class="card-click" href="../notebooks/measurement_setup.html" target="_top">
+    <rect class="card" x="250" y="162" rx="8" ry="8" width="180" height="96" />
+    <image href="icon_measurement_setup.svg" x="320" y="174" width="40" height="40" />
+    <text x="340" y="235" class="label">Measurement Setup</text>
+  </a>
+
+  <a class="card-click" href="../notebooks/preprocessing.html" target="_top">
+    <rect class="card" x="500" y="162" rx="8" ry="8" width="180" height="96" stroke-dasharray="8 5" />
+    <image href="icon_preprocessing.svg" x="570" y="174" width="40" height="40" />
+    <text x="590" y="235" class="label">Pre-processing</text>
+  </a>
+
+  <a class="card-click" href="../notebooks/analysis.html" target="_top">
+    <rect class="card" x="750" y="162" rx="8" ry="8" width="180" height="96" />
+    <image href="icon_analysis.svg" x="820" y="174" width="40" height="40" />
+    <text x="840" y="235" class="label">Analysis</text>
+  </a>
+
+  <a class="card-click" href="../notebooks/fundamental_diagram.html" target="_top">
+    <rect class="card" x="1000" y="72" rx="8" ry="8" width="180" height="96" />
+    <image href="icon_fd.svg" x="1070" y="84" width="40" height="40" />
+    <text x="1090" y="145" class="label">FD</text>
+  </a>
+
+  <a class="card-click" href="../notebooks/fundamental_diagram_at_measurement_line.html" target="_top">
+    <rect class="card" x="1000" y="252" rx="8" ry="8" width="180" height="96" />
+    <image href="icon_fd_at_line.svg" x="1070" y="264" width="40" height="40" />
+    <text x="1090" y="325" class="label">FD at line</text>
+  </a>
+
+  <a class="card-click" href="../notebooks/working_with_results.html" target="_top">
+    <rect class="card" x="750" y="312" rx="8" ry="8" width="180" height="96" />
+    <image href="icon_working_with_results.svg" x="820" y="324" width="40" height="40" />
+    <text x="840" y="385" class="label">Working with Results</text>
+  </a>
+</svg>

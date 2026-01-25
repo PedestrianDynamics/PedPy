@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 320 320">
+  <g fill="none" stroke="#4aa3c4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Y axis -->
+    <line x1="55" y1="275" x2="55" y2="40" stroke-width="14"/>
+    <!-- X axis -->
+    <line x1="55" y1="275" x2="285" y2="275" stroke-width="14"/>
+    <!-- Inverted-U curve (flow vs density) -->
+    <path d="M 75 260 C 90 245, 115 70, 165 65 C 215 70, 245 245, 265 260" stroke-width="12"/>
+    <!-- Vertical measurement line -->
+    <line x1="165" y1="60" x2="165" y2="275" stroke-width="10" stroke-dasharray="16 12"/>
+  </g>
+</svg>

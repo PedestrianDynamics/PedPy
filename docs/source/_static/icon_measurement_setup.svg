@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 320 320">
+  <g fill="none" stroke="#4aa3c4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- L-shaped ruler body -->
+    <path d="M 60 40 L 280 40 L 280 110 L 130 110 L 130 280 L 60 280 Z" stroke-width="14"/>
+    <!-- Horizontal tick marks -->
+    <line x1="170" y1="40" x2="170" y2="80" stroke-width="10"/>
+    <line x1="225" y1="40" x2="225" y2="68" stroke-width="8"/>
+    <!-- Vertical tick marks -->
+    <line x1="60" y1="160" x2="100" y2="160" stroke-width="10"/>
+    <line x1="60" y1="220" x2="88" y2="220" stroke-width="8"/>
+  </g>
+</svg>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 320 320">
+  <g fill="none" stroke="#4aa3c4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Table outline -->
+    <rect x="40" y="40" width="240" height="240" rx="12" stroke-width="14"/>
+    <!-- Header row separator -->
+    <line x1="40" y1="110" x2="280" y2="110" stroke-width="12"/>
+    <!-- Row divider -->
+    <line x1="40" y1="177" x2="280" y2="177" stroke-width="8"/>
+    <!-- Column dividers -->
+    <line x1="133" y1="40" x2="133" y2="280" stroke-width="8"/>
+    <line x1="213" y1="40" x2="213" y2="280" stroke-width="8"/>
+  </g>
+</svg>
