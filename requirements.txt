@@ -1,5 +1,5 @@
 numpy>=2.1,<3.0
-pandas>=2.2,<3.0
+pandas>=2.2,<4.0
 Shapely>=2.0,<3.0
 scipy~=1.15,<2.0
 matplotlib~=3.10,<4.0
@@ -13,10 +13,10 @@ pytest-cov~=7.0
 # build tools
 setuptools>=78.1.1,<81.0
 click~=8.3
-build~=1.3
+build~=1.4
 
 # ci
 mypy==1.19.1
 mypy-extensions==1.1.0
-ruff==0.14.10
+ruff==0.14.14
 pre-commit==4.5.1
