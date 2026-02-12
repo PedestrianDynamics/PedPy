@@ -44,7 +44,7 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
 
     computed_density = compute_classic_density(traj_data=trajectory_data, measurement_area=measurement_area)
 
-    num_peds_in_area_per_frame = {frame: 0 for frame in range(num_frames)}
+    num_peds_in_area_per_frame = dict.fromkeys(range(num_frames), 0)
 
     for index, row in trajectory_data.data.iterrows():
         point = Point([row.x, row.y])

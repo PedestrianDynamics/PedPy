@@ -1,6 +1,5 @@
 import pathlib
 
-import numpy as np
 import pytest
 
 from pedpy import InputError
@@ -52,7 +51,8 @@ def setup_walkable_area():
 @pytest.fixture
 def setup_trajectory_data():
     trajectory_data = load_trajectory(
-        trajectory_file=pathlib.Path( pathlib.Path(__file__).parent.parent / "io/test-data/030_c_56_h0.txt"), default_unit=TrajectoryUnit.METER
+        trajectory_file=pathlib.Path(pathlib.Path(__file__).parent.parent / "io/test-data/030_c_56_h0.txt"),
+        default_unit=TrajectoryUnit.METER,
     )
 
     return trajectory_data

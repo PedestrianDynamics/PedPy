@@ -313,7 +313,7 @@ def write_data_archive_hdf5_file(
         if data is not None:
             records = data.to_records(
                 index=False,
-                column_dtypes={col: dt for col in data.columns[data.dtypes == "object"]},
+                column_dtypes=dict.fromkeys(data.columns[data.dtypes == "object"], dt),
             )
             ds_traj = h5_file.create_dataset(
                 "trajectory",
