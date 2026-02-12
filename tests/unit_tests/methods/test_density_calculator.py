@@ -44,7 +44,7 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
 
     computed_density = compute_classic_density(traj_data=trajectory_data, measurement_area=measurement_area)
 
-    num_peds_in_area_per_frame = dict.fromkeys(range(num_frames), 0)
+    num_peds_in_area_per_frame = {frame: 0 for frame in range(num_frames)}
 
     for index, row in trajectory_data.data.iterrows():
         point = Point([row.x, row.y])
@@ -56,11 +56,10 @@ def test_compute_classic_density(measurement_area, ped_distance, num_ped_col, nu
         orient="index",
         columns=[DENSITY_COL],
     )
-    expected_density.index.name = FRAME_COL
 
-    assert computed_density.index.min() == 0
-    assert computed_density.index.max() == num_frames - 1
-    assert expected_density.equals(computed_density)
+    assert computed_density[FRAME_COL].min() == 0
+    assert computed_density[FRAME_COL].max() == num_frames - 1
+    assert expected_density[DENSITY_COL].equals(computed_density[DENSITY_COL])
 
 
 @pytest.mark.parametrize(

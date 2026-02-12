@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pandas as pd
 import pytest
-from shapely import Polygon
+from shapely import Point, Polygon
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementLine
