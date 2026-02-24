@@ -43,11 +43,11 @@ def correct_invalid_trajectories(
 
     If a point lays inside the geometry or close to it, the  point will be moved away
     outside the geometry. The new distance is calculated by linear interpolation.
-    Points that lie further inside an obstacle/wall have a smaller new distance compared
-    to a point that lies at the end of the interval. The range is between
+    Points that lay further inside an obstacle/wall have a smaller new distance compared
+    to a point that lays at the end of the interval. The range is between
     back_distance and max_distance. The unit for all values is meters.
 
-    max_distance describes how far max. points can be moved out. Points that lie between
+    max_distance describes how far max. points can be moved out. Points that lay between
     the wall and this parameter are also slightly pushed away.
     Furthermore, a value >0 is necessary for a mostly accurate linear interpolation for
     all points, that need to be moved.
@@ -55,7 +55,7 @@ def correct_invalid_trajectories(
     The formula for the calculation for the moving points look like:
 
     .. math::
-        x' = (x - a) \\cdot \\frac{c - b}{c - a} + b
+        x' = (x - a) \cdot (\frac{c - b}{c - a} )+ b
 
     x' is the new distance to the wall
     x is the old distance to the wall, \n
@@ -75,15 +75,15 @@ def correct_invalid_trajectories(
             interpolation for the correcting.
         min_distance_wall (float): in meters, has to be >0. The minimum distance, where the points
             should be moved outside the wall.
-        max_distance_wall (float): in meters, has to be >0 and >= start_distance_wall. Points, which
-            lay nearer to the wall than end_distance_wall will be also moved away. A value
+        max_distance_wall (float): in meters, has to be >0 and >= min_distance_wall. Points, which
+            lay nearer to the wall than max_distance_wall will be also moved away. A value
             >0 ist needed for the linear interpolation, else the calculations do not work.
-        back_distance_obst (float): in meters, has to be <0. Equivalent to backDistance_wall, but the
+        back_distance_obst (float): in meters, has to be <0. Equivalent to max_distance_wall, but the
             value the concerns the obstacles.
-        min_distance_obst (float): in meters, has to be >0. Equivalent to startDistance_wall, but
+        min_distance_obst (float): in meters, has to be >0. Equivalent to min_distance_wall, but
             the value concerns the obstacles.
-        max_distance_obst (float): in meters, has to be >0 and >= start_distance_obst. Equivalent to
-            endDistance_wall, but the value concerns the obstacles.
+        max_distance_obst (float): in meters, has to be >0 and >= min_distance_obst. Equivalent to
+            max_distance_wall, but the value concerns the obstacles.
 
     Returns:
          pedpy.TrajectoryData, either the corrected version of the trajectory or the
@@ -206,15 +206,15 @@ def _project_all_points_inside_walkable_area(
             interpolation for the correcting.
         min_distance_wall (float): in meters, has to be >0. The minimum distance, where the points
             should be moved outside the wall.
-        max_distance_wall (float): in meters, has to be >0 and >= start_distance_wall. Points, which
-            lay nearer to the wall than end_distance_wall will be also moved away. A value
+        max_distance_wall (float): in meters, has to be >0 and >= min_distance_wall. Points, which
+            lay nearer to the wall than max_distance_wall will be also moved away. A value
             >0 ist needed for the linear interpolation, else the calculations do not work.
         back_distance_obst (float): in meters, has to be <0. Equivalent to backDistance_wall, but the
             value the concerns the obstacles.
-        min_distance_obst (float): in meters, has to be >0. Equivalent to startDistance_wall, but
+        min_distance_obst (float): in meters, has to be >0. Equivalent to min_distance_wall, but
             the value concerns the obstacles.
-        max_distance_obst (float): in meters, has to be >0 and >= start_distance_obst. Equivalent to
-            endDistance_wall, but the value concerns the obstacles.
+        max_distance_obst (float): in meters, has to be >0 and >= min_distance_obst. Equivalent to
+            max_distance_wall, but the value concerns the obstacles.
         walkable_area (WalkableArea):  The belonging walkable area
 
 
@@ -280,15 +280,15 @@ def _project_single_inside_walkable_area(
             interpolation for the correcting.
         min_distance_wall (float): in meters, has to be >0. The minimum distance, where the points
             should be moved outside the wall.
-        max_distance_wall (float): in meters, has to be >0 and >= start_distance_wall. Points, which
-            lay nearer to the wall than end_distance_wall will be also moved away. A value
+        max_distance_wall (float): in meters, has to be >0 and >= min_distance_wall. Points, which
+            lay nearer to the wall than max_distance_wall will be also moved away. A value
             >0 ist needed for the linear interpolation, else the calculations do not work.
         back_distance_obst (float): in meters, has to be <0. Equivalent to backDistance_wall, but the
             value the concerns the obstacles.
-        min_distance_obst (float): in meters, has to be >0. Equivalent to startDistance_wall, but
+        min_distance_obst (float): in meters, has to be >0. Equivalent to min_distance_wall, but
             the value concerns the obstacles.
-        max_distance_obst (float): in meters, has to be >0 and >= start_distance_obst. Equivalent to
-            endDistance_wall, but the value concerns the obstacles.
+        max_distance_obst (float): in meters, has to be >0 and >= min_distance_obst. Equivalent to
+            max_distance_wall, but the value concerns the obstacles.
         walkable_area (WalkableArea):  The belonging walkable area
 
     Returns:
@@ -368,7 +368,7 @@ def _push_out_of_wall(
             further inside the walls, are ignored.
         min_distance_wall (float): The minimum distance, where the points
             should be moved outside the wall.
-        max_distance_wall (float): The maximum distance, how far Points can be interpolated outside.
+        max_distance_wall (float): The maximum distance, how far points can be interpolated outside.
             Points, which lay nearer to the wall than end_distance_wall will be also moved away.
         x(float): The  x coordinate of the point to be tested and moved.
         y(float): The  y coordinate of the point to be tested and moved.
@@ -403,8 +403,8 @@ def _push_out_of_obstacles(
             direction : int, points : list  (lists like [p1x, p1y, p2x, p2y], describing  each
             one edge of the wall).
         back_distance_obst (float): the distance behind the wall, ho far the points inside
-            the walls should be corrected. Points, which are further inside the walls, are ignored.
-        max_distance_obst (float): The maximum distance, how far Points can be interpolated outside.
+            the walls should be corrected. points, which are further inside the walls, are ignored.
+        max_distance_obst (float): The maximum distance, how far points can be interpolated outside.
             Points, which lay nearer to the wall than end_distance_wall will be also moved away.
         min_distance_obst (float): The minimum distance, where the points
             should be moved outside the wall.
@@ -445,7 +445,7 @@ def _adjust_around_corners(
             one edge of the wall).
         back_distance_obst (float): the distance behind the wall, ho far the points inside
             the walls should be corrected. Points, which are further inside the walls, are ignored.
-        max_distance_obst (float): The maximum distance, how far Points can be interpolated outside.
+        max_distance_obst (float): The maximum distance, how far points can be interpolated outside.
             Points, which lay nearer to the wall than end_distance_wall will be also moved away.
         min_distance_obst (float): The minimum distance, where the points
             should be moved outside the wall.
@@ -489,8 +489,8 @@ def _calculate_movement_wall(
             further inside the walls, are ignored.
         min_distance_wall (float): The minimum distance, where the points
             should be moved outside the wall.
-        max_distance_wall (float): The maximum distance, how far Points can be interpolated outside.
-            Points, which lay nearer to the wall than end_distance_wall will be also moved away.
+        max_distance_wall (float): The maximum distance, how far points can be interpolated outside.
+            Points, which lay nearer to the wall than max_distance_wall will be also moved away.
         x(float): The  x coordinate of the point to be tested and moved.
         y(float): The  y coordinate of the point to be tested and moved.
 
@@ -526,7 +526,7 @@ def _calculate_movement_obstacle(
             the walls should be corrected. Points, which are
             further inside the walls, are ignored.
         max_distance_obst (float): The maximum distance, how far Points can be interpolated outside.
-            Points, which lay nearer to the wall than end_distance_wall will be also moved away.
+            Points, which lay nearer to the wall than max_distance_obst will be also moved away.
         min_distance_obst (float): The minimum distance, where the points
             should be moved outside the wall.
         x(float): The  x coordinate of the point to be tested and moved.
@@ -565,7 +565,7 @@ def _calculate_movement_adjusting(
             the walls should be corrected. Points, which are
             further inside the walls, are ignored.
         max_distance_obst (float): The maximum distance, how far Points can be interpolated outside.
-            Points, which lay nearer to the wall than end_distance_wall will be also moved away.
+            Points, which lay nearer to the wall than max_distance_obst will be also moved away.
         min_distance_obst (float): The minimum distance, where the points
             should be moved outside the wall.
         x(float): The  x coordinate of the point to be tested and moved.
