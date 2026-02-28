@@ -62,7 +62,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, macos-14, macos-15, windows-latest ]
+        os: [ ubuntu-24.04, macos-14, macos-15, macos-26, windows-latest ]
         python-version: [ '3.11' ]
     runs-on: ${{ matrix.os }}
 
@@ -121,7 +121,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-24.04, macos-14, macos-15, windows-latest ]
+        os: [ ubuntu-24.04, macos-14, macos-15, macos-26, windows-latest ]
         python-version: [ '3.11', '3.12' , '3.13', '3.14']
     runs-on: ${{ matrix.os }}
 
