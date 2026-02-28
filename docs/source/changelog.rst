@@ -5,6 +5,25 @@ Changelog
 Version 1.5.0 (YYYY-MM-DD)
 ==========================
 
+**What's changed:**
+
+- Improved Voronoi polygon computation with ~45% runtime improvement:
+    * Replaced manual scipy-based reconstruction with :code:`shapely.voronoi_polygons`
+    * Vectorized intersection and cutoff operations using shapely array operations
+
+**Migration guide:**
+
+- **Behavioral change**: :func:`~compute_individual_voronoi_polygons` now computes Voronoi cells for frames with fewer than 4 pedestrians.
+Previously, with :code:`use_blind_points=False`, such frames were skipped. The :code:`use_blind_points` parameter is now deprecated and has no effect.
+If you need to replicate the old behavior, filter the results manually:
+
+  .. code-block:: python
+
+     # Filter out frames with < 4 pedestrians (old behavior)
+     result = compute_individual_voronoi_polygons(traj_data, walkable_area)
+     peds_per_frame = traj_data.data.groupby('frame').size()
+     result = result[result['frame'].isin(peds_per_frame[peds_per_frame >= 4].index)]
+
 Version 1.4.0 (2025-09-08)
 ==========================
 
