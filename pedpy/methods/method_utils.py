@@ -4,15 +4,13 @@
 import itertools
 import logging
 import warnings
-from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Callable, Final, List, Optional, Tuple, TypeAlias
+from typing import Callable, Final, Optional, Tuple, TypeAlias
 
 import numpy as np
 import pandas as pd
 import shapely
-from scipy.spatial import Voronoi
 
 from pedpy.column_identifier import (
     CROSSING_FRAME_COL,
@@ -470,7 +468,7 @@ def compute_individual_voronoi_polygons(
     traj_data: TrajectoryData,
     walkable_area: WalkableArea,
     cut_off: Optional[Cutoff] = None,
-    use_blind_points: bool = True,
+    use_blind_points: Optional[bool] = None,
 ) -> pd.DataFrame:
     """Compute the individual Voronoi polygon for each person and frame.
 
@@ -509,99 +507,145 @@ def compute_individual_voronoi_polygons(
         :width: 80 %
         :align: center
 
-    For allowing the computation of the Voronoi polygons when less than 4
-    pedestrians are in the walkable area, 4 extra points will be added outside
-    the walkable area with a significant distance. These will have no effect
-    on the size of the computed Voronoi polygons. This behavior can be turned
-    off by setting :code:`use_blind_points = False`. When turned off no Voronoi
-    polygons will be computed for frames with less than 4 persons, also
-    pedestrians walking in a line can lead to issues in the computation of the
-    Voronoi tesselation.
-
     Args:
         traj_data (TrajectoryData): trajectory data
         walkable_area (WalkableArea): bounding area, where pedestrian are
                 supposed to walk
         cut_off (Cutoff): cutoff information, which provide the largest
                 possible extend of a single Voronoi polygon
-        use_blind_points (bool): adds extra 4 points outside the walkable area
-                to also compute voronoi cells when less than 4 peds are in the
-                walkable area (default: on!)
+        use_blind_points (bool): **Deprecated.** This parameter has no effect
+                and will be removed in a future version. The underlying
+                Voronoi computation now handles any number of pedestrians
+                (including fewer than 4 and collinear configurations)
+                natively via :func:`shapely.voronoi_polygons`.
 
     Returns:
         DataFrame containing the columns 'id', 'frame','polygon' (
         :class:`shapely.Polygon`), and 'density' in :math:`1/m^2`.
     """
-    dfs = []
-
-    bounds = walkable_area.polygon.bounds
-    x_diff = abs(bounds[2] - bounds[0])
-    y_diff = abs(bounds[3] - bounds[1])
-    clipping_diameter = 2 * max(x_diff, y_diff)
-
-    blind_points = np.array(
-        [
-            [100 * (bounds[0] - x_diff), 100 * (bounds[1] - y_diff)],
-            [100 * (bounds[2] + x_diff), 100 * (bounds[1] - y_diff)],
-            [100 * (bounds[0] - x_diff), 100 * (bounds[3] + y_diff)],
-            [100 * (bounds[2] + x_diff), 100 * (bounds[3] + y_diff)],
-        ]
-    )
-
-    for frame, peds_in_frame in traj_data.data.groupby(traj_data.data.frame):
-        points = peds_in_frame[[X_COL, Y_COL]].to_numpy()
-        points = np.concatenate([points, blind_points])
-
-        # only skip analysis if less than 4 peds are in the frame and blind
-        # points are turned off
-        if not use_blind_points and len(points) - len(blind_points) < 4:
-            _log.warning(
-                f"Not enough pedestrians (N="
-                f"{len(points) - len(blind_points)}) available to "
-                f"calculate Voronoi cells for frame = {frame}. "
-                f"Consider enable use of blind points."
-            )
-            continue
-
-        vor = Voronoi(points)
-        voronoi_polygons = _clip_voronoi_polygons(vor, clipping_diameter)
-
-        voronoi_polygons = voronoi_polygons[:-4]
-        voronoi_in_frame = peds_in_frame.loc[:, (ID_COL, FRAME_COL, POINT_COL)]
-
-        # Compute the intersecting area with the walkable area
-        voronoi_in_frame[POLYGON_COL] = shapely.intersection(voronoi_polygons, walkable_area.polygon)
-
-        if cut_off is not None:
-            radius = cut_off.radius
-            quad_segments = cut_off.quad_segments
-            voronoi_in_frame.polygon = shapely.intersection(
-                voronoi_in_frame.polygon,
-                shapely.buffer(
-                    peds_in_frame.point,
-                    radius,
-                    quad_segs=quad_segments,
-                ),
-            )
-
-        # Only consider the parts of a multipolygon which contain the position
-        # of the pedestrian
-        voronoi_in_frame.loc[
-            shapely.get_type_id(voronoi_in_frame.polygon) != 3,
-            POLYGON_COL,
-        ] = voronoi_in_frame.loc[shapely.get_type_id(voronoi_in_frame.polygon) != 3, :].apply(
-            lambda row: shapely.get_parts(row[POLYGON_COL])[shapely.within(row.point, shapely.get_parts(row.polygon))][
-                0
-            ],
-            axis=1,
+    if use_blind_points is not None:
+        warnings.warn(
+            "The parameter 'use_blind_points' is deprecated and has no "
+            "effect. It will be removed in a future version. The underlying "
+            "Voronoi computation handles any number of pedestrians natively.",
+            category=DeprecationWarning,
+            stacklevel=2,
         )
 
-        dfs.append(voronoi_in_frame)
+    all_ids = []
+    all_frames = []
+    all_polygons = []
 
-    result = pd.concat(dfs)[[ID_COL, FRAME_COL, POLYGON_COL]]
-    result[DENSITY_COL] = 1.0 / shapely.area(result.polygon)
+    wa_polygon = walkable_area.polygon
+
+    for _frame, peds_in_frame in traj_data.data.groupby(traj_data.data.frame):
+        points = peds_in_frame[POINT_COL].to_numpy()
+        coords = peds_in_frame[[X_COL, Y_COL]].to_numpy()
+        multipoint = shapely.MultiPoint(coords)
+
+        voronoi_gc = shapely.voronoi_polygons(multipoint, extend_to=wa_polygon, ordered=True)
+        voronoi_polys = shapely.get_parts(voronoi_gc)
+
+        # Intersect with walkable area
+        clipped = shapely.intersection(voronoi_polys, wa_polygon)
+
+        # Apply cutoff if specified
+        if cut_off is not None:
+            buffers = shapely.buffer(
+                points,
+                cut_off.radius,
+                quad_segs=cut_off.quad_segments,
+            )
+            clipped = shapely.intersection(clipped, buffers)
+
+        # Resolve non-Polygon geometries (e.g. MultiPolygon from
+        # non-convex walkable areas) by selecting the part that
+        # contains the pedestrian's position
+        clipped = _resolve_multipolygons(clipped, points)
+
+        all_ids.append(peds_in_frame[ID_COL].values)
+        all_frames.append(peds_in_frame[FRAME_COL].values)
+        all_polygons.append(clipped)
+
+    if not all_ids:
+        return pd.DataFrame(
+            {
+                ID_COL: pd.Series(dtype=int),
+                FRAME_COL: pd.Series(dtype=int),
+                POLYGON_COL: pd.Series(dtype=object),
+                DENSITY_COL: pd.Series(dtype=float),
+            }
+        )
+
+    result = pd.DataFrame(
+        {
+            ID_COL: np.concatenate(all_ids),
+            FRAME_COL: np.concatenate(all_frames),
+            POLYGON_COL: np.concatenate(all_polygons),
+        }
+    )
+    result[DENSITY_COL] = 1.0 / shapely.area(result[POLYGON_COL].values)
 
     return result
+
+
+def _resolve_multipolygons(polygons: np.ndarray, points: np.ndarray) -> np.ndarray:
+    """Resolve non-Polygon geometries to the part containing the point.
+
+    When intersecting Voronoi cells with a non-convex walkable area,
+    the result may be a MultiPolygon or GeometryCollection. This
+    function selects the polygon part that contains the pedestrian's
+    position for each such geometry.
+
+    Args:
+        polygons: array of shapely geometries
+        points: array of shapely Points (one per polygon)
+
+    Returns:
+        Array of shapely Polygons
+
+    Raises:
+        PedPyValueError: if a pedestrian's position does not lie within any
+            polygon part of their Voronoi cell. This indicates the trajectory
+            data is inconsistent with the walkable area (e.g. the position is
+            outside the walkable area or inside an obstacle).
+    """
+    type_ids = shapely.get_type_id(polygons)
+    multi_mask = type_ids != 3  # not a simple Polygon
+
+    if not multi_mask.any():
+        return polygons
+
+    resolved = polygons.copy()
+    for idx in np.where(multi_mask)[0]:
+        parts = shapely.get_parts(polygons[idx])
+
+        # Filter to polygonal parts only (type_id 3 == Polygon).
+        # A GeometryCollection may also contain lines or points; selecting
+        # one of those would violate the return-type contract and cause
+        # division-by-zero when computing density (1 / area).
+        polygon_parts = parts[shapely.get_type_id(parts) == 3]
+
+        if len(polygon_parts) == 0:
+            raise PedPyValueError(
+                f"Pedestrian at position {points[idx]} has a Voronoi cell with "
+                f"no polygonal parts after intersection with the walkable area. "
+                f"Ensure all trajectory positions lie within the walkable area "
+                f"and outside any obstacles."
+            )
+
+        covers_mask = shapely.covers(polygon_parts, points[idx])
+        if not covers_mask.any():
+            raise PedPyValueError(
+                f"Pedestrian at position {points[idx]} does not lie within any "
+                f"part of their Voronoi cell. This indicates the trajectory "
+                f"position is outside the walkable area or inside an obstacle. "
+                f"Verify the trajectory data is consistent with the walkable area."
+            )
+
+        resolved[idx] = polygon_parts[covers_mask][0]
+
+    return resolved
 
 
 def compute_intersecting_polygons(
@@ -724,71 +768,6 @@ def _compute_crossing_frames(
         crossing_frames = df_movement.loc[(movement_crosses_line) & (~movement_ends_on_line)][[ID_COL, FRAME_COL]]
 
     return crossing_frames
-
-
-def _clip_voronoi_polygons(  # pylint: disable=too-many-locals,invalid-name
-    voronoi: Voronoi, diameter: float
-) -> List[shapely.Polygon]:
-    """Generate Polygons from the Voronoi diagram.
-
-    Generate shapely.Polygon objects corresponding to the
-    regions of a scipy.spatial.Voronoi object, in the order of the
-    input points. The polygons for the infinite regions are large
-    enough that all points within a distance 'diameter' of a Voronoi
-    vertex are contained in one of the infinite polygons.
-    from: https://stackoverflow.com/a/52727406/9601068
-    """
-    polygons = []
-    centroid = voronoi.points.mean(axis=0)
-
-    # Mapping from (input point index, Voronoi point index) to list of
-    # unit vectors in the directions of the infinite ridges starting
-    # at the Voronoi point and neighbouring the input point.
-    ridge_direction = defaultdict(list)
-    for (p, q), rv in zip(voronoi.ridge_points, voronoi.ridge_vertices, strict=False):
-        u, v = sorted(rv)
-        if u == -1:
-            # Infinite ridge starting at ridge point with index v,
-            # equidistant from input points with indexes p and q.
-            t = voronoi.points[q] - voronoi.points[p]  # tangent
-            n = np.array([-t[1], t[0]]) / np.linalg.norm(t)  # normal
-            midpoint = voronoi.points[[p, q]].mean(axis=0)
-            direction = np.sign(np.dot(midpoint - centroid, n)) * n
-            ridge_direction[p, v].append(direction)
-            ridge_direction[q, v].append(direction)
-
-    for i, r in enumerate(voronoi.point_region):
-        region = voronoi.regions[r]
-        if -1 not in region:
-            # Finite region.
-            polygons.append(shapely.polygons(voronoi.vertices[region]))
-            continue
-        # Infinite region.
-        inf = region.index(-1)  # Index of vertex at infinity.
-        j = region[(inf - 1) % len(region)]  # Index of previous vertex.
-        k = region[(inf + 1) % len(region)]  # Index of next vertex.
-        if j == k:
-            # Region has one Voronoi vertex with two ridges.
-            dir_j, dir_k = ridge_direction[i, j]
-        else:
-            # Region has two Voronoi vertices, each with one ridge.
-            (dir_j,) = ridge_direction[i, j]
-            (dir_k,) = ridge_direction[i, k]
-
-        # Length of ridges needed for the extra edge to lie at least
-        # 'diameter' away from all Voronoi vertices.
-        length = 2 * diameter / np.linalg.norm(dir_j + dir_k)
-
-        # Polygon consists of finite part plus an extra edge.
-        finite_part = voronoi.vertices[region[inf + 1 :] + region[:inf]]
-        extra_edge = np.array(
-            [
-                voronoi.vertices[j] + dir_j * length,
-                voronoi.vertices[k] + dir_k * length,
-            ]
-        )
-        polygons.append(shapely.polygons(np.concatenate((finite_part, extra_edge))))
-    return polygons
 
 
 def _compute_individual_movement(

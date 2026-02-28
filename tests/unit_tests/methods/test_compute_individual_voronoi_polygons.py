@@ -1,15 +1,6 @@
-"""Unit tests for compute_individual_voronoi_polygons (old implementation).
+"""Unit tests for compute_individual_voronoi_polygons."""
 
-These tests are compatible with the original scipy-based implementation
-and can be backported to verify behavior before the refactoring.
-
-Excluded from the main test file:
-- Tests for _resolve_multipolygons (function did not exist)
-- Tests for empty-result handling (old code crashed with ValueError)
-- Tests for cutoff + non-convex (old multipolygon handling was fragile)
-"""
-
-import logging
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -26,8 +17,10 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyValueError
 from pedpy.methods.method_utils import (
     Cutoff,
+    _resolve_multipolygons,
     compute_individual_voronoi_polygons,
 )
 
@@ -245,7 +238,7 @@ class TestCoverage:
         """Verify the union of polygons equals the walkable area."""
         traj, wa = four_peds_one_frame
         result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
-        union = shapely.unary_union(result[POLYGON_COL].values)
+        union = shapely.union_all(result[POLYGON_COL].values)
         # The union area should equal the walkable area (100)
         np.testing.assert_allclose(union.area, wa.polygon.area, atol=1e-6)
 
@@ -315,93 +308,78 @@ class TestCutoff:
         # Higher quad_segments -> closer to a perfect circle -> larger area
         assert (areas_high >= areas_low - 1e-10).all()
 
+    def test_cutoff_with_non_convex_walkable_area(self):
+        """Verify cutoff works correctly with a non-convex walkable area."""
+        l_shape = WalkableArea([(0, 0), (10, 0), (10, 5), (5, 5), (5, 10), (0, 10)])
+        traj = _make_traj(
+            ids=[0, 1, 2, 3],
+            frames=[0, 0, 0, 0],
+            xs=[2.5, 7.5, 2.5, 2.5],
+            ys=[2.5, 2.5, 7.5, 5.0],
+        )
+        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=l_shape, cut_off=Cutoff(radius=2.0))
+        assert set(result[ID_COL]) == {0, 1, 2, 3}
+        for poly in result[POLYGON_COL]:
+            assert isinstance(poly, shapely.Polygon)
+            assert poly.is_valid
+            assert l_shape.polygon.buffer(1e-8).contains(poly)
+
 
 # ===========================================================================
-# 8. Blind points behavior (use_blind_points)
+# 8. Blind points behavior (use_blind_points) – deprecated parameter
 # ===========================================================================
 class TestBlindPoints:
-    """Test behavior with use_blind_points on/off."""
+    """Test that use_blind_points is deprecated and has no effect.
 
-    def test_single_ped_with_blind_points_returns_result(self, single_ped_one_frame):
-        """With blind points enabled, a single ped should produce a result."""
-        traj, wa = single_ped_one_frame
-        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=True)
-        assert set(result[ID_COL]) == {0}
-        assert set(result[FRAME_COL]) == {0}
+    The parameter is kept for backwards compatibility only. All behavioral
+    correctness for various pedestrian counts is covered by the other test
+    classes (TestSinglePedestrian, TestSymmetricPlacement, etc.).
+    """
 
-    def test_single_ped_without_blind_points_raises(self, single_ped_one_frame):
-        """Without blind points, a single ped crashes (no frames processed)."""
+    def test_passing_true_emits_deprecation_warning(self, single_ped_one_frame):
+        """Passing use_blind_points=True must emit a DeprecationWarning."""
         traj, wa = single_ped_one_frame
-        with pytest.raises(ValueError, match="No objects to concatenate"):
+        with pytest.warns(DeprecationWarning, match="use_blind_points"):
+            compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=True)
+
+    def test_passing_false_emits_deprecation_warning(self, single_ped_one_frame):
+        """Passing use_blind_points=False must emit a DeprecationWarning."""
+        traj, wa = single_ped_one_frame
+        with pytest.warns(DeprecationWarning, match="use_blind_points"):
             compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=False)
 
-    def test_two_peds_without_blind_points_raises(self, two_peds_one_frame):
-        """Without blind points, two peds crashes (no frames processed)."""
-        traj, wa = two_peds_one_frame
-        with pytest.raises(ValueError, match="No objects to concatenate"):
-            compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=False)
+    def test_omitting_parameter_emits_no_warning(self, single_ped_one_frame):
+        """Not passing use_blind_points must not emit any DeprecationWarning."""
+        traj, wa = single_ped_one_frame
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DeprecationWarning)
+            compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
 
-    def test_three_peds_without_blind_points_raises(self, square_walkable_area):
-        """Without blind points, three peds crashes (no frames processed)."""
-        traj = _make_traj(
-            ids=[0, 1, 2],
-            frames=[0, 0, 0],
-            xs=[2.0, 8.0, 5.0],
-            ys=[2.0, 2.0, 8.0],
-        )
-        with pytest.raises(ValueError, match="No objects to concatenate"):
-            compute_individual_voronoi_polygons(
-                traj_data=traj, walkable_area=square_walkable_area, use_blind_points=False
+    def test_parameter_is_noop_true_vs_omitted(self, single_ped_one_frame):
+        """use_blind_points=True must produce the same result as omitting it."""
+        traj, wa = single_ped_one_frame
+        result_default = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
+        with pytest.warns(DeprecationWarning):
+            result_explicit = compute_individual_voronoi_polygons(
+                traj_data=traj, walkable_area=wa, use_blind_points=True
             )
+        pd.testing.assert_frame_equal(
+            result_default.reset_index(drop=True),
+            result_explicit.reset_index(drop=True),
+        )
 
-    def test_four_peds_without_blind_points_returns_result(self, four_peds_one_frame):
-        """With 4+ peds, blind_points=False should still produce results."""
+    def test_parameter_is_noop_false_vs_omitted(self, four_peds_one_frame):
+        """use_blind_points=False must produce the same result as omitting it."""
         traj, wa = four_peds_one_frame
-        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=False)
-        assert set(result[ID_COL]) == {0, 1, 2, 3}
-        assert (result[FRAME_COL] == 0).all()
-
-    def test_blind_points_do_not_affect_results_with_many_peds(self, four_peds_one_frame):
-        """With 4+ peds, results should be the same with or without blind points."""
-        traj, wa = four_peds_one_frame
-        result_bp_on = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=True)
-        result_bp_off = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=False)
-        areas_on = shapely.area(result_bp_on.sort_values(ID_COL).reset_index(drop=True)[POLYGON_COL].values)
-        areas_off = shapely.area(result_bp_off.sort_values(ID_COL).reset_index(drop=True)[POLYGON_COL].values)
-        np.testing.assert_allclose(areas_on, areas_off, atol=1e-6)
-
-    def test_without_blind_points_skips_frame_with_few_peds_keeps_other_frames(self, square_walkable_area):
-        """Frames with <4 peds are skipped, frames with >=4 are kept."""
-        traj = _make_traj(
-            ids=[0, 1, 0, 1, 2, 3],
-            frames=[0, 0, 1, 1, 1, 1],
-            xs=[3.0, 7.0, 2.5, 7.5, 2.5, 7.5],
-            ys=[5.0, 5.0, 2.5, 2.5, 7.5, 7.5],
-        )
-        result = compute_individual_voronoi_polygons(
-            traj_data=traj, walkable_area=square_walkable_area, use_blind_points=False
-        )
-        # Frame 0 has 2 peds -> skipped; Frame 1 has 4 peds -> kept
-        assert set(result[FRAME_COL]) == {1}
-        assert set(result[ID_COL]) == {0, 1, 2, 3}
-
-    def test_skipped_frames_emit_warning(self, square_walkable_area, caplog):
-        """Verify a warning is logged when frames are skipped.
-
-        Uses a scenario where only some frames are skipped (not all),
-        so the old implementation does not crash on pd.concat([]).
-        """
-        traj = _make_traj(
-            ids=[0, 1, 0, 1, 2, 3],
-            frames=[0, 0, 1, 1, 1, 1],
-            xs=[3.0, 7.0, 2.5, 7.5, 2.5, 7.5],
-            ys=[5.0, 5.0, 2.5, 2.5, 7.5, 7.5],
-        )
-        with caplog.at_level(logging.WARNING):
-            compute_individual_voronoi_polygons(
-                traj_data=traj, walkable_area=square_walkable_area, use_blind_points=False
+        result_default = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
+        with pytest.warns(DeprecationWarning):
+            result_explicit = compute_individual_voronoi_polygons(
+                traj_data=traj, walkable_area=wa, use_blind_points=False
             )
-        assert any("Not enough pedestrians" in msg for msg in caplog.messages)
+        pd.testing.assert_frame_equal(
+            result_default.sort_values([ID_COL, FRAME_COL]).reset_index(drop=True),
+            result_explicit.sort_values([ID_COL, FRAME_COL]).reset_index(drop=True),
+        )
 
 
 # ===========================================================================
@@ -467,19 +445,19 @@ class TestMultipleFrames:
 # 10. Single pedestrian gets (approximately) full walkable area
 # ===========================================================================
 class TestSinglePedestrian:
-    """With blind points and one ped, the polygon should cover the walkable area."""
+    """With one ped, the polygon should cover the full walkable area."""
 
     def test_single_ped_polygon_covers_walkable_area(self, single_ped_one_frame):
         """Verify single ped's polygon covers the full walkable area."""
         traj, wa = single_ped_one_frame
-        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=True)
+        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
         poly = result.iloc[0][POLYGON_COL]
         np.testing.assert_allclose(poly.area, wa.polygon.area, atol=1e-6)
 
     def test_single_ped_density(self, single_ped_one_frame):
         """Verify single ped density equals 1 / walkable area."""
         traj, wa = single_ped_one_frame
-        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=True)
+        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
         expected_density = 1.0 / wa.polygon.area
         np.testing.assert_allclose(result.iloc[0][DENSITY_COL], expected_density, atol=1e-10)
 
@@ -514,7 +492,7 @@ class TestNonConvexWalkableArea:
             ys=[2.5, 2.5, 7.5, 5.0],
         )
         result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=l_shape)
-        union = shapely.unary_union(result[POLYGON_COL].values)
+        union = shapely.union_all(result[POLYGON_COL].values)
         np.testing.assert_allclose(union.area, l_shape.polygon.area, atol=1e-6)
 
 
@@ -547,20 +525,18 @@ class TestWalkableAreaWithObstacles:
 class TestCollinearPedestrians:
     """Collinear pedestrians can cause degenerate Voronoi diagrams.
 
-    Blind points should handle this gracefully.
+    shapely.voronoi_polygons handles this natively.
     """
 
-    def test_collinear_peds_with_blind_points(self, square_walkable_area):
-        """Verify collinear peds produce valid polygons with blind points."""
+    def test_collinear_peds_produce_valid_polygons(self, square_walkable_area):
+        """Verify collinear peds produce valid polygons."""
         traj = _make_traj(
             ids=[0, 1, 2, 3, 4],
             frames=[0, 0, 0, 0, 0],
             xs=[1.0, 3.0, 5.0, 7.0, 9.0],
             ys=[5.0, 5.0, 5.0, 5.0, 5.0],
         )
-        result = compute_individual_voronoi_polygons(
-            traj_data=traj, walkable_area=square_walkable_area, use_blind_points=True
-        )
+        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=square_walkable_area)
         assert set(result[ID_COL]) == {0, 1, 2, 3, 4}
         assert (result[FRAME_COL] == 0).all()
         for poly in result[POLYGON_COL]:
@@ -582,9 +558,7 @@ class TestBoundaryPedestrians:
             xs=[0.0, 10.0, 5.0, 5.0],
             ys=[5.0, 5.0, 0.0, 10.0],
         )
-        result = compute_individual_voronoi_polygons(
-            traj_data=traj, walkable_area=square_walkable_area, use_blind_points=True
-        )
+        result = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=square_walkable_area)
         assert set(result[ID_COL]) == {0, 1, 2, 3}
         assert (result[FRAME_COL] == 0).all()
         for poly in result[POLYGON_COL]:
@@ -730,13 +704,13 @@ class TestNonOverlapping:
 
 
 # ===========================================================================
-# 21. Multipolygon resolution (integration test only)
+# 21. Multipolygon resolution (non-convex geometry producing GeometryCollections)
 # ===========================================================================
 class TestMultipolygonResolution:
-    """Test geometries that produce non-Polygon results after clipping.
+    """Test _resolve_multipolygons and the integration path.
 
-    Only integration tests are included here; direct _resolve_multipolygons
-    tests are not applicable to the old implementation.
+    Tests geometries that produce non-Polygon results after intersection
+    with the walkable area.
     """
 
     def test_two_rooms_geometry_produces_valid_polygons(self):
@@ -804,3 +778,169 @@ class TestMultipolygonResolution:
         for _, row in merged.iterrows():
             pt = shapely.Point(row[X_COL], row[Y_COL])
             assert row[POLYGON_COL].contains(pt) or row[POLYGON_COL].touches(pt)
+
+
+# ===========================================================================
+# 22. _resolve_multipolygons unit tests (direct)
+# ===========================================================================
+class TestResolveMultipolygons:
+    """Direct unit tests for the _resolve_multipolygons helper."""
+
+    def test_all_polygons_returned_unchanged(self):
+        """When all geometries are already Polygons, return them as-is."""
+        polys = np.array(
+            [
+                shapely.Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]),
+                shapely.Polygon([(1, 0), (2, 0), (2, 1), (1, 1)]),
+            ]
+        )
+        points = np.array(
+            [
+                shapely.Point(0.5, 0.5),
+                shapely.Point(1.5, 0.5),
+            ]
+        )
+        result = _resolve_multipolygons(polys, points)
+        assert len(result) == 2
+        for r, p in zip(result, polys, strict=True):
+            assert r.equals(p)
+
+    def test_multipolygon_resolved_to_containing_part(self):
+        """A MultiPolygon should be resolved to the part containing the point."""
+        part_a = shapely.Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+        part_b = shapely.Polygon([(5, 5), (6, 5), (6, 6), (5, 6)])
+        multi = shapely.MultiPolygon([part_a, part_b])
+        point_in_b = shapely.Point(5.5, 5.5)
+
+        polys = np.array([multi])
+        points = np.array([point_in_b])
+        result = _resolve_multipolygons(polys, points)
+
+        assert len(result) == 1
+        assert isinstance(result[0], shapely.Polygon)
+        assert result[0].equals(part_b)
+
+    def test_point_outside_all_parts_raises(self):
+        """A MultiPolygon where the point is outside all parts must raise.
+
+        There is no safe 'nearest' guess: picking the wrong part would silently
+        assign the Voronoi cell to the wrong region (e.g. the wrong side of a
+        barrier), producing physically meaningless density values.
+        """
+        part_a = shapely.Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+        part_b = shapely.Polygon([(5, 5), (6, 5), (6, 6), (5, 6)])
+        multi = shapely.MultiPolygon([part_a, part_b])
+        # Point at (2, 0.5) is outside both parts
+        point_outside = shapely.Point(2.0, 0.5)
+
+        polys = np.array([multi])
+        points = np.array([point_outside])
+
+        with pytest.raises(PedPyValueError, match="does not lie within"):
+            _resolve_multipolygons(polys, points)
+
+    def test_geometry_collection_resolved(self):
+        """A GeometryCollection containing polygons should be resolved."""
+        part_a = shapely.Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+        part_b = shapely.Polygon([(5, 5), (6, 5), (6, 6), (5, 6)])
+        gc = shapely.GeometryCollection([part_a, part_b])
+        point_in_a = shapely.Point(0.5, 0.5)
+
+        polys = np.array([gc])
+        points = np.array([point_in_a])
+        result = _resolve_multipolygons(polys, points)
+
+        assert len(result) == 1
+        assert isinstance(result[0], shapely.Polygon)
+        assert result[0].equals(part_a)
+
+    def test_mixed_array_only_non_polygons_resolved(self):
+        """In a mixed array, only non-Polygon entries should be resolved.
+
+        Polygon entries should remain unchanged.
+        """
+        simple_poly = shapely.Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+        part_a = shapely.Polygon([(10, 10), (11, 10), (11, 11), (10, 11)])
+        part_b = shapely.Polygon([(20, 20), (21, 20), (21, 21), (20, 21)])
+        multi = shapely.MultiPolygon([part_a, part_b])
+
+        polys = np.array([simple_poly, multi])
+        points = np.array(
+            [
+                shapely.Point(0.5, 0.5),
+                shapely.Point(20.5, 20.5),
+            ]
+        )
+        result = _resolve_multipolygons(polys, points)
+
+        assert result[0].equals(simple_poly)
+        assert result[1].equals(part_b)
+
+    def test_input_array_not_mutated(self):
+        """Verify _resolve_multipolygons does not modify the input array."""
+        part_a = shapely.Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+        part_b = shapely.Polygon([(5, 5), (6, 5), (6, 6), (5, 6)])
+        multi = shapely.MultiPolygon([part_a, part_b])
+        point_in_a = shapely.Point(0.5, 0.5)
+
+        polys = np.array([multi])
+        original = polys.copy()
+        points = np.array([point_in_a])
+        _resolve_multipolygons(polys, points)
+
+        # Input should be unchanged
+        assert polys[0].equals(original[0])
+
+    def test_geometry_collection_without_polygon_parts_raises(self):
+        """A GeometryCollection with no polygon parts must raise PedPyValueError.
+
+        This indicates the trajectory position is outside the walkable area or
+        inside an obstacle — silent fallback would hide a data integrity problem.
+        """
+        gc = shapely.GeometryCollection([shapely.LineString([(0, 0), (1, 1)]), shapely.Point(0.5, 0.5)])
+        polys = np.array([gc])
+        points = np.array([shapely.Point(0.5, 0.5)])
+
+        with pytest.raises(PedPyValueError, match="no polygonal parts"):
+            _resolve_multipolygons(polys, points)
+
+    def test_point_outside_all_polygon_parts_raises(self):
+        """A point not within any polygon part must raise PedPyValueError.
+
+        Silently picking the nearest part would assign the Voronoi cell to the
+        wrong side of a barrier, producing physically meaningless results.
+        For example: a pedestrian leaning over an obstacle such that their
+        recorded (x, y) position lands inside the obstacle, leaving their
+        point outside all polygon parts of the split Voronoi cell.
+        """
+        part_a = shapely.Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+        part_b = shapely.Polygon([(5, 5), (6, 5), (6, 6), (5, 6)])
+        multi = shapely.MultiPolygon([part_a, part_b])
+        # Point is outside both parts
+        point_outside = shapely.Point(10.0, 10.0)
+
+        polys = np.array([multi])
+        points = np.array([point_outside])
+
+        with pytest.raises(PedPyValueError, match="does not lie within"):
+            _resolve_multipolygons(polys, points)
+
+    def test_geometry_collection_with_mixed_parts_ignores_non_polygon_parts(self):
+        """Non-polygon parts in a GeometryCollection must not be selected.
+
+        Only the polygon part should be a candidate even if the point lies
+        exactly on a line part.
+        """
+        poly_part = shapely.Polygon([(0, 0), (2, 0), (2, 2), (0, 2)])
+        line_part = shapely.LineString([(3, 0), (3, 2)])
+        gc = shapely.GeometryCollection([line_part, poly_part])
+        # Point is inside the polygon part (not on the line)
+        point_in_poly = shapely.Point(1.0, 1.0)
+
+        polys = np.array([gc])
+        points = np.array([point_in_poly])
+        result = _resolve_multipolygons(polys, points)
+
+        assert len(result) == 1
+        assert isinstance(result[0], shapely.Polygon)
+        assert result[0].equals(poly_part)
