@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 320 320">
+  <g stroke="#4aa3c4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Y axis -->
+    <line x1="55" y1="275" x2="55" y2="40" stroke-width="14" fill="none"/>
+    <!-- X axis -->
+    <line x1="55" y1="275" x2="285" y2="275" stroke-width="14" fill="none"/>
+    <!-- Bars -->
+    <rect x="85" y="195" width="45" height="80" rx="4" fill="#4aa3c4" stroke="none"/>
+    <rect x="150" y="130" width="45" height="145" rx="4" fill="#4aa3c4" stroke="none"/>
+    <rect x="215" y="75" width="45" height="200" rx="4" fill="#4aa3c4" stroke="none"/>
+  </g>
+</svg>
