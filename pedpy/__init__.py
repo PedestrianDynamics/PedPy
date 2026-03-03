@@ -10,6 +10,8 @@ except ImportError:
     __version__ = "unknown"
     __commit_hash__ = "unknown"
 
+from preprocessing.trajectory_projector import correct_invalid_trajectories
+
 from .column_identifier import (
     ACC_COL,
     A_X_COL,
@@ -210,6 +212,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_individual_acceleration",
     "compute_mean_acceleration_per_frame",
     "compute_voronoi_acceleration",
+    "correct_invalid_trajectories",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
