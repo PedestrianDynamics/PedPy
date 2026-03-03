@@ -33,7 +33,9 @@ def correct_invalid_trajectories(
     at some frames, this data can not be processed with PedPy.
 
     The function locates false points and points, are too close to a wall but
-    still outside of it, and corrects them by pushing them slightly away.
+    still outside of it, and corrects them by pushing them slightly away. Depending
+    on the geometry and the parameter values, it can be beneficial to buffer
+    the geometry beforehand to create thicker walls.
 
     At the beginning it checks if the trajectory is valid, so that the whole process
     will not run unnecessary.
@@ -52,6 +54,10 @@ def correct_invalid_trajectories(
     Furthermore, a value >0 is necessary for a mostly accurate linear interpolation for
     all points, that need to be moved.
 
+    .. image:: /images/parameters_preprocessing.png
+        :width: 60 %
+        :align: center
+
     The formula for the calculation for the moving points look like:
 
     .. math::
@@ -63,6 +69,7 @@ def correct_invalid_trajectories(
     a is equal to back_distance \n
     b is equal to min_distance  \n
     c is equal to max_distance  \n
+
 
 
     Args:
