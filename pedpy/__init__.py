@@ -149,6 +149,7 @@ from .plotting.plotting import (
     plot_voronoi_cells,
     plot_walkable_area,
 )
+from .preprocessing.trajectory_projector import correct_invalid_trajectories
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "AxisAlignedMeasurementArea",
@@ -210,6 +211,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_individual_acceleration",
     "compute_mean_acceleration_per_frame",
     "compute_voronoi_acceleration",
+    "correct_invalid_trajectories",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
