@@ -10,8 +10,6 @@ except ImportError:
     __version__ = "unknown"
     __commit_hash__ = "unknown"
 
-from preprocessing.trajectory_projector import correct_invalid_trajectories
-
 from .column_identifier import (
     ACC_COL,
     A_X_COL,
@@ -151,6 +149,7 @@ from .plotting.plotting import (
     plot_voronoi_cells,
     plot_walkable_area,
 )
+from .preprocessing.trajectory_projector import correct_invalid_trajectories
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "AxisAlignedMeasurementArea",
