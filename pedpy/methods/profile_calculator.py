@@ -19,8 +19,9 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import shapely
+from scipy import stats
 
-from pedpy.column_identifier import FRAME_COL
+from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 from pedpy.data.geometry import (
     AxisAlignedMeasurementArea,
     MeasurementArea,
@@ -1048,3 +1049,119 @@ def get_grid_cells(
         len(y_coords) - 1,
         len(x_coords) - 1,
     )
+
+
+class RsetMethod(Enum):
+    r"""Aggregation method for computing RSET maps.
+
+    RSET (Required Safe Egress Time) maps show the time at which
+    pedestrians occupy each spatial cell. Different aggregation methods
+    provide different perspectives on the evacuation process.
+
+    See: Schröder et al., "A Map Representation of the ASET-RSET Concept"
+    (Fire Safety Journal, 2020).
+    """
+
+    MAX = auto()
+    r"""Maximum time a pedestrian was observed in each cell.
+
+    This gives the last time any pedestrian occupied each cell,
+    representing the required safe egress time (RSET) per cell.
+    """
+
+    MIN = auto()
+    r"""Minimum time a pedestrian was observed in each cell.
+
+    This gives the earliest time any pedestrian was observed in each
+    cell.
+    """
+
+    MEAN = auto()
+    r"""Mean time pedestrians were observed in each cell."""
+
+
+_RSET_METHOD_TO_STAT: dict[RsetMethod, str] = {
+    RsetMethod.MAX: "max",
+    RsetMethod.MIN: "min",
+    RsetMethod.MEAN: "mean",
+}
+
+
+def compute_rset_map(
+    *,
+    traj_data: "TrajectoryData",
+    walkable_area: Optional[WalkableArea] = None,
+    axis_aligned_measurement_area: Optional[AxisAlignedMeasurementArea] = None,
+    grid_size: float,
+    method: RsetMethod = RsetMethod.MAX,
+) -> npt.NDArray[np.float64]:
+    r"""Compute an RSET (Required Safe Egress Time) map.
+
+    The walkable area (or measurement area) is divided into a grid of
+    square cells. For each cell, the time values of all trajectory
+    points falling inside the cell are aggregated using *method*
+    (default: maximum). This yields a 2-D array where each entry
+    represents the aggregated time in that cell.
+
+    The implementation follows Section 5.5.1 of Schröder et al.,
+    "A Map Representation of the ASET-RSET Concept"
+    (Fire Safety Journal, 2020).
+
+    Args:
+        traj_data: Trajectory data to analyse.
+        walkable_area: Geometry over which to compute the map.
+        axis_aligned_measurement_area: Alternative rectangular area.
+        grid_size: Side length of each grid cell (in metres).
+        method: Aggregation method applied to the time values
+            per cell (default: :attr:`RsetMethod.MAX`).
+
+    Returns:
+        A 2-D NumPy array (rows x cols) with the aggregated time per
+        cell. Cells with no observations contain 0.
+    """
+    from pedpy.data.trajectory_data import TrajectoryData
+
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(
+            f"`traj_data` must be an instance of TrajectoryData, "
+            f"got {type(traj_data).__name__}."
+        )
+
+    (
+        _,
+        rows,
+        cols,
+    ) = get_grid_cells(
+        walkable_area=walkable_area,
+        axis_aligned_measurement_area=axis_aligned_measurement_area,
+        grid_size=grid_size,
+    )
+
+    if walkable_area is not None:
+        min_x, min_y, max_x, max_y = walkable_area.bounds
+    if axis_aligned_measurement_area is not None:
+        min_x, min_y, max_x, max_y = axis_aligned_measurement_area.bounds
+
+    x_edges = np.arange(min_x, max_x + grid_size, grid_size)
+    y_edges = np.arange(min_y, max_y + grid_size, grid_size)
+
+    data = traj_data.data
+    time = data[FRAME_COL].to_numpy(dtype=np.float64) / traj_data.frame_rate
+
+    stat_func = _RSET_METHOD_TO_STAT[method]
+
+    result = stats.binned_statistic_2d(
+        x=data[X_COL].to_numpy(dtype=np.float64),
+        y=data[Y_COL].to_numpy(dtype=np.float64),
+        values=time,
+        statistic=stat_func,
+        bins=[x_edges, y_edges],
+    )
+
+    rset = np.nan_to_num(result.statistic.T)
+
+    # Flip vertically so that row 0 corresponds to the top (max y),
+    # consistent with the orientation used by get_grid_cells and imshow.
+    rset = np.flipud(rset)
+
+    return rset

@@ -1350,6 +1350,81 @@ def plot_profiles(
     return axes
 
 
+def plot_rset_map(
+    *,
+    walkable_area: WalkableArea,
+    rset_map: NDArray[np.float64],
+    measurement_area: Optional[AxisAlignedMeasurementArea] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot an RSET (Required Safe Egress Time) map.
+
+    Args:
+        walkable_area(WalkableArea): walkable area of the plot
+        rset_map: 2-D array as returned by
+            :func:`~profile_calculator.compute_rset_map`
+        measurement_area (AxisAlignedMeasurementArea): measurement area
+            used when computing the RSET map (optional)
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will
+            be created
+        kwargs: Additional parameters to change the plot appearance
+
+    Keyword Args:
+        title (optional): title of the plot
+        cmap (optional): colormap (default ``"jet"``)
+        vmin (optional): minimum value for the colormap
+        vmax (optional): maximum value for the colormap
+        cb_label (optional): colorbar label (default ``"time / s"``)
+        walkable_color (optional): color of the walkable area border
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
+
+    Returns:
+         matplotlib.axes.Axes instance where the RSET map is plotted
+    """
+    bounds = walkable_area.bounds
+
+    if measurement_area is not None:
+        bounds = measurement_area.bounds
+
+    title = kwargs.pop("title", "RSET map")
+    walkable_color = kwargs.pop("walkable_color", "w")
+    hole_color = kwargs.pop("hole_color", "w")
+    hole_alpha = kwargs.pop("hole_alpha", 1.0)
+    vmin = kwargs.pop("vmin", np.nanmin(rset_map))
+    vmax = kwargs.pop("vmax", np.nanmax(rset_map))
+    cb_label = kwargs.pop("cb_label", "time / s")
+
+    if axes is None:
+        axes = plt.gca()
+
+    axes.set_title(title)
+    imshow = axes.imshow(
+        rset_map,
+        extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
+        cmap=kwargs.pop("cmap", "jet"),
+        vmin=vmin,
+        vmax=vmax,
+        **kwargs,
+    )
+    divider = make_axes_locatable(axes)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig = plt.gcf()
+
+    fig.colorbar(imshow, cax=cax, orientation="vertical", label=cb_label)
+
+    axes.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
+    plot_walkable_area(
+        walkable_area=walkable_area,
+        axes=axes,
+        hole_color=hole_color,
+        hole_alpha=hole_alpha,
+    )
+
+    return axes
+
+
 def plot_walkable_area(
     *,
     walkable_area: WalkableArea,
@@ -1663,7 +1738,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
     show_colorbar = kwargs.pop("show_colorbar", True)
     cb_label = kwargs.pop("cb_label", None)
     color_by_column = kwargs.pop("color_by_column", None)
-    voronoi_colormap = plt.get_cmap(kwargs.pop("cmap", "YlGn"))
+    voronoi_colormap = plt.get_cmap(kwargs.pop("cmap", "YlGng"))
 
     if axes is None:
         axes = plt.gca()
