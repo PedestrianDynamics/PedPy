@@ -1738,7 +1738,7 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
     show_colorbar = kwargs.pop("show_colorbar", True)
     cb_label = kwargs.pop("cb_label", None)
     color_by_column = kwargs.pop("color_by_column", None)
-    voronoi_colormap = plt.get_cmap(kwargs.pop("cmap", "YlGng"))
+    voronoi_colormap = plt.get_cmap(kwargs.pop("cmap", "YlGn"))
 
     if axes is None:
         axes = plt.gca()
