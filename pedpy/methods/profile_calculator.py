@@ -1122,10 +1122,7 @@ def compute_rset_map(
     from pedpy.data.trajectory_data import TrajectoryData
 
     if not isinstance(traj_data, TrajectoryData):
-        raise PedPyTypeError(
-            f"`traj_data` must be an instance of TrajectoryData, "
-            f"got {type(traj_data).__name__}."
-        )
+        raise PedPyTypeError(f"`traj_data` must be an instance of TrajectoryData, got {type(traj_data).__name__}.")
 
     (
         _,
