@@ -21,12 +21,13 @@ import pandas as pd
 import shapely
 from scipy import stats
 
-from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.column_identifier import FRAME_COL, X_COL, Y_COL
 from pedpy.data.geometry import (
     AxisAlignedMeasurementArea,
     MeasurementArea,
     WalkableArea,
 )
+from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.errors import PedPyRuntimeError, PedPyTypeError, PedPyValueError
 from pedpy.internal.utils import alias
 
@@ -1089,7 +1090,7 @@ _RSET_METHOD_TO_STAT: dict[RsetMethod, str] = {
 
 def compute_rset_map(
     *,
-    traj_data: "TrajectoryData",
+    traj_data: TrajectoryData,
     walkable_area: Optional[WalkableArea] = None,
     axis_aligned_measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     grid_size: float,
@@ -1119,16 +1120,10 @@ def compute_rset_map(
         A 2-D NumPy array (rows x cols) with the aggregated time per
         cell. Cells with no observations contain 0.
     """
-    from pedpy.data.trajectory_data import TrajectoryData
-
     if not isinstance(traj_data, TrajectoryData):
         raise PedPyTypeError(f"`traj_data` must be an instance of TrajectoryData, got {type(traj_data).__name__}.")
 
-    (
-        _,
-        rows,
-        cols,
-    ) = get_grid_cells(
+    get_grid_cells(
         walkable_area=walkable_area,
         axis_aligned_measurement_area=axis_aligned_measurement_area,
         grid_size=grid_size,
