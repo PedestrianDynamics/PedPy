@@ -1375,7 +1375,11 @@ def plot_rset_map(
         cmap (optional): colormap (default ``"jet"``)
         vmin (optional): minimum value for the colormap
         vmax (optional): maximum value for the colormap
-        cb_label (optional): colorbar label (default ``"time / s"``)
+        label (optional): colorbar label (default ``"time / s"``)
+        font_size (optional): font size for axis and colorbar labels
+            (default 14)
+        title_size (optional): font size for the title (default 16)
+        tick_size (optional): font size for tick labels (default 12)
         walkable_color (optional): color of the walkable area border
         hole_color (optional): background color of holes
         hole_alpha (optional): alpha of background color for holes
@@ -1394,12 +1398,19 @@ def plot_rset_map(
     hole_alpha = kwargs.pop("hole_alpha", 1.0)
     vmin = kwargs.pop("vmin", np.nanmin(rset_map))
     vmax = kwargs.pop("vmax", np.nanmax(rset_map))
-    cb_label = kwargs.pop("cb_label", "time / s")
+    label = kwargs.pop("label", "time / s")
+
+    font_size = kwargs.pop("font_size", 14)
+    title_size = kwargs.pop("title_size", 16)
+    tick_size = kwargs.pop("tick_size", 12)
 
     if axes is None:
         axes = plt.gca()
 
-    axes.set_title(title)
+    axes.set_title(title, fontsize=title_size)
+    axes.set_xlabel("x / m", fontsize=font_size)
+    axes.set_ylabel("y / m", fontsize=font_size)
+    axes.tick_params(labelsize=tick_size)
     imshow = axes.imshow(
         rset_map,
         extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
@@ -1412,7 +1423,9 @@ def plot_rset_map(
     cax = divider.append_axes("right", size="5%", pad=0.05)
     fig = plt.gcf()
 
-    fig.colorbar(imshow, cax=cax, orientation="vertical", label=cb_label)
+    cb = fig.colorbar(imshow, cax=cax, orientation="vertical", label=label)
+    cb.ax.tick_params(labelsize=tick_size)
+    cb.set_label(label, fontsize=font_size)
 
     axes.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
     plot_walkable_area(
