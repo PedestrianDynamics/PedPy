@@ -1,10 +1,16 @@
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import pytest
 import shapely
 
-from pedpy.data.geometry import WalkableArea
+from pedpy.data.geometry import AxisAlignedMeasurementArea, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.profile_calculator import RsetMethod, compute_rset_map
+from pedpy.plotting.plotting import plot_rset_map
+
+matplotlib.use("Agg")
 
 
 def _make_traj(
@@ -44,10 +50,10 @@ def test_rset_map_single_pedestrian_max():
     assert rset.shape == (2, 2)
     # Bottom-left cell should have max time = 4.0
     assert rset[1, 0] == pytest.approx(4.0)
-    # Other cells should be 0 (no observations)
-    assert rset[0, 0] == pytest.approx(0.0)
-    assert rset[0, 1] == pytest.approx(0.0)
-    assert rset[1, 1] == pytest.approx(0.0)
+    # Other cells should be NaN (no observations)
+    assert np.isnan(rset[0, 0])
+    assert np.isnan(rset[0, 1])
+    assert np.isnan(rset[1, 1])
 
 
 def test_rset_map_min_method():
@@ -169,3 +175,73 @@ def test_rset_map_two_cells():
     assert rset[1, 0] == pytest.approx(1.0)
     # Bottom-right cell: max time = 3.0 s
     assert rset[1, 1] == pytest.approx(3.0)
+
+
+def test_rset_map_no_data_cells_are_nan_min():
+    """Empty cells must be NaN, not 0, so they are distinguishable from
+    a real time of 0 s — especially important for RsetMethod.MIN."""
+    n = 5
+    traj = _make_traj(
+        ids=[0] * n,
+        frames=list(range(n)),
+        xs=[0.5] * n,
+        ys=[0.5] * n,
+        frame_rate=1.0,
+    )
+    walkable_area = WalkableArea(shapely.box(0, 0, 2, 2))
+    rset = compute_rset_map(
+        traj_data=traj,
+        walkable_area=walkable_area,
+        grid_size=1.0,
+        method=RsetMethod.MIN,
+    )
+
+    # Occupied cell has min time = 0.0
+    assert rset[1, 0] == pytest.approx(0.0)
+    # Unoccupied cells must be NaN, NOT 0
+    assert np.isnan(rset[0, 0])
+    assert np.isnan(rset[0, 1])
+    assert np.isnan(rset[1, 1])
+
+
+def test_rset_map_with_axis_aligned_measurement_area():
+    """compute_rset_map accepts axis_aligned_measurement_area."""
+    n = 5
+    traj = _make_traj(
+        ids=[0] * n,
+        frames=list(range(n)),
+        xs=[0.5] * n,
+        ys=[0.5] * n,
+        frame_rate=1.0,
+    )
+    area = AxisAlignedMeasurementArea(0, 0, 2, 2)
+    rset = compute_rset_map(
+        traj_data=traj,
+        axis_aligned_measurement_area=area,
+        grid_size=1.0,
+        method=RsetMethod.MAX,
+    )
+
+    assert rset.shape == (2, 2)
+    assert rset[1, 0] == pytest.approx(4.0)
+    assert np.isnan(rset[0, 0])
+
+
+def test_plot_rset_map_preserves_title_and_labels():
+    """Title and axis labels set by plot_rset_map must survive the
+    internal call to plot_walkable_area."""
+    walkable_area = WalkableArea(shapely.box(0, 0, 2, 2))
+    rset_map = np.array([[np.nan, 1.0], [2.0, 3.0]])
+
+    fig, ax = plt.subplots()
+    returned_ax = plot_rset_map(
+        walkable_area=walkable_area,
+        rset_map=rset_map,
+        axes=ax,
+        title="Custom Title",
+    )
+
+    assert returned_ax.get_title() == "Custom Title"
+    assert "x" in returned_ax.get_xlabel().lower()
+    assert "y" in returned_ax.get_ylabel().lower()
+    plt.close(fig)

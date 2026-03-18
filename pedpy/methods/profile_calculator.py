@@ -1118,7 +1118,7 @@ def compute_rset_map(
 
     Returns:
         A 2-D NumPy array (rows x cols) with the aggregated time per
-        cell. Cells with no observations contain 0.
+        cell. Cells with no observations contain NaN.
     """
     if not isinstance(traj_data, TrajectoryData):
         raise PedPyTypeError(f"`traj_data` must be an instance of TrajectoryData, got {type(traj_data).__name__}.")
@@ -1150,7 +1150,7 @@ def compute_rset_map(
         bins=[x_edges, y_edges],
     )
 
-    rset = np.nan_to_num(result.statistic.T)
+    rset = result.statistic.T
 
     # Flip vertically so that row 0 corresponds to the top (max y),
     # consistent with the orientation used by get_grid_cells and imshow.

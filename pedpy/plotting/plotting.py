@@ -1433,6 +1433,9 @@ def plot_rset_map(
         axes=axes,
         hole_color=hole_color,
         hole_alpha=hole_alpha,
+        title=title,
+        x_label=axes.get_xlabel(),
+        y_label=axes.get_ylabel(),
     )
 
     return axes
