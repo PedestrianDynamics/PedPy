@@ -1,12 +1,12 @@
 """Unit tests for compute_rset_map function in pedpy.methods.profile_calculator."""
 
 import numpy as np
-
 import pytest
 import shapely
 
 from pedpy.data.geometry import AxisAlignedMeasurementArea, WalkableArea
 from pedpy.methods.profile_calculator import RsetMethod, compute_rset_map
+
 from ...utils import make_traj
 
 
