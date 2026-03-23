@@ -1137,6 +1137,18 @@ def compute_rset_map(
     data = traj_data.data
     time = data[FRAME_COL].to_numpy(dtype=np.float64) / traj_data.frame_rate
 
+    # Validate aggregation method to provide consistent, helpful errors.
+    if method is None:
+        raise PedPyTypeError("method must be an instance of RsetMethod, not None.")
+    if not isinstance(method, RsetMethod):
+        raise PedPyTypeError(
+            f"method must be an instance of RsetMethod, got {type(method).__name__}."
+        )
+    if method not in _RSET_METHOD_TO_STAT:
+        valid_methods = ", ".join(m.name for m in _RSET_METHOD_TO_STAT)
+        raise PedPyValueError(
+            f"Unknown RsetMethod '{method}'. Valid values are: {valid_methods}."
+        )
     stat_func = _RSET_METHOD_TO_STAT[method]
 
     result = stats.binned_statistic_2d(
