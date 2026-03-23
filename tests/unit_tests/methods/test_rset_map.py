@@ -6,7 +6,6 @@ import shapely
 
 from pedpy.data.geometry import AxisAlignedMeasurementArea, WalkableArea
 from pedpy.methods.profile_calculator import RsetMethod, compute_rset_map
-
 from pedpy.tests.utils.utils import make_traj
 
 
