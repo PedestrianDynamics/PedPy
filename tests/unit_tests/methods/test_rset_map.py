@@ -7,7 +7,7 @@ import shapely
 from pedpy.data.geometry import AxisAlignedMeasurementArea, WalkableArea
 from pedpy.methods.profile_calculator import RsetMethod, compute_rset_map
 
-from ...utils.utils import make_traj
+from pedpy.tests.utils.utils import make_traj
 
 
 def test_rset_map_single_pedestrian_max():
