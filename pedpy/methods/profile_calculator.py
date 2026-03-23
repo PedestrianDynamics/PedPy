@@ -1135,9 +1135,7 @@ def compute_rset_map(
     y_edges = np.arange(min_y, max_y + grid_size, grid_size)
 
     if not isinstance(traj_data, TrajectoryData):
-        raise PedPyTypeError(
-            f"traj_data must be an instance of TrajectoryData, got {type(traj_data).__name__}."
-        )
+        raise PedPyTypeError(f"traj_data must be an instance of TrajectoryData, got {type(traj_data).__name__}.")
 
     data = traj_data.data
     time = data[FRAME_COL].to_numpy(dtype=np.float64) / traj_data.frame_rate
