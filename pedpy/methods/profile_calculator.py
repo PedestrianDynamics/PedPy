@@ -1120,9 +1120,6 @@ def compute_rset_map(
         A 2-D NumPy array (rows x cols) with the aggregated time per
         cell. Cells with no observations contain NaN.
     """
-    if not isinstance(traj_data, TrajectoryData):
-        raise PedPyTypeError(f"`traj_data` must be an instance of TrajectoryData, got {type(traj_data).__name__}.")
-
     get_grid_cells(
         walkable_area=walkable_area,
         axis_aligned_measurement_area=axis_aligned_measurement_area,

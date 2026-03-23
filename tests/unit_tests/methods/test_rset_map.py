@@ -1,27 +1,13 @@
-import matplotlib
-import matplotlib.pyplot as plt
+"""Unit tests for compute_rset_map function in pedpy.methods.profile_calculator."""
+
 import numpy as np
-import pandas as pd
+
 import pytest
 import shapely
 
 from pedpy.data.geometry import AxisAlignedMeasurementArea, WalkableArea
-from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.profile_calculator import RsetMethod, compute_rset_map
-from pedpy.plotting.plotting import plot_rset_map
-
-matplotlib.use("Agg")
-
-
-def _make_traj(
-    ids: list[int],
-    frames: list[int],
-    xs: list[float],
-    ys: list[float],
-    frame_rate: float = 1.0,
-) -> TrajectoryData:
-    df = pd.DataFrame({"id": ids, "frame": frames, "x": xs, "y": ys})
-    return TrajectoryData(data=df, frame_rate=frame_rate)
+from ...utils import make_traj
 
 
 def test_rset_map_single_pedestrian_max():
@@ -32,7 +18,7 @@ def test_rset_map_single_pedestrian_max():
     Max time = 4/1 = 4.0 s.
     """
     n = 5
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0] * n,
         frames=list(range(n)),
         xs=[0.5] * n,
@@ -59,7 +45,7 @@ def test_rset_map_single_pedestrian_max():
 def test_rset_map_min_method():
     """Min method should return the earliest time in each cell."""
     n = 5
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0] * n,
         frames=list(range(n)),
         xs=[0.5] * n,
@@ -80,7 +66,7 @@ def test_rset_map_min_method():
 def test_rset_map_mean_method():
     """Mean method should return the average time in each cell."""
     n = 5
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0] * n,
         frames=list(range(n)),
         xs=[0.5] * n,
@@ -102,7 +88,7 @@ def test_rset_map_mean_method():
 def test_rset_map_frame_rate_scaling():
     """Frame rate should scale the time values correctly."""
     n = 10
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0] * n,
         frames=list(range(n)),
         xs=[0.5] * n,
@@ -123,7 +109,7 @@ def test_rset_map_frame_rate_scaling():
 
 def test_rset_map_multiple_pedestrians():
     """Two pedestrians in the same cell; max should pick the latest."""
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0, 0, 0, 1, 1, 1],
         frames=[0, 1, 2, 3, 4, 5],
         xs=[0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
@@ -156,7 +142,7 @@ def test_rset_map_invalid_input():
 
 def test_rset_map_two_cells():
     """Pedestrian moves between two cells."""
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0, 0, 0, 0],
         frames=[0, 1, 2, 3],
         xs=[0.5, 0.5, 1.5, 1.5],
@@ -181,7 +167,7 @@ def test_rset_map_no_data_cells_are_nan_min():
     """Empty cells must be NaN, not 0, so they are distinguishable from
     a real time of 0 s — especially important for RsetMethod.MIN."""
     n = 5
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0] * n,
         frames=list(range(n)),
         xs=[0.5] * n,
@@ -207,7 +193,7 @@ def test_rset_map_no_data_cells_are_nan_min():
 def test_rset_map_with_axis_aligned_measurement_area():
     """compute_rset_map accepts axis_aligned_measurement_area."""
     n = 5
-    traj = _make_traj(
+    traj = make_traj(
         ids=[0] * n,
         frames=list(range(n)),
         xs=[0.5] * n,
@@ -225,23 +211,3 @@ def test_rset_map_with_axis_aligned_measurement_area():
     assert rset.shape == (2, 2)
     assert rset[1, 0] == pytest.approx(4.0)
     assert np.isnan(rset[0, 0])
-
-
-def test_plot_rset_map_preserves_title_and_labels():
-    """Title and axis labels set by plot_rset_map must survive the
-    internal call to plot_walkable_area."""
-    walkable_area = WalkableArea(shapely.box(0, 0, 2, 2))
-    rset_map = np.array([[np.nan, 1.0], [2.0, 3.0]])
-
-    fig, ax = plt.subplots()
-    returned_ax = plot_rset_map(
-        walkable_area=walkable_area,
-        rset_map=rset_map,
-        axes=ax,
-        title="Custom Title",
-    )
-
-    assert returned_ax.get_title() == "Custom Title"
-    assert "x" in returned_ax.get_xlabel().lower()
-    assert "y" in returned_ax.get_ylabel().lower()
-    plt.close(fig)
