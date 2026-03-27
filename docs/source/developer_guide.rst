@@ -83,6 +83,15 @@ or
     $ git clone git@github.com:<your-username>/PedPy.git
 
 
+The PedPy Repository contains symlinks. If you are working with Windows, those can be destroyed. To
+avoid this issue, it is important to clone the repository in PowerShell while running it as an
+administrator. Also you need to enable symlinks in your git settings.
+
+.. code-block:: bash
+
+    $ git config core.symlinks true
+
+
 **3. Create a Branch:** Before making any modifications, create a new branch in your local repository.
 This helps keep your changes isolated from the main codebase.
 Give the branch a descriptive name that reflects the purpose of your contribution.
