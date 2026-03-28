@@ -18,7 +18,7 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError
+from pedpy.errors import InputError, PedPyTypeError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
     _apply_lambda_for_intersecting_frames,
@@ -56,6 +56,8 @@ def compute_n_t(
         measurement line.
 
     """
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(f"Expected 'traj_data' to be a TrajectoryData, got {type(traj_data).__name__!r} instead.")
     crossing_frames = compute_crossing_frames(traj_data=traj_data, measurement_line=measurement_line)
     crossing_frames = crossing_frames.groupby(by=ID_COL)[FRAME_COL].min().sort_values().reset_index()
 
