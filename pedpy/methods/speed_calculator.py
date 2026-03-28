@@ -20,7 +20,7 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError, SpeedError
+from pedpy.errors import InputError, PedPyTypeError, SpeedError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
     SpeedCalculation,
@@ -181,6 +181,8 @@ def compute_individual_speed(
         'v_x' and 'v_y' with the speed components in x and y direction if
         :code:`compute_velocity` is True
     """
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(f"Expected 'traj_data' to be a TrajectoryData, got {type(traj_data).__name__!r} instead.")
     df_movement = _compute_individual_movement(
         traj_data=traj_data,
         frame_step=frame_step,
@@ -232,6 +234,8 @@ def compute_mean_speed_per_frame(
     Returns:
         DataFrame containing the columns 'frame' and 'speed' in m/s
     """
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(f"Expected 'traj_data' to be a TrajectoryData, got {type(traj_data).__name__!r} instead.")
     if len(individual_speed.index) < len(traj_data.data.index):
         raise SpeedError(
             f"Can not compute the mean speed, as the there are less speed "
@@ -306,6 +310,8 @@ def compute_voronoi_speed(
     Returns:
         DataFrame containing the columns 'frame' and 'speed' in m/s
     """
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(f"Expected 'traj_data' to be a TrajectoryData, got {type(traj_data).__name__!r} instead.")
     if len(individual_speed.index) < len(individual_voronoi_intersection.index):
         raise SpeedError(
             f"Can not compute the Voronoi speed, as the there are less speed "
@@ -621,6 +627,10 @@ def compute_species(
     Returns:
         Dataframe containing columns 'id' and 'species'
     """
+    if not isinstance(trajectory_data, TrajectoryData):
+        raise PedPyTypeError(
+            f"Expected 'trajectory_data' to be a TrajectoryData, got {type(trajectory_data).__name__!r} instead."
+        )
     # create dataframe with id and first frame
     # where Voronoi polygon intersects measurement line
     intersecting_polys = individual_voronoi_polygons[

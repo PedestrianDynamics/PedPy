@@ -13,6 +13,7 @@ from scipy.spatial.distance import cdist
 
 from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyTypeError
 
 
 def compute_pair_distribution_function(
@@ -49,6 +50,8 @@ def compute_pair_distribution_function(
         (excluding the first bin edge), and the second array contains the values
         of the pair-distribution function :math:`g(r)` for each bin.
     """
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(f"Expected 'traj_data' to be a TrajectoryData, got {type(traj_data).__name__!r} instead.")
     data_df = traj_data.data
 
     # Create Dataframe with all pairwise distances
