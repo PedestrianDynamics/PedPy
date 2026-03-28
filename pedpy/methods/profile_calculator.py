@@ -28,7 +28,7 @@ from pedpy.data.geometry import (
     WalkableArea,
 )
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import PedPyRuntimeError, PedPyTypeError, PedPyValueError
+from pedpy.errors import PedPyTypeError, PedPyValueError
 from pedpy.internal.utils import alias
 
 
@@ -232,32 +232,45 @@ def compute_profiles(  # noqa: D417
         grid_size=grid_size,
     )
 
-    (
-        grid_intersections_area,
-        internal_data,
-    ) = _compute_grid_polygon_intersection(
-        data=data,
-        grid_cells=grid_cells,
+    needs_intersection = density_method == DensityMethod.VORONOI or speed_method in (
+        SpeedMethod.VORONOI,
+        SpeedMethod.ARITHMETIC,
     )
 
-    density_profiles = compute_density_profile(
-        data=internal_data,
-        grid_intersections_area=grid_intersections_area,
-        density_method=density_method,
-        walkable_area=walkable_area,
-        axis_aligned_measurement_area=axis_aligned_measurement_area,
-        grid_size=grid_size,
-        gaussian_width=gaussian_width,
-    )
+    density_profiles: list[npt.NDArray[np.float64]] = []
+    speed_profiles: list[npt.NDArray[np.float64]] = []
 
-    speed_profiles = compute_speed_profile(
-        data=internal_data,
-        grid_intersections_area=grid_intersections_area,
-        speed_method=speed_method,
-        walkable_area=walkable_area,
-        axis_aligned_measurement_area=axis_aligned_measurement_area,
-        grid_size=grid_size,
-    )
+    for _, frame_data in data.groupby(FRAME_COL):
+        grid_intersections_area_frame = None
+        if needs_intersection:
+            grid_intersections_area_frame = _compute_frame_grid_intersection(
+                frame_data=frame_data,
+                grid_cells=grid_cells,
+            )
+
+        density_profiles.extend(
+            compute_density_profile(
+                data=frame_data,
+                walkable_area=walkable_area,
+                grid_size=grid_size,
+                density_method=density_method,
+                grid_intersections_area=grid_intersections_area_frame,
+                gaussian_width=gaussian_width,
+                axis_aligned_measurement_area=axis_aligned_measurement_area,
+            )
+        )
+
+        speed_profiles.extend(
+            compute_speed_profile(
+                data=frame_data,
+                walkable_area=walkable_area,
+                grid_size=grid_size,
+                speed_method=speed_method,
+                grid_intersections_area=grid_intersections_area_frame,
+                gaussian_width=gaussian_width if gaussian_width is not None else 0.5,
+                axis_aligned_measurement_area=axis_aligned_measurement_area,
+            )
+        )
 
     return (
         density_profiles,
@@ -299,9 +312,11 @@ def compute_density_profile(
             profiles
         density_method: density method to compute the density
             profile
-        grid_intersections_area: intersection of grid cells with the Voronoi
-            polygons (result from
-            :func:`compute_grid_cell_polygon_intersection_area`)
+        grid_intersections_area: (Optional) intersection of grid cells with
+            the Voronoi polygons (result from
+            :func:`compute_grid_cell_polygon_intersection_area`). If not
+            provided when using :attr:`DensityMethod.VORONOI`, the
+            intersections are computed on-the-fly per frame.
         gaussian_width: full width at half maximum for Gaussian
             approximation of the density, only needed when using
             :attr:`DensityMethod.GAUSSIAN`.
@@ -331,15 +346,16 @@ def compute_density_profile(
         frame_data,
     ) in data_grouped_by_frame:
         if density_method == DensityMethod.VORONOI:
-            if grid_intersections_area is None:
-                raise PedPyRuntimeError(
-                    "Computing a Voronoi density profile needs the parameter `grid_intersections_area`."
+            if grid_intersections_area is not None:
+                grid_intersections_area_frame = grid_intersections_area[
+                    :,
+                    data_grouped_by_frame.indices[frame],
+                ]
+            else:
+                grid_intersections_area_frame = _compute_frame_grid_intersection(
+                    frame_data=frame_data,
+                    grid_cells=grid_cells,
                 )
-
-            grid_intersections_area_frame = grid_intersections_area[
-                :,
-                data_grouped_by_frame.indices[frame],
-            ]
 
             density = _compute_voronoi_density_profile(
                 frame_data=frame_data,
@@ -539,7 +555,10 @@ def compute_speed_profile(
             speed profile
         grid_intersections_area: (Optional) intersection areas of grid cells
             with Voronoi polygons (result from
-            :func:`compute_grid_cell_polygon_intersection_area`)
+            :func:`compute_grid_cell_polygon_intersection_area`). If not
+            provided when using :attr:`SpeedMethod.VORONOI` or
+            :attr:`SpeedMethod.ARITHMETIC`, the intersections are computed
+            on-the-fly per frame.
         fill_value: fill value for cells with no pedestrians inside when
             using :attr:`SpeedMethod.MEAN` (default = `np.nan`)
         gaussian_width: (Optional) The full width at half maximum (FWHM) for
@@ -574,14 +593,16 @@ def compute_speed_profile(
         frame_data,
     ) in data_grouped_by_frame:
         if speed_method == SpeedMethod.VORONOI:
-            if grid_intersections_area is None:
-                raise PedPyRuntimeError(
-                    "Computing a Arithmetic speed profile needs the parameter `grid_intersections_area`."
+            if grid_intersections_area is not None:
+                grid_intersections_area_frame = grid_intersections_area[
+                    :,
+                    data_grouped_by_frame.indices[frame],
+                ]
+            else:
+                grid_intersections_area_frame = _compute_frame_grid_intersection(
+                    frame_data=frame_data,
+                    grid_cells=grid_cells,
                 )
-            grid_intersections_area_frame = grid_intersections_area[
-                :,
-                data_grouped_by_frame.indices[frame],
-            ]
 
             speed = _compute_voronoi_speed_profile(
                 frame_data=frame_data,
@@ -589,14 +610,16 @@ def compute_speed_profile(
                 grid_area=grid_cells[0].area,
             )
         elif speed_method == SpeedMethod.ARITHMETIC:
-            if grid_intersections_area is None:
-                raise PedPyRuntimeError(
-                    "Computing a Arithmetic speed profile needs the parameter `grid_intersections_area`."
+            if grid_intersections_area is not None:
+                grid_intersections_area_frame = grid_intersections_area[
+                    :,
+                    data_grouped_by_frame.indices[frame],
+                ]
+            else:
+                grid_intersections_area_frame = _compute_frame_grid_intersection(
+                    frame_data=frame_data,
+                    grid_cells=grid_cells,
                 )
-            grid_intersections_area_frame = grid_intersections_area[
-                :,
-                data_grouped_by_frame.indices[frame],
-            ]
 
             speed = _compute_arithmetic_voronoi_speed_profile(
                 frame_data=frame_data,
@@ -929,27 +952,54 @@ def compute_grid_cell_polygon_intersection_area(
     )
 
 
+def _compute_frame_grid_intersection(
+    *,
+    frame_data: pd.DataFrame,
+    grid_cells: npt.NDArray[shapely.Polygon],
+) -> npt.NDArray[np.float64]:
+    """Compute grid cell-polygon intersection areas for a single frame.
+
+    Args:
+        frame_data: DataFrame for a single frame containing a 'polygon' column.
+        grid_cells: Grid cells used for computing the profiles.
+
+    Returns:
+        Intersection areas with shape (num_grid_cells, num_pedestrians_in_frame).
+    """
+    return shapely.area(
+        shapely.intersection(
+            np.array(grid_cells)[:, np.newaxis],
+            np.array(frame_data.polygon)[np.newaxis, :],
+        )
+    )
+
+
 def _compute_grid_polygon_intersection(
     *,
-    data,
-    grid_cells,
-):
+    data: pd.DataFrame,
+    grid_cells: npt.NDArray[shapely.Polygon],
+) -> Tuple[npt.NDArray[np.float64], pd.DataFrame]:
     internal_data = data.copy(deep=True)
     internal_data = internal_data.sort_values(by=FRAME_COL)
     internal_data = internal_data.reset_index(drop=True)
 
-    grid_intersections_area = shapely.area(
-        shapely.intersection(
-            np.array(grid_cells)[
-                :,
-                np.newaxis,
-            ],
-            np.array(internal_data.polygon)[
-                np.newaxis,
-                :,
-            ],
+    grid_cells_arr = np.array(grid_cells)
+
+    # Process frame-by-frame to avoid materializing a
+    # (num_grid_cells x num_total_rows) array of Shapely geometries,
+    # which causes excessive memory usage for large datasets.
+    frame_results = []
+    for _, frame_data in internal_data.groupby(FRAME_COL):
+        print(f"Computing grid-polygon intersection for frame {frame_data[FRAME_COL].iloc[0]}")
+        frame_intersections = shapely.area(
+            shapely.intersection(
+                grid_cells_arr[:, np.newaxis],
+                np.array(frame_data.polygon)[np.newaxis, :],
+            )
         )
-    )
+        frame_results.append(frame_intersections)
+
+    grid_intersections_area = np.concatenate(frame_results, axis=1)
     return (
         grid_intersections_area,
         internal_data,
