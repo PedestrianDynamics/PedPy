@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+    rev: v0.15.8
     hooks:
       - id: ruff
         alias: ruff-include-sorting
@@ -15,25 +15,26 @@ repos:
         files: ^pedpy/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v1.19.1
     hooks:
       - id: mypy
         name: Check type hints (mypy)
         additional_dependencies: [
-            "numpy~=2.1",
-            "pandas~=2.2.3",
-            "Shapely~=2.0.6",
-            "scipy~=1.14",
-            "matplotlib~=3.9",
-            "h5py~=3.11"
+          "numpy>=2.1,<3.0",
+          "pandas>=2.2,<4.0",
+          "Shapely>=2.0,<3.0",
+          "scipy~=1.15,<2.0",
+          "matplotlib~=3.10,<4.0",
+          "h5py~=3.13,<4.0",
         ]
         exclude: "(^helper/|^docs/|^scripts/|^tests/)"
 
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 0.9.1
     hooks:
       - id: nbstripout
         exclude: ^docs/
+        args: ['--extra-keys', 'metadata.kernelspec metadata.language_info']
 
   -   repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v6.0.0
