@@ -1324,7 +1324,6 @@ def plot_profiles(
     if axes is None:
         axes = plt.gca()
 
-    axes.set_title(title)
     imshow = axes.imshow(
         mean_profiles,
         extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
@@ -1346,6 +1345,10 @@ def plot_profiles(
         hole_color=hole_color,
         hole_alpha=hole_alpha,
     )
+
+    # Set title after plot_walkable_area, which would otherwise overwrite it
+    # with an empty string (its default).
+    axes.set_title(title)
 
     return axes
 
