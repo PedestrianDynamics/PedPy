@@ -17,7 +17,7 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError
+from pedpy.errors import InputError, PedPyTypeError
 from pedpy.methods.method_utils import (
     _apply_lambda_for_intersecting_frames,
     _compute_partial_line_length,
@@ -56,6 +56,8 @@ def compute_classic_density(
     Returns:
         DataFrame containing the columns 'frame' and 'density' in :math:`1/m^2`
     """
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(f"Expected 'traj_data' to be a TrajectoryData, got {type(traj_data).__name__!r} instead.")
     peds_in_area = TrajectoryData(
         traj_data.data[shapely.contains(measurement_area.polygon, traj_data.data.point)],
         traj_data.frame_rate,
