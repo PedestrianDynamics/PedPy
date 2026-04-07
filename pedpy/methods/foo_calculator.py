@@ -111,12 +111,11 @@ def compute_avoidance(
         - shapely.get_coordinates(matrix.point_neighbor)
     ) / distance[:, np.newaxis]
 
-    v_rel = shapely.get_coordinates(matrix.velocity) - shapely.get_coordinates(
-        matrix.velocity_neighbor
-    ) / np.linalg.norm(
+    delta_v = (
         shapely.get_coordinates(matrix.velocity)
         - shapely.get_coordinates(matrix.velocity_neighbor)
     )
+    v_rel = delta_v / np.linalg.norm(delta_v, axis=1)[:, np.newaxis]
 
     v_rel_norm = np.linalg.norm(v_rel, axis=1)
 
