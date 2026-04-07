@@ -1298,8 +1298,7 @@ def is_individual_speed_valid(
 
 
 def _compute_individual_distances(*, traj_data: TrajectoryData) -> pd.DataFrame:
-    matrix = pd.merge(
-        traj_data.data[["id", "frame", "point"]],
+    matrix = traj_data.data[["id", "frame", "point"]].merge(
         traj_data.data[["id", "frame", "point"]],
         how="outer",
         on="frame",

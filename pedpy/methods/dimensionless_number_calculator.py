@@ -118,10 +118,10 @@ def compute_avoidance(
         speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
     )
 
-    data = pd.merge(traj_data.data, velocity, on=[ID_COL, FRAME_COL])
+    data = traj_data.data.merge(velocity, on=[ID_COL, FRAME_COL])
     data["velocity"] = shapely.points(data.v_x, data.v_y)
 
-    matrix = pd.merge(data, data, how="outer", on=FRAME_COL, suffixes=("", "_neighbor"))
+    matrix = data.merge(data, how="outer", on=FRAME_COL, suffixes=("", "_neighbor"))
     matrix = matrix[matrix.id != matrix.id_neighbor]
 
     distance = np.linalg.norm(
