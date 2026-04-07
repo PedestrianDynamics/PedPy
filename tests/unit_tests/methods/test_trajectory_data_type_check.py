@@ -53,7 +53,7 @@ _DF = pd.DataFrame()
         (compute_crossing_frames, dict(traj_data=_BAD, measurement_line=None)),
         (compute_pair_distribution_function, dict(traj_data=_BAD, radius_bin_size=0.1)),
     ],
-    ids=lambda val: val.__name__ if callable(val) else "",
+    ids=lambda val: val[0].__name__,
 )
 def test_raises_type_error_for_non_trajectory_data(func, kwargs):
     with pytest.raises(PedPyTypeError, match="Expected .* to be a TrajectoryData"):
