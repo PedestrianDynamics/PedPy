@@ -166,7 +166,17 @@ def _check_parameters(
         raise InputError(f"The minimal length, that a trajectory has to have, has to be greater than 1. ")
 
 
-def _concat_traj_data(traj_data: TrajectoryData) -> tuple[list[pd.DataFrame], list[int]]:
+def _concat_traj_data(
+        traj_data: TrajectoryData
+) -> tuple[list[pd.DataFrame], list[float]]:
+    """Splits the trajectory data into multiple pd.Dataframes, one per person.
+
+    Args:
+        traj_data: The TrajectoryData to check.
+
+    Returns: A list with a single pandas DataFrame per person and a list with every distance
+        between two following point throughout the whole trajectory.
+    """
     trajectory_dataframe = copy.deepcopy(traj_data.data)
     trajectories_per_person = []
     all_distances = []
@@ -179,12 +189,27 @@ def _concat_traj_data(traj_data: TrajectoryData) -> tuple[list[pd.DataFrame], li
         trajectories_per_person.append(trajectory_single_person)
     return trajectories_per_person, all_distances
 
+def _split_trajectory(
+        trajectory_to_split:pd.DataFrame,
+        outliers: list[list[int]],
+        person_id: int,
+        critical:int
+)-> pd.DataFrame:
+    """
 
-def _split_trajectory(trajectory_to_split, outliers: list[list[int]], person_id: int, critical):
+    Args:
+        trajectory_to_split: The trajectory data of a single person as a pd.DataFrame.
+        outliers: A list with one or two indexes, where the trajectory needs to be split.
+        person_id: The person id
+        critical:
+
+    Returns:
+
+    """
     if len(outliers) == 2:
         trajectory_to_split = trajectory_to_split[outliers[0][-1] + 1 : outliers[1][0]]
         _log.info(
-            f"Frames in trajectory with original personID {person_id + 1} were cut out before frame "
+            f"Frames in trajectory with original personID {person_id} were cut out before frame "
             f"{trajectory_to_split.iloc[0, 1]} and after frame "
             f"{trajectory_to_split.iloc[-1, 1]} "
         )
@@ -192,17 +217,17 @@ def _split_trajectory(trajectory_to_split, outliers: list[list[int]], person_id:
         if outliers[0][0] > critical:
             trajectory_to_split = trajectory_to_split[: outliers[0][0]]
             _log.info(
-                f"Frames in trajectory with original personID {person_id + 1} were cut out after frame "
+                f"Frames in trajectory with original personID {person_id} were cut out after frame "
                 f"{trajectory_to_split.iloc[-1, 1]} "
             )
         else:
             trajectory_to_split = trajectory_to_split[outliers[0][-1] :]
             _log.info(
-                f"Frames in trajectory with original personID {person_id + 1} were cut out before frame "
+                f"Frames in trajectory with original personID {person_id} were cut out before frame "
                 f"{trajectory_to_split.iloc[0, 1]}"
             )
     else:
-        _log.warning(f"Trajectory with personID {person_id + 1} contains uncorrected jumps")
+        _log.warning(f"Trajectory with personID {person_id} contains uncorrected jumps")
     return trajectory_to_split
 
 

@@ -150,6 +150,7 @@ from .plotting.plotting import (
     plot_walkable_area,
 )
 from .preprocessing.trajectory_projector import correct_invalid_trajectories
+from .preprocessing.trajectory_outlier_detection import detect_outliers
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "AxisAlignedMeasurementArea",
@@ -212,6 +213,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_mean_acceleration_per_frame",
     "compute_voronoi_acceleration",
     "correct_invalid_trajectories",
+    "detect_outliers",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",

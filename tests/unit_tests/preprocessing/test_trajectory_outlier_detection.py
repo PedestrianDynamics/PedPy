@@ -64,13 +64,13 @@ def test_detect_outliers_logging_split_only(setup_trajectory_data, caplog):
             drops_only=True
         )
     expected_messages = [
-    "Frames in trajectory with original personID 56 were cut out after frame 2017 ",
-    "Frames in trajectory with original personID 210 were cut out after frame 478 ",
-    "Frames in trajectory with original personID 211 were cut out before frame 1389",
-    "Frames in trajectory with original personID 212 were cut out before frame 1188 and after frame 2054 ",
+    "Frames in trajectory with original personID 55 were cut out after frame 2017 ",
+    "Frames in trajectory with original personID 209 were cut out after frame 478 ",
+    "Frames in trajectory with original personID 210 were cut out before frame 1389",
+    "Frames in trajectory with original personID 211 were cut out before frame 1188 and after frame 2054 ",
     "Trajectory with personID 422 has to many invalid points and cannot be corrected",
     "Trajectory with personID 422 will be returned unchanged",
-    "Frames in trajectory with original personID 464 were cut out before frame 351 and after frame 749 "]
+    "Frames in trajectory with original personID 463 were cut out before frame 351 and after frame 749 "]
     assert all(
         any(msg in r.message and r.levelname == "INFO" for r in caplog.records)
         for msg in expected_messages
