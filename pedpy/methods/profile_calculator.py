@@ -260,17 +260,17 @@ def compute_profiles(  # noqa: D417
             )
         )
 
-        speed_profiles.extend(
-            compute_speed_profile(
-                data=frame_data,
-                walkable_area=walkable_area,
-                grid_size=grid_size,
-                speed_method=speed_method,
-                grid_intersections_area=grid_intersections_area_frame,
-                gaussian_width=gaussian_width if gaussian_width is not None else 0.5,
-                axis_aligned_measurement_area=axis_aligned_measurement_area,
-            )
+        speed_kwargs: dict = dict(
+            data=frame_data,
+            walkable_area=walkable_area,
+            grid_size=grid_size,
+            speed_method=speed_method,
+            grid_intersections_area=grid_intersections_area_frame,
+            axis_aligned_measurement_area=axis_aligned_measurement_area,
         )
+        if gaussian_width is not None:
+            speed_kwargs["gaussian_width"] = gaussian_width
+        speed_profiles.extend(compute_speed_profile(**speed_kwargs))
 
     return (
         density_profiles,
