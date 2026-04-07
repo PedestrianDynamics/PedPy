@@ -1027,20 +1027,13 @@ def _compute_grid_polygon_intersection(
     internal_data = internal_data.sort_values(by=FRAME_COL)
     internal_data = internal_data.reset_index(drop=True)
 
-    grid_cells_arr = np.array(grid_cells)
-
     # Process frame-by-frame to avoid materializing a
     # (num_grid_cells x num_total_rows) array of Shapely geometries,
     # which causes excessive memory usage for large datasets.
-    frame_results = []
-    for _, frame_data in internal_data.groupby(FRAME_COL):
-        frame_intersections = shapely.area(
-            shapely.intersection(
-                grid_cells_arr[:, np.newaxis],
-                np.array(frame_data.polygon)[np.newaxis, :],
-            )
-        )
-        frame_results.append(frame_intersections)
+    frame_results = [
+        _compute_frame_grid_intersection(frame_data=frame_data, grid_cells=grid_cells)
+        for _, frame_data in internal_data.groupby(FRAME_COL)
+    ]
 
     grid_intersections_area = np.concatenate(frame_results, axis=1)
     return (
