@@ -7,7 +7,7 @@ Cordes et al., PNAS Nexus 2024 (https://doi.org/10.1093/pnasnexus/pgae120).
 from enum import Enum
 
 import numpy as np
-import pandas
+import pandas as pd
 import shapely
 
 from pedpy.column_identifier import (
@@ -39,7 +39,7 @@ def compute_intrusion(
     r_soc: float = 0.8,
     l_min: float = 0.2,
     method: IntrusionMethod = IntrusionMethod.SUM,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     r"""Compute the intrusion number for each pedestrian per frame.
 
     The intrusion variable :math:`\mathcal{I}n_i` quantifies how much
@@ -85,7 +85,7 @@ def compute_avoidance(
     frame_step: int,
     radius: float = 0.2,
     tau_0: float,
-) -> pandas.DataFrame:
+) -> pd.DataFrame:
     r"""Compute the avoidance number for each pedestrian per frame.
 
     The avoidance variable :math:`\mathcal{A}v_i` quantifies the
@@ -118,10 +118,10 @@ def compute_avoidance(
         speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
     )
 
-    data = pandas.merge(traj_data.data, velocity, on=[ID_COL, FRAME_COL])
+    data = pd.merge(traj_data.data, velocity, on=[ID_COL, FRAME_COL])
     data["velocity"] = shapely.points(data.v_x, data.v_y)
 
-    matrix = pandas.merge(data, data, how="outer", on=FRAME_COL, suffixes=("", "_neighbor"))
+    matrix = pd.merge(data, data, how="outer", on=FRAME_COL, suffixes=("", "_neighbor"))
     matrix = matrix[matrix.id != matrix.id_neighbor]
 
     distance = np.linalg.norm(
