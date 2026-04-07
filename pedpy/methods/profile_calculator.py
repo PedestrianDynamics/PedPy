@@ -212,8 +212,8 @@ def compute_profiles(  # noqa: D417
         density_method: density method to compute the density
             profile (default: :attr:`DensityMethod.VORONOI`)
         gaussian_width: full width at half maximum for Gaussian
-            approximation of the density, only needed when using
-            :attr:`DensityMethod.GAUSSIAN`.
+            approximation. Used when :attr:`DensityMethod.GAUSSIAN` or
+            :attr:`SpeedMethod.GAUSSIAN` is selected.
         axis_aligned_measurement_area (AxisAlignedMeasurementArea): Measurement
             area for which the profiles are computed.
         individual_voronoi_speed_data: deprecated alias for
