@@ -233,14 +233,19 @@ def compute_profiles(  # noqa: D417
     )
 
     grid_area = grid_cells[0].area
-    grid_center = np.vectorize(shapely.centroid)(grid_cells)
-    center_x = shapely.get_x(grid_center[:cols])
-    center_y = shapely.get_y(grid_center[::cols])
 
     needs_intersection = density_method == DensityMethod.VORONOI or speed_method in (
         SpeedMethod.VORONOI,
         SpeedMethod.ARITHMETIC,
     )
+    needs_grid_centers = density_method == DensityMethod.GAUSSIAN or speed_method == SpeedMethod.GAUSSIAN
+
+    center_x = None
+    center_y = None
+    if needs_grid_centers:
+        grid_center = shapely.centroid(grid_cells)
+        center_x = shapely.get_x(grid_center[:cols])
+        center_y = shapely.get_y(grid_center[::cols])
 
     if walkable_area is not None:
         bounds = walkable_area.bounds
