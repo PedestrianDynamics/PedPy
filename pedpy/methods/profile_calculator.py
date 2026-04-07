@@ -265,6 +265,7 @@ def compute_profiles(  # noqa: D417
 
         # Compute density for this frame
         if density_method == DensityMethod.VORONOI:
+            assert grid_intersections_area_frame is not None
             density = _compute_voronoi_density_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
@@ -279,6 +280,7 @@ def compute_profiles(  # noqa: D417
         elif density_method == DensityMethod.GAUSSIAN:
             if gaussian_width is None:
                 raise PedPyValueError("Computing a Gaussian density profile needs a parameter 'gaussian_width'.")
+            assert center_x is not None and center_y is not None
             density = _compute_gaussian_density_profile(
                 frame_data=frame_data,
                 center_x=center_x,
@@ -292,12 +294,14 @@ def compute_profiles(  # noqa: D417
 
         # Compute speed for this frame
         if speed_method == SpeedMethod.VORONOI:
+            assert grid_intersections_area_frame is not None
             speed = _compute_voronoi_speed_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
                 grid_area=grid_area,
             )
         elif speed_method == SpeedMethod.ARITHMETIC:
+            assert grid_intersections_area_frame is not None
             speed = _compute_arithmetic_voronoi_speed_profile(
                 frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
@@ -310,6 +314,7 @@ def compute_profiles(  # noqa: D417
                 fill_value=np.nan,
             )
         elif speed_method == SpeedMethod.GAUSSIAN:
+            assert center_x is not None and center_y is not None
             speed = _compute_gaussian_speed_profile(
                 frame_data=frame_data,
                 center_x=center_x,
