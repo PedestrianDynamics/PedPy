@@ -86,15 +86,15 @@ from .methods.density_calculator import (
     compute_passing_density,
     compute_voronoi_density,
 )
-from .methods.flow_calculator import (
-    compute_flow,
-    compute_line_flow,
-    compute_n_t,
-)
 from .methods.dimensionless_number_calculator import (
     IntrusionMethod,
     compute_avoidance,
     compute_intrusion,
+)
+from .methods.flow_calculator import (
+    compute_flow,
+    compute_line_flow,
+    compute_n_t,
 )
 from .methods.method_utils import (
     AccelerationCalculation,

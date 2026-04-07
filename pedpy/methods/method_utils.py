@@ -1306,8 +1306,7 @@ def _compute_individual_distances(*, traj_data: TrajectoryData) -> pd.DataFrame:
     )
     matrix = matrix[matrix.id != matrix.id_neighbor]
     matrix["distance"] = np.linalg.norm(
-        shapely.get_coordinates(matrix.point)
-        - shapely.get_coordinates(matrix.point_neighbor),
+        shapely.get_coordinates(matrix.point) - shapely.get_coordinates(matrix.point_neighbor),
         axis=1,
     )
 
