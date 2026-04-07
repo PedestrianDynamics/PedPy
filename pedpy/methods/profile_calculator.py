@@ -990,7 +990,6 @@ def _compute_grid_polygon_intersection(
     # which causes excessive memory usage for large datasets.
     frame_results = []
     for _, frame_data in internal_data.groupby(FRAME_COL):
-        print(f"Computing grid-polygon intersection for frame {frame_data[FRAME_COL].iloc[0]}")
         frame_intersections = shapely.area(
             shapely.intersection(
                 grid_cells_arr[:, np.newaxis],
