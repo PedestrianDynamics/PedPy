@@ -48,8 +48,7 @@ LambdaGroupFunction: TypeAlias = Callable[[pd.DataFrame, MeasurementLine], pd.Da
 def _check_trajectory_data(traj_data: TrajectoryData, param_name: str = "traj_data") -> None:
     if not isinstance(traj_data, TrajectoryData):
         raise PedPyTypeError(
-            f"Expected '{param_name}' to be a TrajectoryData, "
-            f"got {type(traj_data).__name__!r} instead."
+            f"Expected '{param_name}' to be a TrajectoryData, got {type(traj_data).__name__!r} instead."
         )
 
 
