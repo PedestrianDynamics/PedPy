@@ -115,16 +115,13 @@ def compute_avoidance(
         shapely.get_coordinates(matrix.velocity)
         - shapely.get_coordinates(matrix.velocity_neighbor)
     )
-    v_rel = delta_v / np.linalg.norm(delta_v, axis=1)[:, np.newaxis]
+    delta_v_norm = np.linalg.norm(delta_v, axis=1)
+    v_rel_hat = delta_v / delta_v_norm[:, np.newaxis]
 
-    v_rel_norm = np.linalg.norm(v_rel, axis=1)
-
-    dot_product = np.sum(
-        np.array(np.array(e_v.tolist())) * np.array(np.array(v_rel.tolist())),
+    cos_alpha = np.sum(
+        np.array(e_v.tolist()) * np.array(v_rel_hat.tolist()),
         axis=1,
     )
-
-    cos_alpha = dot_product / (distance * v_rel_norm)
 
     ttc = np.full(matrix.shape[0], np.inf)
 
@@ -138,13 +135,13 @@ def compute_avoidance(
     valid_conditions = (
         (capital_a >= 0)
         & (-cos_alpha * distance - sqrt_a_safe >= 0)
-        & (v_rel_norm != 0)
+        & (delta_v_norm != 0)
     )
 
     ttc[valid_conditions] = (
         -cos_alpha[valid_conditions] * distance[valid_conditions]
         - np.sqrt(capital_a[valid_conditions])
-    ) / v_rel_norm[valid_conditions]
+    ) / delta_v_norm[valid_conditions]
 
     matrix[AVOIDANCE_COL] = tau_0 / ttc
 
