@@ -58,9 +58,7 @@ class TestComputeIntrusion:
         d2 = 0.6
         traj = _make_traj([(0, 0), (d1, 0), (0, d2)])
 
-        result = compute_intrusion(
-            traj_data=traj, r_soc=r_soc, l_min=l_min, method=IntrusionMethod.SUM
-        )
+        result = compute_intrusion(traj_data=traj, r_soc=r_soc, l_min=l_min, method=IntrusionMethod.SUM)
 
         in_01 = ((r_soc - l_min) / (d1 - l_min)) ** 2
         in_02 = ((r_soc - l_min) / (d2 - l_min)) ** 2
@@ -77,9 +75,7 @@ class TestComputeIntrusion:
         d2 = 0.6
         traj = _make_traj([(0, 0), (d1, 0), (0, d2)])
 
-        result = compute_intrusion(
-            traj_data=traj, r_soc=r_soc, l_min=l_min, method=IntrusionMethod.MAX
-        )
+        result = compute_intrusion(traj_data=traj, r_soc=r_soc, l_min=l_min, method=IntrusionMethod.MAX)
 
         in_01 = ((r_soc - l_min) / (d1 - l_min)) ** 2
         in_02 = ((r_soc - l_min) / (d2 - l_min)) ** 2
@@ -131,9 +127,7 @@ class TestComputeAvoidance:
         expected_av = tau_0 / expected_ttc
 
         traj = _make_moving_traj([(-2, 0, 1, 0), (2, 0, -1, 0)], frame_rate=10)
-        result = compute_avoidance(
-            traj_data=traj, frame_step=1, radius=radius, tau_0=tau_0
-        )
+        result = compute_avoidance(traj_data=traj, frame_step=1, radius=radius, tau_0=tau_0)
 
         # Check frame 1 (middle frame where velocity is computed)
         row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
@@ -144,9 +138,7 @@ class TestComputeAvoidance:
         """Two agents moving apart should have Av = 0 (TTC = inf)."""
         tau_0 = 3.0
         traj = _make_moving_traj([(-2, 0, -1, 0), (2, 0, 1, 0)], frame_rate=10)
-        result = compute_avoidance(
-            traj_data=traj, frame_step=1, radius=0.2, tau_0=tau_0
-        )
+        result = compute_avoidance(traj_data=traj, frame_step=1, radius=0.2, tau_0=tau_0)
 
         row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
         assert len(row) == 1

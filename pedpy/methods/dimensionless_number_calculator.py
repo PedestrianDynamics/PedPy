@@ -4,7 +4,6 @@ Implements the Intrusion number and Avoidance number defined in
 Cordes et al., PNAS Nexus 2024 (https://doi.org/10.1093/pnasnexus/pgae120).
 """
 
-
 from enum import Enum
 
 import numpy as np
@@ -68,9 +67,7 @@ def compute_intrusion(
     """
     intrusion = _compute_individual_distances(traj_data=traj_data)
     intrusion = intrusion[intrusion.distance <= 3 * r_soc]
-    intrusion[INTRUSION_COL] = (
-        (r_soc - l_min) / (intrusion.distance - l_min)
-    ) ** 2
+    intrusion[INTRUSION_COL] = ((r_soc - l_min) / (intrusion.distance - l_min)) ** 2
     intrusion = (
         intrusion.groupby(by=[ID_COL, FRAME_COL])
         .agg(
@@ -124,26 +121,19 @@ def compute_avoidance(
     data = pandas.merge(traj_data.data, velocity, on=[ID_COL, FRAME_COL])
     data["velocity"] = shapely.points(data.v_x, data.v_y)
 
-    matrix = pandas.merge(
-        data, data, how="outer", on=FRAME_COL, suffixes=("", "_neighbor")
-    )
+    matrix = pandas.merge(data, data, how="outer", on=FRAME_COL, suffixes=("", "_neighbor"))
     matrix = matrix[matrix.id != matrix.id_neighbor]
 
     distance = np.linalg.norm(
-        shapely.get_coordinates(matrix.point)
-        - shapely.get_coordinates(matrix.point_neighbor),
+        shapely.get_coordinates(matrix.point) - shapely.get_coordinates(matrix.point_neighbor),
         axis=1,
     )
 
-    e_v = (
-        shapely.get_coordinates(matrix.point)
-        - shapely.get_coordinates(matrix.point_neighbor)
-    ) / distance[:, np.newaxis]
+    e_v = (shapely.get_coordinates(matrix.point) - shapely.get_coordinates(matrix.point_neighbor)) / distance[
+        :, np.newaxis
+    ]
 
-    delta_v = (
-        shapely.get_coordinates(matrix.velocity)
-        - shapely.get_coordinates(matrix.velocity_neighbor)
-    )
+    delta_v = shapely.get_coordinates(matrix.velocity) - shapely.get_coordinates(matrix.velocity_neighbor)
     delta_v_norm = np.linalg.norm(delta_v, axis=1)
     v_rel_hat = delta_v / delta_v_norm[:, np.newaxis]
 
@@ -157,24 +147,15 @@ def compute_avoidance(
     capital_a = (cos_alpha**2 - 1) * distance**2 + radius**2
 
     # (0.5 * l_a + 0.5 * l_b)**2 in paper
-    sqrt_a_safe = np.where(
-        capital_a >= 0, np.sqrt(np.where(capital_a >= 0, capital_a, 0)), np.nan
-    )
+    sqrt_a_safe = np.where(capital_a >= 0, np.sqrt(np.where(capital_a >= 0, capital_a, 0)), np.nan)
 
-    valid_conditions = (
-        (capital_a >= 0)
-        & (-cos_alpha * distance - sqrt_a_safe >= 0)
-        & (delta_v_norm != 0)
-    )
+    valid_conditions = (capital_a >= 0) & (-cos_alpha * distance - sqrt_a_safe >= 0) & (delta_v_norm != 0)
 
     ttc[valid_conditions] = (
-        -cos_alpha[valid_conditions] * distance[valid_conditions]
-        - np.sqrt(capital_a[valid_conditions])
+        -cos_alpha[valid_conditions] * distance[valid_conditions] - np.sqrt(capital_a[valid_conditions])
     ) / delta_v_norm[valid_conditions]
 
     matrix[AVOIDANCE_COL] = tau_0 / ttc
 
-    avoidance = matrix.groupby(by=[ID_COL, FRAME_COL], as_index=False).agg(
-        avoidance=(AVOIDANCE_COL, "max")
-    )
+    avoidance = matrix.groupby(by=[ID_COL, FRAME_COL], as_index=False).agg(avoidance=(AVOIDANCE_COL, "max"))
     return avoidance
