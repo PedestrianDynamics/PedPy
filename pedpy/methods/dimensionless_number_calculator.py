@@ -1,4 +1,8 @@
-"""We need a proper name here ..."""
+"""Dimensionless numbers for pedestrian crowd classification.
+
+Implements the Intrusion number and Avoidance number defined in
+Cordes et al., PNAS Nexus 2024 (https://doi.org/10.1093/pnasnexus/pgae120).
+"""
 
 
 from enum import Enum
@@ -37,18 +41,30 @@ def compute_intrusion(
     l_min: float = 0.2,
     method: IntrusionMethod = IntrusionMethod.SUM,
 ) -> pandas.DataFrame:
-    """_summary_.
+    r"""Compute the intrusion number for each pedestrian per frame.
 
-    TODO add documentation here
+    The intrusion variable :math:`\mathcal{I}n_i` quantifies how much
+    other agents encroach on pedestrian *i*'s personal space
+    (Cordes et al. 2024, Eq. 1):
+
+    .. math::
+
+        \mathcal{I}n_i = \sum_{j \in \mathcal{N}_i}
+        \left(\frac{r_\text{soc} - \ell_\text{min}}
+        {r_{ij} - \ell_\text{min}}\right)^{k_I},
+
+    with :math:`k_I = 2`. The neighbor set :math:`\mathcal{N}_i` contains
+    all agents *j* with :math:`r_{ij} \leq 3\,r_\text{soc}`.
 
     Args:
-        traj_data (TrajectoryData): _description_
-        r_soc (float): _description_
-        l_min (float): _description_
-        method (IntrusionMethod, optional): _description_. Defaults to IntrusionMethod.SUM.
+        traj_data (TrajectoryData): trajectory data to analyze
+        r_soc (float): social radius in m (default 0.8)
+        l_min (float): pedestrian diameter in m (default 0.2)
+        method (IntrusionMethod): aggregation over neighbors,
+            ``SUM`` (default, as in the paper) or ``MAX``
 
     Returns:
-        pandas.DataFrame: _description_
+        DataFrame with columns 'id', 'frame', and 'intrusion'
     """
     intrusion = _compute_individual_distances(traj_data=traj_data)
     intrusion = intrusion[intrusion.distance <= 3 * r_soc]
@@ -73,18 +89,30 @@ def compute_avoidance(
     radius: float = 0.2,
     tau_0: float,
 ) -> pandas.DataFrame:
-    """_summary_.
+    r"""Compute the avoidance number for each pedestrian per frame.
 
-    TODO add documentation here
+    The avoidance variable :math:`\mathcal{A}v_i` quantifies the
+    imminence of collisions that pedestrian *i* faces, based on
+    the time-to-collision (TTC) with neighbors
+    (Cordes et al. 2024, Eq. 2):
+
+    .. math::
+
+        \mathcal{A}v_i = \sum_{j \in \mathcal{N}'_i}
+        \left(\frac{\tau_0}{\tau_{ij}}\right)^{k_A},
+
+    with :math:`k_A = 1`. The neighbor set :math:`\mathcal{N}'_i` is
+    restricted to the agent with the shortest TTC :math:`\tau_{ij}`,
+    implemented by taking the ``max`` over :math:`\tau_0 / \tau_{ij}`.
 
     Args:
-        traj_data (TrajectoryData): _description_
-        frame_step (int): _description_
-        radius (float): _description_
-        tau_0 (float): _description_
+        traj_data (TrajectoryData): trajectory data to analyze
+        frame_step (int): number of frames used for velocity computation
+        radius (float): combined disc radius for TTC in m (default 0.2)
+        tau_0 (float): reference timescale in s (paper uses 3.0)
 
     Returns:
-        pandas.DataFrame: _description_
+        DataFrame with columns 'id', 'frame', and 'avoidance'
     """
     velocity = compute_individual_speed(
         traj_data=traj_data,
