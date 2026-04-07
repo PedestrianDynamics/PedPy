@@ -10,6 +10,17 @@ from pedpy.column_identifier import X_COL, Y_COL
 from pedpy.data.trajectory_data import TrajectoryData
 
 
+def make_traj(
+    ids: list[int],
+    frames: list[int],
+    xs: list[float],
+    ys: list[float],
+    frame_rate: float = 1.0,
+) -> TrajectoryData:
+    df = pd.DataFrame({"id": ids, "frame": frames, "x": xs, "y": ys})
+    return TrajectoryData(data=df, frame_rate=frame_rate)
+
+
 def get_trajectory(
     *,
     shape: List[int],
