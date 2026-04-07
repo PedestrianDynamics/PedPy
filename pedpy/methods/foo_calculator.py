@@ -51,6 +51,7 @@ def compute_intrusion(
         pandas.DataFrame: _description_
     """
     intrusion = _compute_individual_distances(traj_data=traj_data)
+    intrusion = intrusion[intrusion.distance <= 3 * r_soc]
     intrusion[INTRUSION_COL] = (
         (r_soc - l_min) / (intrusion.distance - l_min)
     ) ** 2
