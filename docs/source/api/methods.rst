@@ -68,10 +68,10 @@ Utilities
     :no-private-members:
     :no-special-members:
 
-Other
-*****
+Dimensionless Numbers
+*********************
 
-.. autoapimodule:: foo_calculator
+.. autoapimodule:: dimensionless_number_calculator
     :members:
     :no-private-members:
     :no-special-members:

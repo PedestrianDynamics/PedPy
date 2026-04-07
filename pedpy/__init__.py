@@ -91,7 +91,7 @@ from .methods.flow_calculator import (
     compute_line_flow,
     compute_n_t,
 )
-from .methods.foo_calculator import (
+from .methods.dimensionless_number_calculator import (
     IntrusionMethod,
     compute_avoidance,
     compute_intrusion,
