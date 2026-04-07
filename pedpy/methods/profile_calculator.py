@@ -224,18 +224,28 @@ def compute_profiles(  # noqa: D417
     """
     (
         grid_cells,
-        _,
-        _,
+        rows,
+        cols,
     ) = get_grid_cells(
         walkable_area=walkable_area,
         axis_aligned_measurement_area=axis_aligned_measurement_area,
         grid_size=grid_size,
     )
 
+    grid_area = grid_cells[0].area
+    grid_center = np.vectorize(shapely.centroid)(grid_cells)
+    center_x = shapely.get_x(grid_center[:cols])
+    center_y = shapely.get_y(grid_center[::cols])
+
     needs_intersection = density_method == DensityMethod.VORONOI or speed_method in (
         SpeedMethod.VORONOI,
         SpeedMethod.ARITHMETIC,
     )
+
+    if walkable_area is not None:
+        bounds = walkable_area.bounds
+    if axis_aligned_measurement_area is not None:
+        bounds = axis_aligned_measurement_area.bounds
 
     density_profiles: list[npt.NDArray[np.float64]] = []
     speed_profiles: list[npt.NDArray[np.float64]] = []
@@ -248,29 +258,63 @@ def compute_profiles(  # noqa: D417
                 grid_cells=grid_cells,
             )
 
-        density_profiles.extend(
-            compute_density_profile(
-                data=frame_data,
-                walkable_area=walkable_area,
-                grid_size=grid_size,
-                density_method=density_method,
+        # Compute density for this frame
+        if density_method == DensityMethod.VORONOI:
+            density = _compute_voronoi_density_profile(
+                frame_data=frame_data,
                 grid_intersections_area=grid_intersections_area_frame,
-                gaussian_width=gaussian_width,
-                axis_aligned_measurement_area=axis_aligned_measurement_area,
+                grid_area=grid_area,
             )
-        )
+        elif density_method == DensityMethod.CLASSIC:
+            density = _compute_classic_density_profile(
+                frame_data=frame_data,
+                bounds=bounds,
+                grid_size=grid_size,
+            )
+        elif density_method == DensityMethod.GAUSSIAN:
+            if gaussian_width is None:
+                raise PedPyValueError("Computing a Gaussian density profile needs a parameter 'gaussian_width'.")
+            density = _compute_gaussian_density_profile(
+                frame_data=frame_data,
+                center_x=center_x,
+                center_y=center_y,
+                width=gaussian_width,
+            )
+        else:
+            raise PedPyValueError("density method not accepted.")
 
-        speed_kwargs: dict = dict(
-            data=frame_data,
-            walkable_area=walkable_area,
-            grid_size=grid_size,
-            speed_method=speed_method,
-            grid_intersections_area=grid_intersections_area_frame,
-            axis_aligned_measurement_area=axis_aligned_measurement_area,
-        )
-        if gaussian_width is not None:
-            speed_kwargs["gaussian_width"] = gaussian_width
-        speed_profiles.extend(compute_speed_profile(**speed_kwargs))
+        density_profiles.append(density.reshape(rows, cols))
+
+        # Compute speed for this frame
+        if speed_method == SpeedMethod.VORONOI:
+            speed = _compute_voronoi_speed_profile(
+                frame_data=frame_data,
+                grid_intersections_area=grid_intersections_area_frame,
+                grid_area=grid_area,
+            )
+        elif speed_method == SpeedMethod.ARITHMETIC:
+            speed = _compute_arithmetic_voronoi_speed_profile(
+                frame_data=frame_data,
+                grid_intersections_area=grid_intersections_area_frame,
+            )
+        elif speed_method == SpeedMethod.MEAN:
+            speed = _compute_mean_speed_profile(
+                frame_data=frame_data,
+                bounds=bounds,
+                grid_size=grid_size,
+                fill_value=np.nan,
+            )
+        elif speed_method == SpeedMethod.GAUSSIAN:
+            speed = _compute_gaussian_speed_profile(
+                frame_data=frame_data,
+                center_x=center_x,
+                center_y=center_y,
+                fwhm=gaussian_width if gaussian_width is not None else 0.5,
+            )
+        else:
+            raise PedPyValueError("Speed method not accepted.")
+
+        speed_profiles.append(speed.reshape(rows, cols))
 
     return (
         density_profiles,
