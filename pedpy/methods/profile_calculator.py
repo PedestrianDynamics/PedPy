@@ -1035,7 +1035,10 @@ def _compute_grid_polygon_intersection(
         for _, frame_data in internal_data.groupby(FRAME_COL)
     ]
 
-    grid_intersections_area = np.concatenate(frame_results, axis=1)
+    if frame_results:
+        grid_intersections_area = np.concatenate(frame_results, axis=1)
+    else:
+        grid_intersections_area = np.empty((len(grid_cells), 0), dtype=np.float64)
     return (
         grid_intersections_area,
         internal_data,
