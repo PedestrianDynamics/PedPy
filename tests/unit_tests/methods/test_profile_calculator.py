@@ -112,9 +112,7 @@ def profile_test_data():
     )
 
     grid_cells, _, _ = get_grid_cells(walkable_area=walkable_area, grid_size=grid_size)
-    precomputed, sorted_data = compute_grid_cell_polygon_intersection_area(
-        data=data, grid_cells=grid_cells
-    )
+    precomputed, sorted_data = compute_grid_cell_polygon_intersection_area(data=data, grid_cells=grid_cells)
 
     return {
         "data": data,
