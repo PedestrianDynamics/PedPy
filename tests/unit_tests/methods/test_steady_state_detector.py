@@ -310,11 +310,9 @@ class TestReferenceData:
             ref_start=240,
             ref_end=640,
         )
-        # Reference: 148-867
-        assert len(result.frame_start) >= 1
-        # allow +/- 15 frames tolerance for numerical discretization
-        assert abs(result.frame_start[0] - 148) < 15
-        assert abs(result.frame_end[0] - 867) < 15
+        # Reference from the legacy SteadyState.py implementation.
+        np.testing.assert_array_equal(result.frame_start, np.array([161.0]))
+        np.testing.assert_array_equal(result.frame_end, np.array([866.0]))
 
     def test_speed_steady_state(self, reference_data):
         """Speed steady state should match reference within tolerance."""
@@ -325,10 +323,9 @@ class TestReferenceData:
             ref_start=240,
             ref_end=640,
         )
-        # Reference: 231-969
-        assert len(result.frame_start) >= 1
-        assert abs(result.frame_start[0] - 231) < 15
-        assert abs(result.frame_end[0] - 969) < 15
+        # Reference from the legacy SteadyState.py implementation.
+        np.testing.assert_array_equal(result.frame_start, np.array([231.0]))
+        np.testing.assert_array_equal(result.frame_end, np.array([965.0]))
 
     def test_combined_steady_state(self, reference_data):
         """Combined steady state should match reference within tolerance."""
@@ -346,8 +343,4 @@ class TestReferenceData:
             ref_end=640,
         )
         combined = combine_steady_states([result_rho, result_v])
-        # Reference: 231-867 (ratio=62.85%)
-        assert len(combined) >= 1
-        start, end = combined[0]
-        assert abs(start - 231) < 15
-        assert abs(end - 867) < 15
+        assert combined == [(231.0, 866.0)]

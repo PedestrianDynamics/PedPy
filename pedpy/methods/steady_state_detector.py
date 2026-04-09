@@ -219,11 +219,17 @@ def _find_steady_intervals(
     Since we work in frame units (fps=1 frame), the corrections are
     applied directly in frame counts.
     """
+    frame_step = 1.0
+    if len(frames) > 1:
+        frame_step = float(np.median(np.diff(frames)))
+
     steady_mask = cusum < theta
     if not np.any(steady_mask):
         return np.array([]), np.array([])
 
-    steady_frames = frames[steady_mask]
+    # The legacy implementation updates the statistic after processing the
+    # current observation and records it on the next frame boundary.
+    steady_frames = frames[steady_mask] + frame_step
 
     # split into contiguous runs
     starts = []
@@ -231,7 +237,7 @@ def _find_steady_intervals(
     run_start = steady_frames[0]
     for i in range(1, len(steady_frames)):
         # detect gap (non-consecutive frames)
-        if steady_frames[i] - steady_frames[i - 1] != 1:
+        if not np.isclose(steady_frames[i] - steady_frames[i - 1], frame_step):
             run_end = steady_frames[i - 1]
             starts.append(run_start)
             ends.append(run_end)
@@ -408,6 +414,6 @@ def _intersect_interval_lists(
         for b_s, b_e in b:
             start = max(a_s, b_s)
             end = min(a_e, b_e)
-            if start < end:
+            if start <= end:
                 result.append((start, end))
     return result
