@@ -38,11 +38,18 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import PedPyValueError
+from pedpy.errors import PedPyTypeError, PedPyValueError
 
 _log = logging.getLogger(__name__)
 
 LambdaGroupFunction: TypeAlias = Callable[[pd.DataFrame, MeasurementLine], pd.DataFrame]
+
+
+def _check_trajectory_data(traj_data: TrajectoryData, param_name: str = "traj_data") -> None:
+    if not isinstance(traj_data, TrajectoryData):
+        raise PedPyTypeError(
+            f"Expected '{param_name}' to be a TrajectoryData, got {type(traj_data).__name__!r} instead."
+        )
 
 
 class SpeedCalculation(Enum):  # pylint: disable=too-few-public-methods
@@ -97,6 +104,7 @@ def is_trajectory_valid(*, traj_data: TrajectoryData, walkable_area: WalkableAre
     Returns:
         All points lie within walkable area
     """
+    _check_trajectory_data(traj_data)
     return get_invalid_trajectory(traj_data=traj_data, walkable_area=walkable_area).empty
 
 
@@ -111,6 +119,7 @@ def get_invalid_trajectory(*, traj_data: TrajectoryData, walkable_area: Walkable
     Returns:
         DataFrame showing all data points outside the given walkable area
     """
+    _check_trajectory_data(traj_data)
     return traj_data.data.loc[~shapely.within(traj_data.data.point, walkable_area.polygon)]
 
 
@@ -163,6 +172,7 @@ def compute_frame_range_in_area(
         the pedestrian crossed the second or first line, and the created
         measurement area
     """
+    _check_trajectory_data(traj_data)
     # Create the second measurement line with the given offset
     second_line = MeasurementLine(shapely.offset_curve(measurement_line.line, distance=width))
 
@@ -398,6 +408,7 @@ def compute_neighbor_distance(
         DataFrame containing the columns 'id', 'frame', 'neighbor_id' and
         'distance'.
     """
+    _check_trajectory_data(traj_data)
     if NEIGHBORS_COL in neighborhood.columns:
         raise PedPyValueError(
             "Cannot compute distance between neighbors with list-format data. "
@@ -443,6 +454,7 @@ def compute_time_distance_line(*, traj_data: TrajectoryData, measurement_line: M
         DataFrame containing 'id', 'frame', 'distance' (meters to measurement
         line), and 'time' (seconds until crossing)
     """
+    _check_trajectory_data(traj_data)
     df_distance_time = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]].copy(deep=True)
 
     # Compute distance to measurement line
@@ -523,6 +535,7 @@ def compute_individual_voronoi_polygons(
         DataFrame containing the columns 'id', 'frame','polygon' (
         :class:`shapely.Polygon`), and 'density' in :math:`1/m^2`.
     """
+    _check_trajectory_data(traj_data)
     if use_blind_points is not None:
         warnings.warn(
             "The parameter 'use_blind_points' is deprecated and has no "
@@ -707,6 +720,7 @@ def compute_crossing_frames(
         DataFrame containing the columns 'id', 'frame', where 'frame' is
         the frame where the measurement line is crossed.
     """
+    _check_trajectory_data(traj_data)
     return _compute_crossing_frames(
         traj_data=traj_data,
         measurement_line=measurement_line,
