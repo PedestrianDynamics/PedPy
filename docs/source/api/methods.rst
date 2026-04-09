@@ -60,6 +60,15 @@ Motion profiles
     :no-special-members:
 
 
+Steady State Detection
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. autoapimodule:: steady_state_detector
+    :members:
+    :no-private-members:
+    :no-special-members:
+
+
 Utilities
 ------
 
