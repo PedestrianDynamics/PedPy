@@ -19,7 +19,7 @@ from pedpy.column_identifier import (
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import (
     SpeedCalculation,
-    _compute_individual_distances,
+    compute_individual_distances,
 )
 from pedpy.methods.speed_calculator import compute_individual_speed
 
@@ -65,9 +65,9 @@ def compute_intrusion(
     Returns:
         DataFrame with columns 'id', 'frame', and 'intrusion'
     """
-    intrusion = _compute_individual_distances(traj_data=traj_data)
-    intrusion = intrusion[intrusion.distance <= 3 * r_soc]
-    intrusion[INTRUSION_COL] = ((r_soc - l_min) / (intrusion.distance - l_min)) ** 2
+    intrusion = compute_individual_distances(traj_data=traj_data)
+    intrusion = intrusion.loc[(intrusion.distance <= 3 * r_soc) & (intrusion.distance > l_min)].copy()
+    intrusion.loc[:, INTRUSION_COL] = ((r_soc - l_min) / (intrusion.distance - l_min)) ** 2
     intrusion = (
         intrusion.groupby(by=[ID_COL, FRAME_COL])
         .agg(
@@ -121,40 +121,39 @@ def compute_avoidance(
     data = traj_data.data.merge(velocity, on=[ID_COL, FRAME_COL])
     data["velocity"] = shapely.points(data.v_x, data.v_y)
 
-    matrix = data.merge(data, how="outer", on=FRAME_COL, suffixes=("", "_neighbor"))
-    matrix = matrix[matrix.id != matrix.id_neighbor]
+    matrix = data.merge(data, how="inner", on=FRAME_COL, suffixes=("", "_neighbor"))
+    matrix = matrix[matrix[ID_COL] != matrix[f"{ID_COL}_neighbor"]]
 
-    distance = np.linalg.norm(
-        shapely.get_coordinates(matrix.point) - shapely.get_coordinates(matrix.point_neighbor),
-        axis=1,
-    )
-
-    e_v = (shapely.get_coordinates(matrix.point) - shapely.get_coordinates(matrix.point_neighbor)) / distance[
-        :, np.newaxis
-    ]
+    pos = shapely.get_coordinates(matrix.point)
+    pos_neighbor = shapely.get_coordinates(matrix.point_neighbor)
+    distance = np.linalg.norm(pos - pos_neighbor, axis=1)
 
     delta_v = shapely.get_coordinates(matrix.velocity) - shapely.get_coordinates(matrix.velocity_neighbor)
     delta_v_norm = np.linalg.norm(delta_v, axis=1)
-    v_rel_hat = delta_v / delta_v_norm[:, np.newaxis]
 
-    cos_alpha = np.sum(
-        np.array(e_v.tolist()) * np.array(v_rel_hat.tolist()),
-        axis=1,
-    )
+    # only compute for pairs with nonzero distance and nonzero relative velocity
+    computable = (distance > 0) & (delta_v_norm > 0)
 
     ttc = np.full(matrix.shape[0], np.inf)
 
-    capital_a = (cos_alpha**2 - 1) * distance**2 + radius**2
+    if np.any(computable):
+        d_c = distance[computable]
+        dv_c = delta_v[computable]
+        dv_norm_c = delta_v_norm[computable]
 
-    # (0.5 * l_a + 0.5 * l_b)**2 in paper
-    sqrt_a_safe = np.where(capital_a >= 0, np.sqrt(np.where(capital_a >= 0, capital_a, 0)), np.nan)
+        e_v = (pos[computable] - pos_neighbor[computable]) / d_c[:, np.newaxis]
+        v_rel_hat = dv_c / dv_norm_c[:, np.newaxis]
+        cos_alpha = np.sum(e_v * v_rel_hat, axis=1)
 
-    valid_conditions = (capital_a >= 0) & (-cos_alpha * distance - sqrt_a_safe >= 0) & (delta_v_norm != 0)
+        capital_a = (cos_alpha**2 - 1) * d_c**2 + radius**2
+        sqrt_a_safe = np.sqrt(np.maximum(capital_a, 0.0))
 
-    ttc[valid_conditions] = (
-        -cos_alpha[valid_conditions] * distance[valid_conditions] - np.sqrt(capital_a[valid_conditions])
-    ) / delta_v_norm[valid_conditions]
+        valid = (capital_a >= 0) & (-cos_alpha * d_c - sqrt_a_safe >= 0)
 
+        idx = np.where(computable)[0][valid]
+        ttc[idx] = (-cos_alpha[valid] * d_c[valid] - sqrt_a_safe[valid]) / dv_norm_c[valid]
+
+    matrix = matrix.copy()
     matrix[AVOIDANCE_COL] = tau_0 / ttc
 
     avoidance = matrix.groupby(by=[ID_COL, FRAME_COL], as_index=False).agg(avoidance=(AVOIDANCE_COL, "max"))

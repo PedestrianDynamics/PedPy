@@ -1297,19 +1297,33 @@ def is_individual_speed_valid(
     return DataValidationStatus.DATA_CORRECT
 
 
-def _compute_individual_distances(*, traj_data: TrajectoryData) -> pd.DataFrame:
-    matrix = traj_data.data[["id", "frame", "point"]].merge(
-        traj_data.data[["id", "frame", "point"]],
-        how="outer",
-        on="frame",
-        suffixes=("", "_neighbor"),
+def compute_individual_distances(*, traj_data: TrajectoryData) -> pd.DataFrame:
+    """Compute pairwise distances between all pedestrians per frame.
+
+    Args:
+        traj_data: trajectory data
+
+    Returns:
+        DataFrame with columns 'id', 'frame', 'neighbor_id', and 'distance'
+    """
+    neighbor_point_col = f"{POINT_COL}_{NEIGHBOR_ID_COL}"
+    points = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]]
+    neighbor_points = points.rename(
+        columns={
+            ID_COL: NEIGHBOR_ID_COL,
+            POINT_COL: neighbor_point_col,
+        }
     )
-    matrix = matrix[matrix.id != matrix.id_neighbor]
-    matrix["distance"] = np.linalg.norm(
-        shapely.get_coordinates(matrix.point) - shapely.get_coordinates(matrix.point_neighbor),
+    matrix = points.merge(
+        neighbor_points,
+        how="inner",
+        on=FRAME_COL,
+    )
+    matrix = matrix[matrix[ID_COL] != matrix[NEIGHBOR_ID_COL]]
+    matrix[DISTANCE_COL] = np.linalg.norm(
+        shapely.get_coordinates(matrix[POINT_COL]) - shapely.get_coordinates(matrix[neighbor_point_col]),
         axis=1,
     )
 
-    matrix = matrix.drop(columns=["point", "point_neighbor"])
-    matrix = matrix.rename(columns={"id_neighbor": "neighbor"})
+    matrix = matrix.drop(columns=[POINT_COL, neighbor_point_col])
     return matrix.reset_index(drop=True)

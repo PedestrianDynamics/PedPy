@@ -69,7 +69,7 @@ Utilities
     :no-special-members:
 
 Dimensionless Numbers
-*********************
+^^^^^^^^^^^^^^^^^^^^^
 
 .. autoapimodule:: dimensionless_number_calculator
     :members:
