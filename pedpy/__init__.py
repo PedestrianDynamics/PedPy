@@ -12,6 +12,7 @@ except ImportError:
 
 from .column_identifier import (
     ACC_COL,
+    AVOIDANCE_COL,
     A_X_COL,
     A_Y_COL,
     COUNT_COL,
@@ -25,6 +26,7 @@ from .column_identifier import (
     FRAME_COL,
     ID_COL,
     INTERSECTION_COL,
+    INTRUSION_COL,
     LAST_FRAME_COL,
     MEAN_SPEED_COL,
     MID_FRAME_COL,
@@ -281,6 +283,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "MID_POSITION_COL",
     "END_POSITION_COL",
     "WINDOW_SIZE_COL",
+    "INTRUSION_COL",
+    "AVOIDANCE_COL",
     "__version__",
     "AccelerationError",
     "GeometryError",

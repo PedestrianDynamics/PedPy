@@ -63,7 +63,9 @@ def compute_intrusion(
             ``SUM`` (default, as in the paper) or ``MAX``
 
     Returns:
-        DataFrame with columns 'id', 'frame', and 'intrusion'
+        DataFrame with columns 'id', 'frame', and 'intrusion'.
+        Agents with no neighbors within the cutoff (or only at
+        exactly ``l_min`` distance) are absent from the result.
     """
     intrusion = compute_individual_distances(traj_data=traj_data)
     intrusion = intrusion.loc[(intrusion.distance <= 3 * r_soc) & (intrusion.distance > l_min)].copy()
@@ -83,7 +85,7 @@ def compute_avoidance(
     *,
     traj_data: TrajectoryData,
     frame_step: int,
-    radius: float = 0.2,
+    radius: float = 0.4,
     tau_0: float,
 ) -> pd.DataFrame:
     r"""Compute the avoidance number for each pedestrian per frame.
@@ -105,7 +107,8 @@ def compute_avoidance(
     Args:
         traj_data (TrajectoryData): trajectory data to analyze
         frame_step (int): number of frames used for velocity computation
-        radius (float): combined disc radius for TTC in m (default 0.2)
+        radius (float): disc diameter :math:`\ell_\text{soc}` for TTC
+            computation in m (default 0.4, as in the paper)
         tau_0 (float): reference timescale in s (paper uses 3.0)
 
     Returns:
