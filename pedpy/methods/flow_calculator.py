@@ -22,6 +22,7 @@ from pedpy.errors import InputError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
     _apply_lambda_for_intersecting_frames,
+    _check_trajectory_data,
     _compute_orthogonal_speed_in_relation_to_proportion,
     compute_crossing_frames,
     is_individual_speed_valid,
@@ -56,6 +57,7 @@ def compute_n_t(
         measurement line.
 
     """
+    _check_trajectory_data(traj_data)
     crossing_frames = compute_crossing_frames(traj_data=traj_data, measurement_line=measurement_line)
     crossing_frames = crossing_frames.groupby(by=ID_COL)[FRAME_COL].min().sort_values().reset_index()
 
