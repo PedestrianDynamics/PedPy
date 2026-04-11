@@ -30,7 +30,7 @@ def detect_outliers(
     """
 
     Args:
-        traj_data:
+        traj_data: The trajectory data that has to be checked and corrected.
         tolerance: The tolerance equals to the factor the quantile of the distance is
             multiplied with. A low value means a low tolerance for potential outliers,
             which can be useful in trajectories where the speed of the pedestrians
@@ -64,6 +64,8 @@ def detect_outliers(
 
     Returns:
         The corrected and modified copy of the original trajectory as pedpy.TrajectoryData.
+        A list with every personID the way the original trajectory is counted, that was changed.
+        A list with every personID the way the modified trajectory is counted, that was changed.
     """
     _check_parameters(
         tolerance=tolerance,
@@ -125,7 +127,10 @@ def detect_outliers(
                         )
                     else:
                         trajectory_single = _split_trajectory(
-                            trajectory_to_split=trajectory_single, outliers=outliers, person_id=i + 1, critical=critical
+                            trajectory_to_split=trajectory_single,
+                            outliers=outliers,
+                            person_id=i + 1,
+                            critical=critical
                         )
                 case DealTrajectory.correct:
                     trajectory_single = _correct_trajectory(
@@ -147,6 +152,16 @@ def _check_parameters(
     max_length: int,
     critical: int,
 ) -> None:
+    """Checks if the parameters are valid.
+
+    Args:
+        tolerance: the factor for multiplying the quantile to get the guideline for the distance.
+        quantile: The n-quantile of all distances. The n is set.
+        percentage_invalid: How many % of the trajectory have to be an outlier so the trajectory is
+            considered invalid.
+        max_length: The maximum length a group of outliers can have.
+        critical: The minimum length for a trajectory.
+    """
     if tolerance < 1:
         raise InputError(f"The tolerance has to be greater than 1 for meaningful results output")
     if quantile < 0.5 or quantile >= 1:
@@ -190,20 +205,21 @@ def _concat_traj_data(
     return trajectories_per_person, all_distances
 
 def _split_trajectory(
-        trajectory_to_split:pd.DataFrame,
-        outliers: list[list[int]],
-        person_id: int,
-        critical:int
+    trajectory_to_split:pd.DataFrame,
+    outliers: list[list[int]],
+    person_id: int,
+    critical:int
 )-> pd.DataFrame:
-    """
+    """Split the trajectory before/after certain indexes
 
     Args:
         trajectory_to_split: The trajectory data of a single person as a pd.DataFrame.
         outliers: A list with one or two indexes, where the trajectory needs to be split.
-        person_id: The person id
-        critical:
+        person_id: The person id of the current trajectory.
+        critical: The minimum length a trajectory has to have.
 
     Returns:
+        The trajectory where the indexes were cut.
 
     """
     if len(outliers) == 2:
@@ -231,7 +247,10 @@ def _split_trajectory(
     return trajectory_to_split
 
 
-def _calc_distances(traj_data: pd.DataFrame) -> np.ndarray:
+def _calc_distances(
+    traj_data: pd.DataFrame
+) -> np.ndarray:
+    """Calculates distances between following points of a single trajectory."""
     x = traj_data["x"].to_numpy()
     y = traj_data["y"].to_numpy()
 
@@ -243,68 +262,84 @@ def _calc_distances(traj_data: pd.DataFrame) -> np.ndarray:
 
 
 class DealTrajectory(Enum):
+    """Enum, that defines how a trajectory should be treated if an anomaly was detected."""
     delete = "delete"
     split = "split"
     correct = "correct"
 
 
 def _detect_single_outliers(
-    trajectory_single: pd.DataFrame, quantile: float, tolerance: float, critical: int, max_length: int, drops_only: bool
+    trajectory_single: pd.DataFrame,
+    quantile: float,
+    tolerance: float,
+    critical: int,
+    max_length: int,
+    drops_only: bool
 ) -> tuple[list[list[int]], DealTrajectory]:
     distances = trajectory_single["distance prev. point"].to_numpy()
     outliers = []
     for i in range(len(distances)):
-        # if the points current points were already tested by the multiple_outlier function
-        # it could cause mistakes to check them again because of the different algorithms used
-        # for single and for multiple outliers
         if len(outliers) > 0 and outliers[-1][-1] + 1 >= i:
+            # if the points current points were already tested by the multiple_outlier function
+            # it would cause mistakes to check them again because of the different algorithms
+            # that are used for single and for multiple outlier detection
             continue
-        if (
-            distances[i] > tolerance * quantile
-        ):  # Testing, whether the distance between to points is abnormal -> sign of outlier
+        if distances[i] > tolerance * quantile:
+            # Testing, whether the distance between to points is abnormal -> sign of outlier
             following_outliers = []
             if i == 1:
-                # if the outlier is at the second distance, it is not clear if the first or second point is incorrect,
-                # and it needs to be tested further.
+                # if the outlier is at the second distance, it is not clear if the first
+                # or second point is incorrect, and it needs to be tested further.
                 if _outliers_beginning(trajectory_single, quantile, tolerance):
                     following_outliers.append(1)
                     if i + 1 < len(distances):
                         _detect_multiple_outliers(quantile, trajectory_single, following_outliers)
                 else:
                     following_outliers.append(0)
+                    #if the first point is an outlier, there will not be  following
+                    #outliers because the jump back was detected
             else:
                 following_outliers.append(i)
-                if i + 1 < len(distances):
+                if i + 1 < len(distances): #if the outlier is not at the last point
                     _detect_multiple_outliers(quantile, trajectory_single, following_outliers)
 
             if following_outliers[0] < critical and len(following_outliers) > max_length:
-                # The list of following_outliers exceeds the maximum length for outliers and is in the
-                # beginning of the trajectory, therefore the points before the supposed outliers are
+                # The list of following_outliers exceeds the maximum length for outliers and those occur in
+                # the beginning of the trajectory, therefore the points before the supposed outliers are
                 # considered as the actual anomalies
                 following_outliers = [i for i in range(following_outliers[0])]
                 if following_outliers[0] == 0 and len(outliers) > 0 and outliers[0] == [0]:
-                    # This case only happen, when the second point (and further) is an outlier, but the first one
+                    # This case only happens, when the second point (and further) is an outlier, but the first one
                     # is correct and there is a split within the trajectory. In this case, the logic of the even/ uneven number of
                     # outliers is broken and those concrete cases need to be handled again
                     del following_outliers[0]
                     del outliers[0]
+                # sometimes the code above, that deals with eventual splits, fails to make
+                # a proper list with every outlier appearing only once. Those doubles need
+                # to be removed.
                 outliers = [group for group in outliers if not any(x in following_outliers for x in group)]
+
             # following_outliers[0]<critical and len(following_outliers)< max_length
             # -> are considered outliers, because the index list it not long enough to count as a trajectory
+
             elif following_outliers[0] > critical and len(following_outliers) > max_length:
-                # Recognized and treated as a split
+                # Recognized and treated as a split, because there are enough valid frames
+                # at the beginning and the outlier is considered too long to be an actual
+                # outlier
                 deal = DealTrajectory.split
                 outliers.append(following_outliers)
-                if following_outliers[0] < critical:
-                    deal = DealTrajectory.delete
                 if drops_only:
+                    # if the program should only search for drops in the trajectory, the
+                    # outlier array should only contain a list with one or two indexes for
+                    # the split. Either the first or the middle part will be kept.
                     if len(outliers) > 0:
                         outliers = [group for group in outliers if 0 in group]
                         outliers.append(following_outliers)
+                return outliers, deal #it is not necessary to search for further anomalies
 
-                return outliers, deal
             outliers.append(following_outliers)
     deal = DealTrajectory.correct
+
     if drops_only and len(outliers) > 0:
         outliers = [group for group in outliers if 0 in group or len(distances) - 1 in group]
         deal = DealTrajectory.split
@@ -325,7 +360,9 @@ def _detect_multiple_outliers(quantile: float, traj_data: pd.DataFrame, followin
         [traj_data.iloc[following_outliers[-1] + 1]["x"], traj_data.iloc[following_outliers[-1] + 1]["y"]]
     )  # The outlier is already tested and documented, so we'll proceed with the point afterward
     dist_to_corr_point = np.linalg.norm(correct_point - following_point)
-    n = 2  # As we test with the correct point, which is not the direct point before the tested point, we'll multiply the critical distance correspondingly often
+    n = 2
+    # As we test with the correct point, which is not the direct point before the
+    # tested point, we'll multiply the critical distance correspondingly often
     index = following_outliers[-1] + 1
     tolerance = 1.5
     while dist_to_corr_point > quantile * n * tolerance:
