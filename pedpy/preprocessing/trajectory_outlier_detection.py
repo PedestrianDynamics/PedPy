@@ -1,3 +1,5 @@
+"""Provides functions for detecting and correcting anomalies"""
+
 import copy
 import logging
 from enum import Enum
@@ -24,10 +26,13 @@ def detect_outliers(
     percentage_invalid: float = 0.2,
     deleting: bool = False,
     max_length: int = 8,
-    critical: int = None,
+    critical_length_traj: int = None,
     drops_only: bool = False,
 ) -> tuple[TrajectoryData, list[int], list[int]]:
-    """
+    """Detects and corrects outliers in a trajectory.
+
+
+    In the following, the term trajectory means the trajectory of a single person.
 
     Args:
         traj_data: The trajectory data that has to be checked and corrected.
@@ -44,19 +49,14 @@ def detect_outliers(
             is considered as completely invalid.
         deleting: A bool parameter whether completely invalid trajectories should
             be deleted or not.
-        max_length: Sometimes it happens, that a few outliers are directly after another
-            without a jump back to the correct trajectory. The max_length value defines,
-            how many points long those multiple outliers can be, before the program will
-            check, whether it is a split in the trajectory or, if the outlier occur at
-            the beginning of the trajectory, the points before it will be treated as
-            outliers. The default value is 8.
-        critical: Only relevant in cases, where anomalies occur in the beginning of a
-            trajectory and the previous outlier finds need to be checked again, also
-            critical length that a trajectory has to have. If the lowest position of
-            anomalies in the begging is lower than the critical value, the anomalies are
-            considered as outlier. Otherwise, it is a split and the points and every point
-            after is going to be deleted. The default value is 10% of the length of the
-            trajectory.
+        max_length: An integer value. Sometimes it may happen that a few outliers occur
+            directly one after another without a jump back to the correct trajectory.
+            The max_length parameter defines how many frames long these consecutive outliers
+            can be before the program checks whether this indicates a split in the trajectory.
+            The default value is 8.
+        critical_length_traj: The minimum length a trajectory must have to be considered a trajectory
+            in its own right; this is only relevant if a supposed drop has been detected.
+            The default value is 10% of the trajectory’s length.
         drops_only: A bool parameter whether the program should only search and correct
             major jumps within the trajectory, that do not have a jump back. This includes
             outlier group that contain the very first or the very last frame of the person
@@ -72,7 +72,7 @@ def detect_outliers(
         quantile=quantile,
         percentage_invalid=percentage_invalid,
         max_length=max_length,
-        critical=critical,
+        critical=critical_length_traj,
     )
     all_single_trajectories, all_distances = _concat_traj_data(traj_data)
     median = float(np.median(all_distances))
@@ -82,13 +82,13 @@ def detect_outliers(
 
     for i in range(len(all_single_trajectories)):
         trajectory_single = all_single_trajectories[i]
-        if critical is None:
-            critical = int(0.1 * len(trajectory_single))
+        if critical_length_traj is None:
+            critical_length_traj = int(0.1 * len(trajectory_single))
         outliers, deal = _detect_single_outliers(
             trajectory_single=trajectory_single,
             quantile=quan,
             tolerance=tolerance,
-            critical=critical,
+            critical=critical_length_traj,
             max_length=max_length,
             drops_only=drops_only,
         )
@@ -127,10 +127,7 @@ def detect_outliers(
                         )
                     else:
                         trajectory_single = _split_trajectory(
-                            trajectory_to_split=trajectory_single,
-                            outliers=outliers,
-                            person_id=i + 1,
-                            critical=critical
+                            trajectory_to_split=trajectory_single, outliers=outliers, person_id=i + 1, critical=critical_length_traj
                         )
                 case DealTrajectory.correct:
                     trajectory_single = _correct_trajectory(
@@ -182,7 +179,7 @@ def _check_parameters(
 
 
 def _concat_traj_data(
-        traj_data: TrajectoryData
+    traj_data: TrajectoryData
 ) -> tuple[list[pd.DataFrame], list[float]]:
     """Splits the trajectory data into multiple pd.Dataframes, one per person.
 
@@ -204,22 +201,22 @@ def _concat_traj_data(
         trajectories_per_person.append(trajectory_single_person)
     return trajectories_per_person, all_distances
 
+
 def _split_trajectory(
-    trajectory_to_split:pd.DataFrame,
+    trajectory_to_split: pd.DataFrame,
     outliers: list[list[int]],
-    person_id: int,
-    critical:int
-)-> pd.DataFrame:
-    """Split the trajectory before/after certain indexes
+    person_id: int, critical: int
+) -> pd.DataFrame:
+    """Split the trajectory before/after certain indices
 
     Args:
         trajectory_to_split: The trajectory data of a single person as a pd.DataFrame.
-        outliers: A list with one or two indexes, where the trajectory needs to be split.
+        outliers: A list with one or two indices, where the trajectory needs to be split.
         person_id: The person id of the current trajectory.
         critical: The minimum length a trajectory has to have.
 
     Returns:
-        The trajectory where the indexes were cut.
+        The trajectory where the indices were cut.
 
     """
     if len(outliers) == 2:
@@ -247,9 +244,7 @@ def _split_trajectory(
     return trajectory_to_split
 
 
-def _calc_distances(
-    traj_data: pd.DataFrame
-) -> np.ndarray:
+def _calc_distances(traj_data: pd.DataFrame) -> np.ndarray:
     """Calculates distances between following points of a single trajectory."""
     x = traj_data["x"].to_numpy()
     y = traj_data["y"].to_numpy()
@@ -263,18 +258,17 @@ def _calc_distances(
 
 class DealTrajectory(Enum):
     """Enum, that defines how a trajectory should be treated if an anomaly was detected."""
+
     delete = "delete"
     split = "split"
     correct = "correct"
 
-
 def _detect_single_outliers(
-    trajectory_single: pd.DataFrame,
-    quantile: float,
-    tolerance: float,
-    critical: int,
-    max_length: int,
-    drops_only: bool
+        trajectory_single: pd.DataFrame,
+        quantile: float, tolerance:
+        float, critical: int,
+        max_length: int,
+        drops_only: bool
 ) -> tuple[list[list[int]], DealTrajectory]:
     distances = trajectory_single["distance prev. point"].to_numpy()
     outliers = []
@@ -296,11 +290,11 @@ def _detect_single_outliers(
                         _detect_multiple_outliers(quantile, trajectory_single, following_outliers)
                 else:
                     following_outliers.append(0)
-                    #if the first point is an outlier, there will not be  following
-                    #outliers because the jump back was detected
+                    # if the first point is an outlier, there will not be  following
+                    # outliers because the jump back was detected
             else:
                 following_outliers.append(i)
-                if i + 1 < len(distances): #if the outlier is not at the last point
+                if i + 1 < len(distances):  # if the outlier is not at the last point
                     _detect_multiple_outliers(quantile, trajectory_single, following_outliers)
 
             if following_outliers[0] < critical and len(following_outliers) > max_length:
@@ -330,12 +324,12 @@ def _detect_single_outliers(
                 outliers.append(following_outliers)
                 if drops_only:
                     # if the program should only search for drops in the trajectory, the
-                    # outlier array should only contain a list with one or two indexes for
+                    # outlier array should only contain a list with one or two indices for
                     # the split. Either the first or the middle part will be kept.
                     if len(outliers) > 0:
                         outliers = [group for group in outliers if 0 in group]
                         outliers.append(following_outliers)
-                return outliers, deal #it is not necessary to search for further anomalies
+                return outliers, deal  # it is not necessary to search for further anomalies
 
             outliers.append(following_outliers)
     deal = DealTrajectory.correct

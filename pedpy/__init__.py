@@ -149,8 +149,8 @@ from .plotting.plotting import (
     plot_voronoi_cells,
     plot_walkable_area,
 )
-from .preprocessing.trajectory_projector import correct_invalid_trajectories
 from .preprocessing.trajectory_outlier_detection import detect_outliers
+from .preprocessing.trajectory_projector import correct_invalid_trajectories
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "AxisAlignedMeasurementArea",
