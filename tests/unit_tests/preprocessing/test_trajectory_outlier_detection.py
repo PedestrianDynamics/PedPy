@@ -6,7 +6,7 @@ import pytest
 from pedpy import InputError
 from pedpy.io.helper import TrajectoryUnit
 from pedpy.io.trajectory_loader import load_trajectory
-from pedpy.preprocessing.trajectory_outlier_detection import detect_outliers
+from pedpy.preprocessing.trajectory_outlier_detection import detect_anomalies_in_trajectories
 
 
 @pytest.fixture()
@@ -21,14 +21,16 @@ def setup_trajectory_data():
 
 
 def test_detect_outliers_correction(setup_trajectory_data):
-    corrected_trajectory = detect_outliers(setup_trajectory_data, tolerance=6, deleting=True)[0]
-    valid_trajectory, changed_index_orig, changed_index_new = detect_outliers(corrected_trajectory, tolerance=6)
+    corrected_trajectory = detect_anomalies_in_trajectories(setup_trajectory_data, tolerance=6, deleting=True)[0]
+    valid_trajectory, changed_index_orig, changed_index_new = detect_anomalies_in_trajectories(
+        corrected_trajectory, tolerance=6
+    )
     assert changed_index_orig == []
     assert changed_index_new == []
 
 
 def test_detect_outliers_changes_index_list_deleting(setup_trajectory_data):
-    corrected_trajectory, changed_index_orig, changed_index_new = detect_outliers(
+    corrected_trajectory, changed_index_orig, changed_index_new = detect_anomalies_in_trajectories(
         setup_trajectory_data, tolerance=6, deleting=True
     )
     assert changed_index_orig == [55, 89, 123, 209, 210, 211, 463]
@@ -37,7 +39,9 @@ def test_detect_outliers_changes_index_list_deleting(setup_trajectory_data):
 
 def test_detect_outliers_logging_default_tolerance6(setup_trajectory_data, caplog):
     with caplog.at_level(logging.INFO):
-        detect_outliers(traj_data=setup_trajectory_data, tolerance=6, deleting=True, quantile=0.97, max_length=7)
+        detect_anomalies_in_trajectories(
+            traj_data=setup_trajectory_data, tolerance=6, deleting=True, quantile=0.97, max_length=7
+        )
     expected_messages = [
         "Outliers found: personID 55 at frames [2018] ",
         "Outliers found: personID 89 at frames [438] ",
@@ -52,17 +56,17 @@ def test_detect_outliers_logging_default_tolerance6(setup_trajectory_data, caplo
     assert all(any(msg in r.message and r.levelname == "INFO" for r in caplog.records) for msg in expected_messages)
 
 
-def test_detect_outliers_logging_split_only(setup_trajectory_data, caplog):
+def test_detect_outliers_logging_displacements_only(setup_trajectory_data, caplog):
     with caplog.at_level(logging.INFO):
-        detect_outliers(traj_data=setup_trajectory_data, tolerance=6, drops_only=True)
+        detect_anomalies_in_trajectories(traj_data=setup_trajectory_data, tolerance=6, displacements_only=True)
     expected_messages = [
-        "Frames in trajectory with original personID 55 were cut out after frame 2017 ",
-        "Frames in trajectory with original personID 209 were cut out after frame 478 ",
-        "Frames in trajectory with original personID 210 were cut out before frame 1389",
-        "Frames in trajectory with original personID 211 were cut out before frame 1188 and after frame 2054 ",
+        "Frames in trajectory with original personID 55 were cropped after frame 2017 ",
+        "Frames in trajectory with original personID 209 were cropped after frame 478 ",
+        "Frames in trajectory with original personID 210 were cut before frame 1389",
+        "Frames in trajectory with original personID 211 were cut before frame 1188 and after frame 2054 ",
         "Trajectory with personID 422 has to many invalid points and cannot be corrected",
         "Trajectory with personID 422 will be returned unchanged",
-        "Frames in trajectory with original personID 463 were cut out before frame 351 and after frame 749 ",
+        "Frames in trajectory with original personID 463 were cut before frame 351 and after frame 749 ",
     ]
     assert all(any(msg in r.message and r.levelname == "INFO" for r in caplog.records) for msg in expected_messages)
 
@@ -72,7 +76,7 @@ def test_detect_outliers_invalid_tolerance(setup_trajectory_data):
         InputError,
         match=r"The tolerance has to be greater than 1 for meaningful results output",
     ):
-        detect_outliers(setup_trajectory_data, tolerance=0.1, deleting=True)
+        detect_anomalies_in_trajectories(setup_trajectory_data, tolerance=0.1, deleting=True)
 
 
 def test_detect_outliers_invalid_quantile(setup_trajectory_data):
@@ -82,7 +86,7 @@ def test_detect_outliers_invalid_quantile(setup_trajectory_data):
         "as a guideline for the expected distance between two points to locate "
         "outlier should be less that one 1 but at least 0.5",
     ):
-        detect_outliers(setup_trajectory_data, quantile=0.1)
+        detect_anomalies_in_trajectories(setup_trajectory_data, quantile=0.1)
 
 
 def test_detect_outliers_invalid_percentage(setup_trajectory_data):
@@ -90,7 +94,7 @@ def test_detect_outliers_invalid_percentage(setup_trajectory_data):
         InputError,
         match=r"A value for a percentage has to be between 0 and 100",
     ):
-        detect_outliers(setup_trajectory_data, percentage_invalid=-1)
+        detect_anomalies_in_trajectories(setup_trajectory_data, percentage_invalid=-1)
 
 
 def test_detect_outliers_invalid_max_length(setup_trajectory_data):
@@ -99,11 +103,11 @@ def test_detect_outliers_invalid_max_length(setup_trajectory_data):
         match=f"The maximum length of an outlier has to be positive and greater than 1 "
         f"to perform the expected outlier detection",
     ):
-        detect_outliers(setup_trajectory_data, max_length=0)
+        detect_anomalies_in_trajectories(setup_trajectory_data, max_length=0)
 
 
 def test_detect_outliers_invalid_critical(setup_trajectory_data):
     with pytest.raises(
         InputError, match=f"The minimal length, that a trajectory has to have, has to be greater than 1. "
     ):
-        detect_outliers(setup_trajectory_data, critical_length_traj=1)
+        detect_anomalies_in_trajectories(setup_trajectory_data, critical_length_traj=1)
