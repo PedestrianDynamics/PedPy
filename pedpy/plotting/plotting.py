@@ -1324,7 +1324,6 @@ def plot_profiles(
     if axes is None:
         axes = plt.gca()
 
-    axes.set_title(title)
     imshow = axes.imshow(
         mean_profiles,
         extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
@@ -1345,6 +1344,99 @@ def plot_profiles(
         axes=axes,
         hole_color=hole_color,
         hole_alpha=hole_alpha,
+    )
+
+    axes.set_title(title)
+
+    return axes
+
+
+def plot_rset_map(
+    *,
+    walkable_area: WalkableArea,
+    rset_map: NDArray[np.float64],
+    measurement_area: Optional[AxisAlignedMeasurementArea] = None,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot an RSET (Required Safe Egress Time) map.
+
+    Args:
+        walkable_area(WalkableArea): walkable area of the plot
+        rset_map: 2-D array as returned by
+            :func:`~profile_calculator.compute_rset_map`
+        measurement_area (AxisAlignedMeasurementArea): measurement area
+            used when computing the RSET map (optional)
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will
+            be created
+        kwargs: Additional parameters to change the plot appearance
+
+    Keyword Args:
+        title (optional): title of the plot
+        cmap (optional): colormap (default ``"jet"``)
+        vmin (optional): minimum value for the colormap
+        vmax (optional): maximum value for the colormap
+        label (optional): colorbar label (default ``"time / s"``)
+        font_size (optional): font size for axis and colorbar labels
+            (default 14)
+        title_size (optional): font size for the title (default 16)
+        tick_size (optional): font size for tick labels (default 12)
+        walkable_color (optional): color of the walkable area border
+        hole_color (optional): background color of holes
+        hole_alpha (optional): alpha of background color for holes
+
+    Returns:
+         matplotlib.axes.Axes instance where the RSET map is plotted
+    """
+    bounds = walkable_area.bounds
+
+    if measurement_area is not None:
+        bounds = measurement_area.bounds
+
+    title = kwargs.pop("title", "RSET map")
+    walkable_color = kwargs.pop("walkable_color", "w")
+    hole_color = kwargs.pop("hole_color", "w")
+    hole_alpha = kwargs.pop("hole_alpha", 1.0)
+    vmin = kwargs.pop("vmin", np.nanmin(rset_map))
+    vmax = kwargs.pop("vmax", np.nanmax(rset_map))
+    label = kwargs.pop("label", "time / s")
+
+    font_size = kwargs.pop("font_size", 14)
+    title_size = kwargs.pop("title_size", 16)
+    tick_size = kwargs.pop("tick_size", 12)
+
+    if axes is None:
+        axes = plt.gca()
+
+    axes.set_title(title, fontsize=title_size)
+    axes.set_xlabel("x / m", fontsize=font_size)
+    axes.set_ylabel("y / m", fontsize=font_size)
+    axes.tick_params(labelsize=tick_size)
+    imshow = axes.imshow(
+        rset_map,
+        extent=(bounds[0], bounds[2], bounds[1], bounds[3]),
+        cmap=kwargs.pop("cmap", "jet"),
+        vmin=vmin,
+        vmax=vmax,
+        **kwargs,
+    )
+    divider = make_axes_locatable(axes)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig = plt.gcf()
+
+    cb = fig.colorbar(imshow, cax=cax, orientation="vertical", label=label)
+    cb.ax.tick_params(labelsize=tick_size)
+    cb.set_label(label, fontsize=font_size)
+
+    axes.plot(*walkable_area.polygon.exterior.xy, color=walkable_color)
+    plot_walkable_area(
+        walkable_area=walkable_area,
+        axes=axes,
+        hole_color=hole_color,
+        hole_alpha=hole_alpha,
+        title=title,
+        x_label=axes.get_xlabel(),
+        y_label=axes.get_ylabel(),
     )
 
     return axes
