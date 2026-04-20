@@ -23,7 +23,7 @@ def detect_anomalies_in_trajectories(
     traj_data: TrajectoryData,
     tolerance: float = 3.0,
     quantile: float = 0.99,
-    percentage_invalid: float = 0.2,
+    percentage_invalid: int = 20,
     deleting: bool = False,
     max_length: int = 8,
     critical_length_traj: int | None = None,
@@ -49,33 +49,32 @@ def detect_anomalies_in_trajectories(
         r = n * t * q_{0.99}
 
 
-    In the following, the term trajectory means the trajectory of a single person.
+    In the following, the term trajectory means the trajectory data of a single person.
 
     Args:
-        traj_data: The trajectory data that has to be checked and corrected.
-        tolerance: The tolerance equals to the factor the quantile of the distance is
+        traj_data(pedpy.TrajectoryData): The trajectory data that has to be checked and corrected.
+        tolerance(float): The tolerance equals to the factor the quantile of the distance is
             multiplied with. A low value means a low tolerance for potential outliers,
             which can be useful in trajectories where the speed of the pedestrians
             stays in a similar range. If the pedestrians speed variates, for
             example in bottleneck experiments, the tolerance should be chosen larger.
-        quantile: The value, that is used as the guideline for the expected distance
+        quantile(float): The value, that is used as the guideline for the expected distance
             between 2 points is calculated by the quantile of all distances in the
             whole trajectory. A high quantile is recommended.
-        percentage_invalid: If more that percentage_invalid % of the trajectory was
+        percentage_invalid (int): If more that percentage_invalid % of the trajectory was
             detected as an outlier, the trajectory cannot be corrected properly and
             is considered as completely invalid.
-        deleting: A bool parameter whether completely invalid trajectories should
+        deleting (bool): A parameter whether completely invalid trajectories should
             be deleted or not.
-        max_length: An integer value. Sometimes it may happen that a few outliers occur
-            directly one after another without a jump back to the correct trajectory.
-            The max_length parameter defines how many frames long these consecutive outliers
-            can be before the program checks whether this indicates a vertical displacement
-            in the trajectory. The default value is 8.
-        critical_length_traj: An integer value. Sometimes it may happen that a few outliers
-            occur directly one after another without a jump back to the correct trajectory.
-            The max_length parameter defines how many frames long these consecutive outliers
-            can be before the program checks whether this indicates a vertical displacement
-            in the trajectory. The default value is 8.
+        max_length (int): The maximum length for consecutive outliers. Sometimes it may happen
+            that a few outliers occur directly one after another without a jump back to the
+            correct trajectory. The max_length parameter defines how many frames long these
+            consecutive outliers can be before the program checks whether this indicates a
+            vertical displacement in the trajectory. The default value is 8.
+        critical_length_traj (int): The minimum length a trajectory has to have. This integer
+            value is only relevant in cases where it seems that there is a displacement in
+            the trajectory. By the position of the anomaly and the length of it the functions
+            evaluates how to deal with it. The default value is 10% of the trajectory's length.
         displacements_only: A bool parameter whether the program should only search and correct
             major jumps within the trajectory, that do not have a jump back. This includes
             outlier groups that contain the very first or the very last frame of a person id
@@ -113,7 +112,7 @@ def detect_anomalies_in_trajectories(
         )
         if len(outliers) > 0:
             if (
-                len(list(chain.from_iterable(outliers))) > percentage_invalid * len(trajectory_single)
+                len(list(chain.from_iterable(outliers))) > percentage_invalid / 100 * len(trajectory_single)
                 or deal == DealTrajectory.delete
             ):
                 _log.info(f"Trajectory with personID {i + 1} has to many invalid points and cannot be corrected")
@@ -257,7 +256,7 @@ def _calc_distances(traj_data: pd.DataFrame) -> np.ndarray:
 
 
 class DealTrajectory(Enum):
-    """Enum, that defines how a trajectory should be treated if an anomaly was detected."""
+    """Enum defining how a trajectory should be treated when an anomaly is detected."""
 
     delete = "delete"
     displacement = "displacement"
@@ -301,7 +300,7 @@ def _detect_single_outliers(
                     # outliers because the jump back was detected
             else:
                 following_outliers.append(i)
-                if i + 1 < len(distances):  # if the outlier is not at the last point
+                if i + 1 < len(distances):
                     _detect_multiple_outliers(quantile, trajectory_single, following_outliers)
 
             if following_outliers[0] < critical_length_traj and len(following_outliers) > max_length:
@@ -316,12 +315,9 @@ def _detect_single_outliers(
                     del following_outliers[0]
                     del outliers[0]
                 # sometimes the code above, that deals with eventual displacements, fails to make
-                # a proper list with every outlier appearing only once. Those doubles need
+                # a proper list with every outlier frame appearing only once. Those doubles need
                 # to be removed.
                 outliers = [group for group in outliers if not any(x in following_outliers for x in group)]
-
-            # following_outliers[0]<critical and len(following_outliers)< max_length
-            # -> are considered outliers, because the index list it not long enough to count as a trajectory
 
             elif following_outliers[0] > critical_length_traj and len(following_outliers) > max_length:
                 # Recognized and treated as a displacement, because there are enough valid frames
@@ -352,7 +348,7 @@ def _detect_multiple_outliers(quantile: float, traj_data: pd.DataFrame, followin
 
     As the distance between multiple outliers directly after another do not necessarily has to be
     larger that the expected distance between two points, the distance last correct point is taken
-    as a reference. The tolerance is very low to avoid points to be accidental "right" again.
+    as a reference. The tolerance is very low to avoid points to be accidentally valid again.
     """
     correct_point = np.array(
         [traj_data.iloc[following_outliers[-1] - 1]["x"], traj_data.iloc[following_outliers[-1] - 1]["y"]]
@@ -383,7 +379,7 @@ def _outliers_beginning(trajectory_single: pd.DataFrame, quantile: float, tolera
     if len(index_outliers) % 2:  # Uneven Number of jumps, so either the first or last point is an outlier, not both
         # if the last point is an outlier,the first point is correct
         return len(trajectory_single) - 1 in index_outliers
-    else:  # Even Number of outliers: Either both, the first and last point are outliers, or none
+    else:  # Even Number of outliers: Either both, the first and last point are outliers, or none.
         return len(trajectory_single) - 1 not in index_outliers
 
 
