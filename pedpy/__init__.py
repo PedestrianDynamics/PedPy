@@ -12,6 +12,7 @@ except ImportError:
 
 from .column_identifier import (
     ACC_COL,
+    AVOIDANCE_COL,
     A_X_COL,
     A_Y_COL,
     COUNT_COL,
@@ -25,6 +26,7 @@ from .column_identifier import (
     FRAME_COL,
     ID_COL,
     INTERSECTION_COL,
+    INTRUSION_COL,
     LAST_FRAME_COL,
     MEAN_SPEED_COL,
     MID_FRAME_COL,
@@ -86,6 +88,11 @@ from .methods.density_calculator import (
     compute_passing_density,
     compute_voronoi_density,
 )
+from .methods.dimensionless_number_calculator import (
+    IntrusionMethod,
+    compute_avoidance,
+    compute_intrusion,
+)
 from .methods.flow_calculator import (
     compute_flow,
     compute_line_flow,
@@ -96,6 +103,7 @@ from .methods.method_utils import (
     Cutoff,
     SpeedCalculation,
     compute_frame_range_in_area,
+    compute_individual_distances,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
     compute_neighbor_distance,
@@ -188,6 +196,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_frame_range_in_area",
     "compute_individual_voronoi_polygons",
     "compute_intersecting_polygons",
+    "compute_individual_distances",
     "compute_neighbors",
     "compute_neighbor_distance",
     "compute_time_distance_line",
@@ -217,6 +226,9 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_mean_acceleration_per_frame",
     "compute_voronoi_acceleration",
     "correct_invalid_trajectories",
+    "compute_intrusion",
+    "IntrusionMethod",
+    "compute_avoidance",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
@@ -271,6 +283,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "MID_POSITION_COL",
     "END_POSITION_COL",
     "WINDOW_SIZE_COL",
+    "INTRUSION_COL",
+    "AVOIDANCE_COL",
     "__version__",
     "AccelerationError",
     "GeometryError",
