@@ -13,10 +13,10 @@ pytest-cov~=7.1
 # build tools
 setuptools>=78.1.1,<83.0
 click~=8.3
-build~=1.4
+build~=1.5
 
 # ci
-mypy==1.20.0
+mypy==1.20.2
 mypy-extensions==1.1.0
-ruff==0.15.9
-pre-commit==4.5.1
+ruff==0.15.12
+pre-commit==4.6.0
