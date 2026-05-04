@@ -34,7 +34,11 @@ repos:
     hooks:
       - id: nbstripout
         exclude: ^docs/
-        args: [ '--extra-keys=metadata.kernelspec metadata.language_info' ]
+        args: [
+          '--extra-keys=metadata.kernelspec metadata.language_info',
+          '--keep-metadata-keys=cell.metadata.tags cell.metadata.jupyter',
+          '--keep-id',
+        ]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
