@@ -750,7 +750,14 @@ def plot_crossing_speed_flow(
     marker = kwargs.get("marker", "o")
     marker_size = kwargs.get("marker_size", 16)
     axes.set_title(title)
-    axes.scatter(flow[FLOW_COL], flow[MEAN_SPEED_COL], color=color, s=marker_size, marker=marker, **kwargs)
+    axes.scatter(
+        flow[FLOW_COL],
+        flow[MEAN_SPEED_COL],
+        color=color,
+        s=marker_size,
+        marker=marker,
+        **kwargs,
+    )
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)
     return axes
@@ -1525,7 +1532,29 @@ def plot_trajectories(
         traj_alpha (optional): alpha of the trajectories
         traj_start_marker (optional): marker to indicate the start of the
             trajectory
+        traj_start_color (optional): color of the start marker, defaults to
+            traj_color if not set
+        traj_start_marker_alpha (optional): alpha of the start marker,
+            defaults to 1.0
         traj_end_marker (optional): marker to indicate the end of the trajectory
+        traj_end_color (optional): color of the end marker, defaults to
+            traj_color if not set
+        traj_end_marker_alpha (optional): alpha of the end marker,
+            defaults to 1.0
+        traj_start_marker_size (optional): size of the start marker, defaults
+            to None if not set (markers will be sized automatically by matplotlib)
+        traj_end_marker_size (optional): size of the end marker, defaults to
+            None if not set
+        traj_frame (optional): frame number at which to plot a position
+            marker for each pedestrian
+        traj_frame_marker (optional): marker style for the frame position
+            markers
+        traj_frame_color (optional): color of the frame position markers,
+            defaults to traj_color if not set
+        traj_frame_marker_size (optional): size of the frame position markers,
+            defaults to None if not set (markers will be sized automatically by matplotlib)
+        traj_frame_marker_alpha (optional): alpha of the frame position
+            markers, defaults to 1.0
         border_line_color (optional): color of the borders
         border_line_width (optional): line width of the borders
         hole_color (optional): background color of holes
@@ -1533,7 +1562,6 @@ def plot_trajectories(
         title (optional): title of the plot
         x_label (optional): label on the x-axis
         y_label (optional): label on the y-axis
-
 
     Returns:
         matplotlib.axes.Axes instance where the trajectories are plotted
@@ -1543,7 +1571,18 @@ def plot_trajectories(
     traj_alpha = kwargs.pop("traj_alpha", 1.0)
 
     traj_start_marker = kwargs.pop("traj_start_marker", "")
+    traj_start_color = kwargs.pop("traj_start_color", traj_color)
+    traj_start_marker_alpha = kwargs.pop("traj_start_marker_alpha", 1.0)
     traj_end_marker = kwargs.pop("traj_end_marker", "")
+    traj_end_color = kwargs.pop("traj_end_color", traj_color)
+    traj_end_marker_alpha = kwargs.pop("traj_end_marker_alpha", 1.0)
+    traj_start_marker_size = kwargs.pop("traj_start_marker_size", None)
+    traj_end_marker_size = kwargs.pop("traj_end_marker_size", None)
+    traj_frame = kwargs.pop("traj_frame", None)
+    traj_frame_marker = kwargs.pop("traj_frame_marker", "o")
+    traj_frame_color = kwargs.pop("traj_frame_color", traj_color)
+    traj_frame_marker_size = kwargs.pop("traj_frame_marker_size", None)
+    traj_frame_marker_alpha = kwargs.pop("traj_frame_marker_alpha", 1.0)
 
     title = kwargs.pop("title", "")
     x_label = kwargs.pop("x_label", r"x / m")
@@ -1562,19 +1601,38 @@ def plot_trajectories(
             alpha=traj_alpha,
             color=traj_color,
             linewidth=traj_width,
+            zorder=2,
         )
         axes.scatter(
-            ped[ped.frame == ped.frame.min()][X_COL],
-            ped[ped.frame == ped.frame.min()][Y_COL],
-            color=traj_color,
+            ped[ped[FRAME_COL] == ped[FRAME_COL].min()][X_COL],
+            ped[ped[FRAME_COL] == ped[FRAME_COL].min()][Y_COL],
+            color=traj_start_color,
             marker=traj_start_marker,
+            s=traj_start_marker_size,
+            alpha=traj_start_marker_alpha,
+            zorder=3,
         )
         axes.scatter(
-            ped[ped.frame == ped.frame.max()][X_COL],
-            ped[ped.frame == ped.frame.max()][Y_COL],
-            color=traj_color,
+            ped[ped[FRAME_COL] == ped[FRAME_COL].max()][X_COL],
+            ped[ped[FRAME_COL] == ped[FRAME_COL].max()][Y_COL],
+            color=traj_end_color,
             marker=traj_end_marker,
+            s=traj_end_marker_size,
+            alpha=traj_end_marker_alpha,
+            zorder=3,
         )
+        if traj_frame is not None:
+            frame_data = ped[ped[FRAME_COL] == traj_frame]
+            if not frame_data.empty:
+                axes.scatter(
+                    frame_data[X_COL],
+                    frame_data[Y_COL],
+                    color=traj_frame_color,
+                    marker=traj_frame_marker,
+                    s=traj_frame_marker_size,
+                    alpha=traj_frame_marker_alpha,
+                    zorder=3,
+                )
 
     axes.set_title(title)
     axes.set_xlabel(x_label)
@@ -1618,8 +1676,24 @@ def plot_measurement_setup(
         traj_alpha (optional): alpha of the trajectories
         traj_start_marker (optional): marker to indicate the start of the
             trajectory
+        traj_start_color (optional): color of the start marker, defaults to
+            traj_color if not set
+        traj_start_marker_size (optional): size of the start marker
+        traj_start_marker_alpha (optional): alpha of the start marker
         traj_end_marker (optional): marker to indicate the end of the
             trajectory
+        traj_end_color (optional): color of the end marker, defaults to
+            traj_color if not set
+        traj_end_marker_size (optional): size of the end marker
+        traj_end_marker_alpha (optional): alpha of the end marker
+        traj_frame (optional): frame number at which to plot a position
+            marker for each pedestrian
+        traj_frame_marker (optional): marker style for the frame position
+            markers
+        traj_frame_color (optional): color of the frame position markers,
+            defaults to traj_color if not set
+        traj_frame_marker_size (optional): size of the frame position markers
+        traj_frame_marker_alpha (optional): alpha of the frame position markers
         border_line_color (optional): color of the lines of the borders
         border_line_width (optional): line width of the lines of the borders
         hole_color (optional): background color of holes/geometries
