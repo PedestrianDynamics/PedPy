@@ -1309,3 +1309,35 @@ def is_individual_speed_valid(
         return DataValidationStatus.ENTRY_MISSING
 
     return DataValidationStatus.DATA_CORRECT
+
+
+def compute_individual_distances(*, traj_data: TrajectoryData) -> pd.DataFrame:
+    """Compute pairwise distances between all pedestrians per frame.
+
+    Args:
+        traj_data: trajectory data
+
+    Returns:
+        DataFrame with columns 'id', 'frame', 'neighbor_id', and 'distance'
+    """
+    neighbor_point_col = f"{POINT_COL}_{NEIGHBOR_ID_COL}"
+    points = traj_data.data[[ID_COL, FRAME_COL, POINT_COL]]
+    neighbor_points = points.rename(
+        columns={
+            ID_COL: NEIGHBOR_ID_COL,
+            POINT_COL: neighbor_point_col,
+        }
+    )
+    matrix = points.merge(
+        neighbor_points,
+        how="inner",
+        on=FRAME_COL,
+    )
+    matrix = matrix[matrix[ID_COL] != matrix[NEIGHBOR_ID_COL]]
+    matrix[DISTANCE_COL] = np.linalg.norm(
+        shapely.get_coordinates(matrix[POINT_COL]) - shapely.get_coordinates(matrix[neighbor_point_col]),
+        axis=1,
+    )
+
+    matrix = matrix.drop(columns=[POINT_COL, neighbor_point_col])
+    return matrix.reset_index(drop=True)
