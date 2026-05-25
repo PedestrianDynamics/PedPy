@@ -1,5 +1,6 @@
 import pathlib
 
+import numpy as np
 import pytest
 
 from pedpy import InputError
@@ -54,31 +55,73 @@ def setup_trajectory_data():
         trajectory_file=pathlib.Path(pathlib.Path(__file__).parent.parent / "io/test-data/030_c_56_h0.txt"),
         default_unit=TrajectoryUnit.METER,
     )
-
     return trajectory_data
 
 
 def test_correct_invalid_trajectories(setup_trajectory_data, setup_walkable_area):
     assert not (is_trajectory_valid(traj_data=setup_trajectory_data, walkable_area=setup_walkable_area))
-    corrected_trajectory_data = correct_invalid_trajectories(
+    corrected_trajectory_data, invalid_person_ids = correct_invalid_trajectories(
         trajectory_data=setup_trajectory_data, walkable_area=setup_walkable_area
     )
     assert is_trajectory_valid(traj_data=corrected_trajectory_data, walkable_area=setup_walkable_area) == True
+    assert np.array_equal(
+        invalid_person_ids,
+        np.array(
+            [
+                4,
+                5,
+                6,
+                7,
+                9,
+                10,
+                13,
+                15,
+                23,
+                25,
+                27,
+                28,
+                29,
+                34,
+                36,
+                37,
+                40,
+                41,
+                42,
+                43,
+                48,
+                49,
+                52,
+                53,
+                56,
+                63,
+                65,
+                66,
+                67,
+                70,
+                71,
+                73,
+            ]
+        ),
+    )
 
 
 def test_correct_invalid_trajectories_min_parameter(setup_trajectory_data, setup_walkable_area):
     assert (is_trajectory_valid(traj_data=setup_trajectory_data, walkable_area=setup_walkable_area)) == False
-    corrected_trajectory_data = correct_invalid_trajectories(
+    corrected_trajectory_data, invalid_person_ids = correct_invalid_trajectories(
         trajectory_data=setup_trajectory_data,
         walkable_area=setup_walkable_area,
-        back_distance_wall=-1,
+        back_distance_wall=-1.5,
         min_distance_wall=0.01,
         max_distance_wall=0.01,
-        back_distance_obst=-1,
+        back_distance_obst=-1.5,
         min_distance_obst=0.01,
         max_distance_obst=0.01,
     )
     assert is_trajectory_valid(traj_data=corrected_trajectory_data, walkable_area=setup_walkable_area) == True
+    assert np.array_equal(
+        invalid_person_ids,
+        np.array([4, 5, 6, 7, 9, 10, 13, 23, 25, 27, 28, 34, 37, 41, 42, 43, 48, 49, 52, 53, 56, 65, 71, 73]),
+    )
 
 
 def test_correct_invalid_trajectories_invalid_back_distance(setup_trajectory_data, setup_walkable_area):
