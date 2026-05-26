@@ -256,10 +256,10 @@ def _analyze_alignment_to_wall_types(
     max_distance_obst: float,
     walkable_area: shapely.Polygon,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-    """Checks a single point, that is considered to be invalid.
+    """Checks for every single point the alignment to the surrounding geometries.
 
     The function goes through the different sides of the geometry and tests for each
-    one, if the point is too close to this wall. If this is the case, the new distance,
+    one, if the points are too close to this wall. If this is the case, the new distance,
     the point should have to this wall, will be calculated, considering the given
     parameters and the distance between the point and the wall.
 
@@ -452,12 +452,12 @@ def _calculate_movement_wall(
     points: np.ndarray[shapely.Point],
     failsafe: bool = False,
 ) -> np.ndarray[shapely.Point]:
-    """Calculates the new distance, which the point should have after moving.
+    """Calculates the new distance, which the points should have after moving.
 
     Args:
         wall_line: the side of the obstacle from which the points need to will be viewed
             and corrected.
-        distances: the distance between the edge and the point.
+        distances: the distances between the edge and the points.
         back_distance_wall (float): the distance behind the wall, how far the points inside
             the walls should be corrected. Points, which are
             further inside the walls, are ignored.
@@ -503,7 +503,7 @@ def _calculate_movement_obstacle(
     points: np.ndarray[shapely.Point],
     failsafe: bool = False,
 ) -> np.ndarray[shapely.Point]:
-    """Calculates the new distance, which the point should have after moving.
+    """Calculates the new distances, which the points should have after moving.
 
     Args:
         wall_line: the side of the obstacle from which the points need to will be viewed
@@ -539,8 +539,6 @@ def _calculate_movement_obstacle(
         new_distances = (invalid_distances - back_distance_obst) * (
             (max_distance_obst - min_distance_obst) / (max_distance_obst - back_distance_obst)
         ) + min_distance_obst
-        if failsafe:
-            new_distances = [min_distance_obst for _ in range(len(points_to_move))]
         moved = np.array(
             [
                 _move_from_wall(point, wall_line, n, dist)
@@ -614,7 +612,7 @@ def _move_from_wall(
 
     """
     dist = wall_line.project(point)
-    base = wall_line.interpolate(dist)  # Lotfusspunkt
+    base = wall_line.interpolate(dist)
     (p1x, p1y), (p2x, p2y) = wall_line.coords
     vertice1 = shapely.Point([p1x, p1y])
     vertice2 = shapely.Point([p2x, p2y])
@@ -633,9 +631,8 @@ def _move_from_wall(
     norm_v = np.linalg.norm(v)
     e = 10**-5
     if norm_v < e:
-        # if the point does not lie exactly on the
-        # wall, calculating with the norm of
-        # [x - intersect_point_x, y - intersect_point_y] would cause
+        # if the point does  lie exactly on the
+        # wall, calculating with the norm of  would cause
         # errors (devision by zero).
         v = np.array([[p1x - p2x], [p1y - p2y]])
         v = np.array([-v[1], v[0]])
@@ -689,7 +686,6 @@ def _point_valid_test(
                     failsafe=True,
                 )
             points[shapely.within(points, shapely.Polygon(obstacle))] = points_to_correct
-
     walls = walkable_area.exterior
     if (
         len(
@@ -718,7 +714,7 @@ class WallType(Enum):
 
 
 def _distance_from_wall(
-    points: np.ndarray[shapely.Point], walk_area: shapely.Polygon, wall: shapely.LineString, walltype: WallType
+    points: np.ndarray[shapely.Point], walk_area: shapely.Polygon, wall: shapely.LineString, wall_type: WallType
 ) -> npt.NDArray[np.float64]:
     if len(points) == 1:
         distances = shapely.distance(points, wall)
@@ -727,7 +723,7 @@ def _distance_from_wall(
         return distances
     distances = shapely.distance(points, wall)
     invalid = shapely.within(points, walk_area)
-    if walltype == WallType.obstacle:
+    if wall_type == WallType.obstacle:
         distances[invalid] *= -1
     else:
         distances[~invalid] *= -1
@@ -747,7 +743,7 @@ def _close_from_wall(points: np.ndarray[shapely.Point], line: shapely.LineString
     return a + bias > b + c
 
 
-def _close_from_wall_triangle(points: np.ndarray[shapely.Point], line: shapely.LineString) -> bool:
+def _close_from_wall_triangle(points: np.ndarray[shapely.Point], line: shapely.LineString) -> np.ndarray:
     (p1x, p1y), (p2x, p2y) = line.coords
     p = shapely.get_coordinates(points)
 
