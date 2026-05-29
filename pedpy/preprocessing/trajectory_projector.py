@@ -10,7 +10,7 @@ import numpy.typing as npt
 import pandas as pd
 import shapely
 
-from pedpy import GeometryError, InputError
+from pedpy import X_COL, Y_COL, GeometryError, InputError
 from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import get_invalid_trajectory, is_trajectory_valid
@@ -123,9 +123,13 @@ def correct_invalid_trajectories(
             all_points_for_correcting = list(invalid_traj_lines.index)
             # Those points very likely have to be corrected, but not necessarily
         except GeometryError as p:
-            raise InputError("max_distance parameter is not valid") from p
+            raise InputError(
+                "max_distance is too large: shifting points away from one wall brings them "
+                "too close to the opposite wall."
+            ) from p
 
-        normalized_walk_area_polygon = shapely.normalize(walkable_area._polygon)
+        # normalized_walk_area_polygon = shapely.normalize(walkable_area._polygon)
+        normalized_walk_area_polygon = walkable_area._polygon
         invalid_person_ids = invalid_traj_lines["id"][invalid_traj_lines["id"].duplicated()].unique()
 
         new_trajectories_df = _project_all_points_into_walkable_area(
@@ -137,7 +141,7 @@ def correct_invalid_trajectories(
             back_distance_obst=back_distance_obst,
             min_distance_obst=min_distance_obst,
             max_distance_obst=max_distance_obst,
-            walkable_area=normalized_walk_area_polygon,
+            walkable_area_poly=normalized_walk_area_polygon,
         )
 
         corrected_trajectory_data = TrajectoryData(new_trajectories_df, frame_rate=trajectory_data.frame_rate)
@@ -191,7 +195,7 @@ def _project_all_points_into_walkable_area(
     back_distance_obst: float,
     min_distance_obst: float,
     max_distance_obst: float,
-    walkable_area: shapely.Polygon,
+    walkable_area_poly: shapely.Polygon,
 ) -> pd.DataFrame:
     """Extracts the x and y values of all invalid points and inserts the corrected points back into the traj data.
 
@@ -219,7 +223,7 @@ def _project_all_points_into_walkable_area(
             the value concerns the obstacles.
         max_distance_obst (float): in meters, has to be >0 and >= min_distance_obst. Equivalent to
             max_distance_wall, but the value concerns the obstacles.
-        walkable_area (WalkableArea):  The belonging walkable area
+        walkable_area_poly (WalkableArea):  The belonging walkable area
 
 
     Returns:
@@ -227,8 +231,8 @@ def _project_all_points_into_walkable_area(
          the original trajectory, if the original trajectory was valid
     """
     data_trajectories = copy.deepcopy(traj_data.data)
-    prev_x = data_trajectories.loc[all_points_for_correcting, "x"].to_numpy()
-    prev_y = data_trajectories.loc[all_points_for_correcting, "y"].to_numpy()
+    prev_x = data_trajectories.loc[all_points_for_correcting, X_COL].to_numpy()
+    prev_y = data_trajectories.loc[all_points_for_correcting, Y_COL].to_numpy()
     new_x, new_y = _analyze_alignment_to_wall_types(
         x=prev_x,
         y=prev_y,
@@ -238,10 +242,10 @@ def _project_all_points_into_walkable_area(
         back_distance_obst=back_distance_obst,
         min_distance_obst=min_distance_obst,
         max_distance_obst=max_distance_obst,
-        walkable_area=walkable_area,
+        walkable_area_poly=walkable_area_poly,
     )
-    data_trajectories.loc[all_points_for_correcting, "x"] = new_x
-    data_trajectories.loc[all_points_for_correcting, "y"] = new_y
+    data_trajectories.loc[all_points_for_correcting, X_COL] = new_x
+    data_trajectories.loc[all_points_for_correcting, Y_COL] = new_y
     return data_trajectories
 
 
@@ -254,7 +258,7 @@ def _analyze_alignment_to_wall_types(
     back_distance_obst: float,
     min_distance_obst: float,
     max_distance_obst: float,
-    walkable_area: shapely.Polygon,
+    walkable_area_poly: shapely.Polygon,
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Checks for every single point the alignment to the surrounding geometries.
 
@@ -281,13 +285,13 @@ def _analyze_alignment_to_wall_types(
             the value concerns the obstacles.
         max_distance_obst (float): in meters, has to be >0 and >= min_distance_obst. Equivalent to
             max_distance_wall, but the value concerns the obstacles.
-        walkable_area (WalkableArea):  The belonging walkable area
+        walkable_area_poly (WalkableArea):  The belonging walkable area
 
     Returns:
         tuple[np.ndarray[float], np.ndarray[float]]: The corrected x, y values
 
     """
-    coords = [*walkable_area.interiors]
+    coords = [*walkable_area_poly.interiors]
     points = shapely.points(x, y)
     for obstacle in coords:
         points = _adjust_around_corners(
@@ -306,12 +310,16 @@ def _analyze_alignment_to_wall_types(
         )
     if (
         len(
-            points[~shapely.within(points, shapely.buffer(shapely.Polygon(walkable_area.exterior), -max_distance_wall))]
+            points[
+                ~shapely.within(
+                    points, shapely.buffer(shapely.Polygon(walkable_area_poly.exterior), -max_distance_wall)
+                )
+            ]
         )
         > 0
     ):
         points = _push_out_of_wall(
-            walkable_area_wall=shapely.Polygon(walkable_area.exterior),
+            walkable_area_wall=shapely.Polygon(walkable_area_poly.exterior),
             back_distance_wall=back_distance_wall,
             max_distance_wall=max_distance_wall,
             min_distance_wall=min_distance_wall,
@@ -320,7 +328,7 @@ def _analyze_alignment_to_wall_types(
 
     x, y = _point_valid_test(
         points,
-        walkable_area,
+        walkable_area_poly,
         back_distance_wall,
         min_distance_wall,
         max_distance_wall,
@@ -634,8 +642,8 @@ def _move_from_wall(
         # if the point does  lie exactly on the
         # wall, calculating with the norm of  would cause
         # errors (devision by zero).
-        v = np.array([[p1x - p2x], [p1y - p2y]])
-        v = np.array([-v[1], v[0]])
+        direction = np.array([p1x - p2x, p1y - p2y])
+        v = np.array([-direction[1], direction[0]])
         norm_v = np.linalg.norm(v)
 
     v = v / norm_v * new_distance
@@ -718,8 +726,11 @@ def _distance_from_wall(
 ) -> npt.NDArray[np.float64]:
     if len(points) == 1:
         distances = shapely.distance(points, wall)
-        if shapely.within(points, walk_area):
-            return -distances
+        invalid = shapely.within(points, walk_area)
+        if not invalid and wall_type == WallType.walls:
+            distances *= -1
+        elif invalid and wall_type == WallType.obstacle:
+            distances *= -1
         return distances
     distances = shapely.distance(points, wall)
     invalid = shapely.within(points, walk_area)
