@@ -2,6 +2,16 @@
 Changelog
 *********
 
+Version 1.6.0 (YYYY-MM-DD)
+==========================
+
+**New features:**
+
+**What's changed:**
+
+**Fixes:**
+
+
 Version 1.5.0 (2026-06-02)
 ==========================
 
