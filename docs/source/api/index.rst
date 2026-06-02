@@ -9,6 +9,8 @@ API Reference
       - Internal data types, used for handling trajectories and geometrical properties of the analysis
     * - :doc:`Load Trajectories <io>`
       - How to load trajectory data from file
+    * - :doc:`Preprocessing <preprocessing>`
+      - Methods for trajectory correction and preprocessing
     * - :doc:`Analysis Methods <methods>`
       - Analysis methods to compute: density, speed, flow, etc
     * - :doc:`Plotting <plotting>`
