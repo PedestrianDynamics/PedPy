@@ -1,1 +1,16 @@
+# Normalize line endings to LF for all text files, overriding core.autocrlf
+* text=auto eol=lf
+
+# Binary files — never touch line endings
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.h5 binary
+*.hdf5 binary
+*.pkl binary
+*.pyc binary
+
 analyzer/_version.py export-subst

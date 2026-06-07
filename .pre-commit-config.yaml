@@ -51,3 +51,5 @@ repos:
       - id: check-shebang-scripts-are-executable
       - id: check-symlinks
       - id: destroyed-symlinks
+      - id: mixed-line-ending
+        args: ['--fix=lf']
