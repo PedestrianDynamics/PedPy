@@ -1243,7 +1243,7 @@ def _apply_lambda_for_intersecting_frames(
     else:
         species_2 = pd.DataFrame(columns=[FRAME_COL, column_id_sp2])
 
-    result = species_1.merge(species_2, on=FRAME_COL, how="outer").infer_objects(copy=False)
+    result = species_1.merge(species_2, on=FRAME_COL, how="outer").infer_objects()
     return result.sort_values(by=FRAME_COL, ascending=False)
 
 
