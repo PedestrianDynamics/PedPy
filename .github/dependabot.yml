@@ -16,6 +16,15 @@ updates:
       - dependency-name: "pandas"
         update-types: ["version-update:semver-major"]
 
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      pre-commit-dependencies:
+        patterns:
+          - "*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
