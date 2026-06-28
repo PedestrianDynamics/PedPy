@@ -790,4 +790,4 @@ def _zero_point_alignment(p1x: float, p1y: float, p2x: float, p2y: float, direct
     if a == 0:
         return math.sqrt(math.sqrt(c))
     x_sq = ((a + b - c) ** 2) / (4 * a)
-    return np.sign(sin_p) * math.sqrt(math.fabs(b - x_sq))
+    return float(np.sign(sin_p) * math.sqrt(math.fabs(b - x_sq)))

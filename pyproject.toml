@@ -189,7 +189,7 @@ max-statements = 50
 allow-magic-value-types = ["int", "str"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 namespace_packages = true
 ignore_missing_imports = false
 check_untyped_defs = true

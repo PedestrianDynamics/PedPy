@@ -21,7 +21,7 @@ def compute_pair_distribution_function(
     traj_data: TrajectoryData,
     radius_bin_size: float,
     randomisation_stacking: int = 1,
-) -> Tuple[npt.NDArray[np.float16], npt.NDArray[np.float16]]:
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Computes the pair distribution function g(r).
 
     This function calculates the spatial distribution of positions :math:`g(r)`
@@ -101,7 +101,7 @@ def compute_pair_distribution_function(
 
 def _calculate_pair_distances(
     data_df: pd.DataFrame,
-) -> npt.NDArray[np.float16]:
+) -> npt.NDArray[np.float64]:
     """Calculates the pairwise distances of pedestrians.
 
     This function calculates the pairwise Euclidean distances between all
@@ -114,7 +114,7 @@ def _calculate_pair_distances(
         identified by FRAME_COL, ID_COL, X_COL, and Y_COL constants.
 
     Returns:
-        npt.NDArray[np.float16]: A 1D numpy array of pairwise distances.
+        npt.NDArray[np.float64]: A 1D numpy array of pairwise distances.
     """
     distances_list = []
 
