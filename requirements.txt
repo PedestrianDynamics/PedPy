@@ -6,7 +6,7 @@ matplotlib~=3.10,<4.0
 h5py~=3.13,<4.0
 
 # testing
-pytest~=9.0
+pytest~=9.1
 pytest-mock~=3.15
 pytest-cov~=7.1
 
@@ -18,5 +18,5 @@ build~=1.5
 # ci
 mypy==2.1.0
 mypy-extensions==1.1.0
-ruff==0.15.15
+ruff==0.15.20
 pre-commit==4.6.0
