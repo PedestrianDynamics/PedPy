@@ -1838,8 +1838,9 @@ def plot_voronoi_cells(  # noqa: PLR0912,PLR0915
         plot_measurement_setup(measurement_areas=[measurement_area], axes=axes, **kwargs)
 
     if traj_data:
-        data = traj_data.data.merge(
-            voronoi_data[voronoi_data.frame == frame],
+        frame_data = voronoi_data[voronoi_data.frame == frame].drop(columns=[X_COL, Y_COL], errors="ignore")
+        data = frame_data.merge(
+            traj_data.data[[ID_COL, FRAME_COL, X_COL, Y_COL]],
             on=[ID_COL, FRAME_COL],
         )
     else:
