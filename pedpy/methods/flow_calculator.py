@@ -100,17 +100,17 @@ def compute_flow(
         :width: 80 %
 
     In each of the time interval it is checked, if any person has crossed the
-    line, if yes, a flow $J$ can be computed. From the first frame the line was
-    crossed :math:`f^{\Delta frame}_1`, the last frame someone crossed the line
-    :math:`f^{\Delta frame}_N` the length of the frame interval
-    :math:`\Delta f$` can be computed:
+    line, if yes, a flow :math:`J` can be computed. From the first frame the
+    line was crossed :math:`f^{\Delta frame}_1`, the last frame someone
+    crossed the line :math:`f^{\Delta frame}_N` the length of the frame
+    interval :math:`\Delta f` can be computed:
 
     .. math::
 
         \Delta f = f^{\Delta frame}_N - f^{\Delta frame}_1
 
-    This directly together with the frame rate with :data:`frame_rate` ($fps$)
-    gives the time interval $\Delta t$:
+    This directly together with the frame rate with :data:`frame_rate`
+    (:math:`fps`) gives the time interval :math:`\Delta t`:
 
     .. math::
 
