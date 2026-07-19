@@ -12,6 +12,7 @@ Version 1.6.0 (YYYY-MM-DD)
 **Fixes:**
 
 - Fix duplicate columns in :code:`plot_voronoi_cells`: When plotting Voronoi cells, the function now correctly handles cases where duplicate columns may arise in the output DataFrame, ensuring that each column is unique and accurately represents the corresponding data.
+- Minor improvements in documentation, e.g., ensuring correct rendering of equations.
 
 Version 1.5.0 (2026-06-02)
 ==========================

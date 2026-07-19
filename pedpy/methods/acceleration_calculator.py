@@ -44,8 +44,9 @@ def compute_individual_acceleration(
     These positions are called :math:`X(t_{k+n})`, :math:`X(t_{k-n})`
     respectively.
 
-    In order to compute the acceleration at time 't_k', we first calculate the
-    displacements :math:`\bar{X}` around 't_{k+n}' and 't_{k-n}':
+    In order to compute the acceleration at time :math:`t_k`, we first
+    calculate the displacements :math:`\bar{X}` around :math:`t_{k+n}` and
+    :math:`t_{k-n}`:
 
     .. math::
 
@@ -62,7 +63,7 @@ def compute_individual_acceleration(
 
         \Delta\bar{X}(t_k) = \bar{X}(t_{k+n}) - \bar{X}(t_{k-n})
 
-    divided by the square of the time interval '\Delta t':
+    divided by the square of the time interval :math:`\Delta t`:
 
     .. math::
 
