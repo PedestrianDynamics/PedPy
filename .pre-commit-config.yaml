@@ -40,6 +40,13 @@ repos:
           '--keep-id',
         ]
 
+  - repo: https://github.com/sphinx-contrib/sphinx-lint
+    rev: v1.0.2
+    hooks:
+      - id: sphinx-lint
+        name: Lint RST docs (sphinx-lint)
+        files: ^docs/source/.*\.rst$
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
