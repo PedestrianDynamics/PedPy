@@ -6,7 +6,7 @@ PedPy: Pedestrian Trajectory Analyzer
    :maxdepth: 1
    :hidden:
 
-   Getting Started <getting_started>
+   Getting Started <notebooks/getting_started>
    User Guide <user_guide/index>
    API Reference <api/index>
    Developer Guide <developer_guide>
@@ -51,7 +51,7 @@ Cite PedPy
     .. grid-item-card:: Getting Started
         :img-top: _static/getting_started.svg
         :class-card: intro-card
-        :link: getting_started
+        :link: notebooks/getting_started
         :link-type: doc
         :link-alt: To the getting started guide
 
@@ -61,7 +61,7 @@ Cite PedPy
     .. grid-item-card:: User Guide
         :img-top: _static/user_guide.svg
         :class-card: intro-card
-        :link: user_guide
+        :link: user_guide/index
         :link-type: doc
         :link-alt: To the user guide
 

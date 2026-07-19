@@ -114,7 +114,7 @@ jobs:
         with:
           name: demos_usage
           path: |
-            notebooks/
+            docs/source/notebooks/
 
   test:
     needs: build
@@ -156,9 +156,25 @@ jobs:
         run: |
           jupyter nbconvert --to notebook --execute getting_started.ipynb
 
-      - name: Run user guide notebook
+      - name: Run measurement setup notebook
         run: |
-          jupyter nbconvert --to notebook --execute user_guide.ipynb
+          jupyter nbconvert --to notebook --execute measurement_setup.ipynb
+
+      - name: Run load trajectories notebook
+        run: |
+          jupyter nbconvert --to notebook --execute load_trajectories.ipynb
+
+      - name: Run preprocessing notebook
+        run: |
+          jupyter nbconvert --to notebook --execute preprocessing.ipynb
+
+      - name: Run analysis notebook
+        run: |
+          jupyter nbconvert --to notebook --execute analysis.ipynb
+
+      - name: Run working with results notebook
+        run: |
+          jupyter nbconvert --to notebook --execute working_with_results.ipynb
 
       - name: Run fundamental diagram notebook
         run: |
