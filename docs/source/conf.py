@@ -27,6 +27,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
     "myst_nb",
+    "sphinxcontrib.mermaid",
     "sphinx_favicon",
     "notfound.extension",
     "sphinx.ext.autosectionlabel",
@@ -34,10 +35,31 @@ extensions = [
     "autoapi.extension",
 ]
 
+# -- Mermaid diagrams --------------------------------------------------------
+# The user guide flowchart uses clickable nodes and HTML in its node labels.
+# Mermaid disables `click` handlers and escapes label HTML under its default
+# securityLevel "strict", so it has to be relaxed to "loose".
+#
+# Overriding mermaid_init_js stops the extension from prepending its own module
+# preamble, so the imports and the ELK layout loader have to be repeated here.
+# The versions are pinned to the same values the extension defaults to, so the
+# URLs below and the <script> tags it emits stay in sync.
+mermaid_version = "11.2.0"
+mermaid_include_elk = "0.1.4"
+mermaid_init_js = (
+    'import mermaid from "https://cdn.jsdelivr.net/npm/'
+    f'mermaid@{mermaid_version}/dist/mermaid.esm.min.mjs";'
+    'import elkLayouts from "https://cdn.jsdelivr.net/npm/'
+    f"@mermaid-js/layout-elk@{mermaid_include_elk}"
+    '/dist/mermaid-layout-elk.esm.min.mjs";'
+    "mermaid.registerLayoutLoaders(elkLayouts);"
+    "mermaid.initialize({startOnLoad:false, securityLevel:'loose'});"
+)
+
 # -- Automatic execution of jupyter notebooks --------------------------------
 nb_execution_excludepatterns = [
     "readthedocs.ipynb",
-    "fundamental_diagram.ipynb",
+    "**/fundamental_diagram.ipynb",
 ]
 nb_execution_timeout = 300
 myst_enable_extensions = [
