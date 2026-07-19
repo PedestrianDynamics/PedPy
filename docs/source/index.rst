@@ -9,7 +9,6 @@ PedPy: Pedestrian Trajectory Analyzer
    Getting Started <getting_started>
    User Guide <user_guide/index>
    API Reference <api/index>
-   Methods <methods/index>
    Developer Guide <developer_guide>
    Cite PedPy <citation>
    Changelog <changelog>
