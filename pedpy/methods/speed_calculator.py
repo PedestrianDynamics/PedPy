@@ -133,6 +133,7 @@ def compute_individual_speed(
         :width: 46 %
 
     |
+
     Use :code:`speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED`.
 
     .. important::
