@@ -2,7 +2,7 @@
 Changelog
 *********
 
-Version 1.5.1 (YYYY-MM-DD)
+Version 1.5.1 (2026-07-21)
 ==========================
 
 **Fixes:**
