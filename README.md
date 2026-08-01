@@ -63,19 +63,13 @@ python3 -m pip install --force-reinstall git+https://github.com/PedestrianDynami
 from pedpy import *
 
 # Load trajectory data from file
-traj = load_trajectory(
-  trajectory_file=pathlib.Path("some_trajectory_data.txt")
-)
+traj = load_trajectory(trajectory_file=pathlib.Path("some_trajectory_data.txt"))
 
 # Create measurement area
-measurement_area = MeasurementArea(
-  [(-0.4, 0.5), (0.4, 0.5), (0.4, 1.3), (-0.4, 1.3)]
-)
+measurement_area = MeasurementArea([(-0.4, 0.5), (0.4, 0.5), (0.4, 1.3), (-0.4, 1.3)])
 
 # Compute classic density in the measurement area
-classic_density = compute_classic_density(
-    traj_data=traj, measurement_area=measurement_area
-)
+classic_density = compute_classic_density(traj_data=traj, measurement_area=measurement_area)
 
 plot_density(density=classic_density, title="Classic density")
 ```
