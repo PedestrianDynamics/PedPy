@@ -11,7 +11,14 @@ import numpy.typing as npt
 import pandas as pd
 from scipy.spatial.distance import cdist
 
-from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.column_identifier import (
+    FRAME_COL,
+    ID_COL,
+    ORDER_PARAMETER_COL,
+    SPECIES_COL,
+    X_COL,
+    Y_COL,
+)
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.methods.method_utils import _check_trajectory_data
 
@@ -133,3 +140,118 @@ def _calculate_pair_distances(
             distances_list.extend(distances_upper_triangle)
 
     return np.array(distances_list)
+
+
+def compute_lane_order_parameter(
+    *,
+    traj_data: TrajectoryData,
+    species: pd.DataFrame,
+    gamma: float,
+) -> pd.DataFrame:
+    r"""Computes the order parameter for lane formation.
+
+    The order parameter :math:`\Phi` indicates which fraction of the
+    pedestrians walks in a lane. It was introduced for pedestrian dynamics
+    by Nowak and Schadschneider (2012), adapting an order parameter used
+    for colloidal suspensions, and extended to continuous space by
+    von Krüchten (2019). Two pedestrians are considered to be in the same
+    lane when their distance perpendicular to the desired walking direction
+    is below a threshold :math:`\gamma`:
+
+    .. math::
+        |y_n(t) - y_i(t)| \le \gamma
+
+    With :math:`N_L` the number of pedestrians meeting this criterion and
+    walking in the same direction as pedestrian :math:`i`, and :math:`N_O`
+    the number walking in the opposite direction, the order parameter of a
+    single pedestrian is
+
+    .. math::
+        \varphi_i = \frac{(N_L - N_O)^2}{(N_L + N_O)^2}
+
+    which is zero when both directions are equally represented and tends to
+    one when the lane is dominated by a single direction. The global order
+    parameter is the average over all :math:`N` pedestrians in the frame:
+
+    .. math::
+        \Phi = \frac{1}{N} \sum_{i=1}^{N} \varphi_i
+
+    Pedestrian :math:`i` is counted as its own lane mate, hence
+    :math:`N_L \ge 1` and the denominator never vanishes. An isolated
+    pedestrian therefore yields :math:`\varphi_i = 1`.
+
+    .. note::
+
+        The perpendicular coordinate is taken to be :math:`y`, i.e., the
+        desired walking direction is assumed to be parallel to the x-axis.
+
+    .. warning::
+
+        :math:`\Phi` approaches one as the number of pedestrians decreases,
+        since an isolated pedestrian is trivially in a lane of its own.
+        Values computed at different densities are therefore not directly
+        comparable. Nowak and Schadschneider (2012) address this with a
+        reduced order parameter, which subtracts the value expected for a
+        random configuration at the same density. This is not implemented
+        here.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        species (pd.DataFrame): DataFrame containing the columns 'id' and
+            'species', where the species is +1 or -1 and denotes the desired
+            walking direction, result from
+            :func:`~speed_calculator.compute_species`
+        gamma (float): threshold in :math:`m` below which two pedestrians
+            are considered to be in the same lane. Following von Krüchten
+            (2019) a value of :math:`3r/2` is used, with :math:`r` the
+            radius of a pedestrian.
+
+    Returns:
+        DataFrame containing the columns 'frame' and 'order_parameter'.
+    """
+    _check_trajectory_data(traj_data)
+
+    data_with_species = traj_data.data.merge(species, on=ID_COL, how="left")
+
+    order_parameter_per_frame = []
+    for frame, frame_df in data_with_species.groupby(FRAME_COL):
+        order_parameter_per_frame.append(
+            {
+                FRAME_COL: frame,
+                ORDER_PARAMETER_COL: _compute_frame_order_parameter(
+                    y_values=frame_df[Y_COL].to_numpy(),
+                    species_values=frame_df[SPECIES_COL].to_numpy(),
+                    gamma=gamma,
+                ),
+            }
+        )
+
+    return pd.DataFrame(order_parameter_per_frame)
+
+
+def _compute_frame_order_parameter(
+    *,
+    y_values: npt.NDArray[np.float64],
+    species_values: npt.NDArray[np.float64],
+    gamma: float,
+) -> float:
+    """Computes the order parameter for a single frame.
+
+    Args:
+        y_values: coordinates perpendicular to the walking direction
+        species_values: species (+1 or -1) of each pedestrian
+        gamma: threshold below which two pedestrians share a lane
+
+    Returns:
+        The order parameter of the frame.
+    """
+    lateral_distance = np.abs(y_values[:, np.newaxis] - y_values[np.newaxis, :])
+    in_lane = lateral_distance <= gamma
+    same_species = species_values[:, np.newaxis] == species_values[np.newaxis, :]
+
+    # the pedestrian itself is included, hence num_same_lane >= 1
+    num_same_lane = np.count_nonzero(in_lane & same_species, axis=1)
+    num_opposite_lane = np.count_nonzero(in_lane & ~same_species, axis=1)
+
+    order_parameter_individual = ((num_same_lane - num_opposite_lane) ** 2) / ((num_same_lane + num_opposite_lane) ** 2)
+    return float(np.mean(order_parameter_individual))
