@@ -74,15 +74,15 @@ classic_density = compute_classic_density(traj_data=traj, measurement_area=measu
 plot_density(density=classic_density, title="Classic density")
 ```
 
-See the [Getting Started Guide](https://pedpy.readthedocs.io/stable/getting_started.html) for a step-by-step introduction.
-A more extensive documentation and demonstration of **PedPy**'s capabilities can be found in the [User Guide](https://pedpy.readthedocs.io/stable/user_guide.html).
+See the [Getting Started Guide](https://pedpy.readthedocs.io/stable/notebooks/getting_started.html) for a step-by-step introduction.
+A more extensive documentation and demonstration of **PedPy**'s capabilities can be found in the [User Guide](https://pedpy.readthedocs.io/stable/user_guide/).
 
 
 ### Usage
 
 PedPy is designed to be used in scripts or interactive Jupyter notebooks.
 
-- Explore [getting started](notebooks/getting_started.ipynb), [user guide](https://github.com/PedestrianDynamics/PedPy/blob/main/notebooks/user_guide.ipynb), and [fundamental diagram](https://github.com/PedestrianDynamics/PedPy/blob/main/notebooks/fundamental_diagram.ipynb) notebooks.
+- Explore [getting started](docs/source/notebooks/getting_started.ipynb), the [user guide](https://pedpy.readthedocs.io/stable/user_guide/), and the [fundamental diagram](https://github.com/PedestrianDynamics/PedPy/blob/main/docs/source/notebooks/fundamental_diagram.ipynb) notebooks.
 - For local usage, clone the repository and install the extra requirements for notebooks and plotting:
 
     ```bash
@@ -121,8 +121,8 @@ PedPy is designed to be used in scripts or interactive Jupyter notebooks.
 ## Documentation
 
 - [Full Documentation](https://pedpy.readthedocs.io/)
-- [Getting Started Guide](https://pedpy.readthedocs.io/stable/getting_started.html)
-- [Extensive User Guide](https://pedpy.readthedocs.io/stable/user_guide.html)
+- [Getting Started Guide](https://pedpy.readthedocs.io/stable/notebooks/getting_started.html)
+- [Extensive User Guide](https://pedpy.readthedocs.io/stable/user_guide/)
 - [API Reference](https://pedpy.readthedocs.io/stable/api/index.html)
 
 
