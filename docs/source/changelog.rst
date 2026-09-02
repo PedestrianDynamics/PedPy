@@ -2,8 +2,51 @@
 Changelog
 *********
 
-Version 1.5.0 (YYYY-MM-DD)
+Version 1.6.0 (YYYY-MM-DD)
 ==========================
+
+**New features:**
+
+**What's changed:**
+
+**Fixes:**
+
+- Fix duplicate columns in :code:`plot_voronoi_cells`: When plotting Voronoi cells, the function now correctly handles cases where duplicate columns may arise in the output DataFrame, ensuring that each column is unique and accurately represents the corresponding data.
+- Minor improvements in documentation, e.g., ensuring correct rendering of equations.
+
+Version 1.5.0 (2026-06-02)
+==========================
+
+**New features:**
+
+- Add new preprocessing methods for cleaning trajectory data before analysis:
+    * Project trajectories into walkable area
+    * Added functions for outlier and anomaly detection
+- Add method to compute RSET maps
+
+**What's changed:**
+
+- Add support for Python 3.14
+- Improved Voronoi polygon computation with ~45% runtime improvement:
+    * Behavioral change: :func:`~compute_individual_voronoi_polygons` now computes Voronoi cells for frames with fewer than 4 pedestrians.
+    Previously, with :code:`use_blind_points=False`, such frames were skipped. The :code:`use_blind_points` parameter is now deprecated and has no effect.
+    If you need to replicate the old behavior, filter the results manually:
+
+    .. code-block:: python
+
+       # Filter out frames with < 4 pedestrians (old behavior)
+       result = compute_individual_voronoi_polygons(traj_data, walkable_area)
+       peds_per_frame = traj_data.data.groupby('frame').size()
+       result = result[result['frame'].isin(peds_per_frame[peds_per_frame >= 4].index)]
+
+- Improve profile computation memory efficiency
+- Unification of plot function options: All plotting functions now accept a unified set of keyword arguments, improving consistency and ease of use across different plot types.
+
+**Fixes:**
+
+- Correctly plot Voronoi cells
+- Return Pandas DataFrame in all analysis functions as specified in the documentation
+- Minor plotting issues
 
 Version 1.4.0 (2025-09-08)
 ==========================

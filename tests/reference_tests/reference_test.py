@@ -190,6 +190,12 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
         measurement_area=measurement_area,
     )
 
+    # JPSreport (use_blind_points=False) excluded frames with < 4 pedestrians.
+    # Filter to match that behavior for comparison with reference data.
+    peds_per_frame = trajectory.data.groupby(FRAME_COL).size()
+    frames_with_enough_peds = peds_per_frame[peds_per_frame >= 4].index
+    result = result[result[FRAME_COL].isin(frames_with_enough_peds)]
+
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
     # frame and check if the rest is zero
@@ -406,6 +412,12 @@ def test_voronoi_speed(walkable_area_polygon, measurement_area, folder, velocity
         individual_speed=individual_speed,
         measurement_area=measurement_area,
     )
+
+    # JPSreport (use_blind_points=False) excluded frames with < 4 pedestrians.
+    # Filter to match that behavior for comparison with reference data.
+    peds_per_frame = trajectory.data.groupby(FRAME_COL).size()
+    frames_with_enough_peds = peds_per_frame[peds_per_frame >= 4].index
+    result = result[result[FRAME_COL].isin(frames_with_enough_peds)]
 
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference

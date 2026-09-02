@@ -7,7 +7,7 @@ Core measurements
 -----------------
 
 Density
-^^^^^^
+^^^^^^^
 
 .. autoapimodule:: density_calculator
     :members:
@@ -43,7 +43,7 @@ Further measurements
 --------------------
 
 Spatial Analysis
-^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^
 
 .. autoapimodule:: spatial_analysis
     :members:
@@ -52,7 +52,7 @@ Spatial Analysis
 
 
 Motion profiles
-^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^
 
 .. autoapimodule:: profile_calculator
     :members:
@@ -61,7 +61,7 @@ Motion profiles
 
 
 Utilities
-------
+---------
 
 .. autoapimodule:: method_utils
     :members:

@@ -13,6 +13,7 @@ from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.errors import AccelerationError
 from pedpy.methods.method_utils import (
     AccelerationCalculation,
+    _check_trajectory_data,
     _compute_individual_movement_acceleration,
 )
 
@@ -43,8 +44,9 @@ def compute_individual_acceleration(
     These positions are called :math:`X(t_{k+n})`, :math:`X(t_{k-n})`
     respectively.
 
-    In order to compute the acceleration at time 't_k', we first calculate the
-    displacements :math:`\bar{X}` around 't_{k+n}' and 't_{k-n}':
+    In order to compute the acceleration at time :math:`t_k`, we first
+    calculate the displacements :math:`\bar{X}` around :math:`t_{k+n}` and
+    :math:`t_{k-n}`:
 
     .. math::
 
@@ -61,7 +63,7 @@ def compute_individual_acceleration(
 
         \Delta\bar{X}(t_k) = \bar{X}(t_{k+n}) - \bar{X}(t_{k-n})
 
-    divided by the square of the time interval '\Delta t':
+    divided by the square of the time interval :math:`\Delta t`:
 
     .. math::
 
@@ -113,6 +115,7 @@ def compute_individual_acceleration(
         :math:`m/s^2`, 'a_x' and 'a_y' with the acceleration components
         in x and y direction if :code:`compute_acceleration_components` is True
     """
+    _check_trajectory_data(traj_data)
     df_movement = _compute_individual_movement_acceleration(
         traj_data=traj_data,
         frame_step=frame_step,
@@ -167,6 +170,7 @@ def compute_mean_acceleration_per_frame(
         DataFrame containing the columns 'frame' and 'acceleration' in
         :math:`m/s^2`
     """
+    _check_trajectory_data(traj_data)
     if len(individual_acceleration.index) < len(traj_data.data.index):
         raise AccelerationError(
             f"Can not compute the mean acceleration, as the there are less "
@@ -240,6 +244,7 @@ def compute_voronoi_acceleration(
         DataFrame containing the columns 'frame' and 'acceleration' in
         :math:`m/s^2`
     """
+    _check_trajectory_data(traj_data)
     if len(individual_acceleration.index) < len(individual_voronoi_intersection.index):
         raise AccelerationError(
             f"Can not compute the Voronoi acceleration, as the there are less "

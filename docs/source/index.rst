@@ -7,7 +7,7 @@ PedPy: Pedestrian Trajectory Analyzer
    :hidden:
 
    Getting Started <getting_started>
-   User Guide <user_guide>
+   User Guide <user_guide/index>
    API Reference <api/index>
    Methods <methods/index>
    Developer Guide <developer_guide>

@@ -8,6 +8,7 @@
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pedpy)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg)](https://doi.org/10.5281/zenodo.7194992)
 [![License](https://img.shields.io/pypi/l/pedpy.svg)](https://github.com/PedestrianDynamics/pedpy/blob/main/LICENSE)
+[![Downloads](https://static.pepy.tech/badge/pedpy/month)](https://pepy.tech/projects/pedpy)
 ![ci workflow](https://github.com/PedestrianDynamics/PedPy/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/PedestrianDynamics/PedPy/graph/badge.svg?token=X5C9NTKAVK)](https://codecov.io/gh/PedestrianDynamics/PedPy)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -62,19 +63,13 @@ python3 -m pip install --force-reinstall git+https://github.com/PedestrianDynami
 from pedpy import *
 
 # Load trajectory data from file
-traj = load_trajectory(
-  trajectory_file=pathlib.Path("some_trajectory_data.txt")
-)
+traj = load_trajectory(trajectory_file=pathlib.Path("some_trajectory_data.txt"))
 
 # Create measurement area
-measurement_area = MeasurementArea(
-  [(-0.4, 0.5), (0.4, 0.5), (0.4, 1.3), (-0.4, 1.3)]
-)
+measurement_area = MeasurementArea([(-0.4, 0.5), (0.4, 0.5), (0.4, 1.3), (-0.4, 1.3)])
 
 # Compute classic density in the measurement area
-classic_density = compute_classic_density(
-    traj_data=traj, measurement_area=measurement_area
-)
+classic_density = compute_classic_density(traj_data=traj, measurement_area=measurement_area)
 
 plot_density(density=classic_density, title="Classic density")
 ```

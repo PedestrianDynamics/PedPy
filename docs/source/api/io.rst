@@ -4,7 +4,7 @@ Load Trajectories
 
 
 Pedestrian Dynamics Data Archive
-------------------------------
+---------------------------------
 
 .. autoapimodule:: trajectory_loader
     :members:
@@ -33,7 +33,7 @@ Crowdit
     :no-special-members:
 
 Pathfinder
----------
+----------
 
 .. autoapimodule:: pathfinder_loader
     :members:
