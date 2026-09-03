@@ -20,6 +20,7 @@ from pedpy.column_identifier import (
     Y_COL,
 )
 from pedpy.data.trajectory_data import TrajectoryData
+from pedpy.errors import PedPyValueError
 from pedpy.methods.method_utils import _check_trajectory_data
 
 
@@ -150,13 +151,13 @@ def compute_lane_order_parameter(
 ) -> pd.DataFrame:
     r"""Computes the order parameter for lane formation.
 
-    The order parameter :math:`\Phi` indicates which fraction of the
-    pedestrians walks in a lane. It was introduced for pedestrian dynamics
-    by Nowak and Schadschneider (2012), adapting an order parameter used
-    for colloidal suspensions, and extended to continuous space by
-    von Krüchten (2019). Two pedestrians are considered to be in the same
-    lane when their distance perpendicular to the desired walking direction
-    is below a threshold :math:`\gamma`:
+    The order parameter :math:\Phi quantifies how strongly pedestrians
+    moving in opposite directions have segregated into lanes. It was
+    introduced for pedestrian dynamics by Nowak and Schadschneider (2012),
+    adapting an order parameter used for colloidal suspensions, and extended
+    to continuous space by von Krüchten (2019). Two pedestrians are considered
+    to be in the same lane when their distance perpendicular to the desired
+    walking direction is below a threshold :math:`\gamma`:
 
     .. math::
         |y_n(t) - y_i(t)| \le \gamma
@@ -184,6 +185,15 @@ def compute_lane_order_parameter(
 
         The perpendicular coordinate is taken to be :math:`y`, i.e., the
         desired walking direction is assumed to be parallel to the x-axis.
+        For geometries other than a bidirectional corridor, :math:`\Phi`
+        is computed but is not meaningful. Only the single-species case
+        below is detectable by the function itself.
+
+    .. note::
+
+        With only one species present, :math:`N_O = 0` for every pedestrian
+        and :math:`\Phi = 1` in every frame, independent of the positions.
+        A warning is issued in this case.
 
     .. warning::
 
@@ -199,17 +209,46 @@ def compute_lane_order_parameter(
         traj_data (TrajectoryData): trajectory data
         species (pd.DataFrame): DataFrame containing the columns 'id' and
             'species', where the species is +1 or -1 and denotes the desired
-            walking direction, result from
-            :func:`~speed_calculator.compute_species`
+            walking direction. A species is required for every pedestrian in
+            the trajectory data. Note that
+            :func:`~speed_calculator.compute_species` assigns a species only
+            to pedestrians whose Voronoi cell intersects the measurement
+            line, so it may not cover the whole population.
         gamma (float): threshold in :math:`m` below which two pedestrians
             are considered to be in the same lane. Following von Krüchten
             (2019) a value of :math:`3r/2` is used, with :math:`r` the
             radius of a pedestrian.
 
+    Raises:
+        PedPyValueError: if a pedestrian has more than one species assigned,
+            if a pedestrian in the trajectory data has no species assigned,
+            or if a species other than -1 or 1 is present.
+
     Returns:
         DataFrame containing the columns 'frame' and 'order_parameter'.
     """
     _check_trajectory_data(traj_data)
+
+    if species[ID_COL].duplicated().any():
+        raise PedPyValueError("Every pedestrian may only have one species assigned.")
+
+    missing_ids = set(traj_data.data[ID_COL].unique()) - set(species[ID_COL])
+    if missing_ids:
+        raise PedPyValueError(
+            f"No species assigned for {len(missing_ids)} pedestrians, "
+            "every pedestrian in the trajectory data needs a species."
+        )
+
+    invalid_species = set(species[SPECIES_COL].unique()) - {-1, 1}
+    if invalid_species:
+        raise PedPyValueError(f"Only species -1 and 1 are supported, found {sorted(invalid_species, key=repr)}.")
+
+    if species[SPECIES_COL].nunique() < 2:
+        warning_message = (
+            "Only one species is present, the order parameter will be 1 in "
+            "every frame, independent of the pedestrians' positions."
+        )
+        warnings.warn(warning_message, stacklevel=2)
 
     data_with_species = traj_data.data.merge(species, on=ID_COL, how="left")
 
