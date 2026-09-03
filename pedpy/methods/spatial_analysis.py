@@ -151,7 +151,7 @@ def compute_lane_order_parameter(
 ) -> pd.DataFrame:
     r"""Computes the order parameter for lane formation.
 
-    The order parameter :math:\Phi quantifies how strongly pedestrians
+    The order parameter :math:`\Phi` quantifies how strongly pedestrians
     moving in opposite directions have segregated into lanes. It was
     introduced for pedestrian dynamics by Nowak and Schadschneider (2012),
     adapting an order parameter used for colloidal suspensions, and extended
