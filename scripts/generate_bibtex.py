@@ -1,78 +1,94 @@
+"""Write ``docs/source/ZENODO.rst`` with the citation information for this build.
+
+The BibTeX entry is fetched from Zenodo by *concept id*, the identifier that
+stays the same across all releases, rather than by searching for the project
+name. A name search matches titles, descriptions and author names, so it can
+return an unrelated record, and it only reads one page of results, which
+silently hides older versions once a project has enough of them.
+
+Zenodo being briefly unreachable must not fail the documentation build, so
+every failure degrades instead: to the most recent release, and finally to a
+note in place of the entry.
+"""
+
+import logging
 import pathlib
 import textwrap
-import time
-import warnings
 
-import requests
+from zenodo_bibtex_exporter import ZenodoBibtexError, get_bibtex
 
 import pedpy
 
-zenodo_path = pathlib.Path("docs/source/ZENODO.rst")
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
-search_query = "PedPy"
-version = f"v{pedpy.__version__}"
-record_id = None
-zenodo_record = "If you use *PedPy* in your work, please cite it with the following information from Zenodo.\n\n"
+#: PedPy on Zenodo. This is the concept id, which never changes between releases.
+CONCEPT_ID = "7194992"
 
+REPOSITORY_ROOT = pathlib.Path(__file__).resolve().parent.parent
+ZENODO_PATH = REPOSITORY_ROOT / "docs" / "source" / "ZENODO.rst"
 
-def fetch_data_with_retries(url, params=None, headers=None, max_retries=10, wait_time=2):
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, params=params, headers=headers)
-            response.raise_for_status()
-            return response
-        except requests.RequestException as e:
-            warnings.warn(f"Attempt {attempt + 1} failed: {e}")
-            time.sleep(wait_time)
-    raise RuntimeError("All attempts to fetch data failed.")
+INTRO = "If you use *PedPy* in your work, please cite it with the following information from Zenodo.\n\n"
 
+TRAILER = textwrap.dedent(
+    f"""\
 
-try:
-    response = fetch_data_with_retries(
-        "https://zenodo.org/api/records",
-        params={"q": search_query, "all_versions": True, "sort": "mostrecent"},
-    )
-    data = response.json()
+    Information to all versions of PedPy can be found on `Zenodo <https://zenodo.org/doi/10.5281/zenodo.{CONCEPT_ID}>`_.
 
-    # Check for errors
-    if "status" in data and data["status"] != 200:
-        raise RuntimeError("Not found")
-    else:
-        # Print available records
-        for record in data.get("hits", {}).get("hits", []):
-            if "version" in record["metadata"] and version == record["metadata"]["version"]:
-                record_id = record["id"]
+    .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.{CONCEPT_ID}.svg
+        :target: https://doi.org/10.5281/zenodo.{CONCEPT_ID}
 
-    headers = {"accept": "application/x-bibtex"}
-    response = fetch_data_with_retries(f"https://zenodo.org/api/records/{record_id}", headers=headers)
-    response.encoding = "utf-8"
+    To find your installed version of *PedPy*, you can run:
 
-    if response.status_code == 200:
-        zenodo_record += ".. code-block:: bibtex\n\n" + textwrap.indent(response.text, " " * 4) + "\n"
-    else:
-        raise RuntimeError("Not found")
+    .. code-block:: python
 
-except Exception as e:
-    warnings.warn(f"An error occurred: {e}")
-
-zenodo_record += textwrap.dedent(
-    """\
-
-        Information to all versions of PedPy can be found on `Zenodo <https://zenodo.org/doi/10.5281/zenodo.7194992>`_.
-
-        .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.7194992.svg
-            :target: https://doi.org/10.5281/zenodo.7194992
-
-        To find your installed version of *PedPy*, you can run:
-
-        .. code-block:: bash
-
-            import pedpy
-            print(pedpy.__version__)
+        import pedpy
+        print(pedpy.__version__)
     """
 )
 
-with open(zenodo_path, "w") as f:
-    f.write(zenodo_record)
 
-print(zenodo_record)
+def fetch_bibtex() -> str | None:
+    """Return the BibTeX entry to document, or None if Zenodo gave us nothing.
+
+    Prefers the record for the version being built. Development builds carry a
+    suffix that no release has, so they fall back to the most recent release.
+    """
+    version = f"v{pedpy.__version__}"
+
+    try:
+        entry = get_bibtex(CONCEPT_ID, version=version)
+    except ZenodoBibtexError as error:
+        logger.warning("No Zenodo record for %s: %s", version, error)
+    else:
+        logger.info("Using the Zenodo record for %s.", version)
+        return entry
+
+    try:
+        entry = get_bibtex(CONCEPT_ID)
+    except ZenodoBibtexError as error:
+        logger.warning("No citation information available at all: %s", error)
+        return None
+    else:
+        logger.info("Falling back to the most recent release on Zenodo.")
+        return entry
+
+
+def main() -> None:
+    """Generate the citation page."""
+    entry = fetch_bibtex()
+
+    if entry is None:
+        citation = (
+            f"Citation information could not be retrieved from Zenodo. "
+            f"It is available at https://doi.org/10.5281/zenodo.{CONCEPT_ID}.\n"
+        )
+    else:
+        citation = ".. code-block:: bibtex\n\n" + textwrap.indent(entry, " " * 4)
+
+    ZENODO_PATH.write_text(INTRO + citation + TRAILER, encoding="utf-8")
+    logger.info("Wrote %s", ZENODO_PATH)
+
+
+if __name__ == "__main__":
+    main()
