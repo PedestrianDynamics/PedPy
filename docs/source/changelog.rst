@@ -7,6 +7,11 @@ Version 1.6.0 (YYYY-MM-DD)
 
 **New features:**
 
+- Add frequency analysis methods for temporal signals:
+    * :func:`~compute_stft` computes the Short-Time Fourier Transform (STFT) of a signal
+    * :func:`~compute_welch_spectral_distribution` estimates the power spectral density of a signal using Welch's method
+    * Add :func:`~plot_stft` and :func:`~plot_welch_spectrum` to visualize the results
+
 **What's changed:**
 
 **Fixes:**
