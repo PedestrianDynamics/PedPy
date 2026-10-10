@@ -80,7 +80,7 @@ Version 1.3.0 (2025-02-02)
 This approach uses Voronoi decomposition to allow defintiions of density, speed and flow on the basis of trajectories in accordance with the continuity equation.
 It also enables measurement along a line, handling different motion directions without losing velocity sign.
 
-How to use the new method is shown in the following Jupyter-Notebook: :doc:`Fundamental Diagrams at Measurement Line <../fundamental_diagram_at_measurement_line>`
+How to use the new method is shown in the following Jupyter-Notebook: :doc:`Fundamental Diagrams at Measurement Line <notebooks/fundamental_diagram_at_measurement_line>`
 
 .. figure:: images/fd_continuity.png
     :width: 90%

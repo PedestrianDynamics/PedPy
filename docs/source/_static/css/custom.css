@@ -37,3 +37,34 @@ h3, h4, h5, h6 {
     border-color:color: var(--pst-color-primary)
     transform: scale(2.01);
 }
+
+/* sphinxcontrib-mermaid emits the diagram inside a <pre>, which the theme
+   styles like a code block. Strip that so the flowchart sits directly on the
+   page background. */
+.mermaid {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+/* User guide workflow flowchart: mermaid renders the node labels as HTML in a
+   foreignObject, so the FontAwesome icons in them are styled from here.
+   mermaid's own classDef CSS sets `fill: <node background> !important` on
+   everything inside the label, which would paint the icons white on a white
+   box, so these rules have to be specific enough to win. */
+.mermaid .fc-icon {
+    font-size: 1.5em;
+    line-height: 1.1;
+}
+
+.mermaid .fc-icon svg,
+.mermaid .fc-icon svg path {
+    fill: #4AA3C4 !important;
+    color: #4AA3C4 !important;
+}
+
+.mermaid .fc-icon svg {
+    height: 26px !important;
+    width: auto !important;
+    vertical-align: middle;
+}
