@@ -216,7 +216,7 @@ def compute_avoidance(
     *,
     traj_data: TrajectoryData,
     frame_step: int,
-    radius: float = 0.4,
+    l_min: float = 0.2,
     tau_0: float,
 ) -> pd.DataFrame:
     r"""Compute the avoidance number for each pedestrian per frame.
@@ -238,15 +238,21 @@ def compute_avoidance(
     decreases with :math:`\tau_{ij}`, :math:`\mathcal{A}v_i` equals the
     largest :math:`\tau_0 / \tau_{ij}` over all neighbors *j* in the same
     frame. That maximum is what this function computes. The TTC is the
-    time until the discs of diameter ``radius`` around *i* and *j* first
+    time until the discs of diameter ``l_min`` around *i* and *j* first
     touch if both keep their current velocity; pairs that are not on a
     collision course have :math:`\tau_{ij} = \infty` and contribute 0.
+
+    The paper caps the per-pair values at :math:`\mathcal{A}v_{ij} \leq 60`
+    to limit artifacts from apparent overlaps in noisy trajectories. No
+    cap is applied here; apply one to the result if needed.
 
     Args:
         traj_data (TrajectoryData): trajectory data to analyze
         frame_step (int): number of frames used for velocity computation
-        radius (float): disc diameter :math:`\ell_\text{soc}` for TTC
-            computation in m (default 0.4, as in the paper)
+        l_min (float): pedestrian diameter :math:`\ell` in m at which
+            two pedestrians touch (default 0.2, as the paper uses for
+            recorded trajectories; its simulations use
+            :math:`\ell_\text{soc} = 0.4` m instead)
         tau_0 (float): reference timescale in s (paper uses 3.0)
 
     Returns:
@@ -286,7 +292,7 @@ def compute_avoidance(
         v_rel_hat = dv_c / dv_norm_c[:, np.newaxis]
         cos_alpha = np.sum(e_v * v_rel_hat, axis=1)
 
-        capital_a = (cos_alpha**2 - 1) * d_c**2 + radius**2
+        capital_a = (cos_alpha**2 - 1) * d_c**2 + l_min**2
         sqrt_a_safe = np.sqrt(np.maximum(capital_a, 0.0))
 
         valid = (capital_a >= 0) & (-cos_alpha * d_c - sqrt_a_safe >= 0)

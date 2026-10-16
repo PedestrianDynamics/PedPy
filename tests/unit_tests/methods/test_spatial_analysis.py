@@ -120,14 +120,14 @@ class TestComputeAvoidance:
         # Agent 1 at x=+2, moving left at v=-1
         # At frame 1 (dt=0.1): positions are -1.9 and +1.9, distance=3.8
         # Relative speed = 2, TTC = (d - R) / |delta_v| = (3.8 - 0.2) / 2 = 1.8
-        radius = 0.2
+        l_min = 0.2
         tau_0 = 3.0
         d_at_frame1 = 3.8
-        expected_ttc = (d_at_frame1 - radius) / 2.0
+        expected_ttc = (d_at_frame1 - l_min) / 2.0
         expected_av = tau_0 / expected_ttc
 
         traj = _make_moving_traj([(-2, 0, 1, 0), (2, 0, -1, 0)], frame_rate=10)
-        result = compute_avoidance(traj_data=traj, frame_step=1, radius=radius, tau_0=tau_0)
+        result = compute_avoidance(traj_data=traj, frame_step=1, l_min=l_min, tau_0=tau_0)
 
         # Check frame 1 (middle frame where velocity is computed)
         row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
@@ -138,7 +138,7 @@ class TestComputeAvoidance:
         """Two agents moving apart should have Av = 0 (TTC = inf)."""
         tau_0 = 3.0
         traj = _make_moving_traj([(-2, 0, -1, 0), (2, 0, 1, 0)], frame_rate=10)
-        result = compute_avoidance(traj_data=traj, frame_step=1, radius=0.2, tau_0=tau_0)
+        result = compute_avoidance(traj_data=traj, frame_step=1, l_min=0.2, tau_0=tau_0)
 
         row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
         assert len(row) == 1
