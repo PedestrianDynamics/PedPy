@@ -22,6 +22,7 @@ from pedpy.errors import InputError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
     _apply_lambda_for_intersecting_frames,
+    _check_trajectory_data,
     _compute_orthogonal_speed_in_relation_to_proportion,
     compute_crossing_frames,
     is_individual_speed_valid,
@@ -56,6 +57,7 @@ def compute_n_t(
         measurement line.
 
     """
+    _check_trajectory_data(traj_data)
     crossing_frames = compute_crossing_frames(traj_data=traj_data, measurement_line=measurement_line)
     crossing_frames = crossing_frames.groupby(by=ID_COL)[FRAME_COL].min().sort_values().reset_index()
 
@@ -98,17 +100,17 @@ def compute_flow(
         :width: 80 %
 
     In each of the time interval it is checked, if any person has crossed the
-    line, if yes, a flow $J$ can be computed. From the first frame the line was
-    crossed :math:`f^{\Delta frame}_1`, the last frame someone crossed the line
-    :math:`f^{\Delta frame}_N` the length of the frame interval
-    :math:`\Delta f$` can be computed:
+    line, if yes, a flow :math:`J` can be computed. From the first frame the
+    line was crossed :math:`f^{\Delta frame}_1`, the last frame someone
+    crossed the line :math:`f^{\Delta frame}_N` the length of the frame
+    interval :math:`\Delta f` can be computed:
 
     .. math::
 
         \Delta f = f^{\Delta frame}_N - f^{\Delta frame}_1
 
-    This directly together with the frame rate with :data:`frame_rate` ($fps$)
-    gives the time interval $\Delta t$:
+    This directly together with the frame rate with :data:`frame_rate`
+    (:math:`fps`) gives the time interval :math:`\Delta t`:
 
     .. math::
 

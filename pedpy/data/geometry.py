@@ -54,6 +54,7 @@ class WalkableArea:
         for hole in self._polygon.interiors:
             if not self._polygon.covers(hole):
                 raise GeometryError("Holes need to be inside the walkable area.")
+        self._polygon = shapely.normalize(self._polygon)
         shapely.prepare(self._polygon)
         self._frozen = True
 

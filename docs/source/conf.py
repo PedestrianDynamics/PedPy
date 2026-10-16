@@ -131,6 +131,7 @@ html_theme_options = {
         },
     ],
     "show_toc_level": 3,
+    "navbar_persistent": [],
 }
 
 html_sidebars = {"**": ["navbar-logo", "icon-links", "search-field", "sbt-sidebar-nav.html"]}

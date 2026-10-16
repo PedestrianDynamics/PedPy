@@ -160,6 +160,7 @@ from .plotting.plotting import (
     plot_voronoi_cells,
     plot_walkable_area,
 )
+from .preprocessing.trajectory_outlier_detection import detect_anomalies_in_trajectories
 from .preprocessing.trajectory_projector import correct_invalid_trajectories
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
@@ -179,12 +180,10 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "load_walkable_area_from_jupedsim_sqlite",
     "load_walkable_area_from_ped_data_archive_hdf5",
     "load_walkable_area_from_vadere_scenario",
-    "load_trajectory_from_pathfinder_csv",
     "load_trajectory_from_pathfinder_json",
     "load_walkable_area_from_crowdit",
     "load_trajectory_from_crowdit",
     "load_trajectory_from_pathfinder_csv",
-    "load_trajectory_from_pathfinder_json",
     "compute_classic_density",
     "compute_line_density",
     "compute_passing_density",
@@ -229,6 +228,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_intrusion",
     "IntrusionMethod",
     "compute_avoidance",
+    "detect_anomalies_in_trajectories",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",

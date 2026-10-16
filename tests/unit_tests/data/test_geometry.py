@@ -345,6 +345,49 @@ def test_create_walkable_area_error(area_input, message):
         walkable_area = WalkableArea(area_input)
 
 
+@pytest.mark.parametrize(
+    "unnormalized_polygon",
+    [
+        shapely.from_wkt(
+            "POLYGON ((-3.5 8, 3.5 8, 3.5 -2, -3.5 -2, -3.5 8), (-0.25 -0.15, "
+            "-0.4 0, -2.8 0, -2.8 6.7, -3.05 6.7, -3.05 -0.3, -0.7 -0.3, -0.7 -1,"
+            " -0.7 -1.1, -0.25 -1.1, -0.25 -0.15), (0.7 -1.1, 0.7 -0.3, 3.05 -0.3, "
+            "3.05 6.7, 2.8 6.7, 2.8 0, 0.4 0, 0.25 -0.15, 0.25 -1.1, 0.7 -1.1))"
+        ),
+        shapely.from_wkt(
+            "POLYGON ((10 -2, -10 -2, -10 7, 10 7, 10 -2), (9 6, -9 6, -9 5, 9 5, 9 6), (-9 -1, 9 -1, 9 0, -9 0, -9 -1))"
+        ),
+    ],
+)
+def test_normalized_walkable_area_previously_unnormalized(unnormalized_polygon):
+    walkable_area = WalkableArea(unnormalized_polygon)
+    assert unnormalized_polygon != unnormalized_polygon.normalize()
+    assert unnormalized_polygon != walkable_area.polygon
+    assert unnormalized_polygon.normalize() == walkable_area.polygon
+
+
+@pytest.mark.parametrize(
+    "normalized_polygon",
+    [
+        shapely.from_wkt(
+            "POLYGON ((-3.5 -2, -3.5 8, 3.5 8, 3.5 -2, -3.5 -2), (-3.05 -0.3, "
+            "-0.7 -0.3, -0.7 -1, -0.7 -1.1, -0.25 -1.1, -0.25 -0.15, -0.4 0, "
+            "-2.8 0, -2.8 6.7, -3.05 6.7, -3.05 -0.3), (0.25 -1.1, 0.7 -1.1, "
+            "0.7 -0.3, 3.05 -0.3, 3.05 6.7, 2.8 6.7, 2.8 0, 0.4 0, 0.25 -0.15, 0.25 -1.1))"
+        ),
+        shapely.from_wkt(
+            "POLYGON ((-10 -2, -10 7, 10 7, 10 -2, -10 -2), (-9 5, 9 5, 9 6, -9 6, -9 5), "
+            "(-9 -1, 9 -1, 9 0, -9 0, -9 -1))"
+        ),
+    ],
+)
+def test_normalized_walkable_area_previously_normalized(normalized_polygon):
+    walkable_area = WalkableArea(normalized_polygon)
+    assert normalized_polygon == normalized_polygon.normalize()
+    assert walkable_area.polygon == normalized_polygon
+    assert normalized_polygon.normalize() == walkable_area.polygon
+
+
 def test_changing_walkable_area_fails():
     with pytest.raises(
         AttributeError,
