@@ -201,9 +201,9 @@ def compute_intrusion(
             cap; such pairs are then infinite.
 
     Returns:
-        DataFrame with columns 'id', 'frame', and 'intrusion'.
-        Agents with no neighbors within the cutoff are absent from
-        the result.
+        DataFrame with columns 'id', 'frame', and 'intrusion', one row
+        per pedestrian and frame. Agents with no neighbor within the
+        cutoff get 0.
     """
     intrusion = compute_individual_distances(traj_data=traj_data)
     intrusion = intrusion.loc[intrusion.distance <= 3 * r_soc].copy()
@@ -223,7 +223,7 @@ def compute_intrusion(
         .reset_index()
     )
 
-    return intrusion
+    return _fill_missing_agents(traj_data=traj_data, result=intrusion, column=INTRUSION_COL)
 
 
 def compute_avoidance(
@@ -275,7 +275,9 @@ def compute_avoidance(
             or overlapping pairs are then infinite.
 
     Returns:
-        DataFrame with columns 'id', 'frame', and 'avoidance'
+        DataFrame with columns 'id', 'frame', and 'avoidance', one row
+        per pedestrian and frame. Agents on no collision course, or
+        alone in their frame, get 0.
     """
     velocity = compute_individual_speed(
         traj_data=traj_data,
@@ -327,4 +329,10 @@ def compute_avoidance(
         matrix[AVOIDANCE_COL] = np.minimum(matrix[AVOIDANCE_COL], cap)
 
     avoidance = matrix.groupby(by=[ID_COL, FRAME_COL], as_index=False).agg(avoidance=(AVOIDANCE_COL, "max"))
-    return avoidance
+    return _fill_missing_agents(traj_data=traj_data, result=avoidance, column=AVOIDANCE_COL)
+
+
+def _fill_missing_agents(*, traj_data: TrajectoryData, result: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Return one row per pedestrian and frame, 0 where no pair contributed."""
+    agents = traj_data.data[[ID_COL, FRAME_COL]]
+    return agents.merge(result, on=[ID_COL, FRAME_COL], how="left").fillna({column: 0.0})

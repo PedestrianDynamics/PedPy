@@ -47,8 +47,9 @@ class TestComputeIntrusion:
         traj = _make_traj([(0, 0), (far, 0)])
         result = compute_intrusion(traj_data=traj, r_soc=r_soc, l_min=l_min)
 
-        # Both agents should be absent (no neighbors within cutoff)
-        assert result.empty
+        # Both agents are present with zero intrusion
+        assert len(result) == 2
+        assert (result[INTRUSION_COL] == 0).all()
 
     def test_three_agents_sum(self):
         """Three agents: agent 0 has two neighbors, check sum."""
