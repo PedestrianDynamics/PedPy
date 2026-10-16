@@ -204,9 +204,11 @@ def compute_intrusion(
         method (IntrusionMethod): aggregation over the neighbors.
             ``SUM`` is the definition of the paper (Eq. 1): the
             encroachments of all neighbors add up, as mechanical forces
-            do. ``MAX`` keeps only the strongest single encroachment, so
-            it does not grow with the number of neighbors; it is offered
-            for comparison and is not the paper's definition.
+            do. ``MAX`` is the variant of Eq. S6 in the paper's SI
+            Appendix B: the intrusion is dominated by the closest
+            neighbor and does not grow with the number of neighbors.
+            The authors report that the delineation of regimes is
+            robust under this change.
         cap (float, optional): upper bound applied to every per-pair term
             before aggregation (default 400, the paper's value, which
             limits artifacts from apparent overlaps of the discs in
