@@ -186,10 +186,10 @@ def compute_intrusion(
     Differences to the paper's processing that the caller has to
     handle:
 
-    - The paper's simulated models subtract a small constant from each
-      term so that :math:`\mathcal{I}n_i` is continuous at the cutoff.
-      Eq. 1 for recorded data has no such term and none is subtracted
-      here.
+    - The paper's simulated models (Jakob-KKU/Pedestrian_Models) replace
+      Eq. 1 within 0.01 m of contact by a smooth polynomial so that the
+      model force stays finite. The data analysis has no such term and
+      none is applied here; the cap takes that role.
     - The paper smooths the trajectories with a 4th-order Butterworth
       filter at 0.5 Hz before computing :math:`r_{ij}`. No smoothing is
       done here; smooth the trajectories first if they contain head sway.
@@ -275,11 +275,16 @@ def compute_avoidance(
 
     Pairs whose discs already touch or overlap (:math:`r_{ij} \leq \ell`)
     have no collision ahead of them, so :math:`\tau_{ij} = \infty` and
-    they contribute 0. With this rule and the cap below, the function
-    reproduces the Waiting points of the paper's Fig. 1B on the paper's
-    own supplementary trajectories within the reading accuracy of the
-    figure, about 10 %. Every pair in a frame is a candidate; the paper
-    sets no distance cutoff for :math:`\mathcal{N}'_i`.
+    they contribute 0. This is the convention of the authors' data
+    analysis (Jakob-KKU/Analyze_Trajectories); their simulation code
+    instead treats contact as :math:`\tau_{ij} = 0`, a safeguard for
+    hard discs that cannot overlap. With the analysis convention and
+    the cap below, this function and an independent re-implementation
+    of the authors' analysis code give identical numbers and reproduce
+    the six Waiting points of the paper's Fig. 1B on the paper's
+    supplementary trajectories within the reading accuracy of the
+    figure. Every pair in a frame is a candidate; the paper sets no
+    distance cutoff for :math:`\mathcal{N}'_i`.
 
     Differences to the paper's processing that the caller has to
     handle:
