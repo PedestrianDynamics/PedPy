@@ -183,6 +183,20 @@ def compute_intrusion(
     with :math:`k_I = 2`. The neighbor set :math:`\mathcal{N}_i` contains
     all agents *j* with :math:`r_{ij} \leq 3\,r_\text{soc}`.
 
+    Differences to the paper's processing that the caller has to
+    handle:
+
+    - The paper's simulated models subtract a small constant from each
+      term so that :math:`\mathcal{I}n_i` is continuous at the cutoff.
+      Eq. 1 for recorded data has no such term and none is subtracted
+      here.
+    - The paper smooths the trajectories with a 4th-order Butterworth
+      filter at 0.5 Hz before computing :math:`r_{ij}`. No smoothing is
+      done here; smooth the trajectories first if they contain head sway.
+    - The paper's crowd average of :math:`\mathcal{I}n` includes isolated
+      pedestrians with :math:`\mathcal{I}n_i = 0`, sampled every 0.5 s
+      over the stationary state.
+
     Args:
         traj_data (TrajectoryData): trajectory data to analyze
         r_soc (float): social radius in m (default 0.8)
@@ -258,11 +272,29 @@ def compute_avoidance(
     collision course have :math:`\tau_{ij} = \infty` and contribute 0.
 
     Pairs whose discs already touch or overlap (:math:`r_{ij} \leq \ell`)
-    are in collision now, :math:`\tau_{ij} = 0`, and take the cap.
+    are in collision now, :math:`\tau_{ij} = 0`, and take the cap. Every
+    pair in a frame is a candidate; the paper sets no distance cutoff
+    for :math:`\mathcal{N}'_i`.
+
+    Differences to the paper's processing that the caller has to
+    handle:
+
+    - Velocities come from :func:`compute_individual_speed` with
+      :attr:`SpeedCalculation.BORDER_SINGLE_SIDED`, a centered window of
+      ``2 * frame_step / frame_rate`` seconds, one-sided at the borders of
+      a trajectory. The paper smooths the trajectories with a 4th-order
+      Butterworth filter at 0.5 Hz and computes velocities over about
+      1 s. Neither is done here; :math:`\mathcal{A}v` is sensitive to
+      both. ``frame_step = frame_rate / 2`` gives the paper's window.
+    - The paper's crowd average of :math:`\mathcal{A}v` excludes
+      pedestrians with :math:`\mathcal{A}v_i = 0` ("we only consider data
+      points with a finite TTC in the average"), sampled every 0.5 s over
+      the stationary state.
 
     Args:
         traj_data (TrajectoryData): trajectory data to analyze
-        frame_step (int): number of frames used for velocity computation
+        frame_step (int): number of frames on each side of a frame used
+            for the velocity, see above
         l_min (float): pedestrian diameter :math:`\ell` in m at which
             two pedestrians touch (default 0.2, as the paper uses for
             recorded trajectories; its simulations use
