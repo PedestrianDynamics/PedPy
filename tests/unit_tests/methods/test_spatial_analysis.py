@@ -1,3 +1,5 @@
+import math
+
 import pandas as pd
 import pytest
 
@@ -85,6 +87,29 @@ class TestComputeIntrusion:
         val = result.loc[result[ID_COL] == 0, INTRUSION_COL].iloc[0]
         assert val == pytest.approx(expected_0)
 
+    def test_near_contact_pair_is_capped(self):
+        """A pair just outside l_min takes the paper's cap of 400."""
+        traj = _make_traj([(0, 0), (0.21, 0)])
+        result = compute_intrusion(traj_data=traj)
+        assert (result[INTRUSION_COL] == 400.0).all()
+
+        raw = compute_intrusion(traj_data=traj, cap=None)
+        assert raw[INTRUSION_COL].iloc[0] == pytest.approx((0.6 / 0.01) ** 2)
+
+    def test_overlapping_pair_takes_the_cap(self):
+        """Discs at or inside l_min diverge in Eq. 1 and take the cap."""
+        for d in (0.2, 0.1, 0.0):
+            traj = _make_traj([(0, 0), (d, 0)])
+            assert (compute_intrusion(traj_data=traj)[INTRUSION_COL] == 400.0).all()
+            assert math.isinf(compute_intrusion(traj_data=traj, cap=None)[INTRUSION_COL].iloc[0])
+
+    def test_isolated_agent_has_zero_intrusion(self):
+        """An agent alone in its frame is present with In = 0."""
+        traj = _make_traj([(0, 0)])
+        result = compute_intrusion(traj_data=traj)
+        assert len(result) == 1
+        assert result[INTRUSION_COL].iloc[0] == 0.0
+
 
 # ---------------------------------------------------------------------------
 # Avoidance
@@ -133,7 +158,7 @@ class TestComputeAvoidance:
         # Check frame 1 (middle frame where velocity is computed)
         row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
         assert len(row) == 1
-        assert row[AVOIDANCE_COL].iloc[0] == pytest.approx(expected_av, rel=0.05)
+        assert row[AVOIDANCE_COL].iloc[0] == pytest.approx(expected_av, rel=1e-9)
 
     def test_diverging_agents_zero_avoidance(self):
         """Two agents moving apart should have Av = 0 (TTC = inf)."""
@@ -144,3 +169,40 @@ class TestComputeAvoidance:
         row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
         assert len(row) == 1
         assert row[AVOIDANCE_COL].iloc[0] == pytest.approx(0.0, abs=1e-10)
+
+    def test_oblique_near_miss(self):
+        """An approach that passes inside l_min collides, outside it does not."""
+        tau_0 = 3.0
+        l_min = 0.2
+        # Agent 0 rests at the origin; agent 1 passes at lateral offset y
+        # moving at 1 m/s along x and is at x = -1.9 at frame 1.
+        y = 0.19
+        traj = _make_moving_traj([(0, 0, 0, 0), (-2.0, y, 1, 0)], frame_rate=10)
+        result = compute_avoidance(traj_data=traj, frame_step=1, l_min=l_min, tau_0=tau_0)
+        expected_ttc = 1.9 - math.sqrt(l_min**2 - y**2)
+        row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
+        assert row[AVOIDANCE_COL].iloc[0] == pytest.approx(tau_0 / expected_ttc, rel=1e-9)
+
+        traj = _make_moving_traj([(0, 0, 0, 0), (-2.0, 0.21, 1, 0)], frame_rate=10)
+        result = compute_avoidance(traj_data=traj, frame_step=1, l_min=l_min, tau_0=tau_0)
+        row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
+        assert row[AVOIDANCE_COL].iloc[0] == 0.0
+
+    def test_touching_and_overlapping_pairs_take_the_cap(self):
+        """Discs already in contact have TTC 0 and take the paper's cap of 60."""
+        for x1 in (0.1, 0.05):  # distance 0.2 and 0.1 at frame 1
+            traj = _make_moving_traj([(-0.2, 0, 1, 0), (x1 + 0.1, 0, -1, 0)], frame_rate=10)
+            result = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0)
+            row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
+            assert row[AVOIDANCE_COL].iloc[0] == 60.0
+
+            raw = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0, cap=None)
+            row = raw[(raw[ID_COL] == 0) & (raw[FRAME_COL] == 1)]
+            assert math.isinf(row[AVOIDANCE_COL].iloc[0])
+
+    def test_isolated_agent_has_zero_avoidance(self):
+        """An agent alone in its frame is present with Av = 0."""
+        traj = _make_moving_traj([(0, 0, 1, 0)], frame_rate=10)
+        result = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0)
+        assert len(result) == 3
+        assert (result[AVOIDANCE_COL] == 0.0).all()
