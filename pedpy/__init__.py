@@ -12,6 +12,7 @@ except ImportError:
 
 from .column_identifier import (
     ACC_COL,
+    AVOIDANCE_COL,
     A_X_COL,
     A_Y_COL,
     COUNT_COL,
@@ -25,6 +26,7 @@ from .column_identifier import (
     FRAME_COL,
     ID_COL,
     INTERSECTION_COL,
+    INTRUSION_COL,
     LAST_FRAME_COL,
     MEAN_SPEED_COL,
     MID_FRAME_COL,
@@ -96,6 +98,7 @@ from .methods.method_utils import (
     Cutoff,
     SpeedCalculation,
     compute_frame_range_in_area,
+    compute_individual_distances,
     compute_individual_voronoi_polygons,
     compute_intersecting_polygons,
     compute_neighbor_distance,
@@ -117,7 +120,12 @@ from .methods.profile_calculator import (
     compute_speed_profile,
     get_grid_cells,
 )
-from .methods.spatial_analysis import compute_pair_distribution_function
+from .methods.spatial_analysis import (
+    IntrusionMethod,
+    compute_avoidance,
+    compute_intrusion,
+    compute_pair_distribution_function,
+)
 from .methods.speed_calculator import (
     compute_individual_speed,
     compute_line_speed,
@@ -187,6 +195,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_frame_range_in_area",
     "compute_individual_voronoi_polygons",
     "compute_intersecting_polygons",
+    "compute_individual_distances",
     "compute_neighbors",
     "compute_neighbor_distance",
     "compute_time_distance_line",
@@ -216,6 +225,9 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_mean_acceleration_per_frame",
     "compute_voronoi_acceleration",
     "correct_invalid_trajectories",
+    "compute_intrusion",
+    "IntrusionMethod",
+    "compute_avoidance",
     "detect_anomalies_in_trajectories",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
@@ -271,6 +283,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "MID_POSITION_COL",
     "END_POSITION_COL",
     "WINDOW_SIZE_COL",
+    "INTRUSION_COL",
+    "AVOIDANCE_COL",
     "__version__",
     "AccelerationError",
     "GeometryError",

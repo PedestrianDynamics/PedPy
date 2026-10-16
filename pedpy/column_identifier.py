@@ -44,3 +44,6 @@ SPEED_SP1_COL: Final = "s_sp+1"
 SPEED_SP2_COL: Final = "s_sp-1"
 FLOW_SP1_COL: Final = "j_sp+1"
 FLOW_SP2_COL: Final = "j_sp-1"
+
+INTRUSION_COL: Final = "intrusion"
+AVOIDANCE_COL: Final = "avoidance"
