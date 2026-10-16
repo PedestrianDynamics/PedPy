@@ -88,11 +88,6 @@ from .methods.density_calculator import (
     compute_passing_density,
     compute_voronoi_density,
 )
-from .methods.dimensionless_number_calculator import (
-    IntrusionMethod,
-    compute_avoidance,
-    compute_intrusion,
-)
 from .methods.flow_calculator import (
     compute_flow,
     compute_line_flow,
@@ -125,7 +120,12 @@ from .methods.profile_calculator import (
     compute_speed_profile,
     get_grid_cells,
 )
-from .methods.spatial_analysis import compute_pair_distribution_function
+from .methods.spatial_analysis import (
+    IntrusionMethod,
+    compute_avoidance,
+    compute_intrusion,
+    compute_pair_distribution_function,
+)
 from .methods.speed_calculator import (
     compute_individual_speed,
     compute_line_speed,

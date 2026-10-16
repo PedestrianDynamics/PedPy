@@ -67,11 +67,3 @@ Utilities
     :members:
     :no-private-members:
     :no-special-members:
-
-Dimensionless Numbers
-^^^^^^^^^^^^^^^^^^^^^
-
-.. autoapimodule:: dimensionless_number_calculator
-    :members:
-    :no-private-members:
-    :no-special-members:

@@ -3,7 +3,7 @@ import pytest
 
 from pedpy.column_identifier import AVOIDANCE_COL, FRAME_COL, ID_COL, INTRUSION_COL
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.dimensionless_number_calculator import (
+from pedpy.methods.spatial_analysis import (
     IntrusionMethod,
     compute_avoidance,
     compute_intrusion,
