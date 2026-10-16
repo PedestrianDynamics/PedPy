@@ -7,7 +7,7 @@ avoidance numbers of Cordes et al., PNAS Nexus 2024
 
 import warnings
 from enum import Enum
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
@@ -166,6 +166,7 @@ def compute_intrusion(
     r_soc: float = 0.8,
     l_min: float = 0.2,
     method: IntrusionMethod = IntrusionMethod.SUM,
+    cap: Optional[float] = 400.0,
 ) -> pd.DataFrame:
     r"""Compute the intrusion number for each pedestrian per frame.
 
@@ -192,15 +193,28 @@ def compute_intrusion(
             do. ``MAX`` keeps only the strongest single encroachment, so
             it does not grow with the number of neighbors; it is offered
             for comparison and is not the paper's definition.
+        cap (float, optional): upper bound applied to every per-pair term
+            before aggregation (default 400, the paper's value, which
+            limits artifacts from apparent overlaps of the discs in
+            noisy trajectories). Pairs at or below ``l_min`` distance,
+            where Eq. 1 diverges, take the cap. ``None`` disables the
+            cap; such pairs are then infinite.
 
     Returns:
         DataFrame with columns 'id', 'frame', and 'intrusion'.
-        Agents with no neighbors within the cutoff (or only at
-        exactly ``l_min`` distance) are absent from the result.
+        Agents with no neighbors within the cutoff are absent from
+        the result.
     """
     intrusion = compute_individual_distances(traj_data=traj_data)
-    intrusion = intrusion.loc[(intrusion.distance <= 3 * r_soc) & (intrusion.distance > l_min)].copy()
-    intrusion.loc[:, INTRUSION_COL] = ((r_soc - l_min) / (intrusion.distance - l_min)) ** 2
+    intrusion = intrusion.loc[intrusion.distance <= 3 * r_soc].copy()
+    with np.errstate(divide="ignore"):
+        intrusion.loc[:, INTRUSION_COL] = np.where(
+            intrusion.distance > l_min,
+            ((r_soc - l_min) / (intrusion.distance - l_min)) ** 2,
+            np.inf,
+        )
+    if cap is not None:
+        intrusion.loc[:, INTRUSION_COL] = np.minimum(intrusion[INTRUSION_COL], cap)
     intrusion = (
         intrusion.groupby(by=[ID_COL, FRAME_COL])
         .agg(
@@ -218,6 +232,7 @@ def compute_avoidance(
     frame_step: int,
     l_min: float = 0.2,
     tau_0: float,
+    cap: Optional[float] = 60.0,
 ) -> pd.DataFrame:
     r"""Compute the avoidance number for each pedestrian per frame.
 
@@ -242,9 +257,8 @@ def compute_avoidance(
     touch if both keep their current velocity; pairs that are not on a
     collision course have :math:`\tau_{ij} = \infty` and contribute 0.
 
-    The paper caps the per-pair values at :math:`\mathcal{A}v_{ij} \leq 60`
-    to limit artifacts from apparent overlaps in noisy trajectories. No
-    cap is applied here; apply one to the result if needed.
+    Pairs whose discs already touch or overlap (:math:`r_{ij} \leq \ell`)
+    are in collision now, :math:`\tau_{ij} = 0`, and take the cap.
 
     Args:
         traj_data (TrajectoryData): trajectory data to analyze
@@ -254,6 +268,11 @@ def compute_avoidance(
             recorded trajectories; its simulations use
             :math:`\ell_\text{soc} = 0.4` m instead)
         tau_0 (float): reference timescale in s (paper uses 3.0)
+        cap (float, optional): upper bound applied to every per-pair term
+            before taking the maximum (default 60, the paper's value,
+            which limits artifacts from apparent overlaps of the discs
+            in noisy trajectories). ``None`` disables the cap; touching
+            or overlapping pairs are then infinite.
 
     Returns:
         DataFrame with columns 'id', 'frame', and 'avoidance'
@@ -278,10 +297,11 @@ def compute_avoidance(
     delta_v = shapely.get_coordinates(matrix.velocity) - shapely.get_coordinates(matrix.velocity_neighbor)
     delta_v_norm = np.linalg.norm(delta_v, axis=1)
 
-    # only compute for pairs with nonzero distance and nonzero relative velocity
-    computable = (distance > 0) & (delta_v_norm > 0)
+    # solve the quadratic only for separated pairs with a relative velocity
+    computable = (distance > l_min) & (delta_v_norm > 0)
 
     ttc = np.full(matrix.shape[0], np.inf)
+    ttc[distance <= l_min] = 0.0  # already in contact
 
     if np.any(computable):
         d_c = distance[computable]
@@ -301,7 +321,10 @@ def compute_avoidance(
         ttc[idx] = (-cos_alpha[valid] * d_c[valid] - sqrt_a_safe[valid]) / dv_norm_c[valid]
 
     matrix = matrix.copy()
-    matrix[AVOIDANCE_COL] = tau_0 / ttc
+    with np.errstate(divide="ignore"):
+        matrix[AVOIDANCE_COL] = tau_0 / ttc
+    if cap is not None:
+        matrix[AVOIDANCE_COL] = np.minimum(matrix[AVOIDANCE_COL], cap)
 
     avoidance = matrix.groupby(by=[ID_COL, FRAME_COL], as_index=False).agg(avoidance=(AVOIDANCE_COL, "max"))
     return avoidance
