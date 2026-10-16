@@ -188,17 +188,25 @@ class TestComputeAvoidance:
         row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
         assert row[AVOIDANCE_COL].iloc[0] == 0.0
 
-    def test_touching_and_overlapping_pairs_take_the_cap(self):
-        """Discs already in contact have TTC 0 and take the paper's cap of 60."""
+    def test_touching_and_overlapping_pairs_have_no_collision(self):
+        """Discs already in contact have no collision ahead: TTC inf, Av 0."""
         for x1 in (0.1, 0.05):  # distance 0.2 and 0.1 at frame 1
             traj = _make_moving_traj([(-0.2, 0, 1, 0), (x1 + 0.1, 0, -1, 0)], frame_rate=10)
-            result = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0)
-            row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
-            assert row[AVOIDANCE_COL].iloc[0] == 60.0
+            for cap in (60.0, None):
+                result = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0, cap=cap)
+                row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
+                assert row[AVOIDANCE_COL].iloc[0] == 0.0
 
-            raw = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0, cap=None)
-            row = raw[(raw[ID_COL] == 0) & (raw[FRAME_COL] == 1)]
-            assert math.isinf(row[AVOIDANCE_COL].iloc[0])
+    def test_near_contact_approach_is_capped(self):
+        """A pair 1 mm outside l_min closing at 0.2 m/s has Av 600, capped at 60."""
+        traj = _make_moving_traj([(-0.2105, 0, 0.1, 0), (0.0105, 0, -0.1, 0)], frame_rate=10)
+        result = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0)
+        row = result[(result[ID_COL] == 0) & (result[FRAME_COL] == 1)]
+        assert row[AVOIDANCE_COL].iloc[0] == 60.0
+
+        raw = compute_avoidance(traj_data=traj, frame_step=1, tau_0=3.0, cap=None)
+        row = raw[(raw[ID_COL] == 0) & (raw[FRAME_COL] == 1)]
+        assert row[AVOIDANCE_COL].iloc[0] == pytest.approx(600.0, rel=1e-6)
 
     def test_isolated_agent_has_zero_avoidance(self):
         """An agent alone in its frame is present with Av = 0."""

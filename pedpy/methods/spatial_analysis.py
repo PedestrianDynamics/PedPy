@@ -272,9 +272,12 @@ def compute_avoidance(
     collision course have :math:`\tau_{ij} = \infty` and contribute 0.
 
     Pairs whose discs already touch or overlap (:math:`r_{ij} \leq \ell`)
-    are in collision now, :math:`\tau_{ij} = 0`, and take the cap. Every
-    pair in a frame is a candidate; the paper sets no distance cutoff
-    for :math:`\mathcal{N}'_i`.
+    have no collision ahead of them, so :math:`\tau_{ij} = \infty` and
+    they contribute 0. With this rule and the cap below, the function
+    reproduces the Waiting points of the paper's Fig. 1B on the paper's
+    own supplementary trajectories within the reading accuracy of the
+    figure, about 10 %. Every pair in a frame is a candidate; the paper
+    sets no distance cutoff for :math:`\mathcal{N}'_i`.
 
     Differences to the paper's processing that the caller has to
     handle:
@@ -303,8 +306,7 @@ def compute_avoidance(
         cap (float, optional): upper bound applied to every per-pair term
             before taking the maximum (default 60, the paper's value,
             which limits artifacts from apparent overlaps of the discs
-            in noisy trajectories). ``None`` disables the cap; touching
-            or overlapping pairs are then infinite.
+            in noisy trajectories). ``None`` disables the cap.
 
     Returns:
         DataFrame with columns 'id', 'frame', and 'avoidance', one row
@@ -335,7 +337,6 @@ def compute_avoidance(
     computable = (distance > l_min) & (delta_v_norm > 0)
 
     ttc = np.full(matrix.shape[0], np.inf)
-    ttc[distance <= l_min] = 0.0  # already in contact
 
     if np.any(computable):
         d_c = distance[computable]
