@@ -60,7 +60,7 @@ def compute_individual_acceleration(
 
         \bar{X}(t_{k-n}) = X(t_{k}) - X(t_{k-2n})
 
-    
+
     The acceleration :math:`a_i(t_k)` is then calculated from the difference of
     the speeds divided by the time interval :math:`\Delta t`:
 
@@ -79,7 +79,7 @@ def compute_individual_acceleration(
     .. math::
 
         \Delta\bar{X}(t_k) = \bar{X}(t_{k+n}) - \bar{X}(t_{k-n})
-    
+
     .. math::
 
         \Delta\bar{X}(t_k) = X(t_{k+2n}) - 2*X(t_{k}) + X(t_{k-2n})
