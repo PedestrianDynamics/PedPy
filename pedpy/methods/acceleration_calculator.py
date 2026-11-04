@@ -30,15 +30,15 @@ def compute_individual_acceleration(
 
     For computing the individuals' acceleration at a specific frame
     :math:`a_i(t_k)`, a specific frame step (:math:`n`) is needed.
-    Together with the :attr:`~trajectory_data.TrajectoryData.frame_rate` 
-    of the trajectory data :math:`fps` the time frame :math:`\Delta t` 
+    Together with the :attr:`~trajectory_data.TrajectoryData.frame_rate`
+    of the trajectory data :math:`fps` the time frame :math:`\Delta t`
     for computing the speed and the acceleration becomes:
 
     .. math::
 
         \Delta t = 2 n / fps
 
-    The acceleration at time :math:`t_k` can be calculated from the speeds 
+    The acceleration at time :math:`t_k` can be calculated from the speeds
     :math:`v(t_{k+n})` and :math:`v(t_{k-n})`:
 
     .. math::
@@ -61,7 +61,7 @@ def compute_individual_acceleration(
         \bar{X}(t_{k-n}) = X(t_{k}) - X(t_{k-2n})
 
     
-    The acceleration :math:`a_i(t_k)` is then calculated from the difference of 
+    The acceleration :math:`a_i(t_k)` is then calculated from the difference of
     the speeds divided by the time interval :math:`\Delta t`:
 
     .. math::
@@ -74,7 +74,7 @@ def compute_individual_acceleration(
 
         a_i(t_k) = \Delta\bar{X}(t_k) / (\Delta t^{2})
 
-    using 
+    using
 
     .. math::
 
@@ -320,7 +320,7 @@ def _compute_individual_acceleration(
         shapely.get_coordinates(movement_data.end_position) - shapely.get_coordinates(movement_data.mid_position)
     ) - (shapely.get_coordinates(movement_data.mid_position) - shapely.get_coordinates(movement_data.start_position))
 
-    movement_data[ACC_COL] = np.linalg.norm(movement_data[["dd_x", "dd_y"]], axis=1) / (time_interval**2)
+    movement_data[ACC_COL] = np.linalg.norm(movement_data[["dd_x", "dd_y"]], axis=1) / time_interval**2
 
     if movement_direction is not None:
         # Projection of the displacement onto the movement direction
@@ -337,8 +337,8 @@ def _compute_individual_acceleration(
         )
 
     if compute_acceleration_components:
-        movement_data[A_X_COL] = movement_data["dd_x"].to_numpy() / (time_interval**2)
-        movement_data[A_Y_COL] = movement_data["dd_y"].to_numpy() / (time_interval**2)
+        movement_data[A_X_COL] = movement_data["dd_x"].to_numpy() / time_interval**2
+        movement_data[A_Y_COL] = movement_data["dd_y"].to_numpy() / time_interval**2
         columns.append(A_X_COL)
         columns.append(A_Y_COL)
 
