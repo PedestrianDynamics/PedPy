@@ -51,6 +51,15 @@ Spatial Analysis
     :no-special-members:
 
 
+Temporal Analysis
+^^^^^^^^^^^^^^^^^^^
+
+.. autoapimodule:: temporal_analysis
+    :members:
+    :no-private-members:
+    :no-special-members:
+
+
 Motion profiles
 ^^^^^^^^^^^^^^^
 

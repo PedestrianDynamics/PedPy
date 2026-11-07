@@ -44,3 +44,8 @@ SPEED_SP1_COL: Final = "s_sp+1"
 SPEED_SP2_COL: Final = "s_sp-1"
 FLOW_SP1_COL: Final = "j_sp+1"
 FLOW_SP2_COL: Final = "j_sp-1"
+
+FREQUENCY_COL: Final = "frequency"
+MAGNITUDE_COL: Final = "magnitude"
+PHASE_COL: Final = "phase"
+POWER_COL: Final = "power"

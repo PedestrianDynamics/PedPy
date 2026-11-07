@@ -28,12 +28,15 @@ from pedpy.column_identifier import (
     FLOW_SP1_COL,
     FLOW_SP2_COL,
     FRAME_COL,
+    FREQUENCY_COL,
     ID_COL,
     INTERSECTION_COL,
+    MAGNITUDE_COL,
     MEAN_SPEED_COL,
     NEIGHBORS_COL,
     NEIGHBOR_ID_COL,
     POLYGON_COL,
+    POWER_COL,
     SPEED_COL,
     SPEED_SP1_COL,
     SPEED_SP2_COL,
@@ -481,6 +484,119 @@ def plot_nt(
         y_label=y_label,
         **kwargs,
     )
+
+
+def plot_welch_spectrum(
+    *,
+    welch_distribution: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the power spectral density computed by Welch's method.
+
+    Args:
+        welch_distribution (pd.DataFrame): power spectral density, as
+            returned by
+            :func:`~temporal_analysis.compute_welch_spectral_distribution`
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be
+            created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        color (optional): color of the plot
+        title (optional): title of the plot
+        line_width (optional): line width of the spectrum
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
+    Returns:
+        matplotlib.axes.Axes instance where the power spectral density is
+        plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    color = kwargs.pop("color", PEDPY_BLUE)
+    title = kwargs.pop("title", "")
+    line_width = kwargs.pop("line_width", 1.5)
+    x_label = kwargs.pop("x_label", "frequency / Hz")
+    y_label = kwargs.pop("y_label", "power spectral density")
+    return _plot_series(
+        axes=axes,
+        title=title,
+        x=welch_distribution[FREQUENCY_COL],
+        y=welch_distribution[POWER_COL],
+        color=color,
+        line_width=line_width,
+        x_label=x_label,
+        y_label=y_label,
+        **kwargs,
+    )
+
+
+def plot_stft(
+    *,
+    stft_result: pd.DataFrame,
+    axes: Optional[matplotlib.axes.Axes] = None,
+    **kwargs: Any,
+) -> matplotlib.axes.Axes:
+    """Plot the magnitude spectrogram computed by the Short-Time Fourier Transform (STFT).
+
+    Args:
+        stft_result (pd.DataFrame): STFT result, as returned by
+            :func:`~temporal_analysis.compute_stft`
+        axes (matplotlib.axes.Axes): Axes to plot on, if None new will be
+            created
+        kwargs: Additional parameters to change the plot appearance, see
+            below for list of usable keywords
+
+    Keyword Args:
+        title (optional): title of the plot
+        cmap (optional): colormap (default ``"viridis"``)
+        vmin (optional): minimum value for the colormap
+        vmax (optional): maximum value for the colormap
+        label (optional): colorbar label (default ``"magnitude"``)
+        x_label (optional): label on the x-axis
+        y_label (optional): label on the y-axis
+
+    Returns:
+        matplotlib.axes.Axes instance where the STFT magnitude spectrogram
+        is plotted
+    """
+    if axes is None:
+        axes = plt.gca()
+
+    title = kwargs.pop("title", "")
+    cmap = kwargs.pop("cmap", "viridis")
+    label = kwargs.pop("label", "magnitude")
+    x_label = kwargs.pop("x_label", "time / s")
+    y_label = kwargs.pop("y_label", "frequency / Hz")
+
+    magnitude = stft_result.pivot_table(index=FREQUENCY_COL, columns=TIME_COL, values=MAGNITUDE_COL)
+    vmin = kwargs.pop("vmin", np.nanmin(magnitude.to_numpy()))
+    vmax = kwargs.pop("vmax", np.nanmax(magnitude.to_numpy()))
+
+    mesh = axes.pcolormesh(
+        magnitude.columns,
+        magnitude.index,
+        magnitude.to_numpy(),
+        cmap=cmap,
+        vmin=vmin,
+        vmax=vmax,
+        shading="gouraud",
+        **kwargs,
+    )
+    divider = make_axes_locatable(axes)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig = plt.gcf()
+    fig.colorbar(mesh, cax=cax, orientation="vertical", label=label)
+
+    axes.set_title(title)
+    axes.set_xlabel(x_label)
+    axes.set_ylabel(y_label)
+
+    return axes
 
 
 def plot_density(
