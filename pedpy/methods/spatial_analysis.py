@@ -1,19 +1,35 @@
 """Module containing functions to compute spatial analysis methods.
 
-For example: the pair distribution function.
+For example: the pair distribution function, and the intrusion and
+avoidance numbers of Cordes et al., PNAS Nexus 2024
+(https://doi.org/10.1093/pnasnexus/pgae120).
 """
 
 import warnings
-from typing import Tuple
+from enum import Enum
+from typing import Optional, Tuple
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+import shapely
 from scipy.spatial.distance import cdist
 
-from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.column_identifier import (
+    AVOIDANCE_COL,
+    FRAME_COL,
+    ID_COL,
+    INTRUSION_COL,
+    X_COL,
+    Y_COL,
+)
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.methods.method_utils import _check_trajectory_data
+from pedpy.methods.method_utils import (
+    SpeedCalculation,
+    _check_trajectory_data,
+    compute_individual_distances,
+)
+from pedpy.methods.speed_calculator import compute_individual_speed
 
 
 def compute_pair_distribution_function(
@@ -133,3 +149,230 @@ def _calculate_pair_distances(
             distances_list.extend(distances_upper_triangle)
 
     return np.array(distances_list)
+
+
+class IntrusionMethod(Enum):  # pylint: disable=too-few-public-methods
+    """Identifier of method to compute the intrusion."""
+
+    MAX = "max"
+    """Use the max value in neighborhood as intrusion."""
+    SUM = "sum"
+    """Use the sum of all values in neighborhood as intrusion."""
+
+
+def compute_intrusion(
+    *,
+    traj_data: TrajectoryData,
+    r_soc: float = 0.8,
+    l_min: float = 0.2,
+    method: IntrusionMethod = IntrusionMethod.SUM,
+    cap: Optional[float] = 400.0,
+) -> pd.DataFrame:
+    r"""Compute the intrusion number for each pedestrian per frame.
+
+    The intrusion variable :math:`\mathcal{I}n_i` quantifies how much
+    other agents encroach on pedestrian *i*'s personal space
+    (Cordes et al. 2024, Eq. 1):
+
+    .. math::
+
+        \mathcal{I}n_i = \sum_{j \in \mathcal{N}_i}
+        \left(\frac{r_\text{soc} - \ell_\text{min}}
+        {r_{ij} - \ell_\text{min}}\right)^{k_I},
+
+    with :math:`k_I = 2`. The neighbor set :math:`\mathcal{N}_i` contains
+    all agents *j* with :math:`r_{ij} \leq 3\,r_\text{soc}`.
+
+    Differences to the paper's processing that the caller has to
+    handle:
+
+    - The paper's simulated models (Jakob-KKU/Pedestrian_Models) replace
+      Eq. 1 within 0.01 m of contact by a smooth polynomial so that the
+      model force stays finite. The data analysis has no such term and
+      none is applied here; the cap takes that role.
+    - The paper smooths the trajectories with a 4th-order Butterworth
+      filter at 0.5 Hz before computing :math:`r_{ij}`. No smoothing is
+      done here; smooth the trajectories first if they contain head sway.
+    - The paper's crowd average of :math:`\mathcal{I}n` includes isolated
+      pedestrians with :math:`\mathcal{I}n_i = 0`, sampled every 0.5 s
+      over the stationary state.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data to analyze
+        r_soc (float): social radius in m (default 0.8)
+        l_min (float): pedestrian diameter in m (default 0.2)
+        method (IntrusionMethod): aggregation over the neighbors.
+            ``SUM`` is the definition of the paper (Eq. 1): the
+            encroachments of all neighbors add up, as mechanical forces
+            do. ``MAX`` is the variant of Eq. S6 in the paper's SI
+            Appendix B: the intrusion is dominated by the closest
+            neighbor and does not grow with the number of neighbors.
+            The authors report that the delineation of regimes is
+            robust under this change.
+        cap (float, optional): upper bound applied to every per-pair term
+            before aggregation (default 400, the paper's value, which
+            limits artifacts from apparent overlaps of the discs in
+            noisy trajectories). Pairs at or below ``l_min`` distance,
+            where Eq. 1 diverges, take the cap. ``None`` disables the
+            cap; such pairs are then infinite.
+
+    Returns:
+        DataFrame with columns 'id', 'frame', and 'intrusion', one row
+        per pedestrian and frame. Agents with no neighbor within the
+        cutoff get 0.
+    """
+    intrusion = compute_individual_distances(traj_data=traj_data)
+    intrusion = intrusion.loc[intrusion.distance <= 3 * r_soc].copy()
+    with np.errstate(divide="ignore"):
+        intrusion.loc[:, INTRUSION_COL] = np.where(
+            intrusion.distance > l_min,
+            ((r_soc - l_min) / (intrusion.distance - l_min)) ** 2,
+            np.inf,
+        )
+    if cap is not None:
+        intrusion.loc[:, INTRUSION_COL] = np.minimum(intrusion[INTRUSION_COL], cap)
+    intrusion = (
+        intrusion.groupby(by=[ID_COL, FRAME_COL])
+        .agg(
+            intrusion=(INTRUSION_COL, method.value),
+        )
+        .reset_index()
+    )
+
+    return _fill_missing_agents(traj_data=traj_data, result=intrusion, column=INTRUSION_COL)
+
+
+def compute_avoidance(
+    *,
+    traj_data: TrajectoryData,
+    frame_step: int,
+    l_min: float = 0.2,
+    tau_0: float,
+    cap: Optional[float] = 60.0,
+) -> pd.DataFrame:
+    r"""Compute the avoidance number for each pedestrian per frame.
+
+    The avoidance variable :math:`\mathcal{A}v_i` quantifies the
+    imminence of collisions that pedestrian *i* faces, based on
+    the time-to-collision (TTC) with neighbors
+    (Cordes et al. 2024, Eq. 2):
+
+    .. math::
+
+        \mathcal{A}v_i = \sum_{j \in \mathcal{N}'_i}
+        \left(\frac{\tau_0}{\tau_{ij}}\right)^{k_A},
+
+    with :math:`k_A = 1`. Unlike Eq. 1, the neighbor set
+    :math:`\mathcal{N}'_i` contains only the neighbor with the shortest
+    time-to-collision :math:`\tau_{ij}`, the most imminent risk. The sum
+    therefore has a single term, and because :math:`\tau_0 / \tau_{ij}`
+    decreases with :math:`\tau_{ij}`, :math:`\mathcal{A}v_i` equals the
+    largest :math:`\tau_0 / \tau_{ij}` over all neighbors *j* in the same
+    frame. That maximum is what this function computes. The TTC is the
+    time until the discs of diameter ``l_min`` around *i* and *j* first
+    touch if both keep their current velocity; pairs that are not on a
+    collision course have :math:`\tau_{ij} = \infty` and contribute 0.
+
+    Pairs whose discs already touch or overlap (:math:`r_{ij} \leq \ell`)
+    have no collision ahead of them, so :math:`\tau_{ij} = \infty` and
+    they contribute 0. This is the convention of the authors' data
+    analysis (Jakob-KKU/Analyze_Trajectories); their simulation code
+    instead treats contact as :math:`\tau_{ij} = 0`, a safeguard for
+    hard discs that cannot overlap. With the analysis convention and
+    the cap below, this function and an independent re-implementation
+    of the authors' analysis code give identical numbers and reproduce
+    the six Waiting points of the paper's Fig. 1B on the paper's
+    supplementary trajectories within the reading accuracy of the
+    figure. Every pair in a frame is a candidate; the paper sets no
+    distance cutoff for :math:`\mathcal{N}'_i`.
+
+    Differences to the paper's processing that the caller has to
+    handle:
+
+    - Velocities come from :func:`compute_individual_speed` with
+      :attr:`SpeedCalculation.BORDER_SINGLE_SIDED`, a centered window of
+      ``2 * frame_step / frame_rate`` seconds, one-sided at the borders of
+      a trajectory. The paper smooths the trajectories with a 4th-order
+      Butterworth filter at 0.5 Hz and computes velocities over about
+      1 s. Neither is done here; :math:`\mathcal{A}v` is sensitive to
+      both. ``frame_step = frame_rate / 2`` gives the paper's window.
+    - The paper's crowd average of :math:`\mathcal{A}v` excludes
+      pedestrians with :math:`\mathcal{A}v_i = 0` ("we only consider data
+      points with a finite TTC in the average"), sampled every 0.5 s over
+      the stationary state.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data to analyze
+        frame_step (int): number of frames on each side of a frame used
+            for the velocity, see above
+        l_min (float): pedestrian diameter :math:`\ell` in m at which
+            two pedestrians touch (default 0.2, as the paper uses for
+            recorded trajectories; its simulations use
+            :math:`\ell_\text{soc} = 0.4` m instead)
+        tau_0 (float): reference timescale in s (paper uses 3.0)
+        cap (float, optional): upper bound applied to every per-pair term
+            before taking the maximum (default 60, the paper's value,
+            which limits artifacts from apparent overlaps of the discs
+            in noisy trajectories). ``None`` disables the cap.
+
+    Returns:
+        DataFrame with columns 'id', 'frame', and 'avoidance', one row
+        per pedestrian and frame. Agents on no collision course, or
+        alone in their frame, get 0.
+    """
+    velocity = compute_individual_speed(
+        traj_data=traj_data,
+        frame_step=frame_step,
+        compute_velocity=True,
+        speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
+    )
+
+    data = traj_data.data.merge(velocity, on=[ID_COL, FRAME_COL])
+    data["velocity"] = shapely.points(data.v_x, data.v_y)
+
+    matrix = data.merge(data, how="inner", on=FRAME_COL, suffixes=("", "_neighbor"))
+    matrix = matrix[matrix[ID_COL] != matrix[f"{ID_COL}_neighbor"]]
+
+    pos = shapely.get_coordinates(matrix.point)
+    pos_neighbor = shapely.get_coordinates(matrix.point_neighbor)
+    distance = np.linalg.norm(pos - pos_neighbor, axis=1)
+
+    delta_v = shapely.get_coordinates(matrix.velocity) - shapely.get_coordinates(matrix.velocity_neighbor)
+    delta_v_norm = np.linalg.norm(delta_v, axis=1)
+
+    # solve the quadratic only for separated pairs with a relative velocity
+    computable = (distance > l_min) & (delta_v_norm > 0)
+
+    ttc = np.full(matrix.shape[0], np.inf)
+
+    if np.any(computable):
+        d_c = distance[computable]
+        dv_c = delta_v[computable]
+        dv_norm_c = delta_v_norm[computable]
+
+        e_v = (pos[computable] - pos_neighbor[computable]) / d_c[:, np.newaxis]
+        v_rel_hat = dv_c / dv_norm_c[:, np.newaxis]
+        cos_alpha = np.sum(e_v * v_rel_hat, axis=1)
+
+        capital_a = (cos_alpha**2 - 1) * d_c**2 + l_min**2
+        sqrt_a_safe = np.sqrt(np.maximum(capital_a, 0.0))
+
+        valid = (capital_a >= 0) & (-cos_alpha * d_c - sqrt_a_safe >= 0)
+
+        idx = np.where(computable)[0][valid]
+        ttc[idx] = (-cos_alpha[valid] * d_c[valid] - sqrt_a_safe[valid]) / dv_norm_c[valid]
+
+    matrix = matrix.copy()
+    with np.errstate(divide="ignore"):
+        matrix[AVOIDANCE_COL] = tau_0 / ttc
+    if cap is not None:
+        matrix[AVOIDANCE_COL] = np.minimum(matrix[AVOIDANCE_COL], cap)
+
+    avoidance = matrix.groupby(by=[ID_COL, FRAME_COL], as_index=False).agg(avoidance=(AVOIDANCE_COL, "max"))
+    return _fill_missing_agents(traj_data=traj_data, result=avoidance, column=AVOIDANCE_COL)
+
+
+def _fill_missing_agents(*, traj_data: TrajectoryData, result: pd.DataFrame, column: str) -> pd.DataFrame:
+    """Return one row per pedestrian and frame, 0 where no pair contributed."""
+    agents = traj_data.data[[ID_COL, FRAME_COL]]
+    return agents.merge(result, on=[ID_COL, FRAME_COL], how="left").fillna({column: 0.0})
