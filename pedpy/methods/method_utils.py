@@ -1002,8 +1002,8 @@ def _compute_movement_acceleration_exclude_border(
 ) -> pd.DataFrame:
     """Compute the individual movement in the time interval frame_step.
 
-    The movement is computed for the interval [frame - frame_step: frame +
-    frame_step], if one of the boundaries is not contained in the trajectory
+    The movement is computed for the interval [frame - 2 * frame_step: frame +
+    2 * frame_step], if one of the boundaries is not contained in the trajectory
     frame these points will not be considered.
 
     Args:
@@ -1022,16 +1022,16 @@ def _compute_movement_acceleration_exclude_border(
     """
     df_movement = traj_data.data.copy(deep=True)
 
-    df_movement[START_POSITION_COL] = df_movement.groupby(by=ID_COL).point.shift(2 * frame_step)
-    df_movement["start_frame"] = df_movement.groupby(by=ID_COL).frame.shift(2 * frame_step)
+    df_movement[START_POSITION_COL] = df_movement.groupby(by=ID_COL).point.shift(-2 * frame_step)
+    df_movement["start_frame"] = df_movement.groupby(by=ID_COL).frame.shift(-2 * frame_step)
 
-    df_movement[MID_POSITION_COL] = df_movement.groupby(by=ID_COL).point.shift(frame_step)
-    df_movement["mid_frame"] = df_movement.groupby(by=ID_COL).frame.shift(frame_step)
+    df_movement[MID_POSITION_COL] = df_movement.point
+    df_movement["mid_frame"] = df_movement.frame
 
-    df_movement[END_POSITION_COL] = df_movement.point
-    df_movement["end_frame"] = df_movement.frame
+    df_movement[END_POSITION_COL] = df_movement.groupby(by=ID_COL).point.shift(2 * frame_step)
+    df_movement["end_frame"] = df_movement.groupby(by=ID_COL).frame.shift(2 * frame_step)
 
-    df_movement[WINDOW_SIZE_COL] = df_movement.end_frame - df_movement.mid_frame
+    df_movement[WINDOW_SIZE_COL] = df_movement.end_frame - df_movement.start_frame
     return df_movement[
         [
             ID_COL,

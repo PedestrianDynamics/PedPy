@@ -30,23 +30,27 @@ def compute_individual_acceleration(
 
     For computing the individuals' acceleration at a specific frame
     :math:`a_i(t_k)`, a specific frame step (:math:`n`) is needed.
-    Together with the
-    :attr:`~trajectory_data.TrajectoryData.frame_rate` of the trajectory data
-    :math:`fps` the time frame :math:`\Delta t` for computing the speed
-    becomes:
+    Together with the :attr:`~trajectory_data.TrajectoryData.frame_rate`
+    of the trajectory data :math:`fps` the time frame :math:`\Delta t`
+    for computing the speed and the acceleration becomes:
 
     .. math::
 
         \Delta t = 2 n / fps
 
-    This time step describes how many frames before and after the current
-    position :math:`X(t_k)` are used to compute the movement.
-    These positions are called :math:`X(t_{k+n})`, :math:`X(t_{k-n})`
-    respectively.
+    The acceleration at time :math:`t_k` can be calculated from the speeds
+    :math:`v(t_{k+n})` and :math:`v(t_{k-n})`:
 
-    In order to compute the acceleration at time :math:`t_k`, we first
-    calculate the displacements :math:`\bar{X}` around :math:`t_{k+n}` and
-    :math:`t_{k-n}`:
+    .. math::
+
+        v(t_{k+n}) = \bar{X}(t_{k+n}) / \Delta t
+
+    .. math::
+
+        v(t_{k-n}) = \bar{X}(t_{k-n}) / \Delta t
+
+    using the displacements :math:`\bar{X}(t_{k+n})` and :math:`\bar{X}(t_{k-n})`
+    during :math:`\Delta t` around :math:`t_{k+n}` and :math:`t_{k-n}`:
 
     .. math::
 
@@ -56,18 +60,29 @@ def compute_individual_acceleration(
 
         \bar{X}(t_{k-n}) = X(t_{k}) - X(t_{k-2n})
 
-    The acceleration is then calculated from the difference of the
-    displacements
+
+    The acceleration :math:`a_i(t_k)` is then calculated from the difference of
+    the speeds divided by the time interval :math:`\Delta t`:
+
+    .. math::
+
+        a_i(t_k) = (v(t_{k+n}) - v(t_{k-n})) / \Delta t
+
+    which is simplified to
+
+    .. math::
+
+        a_i(t_k) = \Delta\bar{X}(t_k) / (\Delta t^{2})
+
+    using
 
     .. math::
 
         \Delta\bar{X}(t_k) = \bar{X}(t_{k+n}) - \bar{X}(t_{k-n})
 
-    divided by the square of the time interval :math:`\Delta t`:
-
     .. math::
 
-        a_i(t_k) = \Delta\bar{X}(t_k) / \Delta t^{2}
+        \Delta\bar{X}(t_k) = X(t_{k+2n}) - 2*X(t_{k}) + X(t_{k-2n})
 
 
     When getting closer to the start, or end of the trajectory data, it is not
@@ -298,7 +313,7 @@ def _compute_individual_acceleration(
         components in x and y direction if compute_acceleration is True
     """
     columns = [ID_COL, FRAME_COL, ACC_COL]
-    time_interval = movement_data.window_size / frame_rate
+    time_interval = 0.5 * movement_data.window_size / frame_rate
 
     # Compute displacements in x and y direction
     movement_data[["dd_x", "dd_y"]] = (
@@ -318,7 +333,7 @@ def _compute_individual_acceleration(
         movement_data[ACC_COL] = (
             np.dot(movement_data[["dd_x", "dd_y"]].to_numpy(), movement_direction)
             / np.linalg.norm(movement_direction)
-            / time_interval**2
+            / (time_interval**2)
         )
 
     if compute_acceleration_components:
