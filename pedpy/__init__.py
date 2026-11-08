@@ -31,6 +31,7 @@ from .column_identifier import (
     MID_POSITION_COL,
     NEIGHBORS_COL,
     NEIGHBOR_ID_COL,
+    ORDER_PARAMETER_COL,
     POINT_COL,
     POLYGON_COL,
     SPEED_COL,
@@ -117,7 +118,10 @@ from .methods.profile_calculator import (
     compute_speed_profile,
     get_grid_cells,
 )
-from .methods.spatial_analysis import compute_pair_distribution_function
+from .methods.spatial_analysis import (
+    compute_lane_order_parameter,
+    compute_pair_distribution_function,
+)
 from .methods.speed_calculator import (
     compute_individual_speed,
     compute_line_speed,
@@ -195,6 +199,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "is_species_valid",
     "is_trajectory_valid",
     "compute_pair_distribution_function",
+    "compute_lane_order_parameter",
     "DensityMethod",
     "RsetMethod",
     "SpeedMethod",
@@ -271,6 +276,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "MID_POSITION_COL",
     "END_POSITION_COL",
     "WINDOW_SIZE_COL",
+    "ORDER_PARAMETER_COL",
     "__version__",
     "AccelerationError",
     "GeometryError",
