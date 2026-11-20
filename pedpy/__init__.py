@@ -80,6 +80,12 @@ from .methods.acceleration_calculator import (
     compute_mean_acceleration_per_frame,
     compute_voronoi_acceleration,
 )
+from .methods.anisotropic_space_calculator import (
+    classify_pose_distraction_coco17,
+    compute_anisotropic_personal_space,
+    compute_shared_space_cpa,
+    detect_social_dyads,
+)
 from .methods.density_calculator import (
     compute_classic_density,
     compute_line_density,
@@ -215,6 +221,10 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_individual_acceleration",
     "compute_mean_acceleration_per_frame",
     "compute_voronoi_acceleration",
+    "compute_anisotropic_personal_space",
+    "detect_social_dyads",
+    "compute_shared_space_cpa",
+    "classify_pose_distraction_coco17",
     "correct_invalid_trajectories",
     "detect_anomalies_in_trajectories",
     "PEDPY_BLUE",
