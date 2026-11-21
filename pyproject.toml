@@ -32,6 +32,8 @@ requires-python = ">=3.11"
 
 [project.urls]
 homepage = "https://pedpy.readthedocs.io/"
+repository = "https://github.com/PedestrianDynamics/PedPy"
+"Helmholtz RSD" = "https://helmholtz.software/software/pedpy"
 
 [build-system]
 requires = ["setuptools>=75", "wheel", "versioningit"]
