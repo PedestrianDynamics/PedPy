@@ -10,9 +10,11 @@ import shapely
 from pedpy.column_identifier import ACC_COL, A_X_COL, A_Y_COL, FRAME_COL, ID_COL
 from pedpy.data.geometry import MeasurementArea
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import AccelerationError
+from pedpy.errors import AccelerationError, PedPyValueError
 from pedpy.methods.method_utils import (
     AccelerationCalculation,
+    BorderFillMethod,
+    _apply_border_fill,
     _check_trajectory_data,
     _compute_individual_movement_acceleration,
 )
@@ -25,6 +27,7 @@ def compute_individual_acceleration(
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_acceleration_components: bool = False,
     acceleration_calculation: AccelerationCalculation = AccelerationCalculation.BORDER_EXCLUDE,
+    border_fill: BorderFillMethod = BorderFillMethod.NONE,
 ) -> pd.DataFrame:
     r"""Compute the individual acceleration for each pedestrian.
 
@@ -97,6 +100,16 @@ def compute_individual_acceleration(
     If :code:`compute_acceleration_components` is `True` also
     :math:`\Delta\bar{X}` is returned.
 
+    **Filling border frames:**
+
+    When border frames cannot be computed (e.g. with
+    :attr:`~method_utils.AccelerationCalculation.BORDER_EXCLUDE`), they are
+    dropped by default (:attr:`~method_utils.BorderFillMethod.NONE`). Setting
+    ``border_fill`` to :attr:`~method_utils.BorderFillMethod.NAN` or
+    :attr:`~method_utils.BorderFillMethod.LAST_VALUE` preserves a 1:1 row
+    alignment with ``traj_data.data`` by inserting ``NaN`` or forward-/backward-
+    filling from the nearest valid value of the same pedestrian.
+
     Args:
         traj_data (TrajectoryData): trajectory data
         frame_step (int): gives the size of time interval for calculating the
@@ -109,6 +122,9 @@ def compute_individual_acceleration(
         acceleration_calculation (method_utils.AccelerationCalculation): method
             used to compute the acceleration at the borders of the individual
             trajectories
+        border_fill (method_utils.BorderFillMethod): strategy used to fill
+            dropped border frames so the output has the same length as
+            ``traj_data.data`` (default: ``BorderFillMethod.NONE``)
 
     Returns:
         DataFrame containing the columns 'id', 'frame', and 'acceleration' in
@@ -116,6 +132,9 @@ def compute_individual_acceleration(
         in x and y direction if :code:`compute_acceleration_components` is True
     """
     _check_trajectory_data(traj_data)
+    if not isinstance(border_fill, BorderFillMethod):
+        raise PedPyValueError(f"border fill method not accepted: {border_fill!r}")
+
     df_movement = _compute_individual_movement_acceleration(
         traj_data=traj_data,
         frame_step=frame_step,
@@ -129,7 +148,11 @@ def compute_individual_acceleration(
         compute_acceleration_components=compute_acceleration_components,
     )
 
-    return df_acceleration
+    return _apply_border_fill(
+        result_df=df_acceleration,
+        traj_data=traj_data,
+        border_fill=border_fill,
+    )
 
 
 def compute_mean_acceleration_per_frame(

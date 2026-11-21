@@ -66,6 +66,22 @@ class AccelerationCalculation(Enum):  # pylint: disable=too-few-public-methods
     BORDER_EXCLUDE = auto()
 
 
+class BorderFillMethod(Enum):  # pylint: disable=too-few-public-methods
+    """Strategy used to fill dropped border frames in individual calculations.
+
+    Attributes:
+        NONE: Drop border frames where the calculation window is incomplete
+            (default).
+        NAN: Keep border frames and fill computed columns with ``NaN``.
+        LAST_VALUE: Keep border frames and forward-/backward-fill computed
+            columns from the nearest valid value of the same pedestrian.
+    """
+
+    NONE = auto()
+    NAN = auto()
+    LAST_VALUE = auto()
+
+
 class DataValidationStatus(Enum):  # pylint: disable=too-few-public-methods
     """Identifies the result of a return value."""
 
@@ -1042,6 +1058,50 @@ def _compute_movement_acceleration_exclude_border(
             WINDOW_SIZE_COL,
         ]
     ].dropna()
+
+
+def _apply_border_fill(
+    *,
+    result_df: pd.DataFrame,
+    traj_data: TrajectoryData,
+    border_fill: BorderFillMethod,
+) -> pd.DataFrame:
+    """Align per-frame individual results to ``traj_data`` using ``border_fill``.
+
+    Args:
+        result_df (pd.DataFrame): Computed per-frame individual DataFrame
+            containing ``ID_COL``, ``FRAME_COL``, and value columns.
+        traj_data (TrajectoryData): Input trajectory data defining the full
+            ``(id, frame)`` sequence and row order.
+        border_fill (BorderFillMethod): Strategy for filling missing border
+            frames.
+
+    Returns:
+        DataFrame aligned to ``traj_data.data`` when ``border_fill`` is not
+        ``BorderFillMethod.NONE``, otherwise ``result_df`` unchanged.
+    """
+    if not isinstance(border_fill, BorderFillMethod):
+        raise PedPyValueError(f"border fill method not accepted: {border_fill!r}")
+
+    if border_fill == BorderFillMethod.NONE:
+        return result_df
+
+    value_cols = [col for col in result_df.columns if col not in (ID_COL, FRAME_COL)]
+    order_col = "_pedpy_row_order"
+
+    base_df = traj_data.data[[ID_COL, FRAME_COL]].copy()
+    base_df[order_col] = np.arange(len(base_df))
+
+    merged = base_df.merge(result_df, on=[ID_COL, FRAME_COL], how="left")
+
+    if border_fill == BorderFillMethod.LAST_VALUE and not merged.empty and value_cols:
+        merged = merged.sort_values(by=[ID_COL, FRAME_COL])
+        merged[value_cols] = merged.groupby(ID_COL)[value_cols].ffill()
+        merged[value_cols] = merged.groupby(ID_COL)[value_cols].bfill()
+
+    merged = merged.sort_values(by=order_col).drop(columns=[order_col])
+    merged.index = traj_data.data.index
+    return merged[[ID_COL, FRAME_COL, *value_cols]]
 
 
 def _get_continuous_parts_in_area(*, traj_data: TrajectoryData, measurement_area: MeasurementArea) -> pd.DataFrame:
