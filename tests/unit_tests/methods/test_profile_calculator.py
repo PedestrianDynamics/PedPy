@@ -562,3 +562,69 @@ def test_speed_dispatch_calls_correct_impl_per_frame(mocker, speed_method, spy_t
         gaussian_width=1.0,  # ignored unless GAUSSIAN
     )
     assert spy.call_count == n_frames
+
+
+def test_l_shaped_walkable_area_skips_outside_grid_cells():
+    # L-shaped geometry inside 4x4 bounding box (area = 7 out of 16 cells)
+    l_shape = WalkableArea(
+        [
+            (0.0, 0.0),
+            (4.0, 0.0),
+            (4.0, 1.0),
+            (1.0, 1.0),
+            (1.0, 4.0),
+            (0.0, 4.0),
+        ]
+    )
+    grid_cells, rows, cols = get_grid_cells(walkable_area=l_shape, grid_size=1.0)
+    assert (rows, cols) == (4, 4)
+
+    active_indices, _, active_cells = _profile_calc_module._prepare_active_grid_tree(
+        grid_cells=grid_cells,
+        walkable_area=l_shape,
+    )
+    # Only the 7 cells overlapping the L-shape are indexed (9 outside cells skipped)
+    assert len(active_cells) == 7
+    assert len(active_indices) == 7
+
+    data = pd.DataFrame(
+        {
+            ID_COL: [1, 2],
+            FRAME_COL: [0, 0],
+            "x": [0.5, 2.5],
+            "y": [2.5, 0.5],
+            "speed": [1.2, 1.8],
+            "polygon": [
+                shapely.box(0.0, 1.0, 1.0, 4.0),
+                shapely.box(1.0, 0.0, 4.0, 1.0),
+            ],
+        }
+    )
+
+    density_profiles, speed_profiles = compute_profiles(
+        data=data,
+        walkable_area=l_shape,
+        grid_size=1.0,
+        density_method=DensityMethod.VORONOI,
+        speed_method=SpeedMethod.VORONOI,
+    )
+    assert density_profiles[0].shape == (4, 4)
+    assert speed_profiles[0].shape == (4, 4)
+
+    # Top-right 3x3 block (rows 0..2, cols 1..3) is completely outside the L-shape -> strictly 0.0
+    np.testing.assert_allclose(density_profiles[0][:3, 1:], 0.0)
+    np.testing.assert_allclose(speed_profiles[0][:3, 1:], 0.0)
+
+    # Compare against dense brute-force shapely intersection
+    dense_areas = shapely.area(
+        shapely.intersection(
+            np.asarray(grid_cells)[:, np.newaxis],
+            np.asarray(data["polygon"])[np.newaxis, :],
+        )
+    )
+    sparse_areas, _ = compute_grid_cell_polygon_intersection_area(
+        data=data,
+        grid_cells=grid_cells,
+        walkable_area=l_shape,
+    )
+    np.testing.assert_allclose(sparse_areas, dense_areas)
