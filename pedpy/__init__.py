@@ -87,6 +87,7 @@ from .methods.density_calculator import (
     compute_voronoi_density,
 )
 from .methods.flow_calculator import (
+    compute_classic_fundamental_diagram,
     compute_flow,
     compute_line_flow,
     compute_n_t,
@@ -180,6 +181,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_line_density",
     "compute_passing_density",
     "compute_voronoi_density",
+    "compute_classic_fundamental_diagram",
     "compute_flow",
     "compute_line_flow",
     "compute_n_t",
