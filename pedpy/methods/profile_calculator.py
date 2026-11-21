@@ -12,8 +12,9 @@ Each of these grid cells is then used as a
 density can be computed with different methods.
 """
 
+import math
 from enum import Enum, auto
-from typing import Any, Final, Optional, Sequence, Tuple
+from typing import Any, Callable, Final, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -441,16 +442,8 @@ def _compute_classic_density_profile(
         max_y,
     ) = bounds
 
-    x_coords = np.arange(
-        min_x,
-        max_x + grid_size,
-        grid_size,
-    )
-    y_coords = np.arange(
-        min_y,
-        max_y + grid_size,
-        grid_size,
-    )
+    x_coords = _compute_grid_edges(min_x, max_x, grid_size)
+    y_coords = _compute_grid_edges(min_y, max_y, grid_size)
 
     (
         hist,
@@ -918,16 +911,8 @@ def _compute_mean_speed_profile(
         max_y,
     ) = bounds
 
-    x_coords = np.arange(
-        min_x,
-        max_x + grid_size,
-        grid_size,
-    )
-    y_coords = np.arange(
-        min_y,
-        max_y + grid_size,
-        grid_size,
-    )
+    x_coords = _compute_grid_edges(min_x, max_x, grid_size)
+    y_coords = _compute_grid_edges(min_y, max_y, grid_size)
 
     (
         hist,
@@ -1238,16 +1223,8 @@ def get_grid_cells(
 
         min_x, min_y, max_x, max_y = axis_aligned_measurement_area.bounds
 
-    x_coords = np.arange(
-        min_x,
-        max_x + grid_size,
-        grid_size,
-    )
-    y_coords = np.arange(
-        max_y,
-        min_y - grid_size,
-        -grid_size,
-    )
+    x_coords = _compute_grid_edges(min_x, max_x, grid_size)
+    y_coords = _compute_grid_edges(min_y, max_y, grid_size, descending=True)
 
     grid_cells = []
     for j in range(len(y_coords) - 1):
@@ -1267,6 +1244,23 @@ def get_grid_cells(
     )
 
 
+def _compute_grid_edges(
+    min_val: float,
+    max_val: float,
+    grid_size: float,
+    *,
+    descending: bool = False,
+) -> npt.NDArray[np.float64]:
+    """Build grid cell edges without floating-point overshoot on exact multiples."""
+    if grid_size <= 0:
+        raise PedPyValueError(f"grid_size must be positive, got {grid_size}.")
+    n_cells = max(1, math.ceil((max_val - min_val) / grid_size - 1e-12))
+    steps = np.arange(n_cells + 1, dtype=np.float64)
+    if descending:
+        return max_val - grid_size * steps
+    return min_val + grid_size * steps
+
+
 class RsetMethod(Enum):
     r"""Aggregation method for computing RSET maps.
 
@@ -1274,8 +1268,9 @@ class RsetMethod(Enum):
     pedestrians occupy each spatial cell. Different aggregation methods
     provide different perspectives on the evacuation process.
 
-    See: Schröder et al., "A Map Representation of the ASET-RSET Concept"
-    (Fire Safety Journal, 2020).
+    See: Schröder et al., "A Map Representation of the ASET-RSET Concept",
+    Fire Safety Journal 115 (2020), Section 2.3, Eqs. 4-5
+    (doi:10.1016/j.firesaf.2020.103154).
     """
 
     MAX = auto()
@@ -1295,12 +1290,19 @@ class RsetMethod(Enum):
     MEAN = auto()
     r"""Mean time pedestrians were observed in each cell."""
 
+    PERCENTILE = auto()
+    r"""Given percentile (e.g. 95th) of observation times in each cell.
+
+    Useful when pooling multiple runs or suppressing single-agent outliers.
+    """
+
 
 _RSET_METHOD_TO_STAT: dict[RsetMethod, str] = {
     RsetMethod.MAX: "max",
     RsetMethod.MIN: "min",
     RsetMethod.MEAN: "mean",
 }
+_MAX_PERCENTILE: Final = 100.0
 
 
 def compute_rset_map(
@@ -1310,18 +1312,23 @@ def compute_rset_map(
     axis_aligned_measurement_area: Optional[AxisAlignedMeasurementArea] = None,
     grid_size: float,
     method: RsetMethod = RsetMethod.MAX,
+    percentile: float = 95.0,
 ) -> npt.NDArray[np.float64]:
     r"""Compute an RSET (Required Safe Egress Time) map.
 
     The walkable area (or measurement area) is divided into a grid of
-    square cells. For each cell, the time values of all trajectory
-    points falling inside the cell are aggregated using *method*
-    (default: maximum). This yields a 2-D array where each entry
-    represents the aggregated time in that cell.
+    square cells whose edges start at ``(min_x, min_y)`` of
+    ``walkable_area.bounds`` (or ``axis_aligned_measurement_area.bounds``).
+    Observation times are computed as ``frame / traj_data.frame_rate`` (in
+    seconds). For each cell, the time values of all trajectory points falling
+    inside the cell are aggregated using *method* (default: maximum). The
+    returned 2-D array is flipped vertically so that row ``0`` corresponds to
+    ``max_y`` (consistent with :func:`get_grid_cells` and
+    :func:`matplotlib.pyplot.imshow`).
 
-    The implementation follows Section 5.5.1 of Schröder et al.,
-    "A Map Representation of the ASET-RSET Concept"
-    (Fire Safety Journal, 2020).
+    The implementation follows Section 2.3 (Eqs. 4-5) of Schröder et al.,
+    "A Map Representation of the ASET-RSET Concept", Fire Safety Journal 115
+    (2020), doi:10.1016/j.firesaf.2020.103154.
 
     Args:
         traj_data: Trajectory data to analyse.
@@ -1330,6 +1337,8 @@ def compute_rset_map(
         grid_size: Side length of each grid cell (in metres).
         method: Aggregation method applied to the time values
             per cell (default: :attr:`RsetMethod.MAX`).
+        percentile: Percentile in ``[0, 100]`` used when ``method`` is
+            :attr:`RsetMethod.PERCENTILE` (default: ``95.0``).
 
     Returns:
         A 2-D NumPy array (rows x cols) with the aggregated time per
@@ -1346,11 +1355,17 @@ def compute_rset_map(
     if axis_aligned_measurement_area is not None:
         min_x, min_y, max_x, max_y = axis_aligned_measurement_area.bounds
 
-    x_edges = np.arange(min_x, max_x + grid_size, grid_size)
-    y_edges = np.arange(min_y, max_y + grid_size, grid_size)
+    x_edges = _compute_grid_edges(min_x, max_x, grid_size)
+    y_edges = _compute_grid_edges(min_y, max_y, grid_size)
 
     if not isinstance(traj_data, TrajectoryData):
         raise PedPyTypeError(f"traj_data must be an instance of TrajectoryData, got {type(traj_data).__name__}.")
+
+    if not isinstance(percentile, (int, float)) or isinstance(percentile, bool):
+        raise PedPyTypeError(f"percentile must be a float in [0, 100], got {type(percentile).__name__}.")
+    percentile_val = float(percentile)
+    if not 0.0 <= percentile_val <= _MAX_PERCENTILE:
+        raise PedPyValueError(f"percentile must be between 0 and 100, got {percentile_val}.")
 
     data = traj_data.data
     time = data[FRAME_COL].to_numpy(dtype=np.float64) / traj_data.frame_rate
@@ -1360,10 +1375,19 @@ def compute_rset_map(
         raise PedPyTypeError("method must be an instance of RsetMethod, not None.")
     if not isinstance(method, RsetMethod):
         raise PedPyTypeError(f"method must be an instance of RsetMethod, got {type(method).__name__}.")
-    if method not in _RSET_METHOD_TO_STAT:
-        valid_methods = ", ".join(m.name for m in _RSET_METHOD_TO_STAT)
+
+    stat_func: Union[str, Callable[[npt.NDArray[np.float64]], float]]
+    if method == RsetMethod.PERCENTILE:
+
+        def _percentile_stat(vals: npt.NDArray[np.float64]) -> float:
+            return float(np.percentile(vals, percentile_val))
+
+        stat_func = _percentile_stat
+    elif method in _RSET_METHOD_TO_STAT:
+        stat_func = _RSET_METHOD_TO_STAT[method]
+    else:
+        valid_methods = ", ".join(m.name for m in RsetMethod)
         raise PedPyValueError(f"Unknown RsetMethod '{method}'. Valid values are: {valid_methods}.")
-    stat_func = _RSET_METHOD_TO_STAT[method]
 
     result = stats.binned_statistic_2d(
         x=data[X_COL].to_numpy(dtype=np.float64),

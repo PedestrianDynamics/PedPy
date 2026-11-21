@@ -210,3 +210,68 @@ def test_rset_map_with_axis_aligned_measurement_area():
     assert rset.shape == (2, 2)
     assert rset[1, 0] == pytest.approx(4.0)
     assert np.isnan(rset[0, 0])
+
+
+def test_rset_map_and_grid_cells_no_extra_column_on_float_multiple():
+    """Regression test for #581: 30x10 m room with grid_size=0.6 must have 17x50 cells, not 17x51."""
+    from pedpy.methods.profile_calculator import get_grid_cells
+
+    walkable_area = WalkableArea(shapely.box(0.0, 0.0, 30.0, 10.0))
+    cells, rows, cols = get_grid_cells(walkable_area=walkable_area, grid_size=0.6)
+    assert (rows, cols) == (17, 50)
+    assert len(cells) == 17 * 50
+
+    traj = make_traj(
+        ids=[0, 0],
+        frames=[0, 10],
+        xs=[0.3, 30.0],
+        ys=[0.3, 0.3],
+        frame_rate=1.0,
+    )
+    rset = compute_rset_map(traj_data=traj, walkable_area=walkable_area, grid_size=0.6)
+    assert rset.shape == (17, 50)
+    # Boundary point x=30.0 must fall into the rightmost cell inside the room (col 49)
+    assert rset[16, 49] == pytest.approx(10.0)
+
+
+def test_rset_map_percentile_method():
+    """RsetMethod.PERCENTILE computes the requested percentile and keeps empty cells NaN."""
+    from pedpy.errors import PedPyTypeError, PedPyValueError
+
+    n = 101
+    traj = make_traj(
+        ids=list(range(n)),
+        frames=list(range(n)),
+        xs=[0.5] * n,
+        ys=[0.5] * n,
+        frame_rate=1.0,
+    )
+    walkable_area = WalkableArea(shapely.box(0, 0, 2, 2))
+    rset_p95 = compute_rset_map(
+        traj_data=traj,
+        walkable_area=walkable_area,
+        grid_size=1.0,
+        method=RsetMethod.PERCENTILE,
+        percentile=95.0,
+    )
+    assert rset_p95[1, 0] == pytest.approx(95.0)
+    assert np.isnan(rset_p95[0, 0])
+    assert np.isnan(rset_p95[0, 1])
+    assert np.isnan(rset_p95[1, 1])
+
+    with pytest.raises(PedPyValueError):
+        compute_rset_map(
+            traj_data=traj,
+            walkable_area=walkable_area,
+            grid_size=1.0,
+            method=RsetMethod.PERCENTILE,
+            percentile=105.0,
+        )
+    with pytest.raises(PedPyTypeError):
+        compute_rset_map(
+            traj_data=traj,
+            walkable_area=walkable_area,
+            grid_size=1.0,
+            method=RsetMethod.PERCENTILE,
+            percentile="95",  # type: ignore[arg-type]
+        )
