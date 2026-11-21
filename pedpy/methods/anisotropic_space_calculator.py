@@ -1,8 +1,7 @@
 """Module containing anisotropic personal space, social dyad, and shared-space CPA methods."""
 
-from __future__ import annotations
-
 import math
+from typing import Final, Optional, Tuple, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -13,18 +12,76 @@ from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.errors import PedPyTypeError, PedPyValueError
 from pedpy.methods.method_utils import _check_trajectory_data
 
+_SPEED_EPS: Final = 1e-6
+_DIST_EPS: Final = 1e-9
+_REL_VEL_SQ_EPS: Final = 1e-12
+_MOVING_SPEED_MIN: Final = 0.05
+_CODIR_COS_MIN: Final = 0.5
+_ABREAST_ANGLE_DEG: Final = 45.0
+_STRAIGHT_ELBOW_DEG: Final = 180.0
+_NECK_REF_PROJ: Final = 0.36
+_NECK_PITCH_SCALE: Final = 185.0
+_MAX_NECK_PITCH_DEG: Final = 65.0
+_EAR_PITCH_WEIGHT: Final = 0.65
+_NECK_PITCH_WEIGHT: Final = 0.35
+_CHEST_MAX_ELBOW_DEG: Final = 120.0
+_CHEST_MIN_WRIST_H: Final = 0.35
+_CHEST_MAX_WRIST_H: Final = 1.05
+_CHEST_MAX_WRIST_LAT: Final = 0.70
+_EAR_MAX_ELBOW_DEG: Final = 95.0
+_EAR_MIN_WRIST_H: Final = 1.02
+_EAR_MAX_WRIST_LAT: Final = 0.65
+_PITCH_SCORE_OFFSET_DEG: Final = 18.0
+_PITCH_SCORE_SPAN_DEG: Final = 22.0
+_FLEX_SCORE_REF_DEG: Final = 135.0
+_FLEX_SCORE_SPAN_DEG: Final = 55.0
+_PHONE_VIEW_MIN_PITCH_DEG: Final = 24.0
+_DOWNWARD_GAZE_MIN_PITCH_DEG: Final = 35.0
+_ATTENTIVE_SCORE_CAP: Final = 0.45
+
+
+def _compute_segment_velocities(
+    f_seg: npt.NDArray[np.float64],
+    x_seg: npt.NDArray[np.float64],
+    y_seg: npt.NDArray[np.float64],
+    frame_rate: float,
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Compute central/boundary finite-difference velocities for one agent."""
+    n = len(f_seg)
+    vx_seg = np.zeros(n, dtype=float)
+    vy_seg = np.zeros(n, dtype=float)
+    if n <= 1:
+        return vx_seg, vy_seg
+
+    dt0 = (f_seg[1] - f_seg[0]) / frame_rate
+    if dt0 > 0.0:
+        vx_seg[0] = (x_seg[1] - x_seg[0]) / dt0
+        vy_seg[0] = (y_seg[1] - y_seg[0]) / dt0
+
+    dt_end = (f_seg[-1] - f_seg[-2]) / frame_rate
+    if dt_end > 0.0:
+        vx_seg[-1] = (x_seg[-1] - x_seg[-2]) / dt_end
+        vy_seg[-1] = (y_seg[-1] - y_seg[-2]) / dt_end
+
+    if n > 2:
+        dt_mid = (f_seg[2:] - f_seg[:-2]) / frame_rate
+        valid = dt_mid > 0.0
+        vx_mid = np.zeros(n - 2, dtype=float)
+        vy_mid = np.zeros(n - 2, dtype=float)
+        vx_mid[valid] = (x_seg[2:][valid] - x_seg[:-2][valid]) / dt_mid[valid]
+        vy_mid[valid] = (y_seg[2:][valid] - y_seg[:-2][valid]) / dt_mid[valid]
+        vx_seg[1:-1] = vx_mid
+        vy_seg[1:-1] = vy_mid
+
+    return vx_seg, vy_seg
+
 
 def _estimate_agent_kinematics(
     df: pd.DataFrame,
     frame_rate: float,
 ) -> pd.DataFrame:
-    """Compute per-agent velocity, speed, and heading using finite differences.
-
-    Interior frames use central differences; first/last frames of each agent
-    trajectory use forward/backward differences. Single-frame trajectories
-    receive zero velocity and zero heading.
-    """
-    if frame_rate <= 0:
+    """Compute per-agent velocity, speed, and heading using finite differences."""
+    if frame_rate <= 0.0:
         raise PedPyValueError(f"Expected positive frame_rate, got {frame_rate}.")
 
     if df.empty:
@@ -34,75 +91,37 @@ def _estimate_agent_kinematics(
         return out
 
     work = df[[ID_COL, FRAME_COL, X_COL, Y_COL]].sort_values([ID_COL, FRAME_COL]).copy()
-    has_precomputed_vel = V_X_COL in df.columns and V_Y_COL in df.columns
-    if has_precomputed_vel:
+    if V_X_COL in df.columns and V_Y_COL in df.columns:
         vel_sorted = df.sort_values([ID_COL, FRAME_COL])
         vx_all = vel_sorted[V_X_COL].to_numpy(dtype=float)
         vy_all = vel_sorted[V_Y_COL].to_numpy(dtype=float)
     else:
         vx_all = np.zeros(len(work), dtype=float)
         vy_all = np.zeros(len(work), dtype=float)
-
         ids = work[ID_COL].to_numpy()
         frames = work[FRAME_COL].to_numpy(dtype=float)
         xs = work[X_COL].to_numpy(dtype=float)
         ys = work[Y_COL].to_numpy(dtype=float)
 
-        # Locate contiguous slices per sorted agent id
         change_idx = np.flatnonzero(ids[1:] != ids[:-1]) + 1
         starts = np.concatenate(([0], change_idx))
         ends = np.concatenate((change_idx, [len(work)]))
-
-        for s, e in zip(starts, ends):
-            n = e - s
-            if n <= 1:
-                continue
-            f_seg = frames[s:e]
-            x_seg = xs[s:e]
-            y_seg = ys[s:e]
-
-            vx_seg = np.zeros(n, dtype=float)
-            vy_seg = np.zeros(n, dtype=float)
-
-            # Forward difference at start
-            dt0 = (f_seg[1] - f_seg[0]) / frame_rate
-            if dt0 > 0:
-                vx_seg[0] = (x_seg[1] - x_seg[0]) / dt0
-                vy_seg[0] = (y_seg[1] - y_seg[0]) / dt0
-
-            # Backward difference at end
-            dt_end = (f_seg[-1] - f_seg[-2]) / frame_rate
-            if dt_end > 0:
-                vx_seg[-1] = (x_seg[-1] - x_seg[-2]) / dt_end
-                vy_seg[-1] = (y_seg[-1] - y_seg[-2]) / dt_end
-
-            # Central differences on interior points
-            if n > 2:
-                dt_mid = (f_seg[2:] - f_seg[:-2]) / frame_rate
-                valid = dt_mid > 0
-                vx_mid = np.zeros(n - 2, dtype=float)
-                vy_mid = np.zeros(n - 2, dtype=float)
-                vx_mid[valid] = (x_seg[2:][valid] - x_seg[:-2][valid]) / dt_mid[valid]
-                vy_mid[valid] = (y_seg[2:][valid] - y_seg[:-2][valid]) / dt_mid[valid]
-                vx_seg[1:-1] = vx_mid
-                vy_seg[1:-1] = vy_mid
-
+        for s, e in zip(starts, ends, strict=True):
+            vx_seg, vy_seg = _compute_segment_velocities(frames[s:e], xs[s:e], ys[s:e], frame_rate)
             vx_all[s:e] = vx_seg
             vy_all[s:e] = vy_seg
 
     speed_all = np.hypot(vx_all, vy_all)
-    heading_all = np.where(speed_all > 1e-6, np.arctan2(vy_all, vx_all), 0.0)
-
     work[V_X_COL] = vx_all
     work[V_Y_COL] = vy_all
     work[SPEED_COL] = speed_all
-    work["heading_rad"] = heading_all
+    work["heading_rad"] = np.where(speed_all > _SPEED_EPS, np.arctan2(vy_all, vx_all), 0.0)
     return work.reset_index(drop=True)
 
 
 def _extract_distraction_level(
     kin_df: pd.DataFrame,
-    attention_df: pd.DataFrame | None,
+    attention_df: Optional[pd.DataFrame],
 ) -> npt.NDArray[np.float64]:
     """Resolve per-row distraction weight in [0, 1] from optional attention_df."""
     if attention_df is None:
@@ -120,7 +139,6 @@ def _extract_distraction_level(
     if "distracted" in att.columns:
         att["_distraction_val"] = att["distracted"].astype(float)
     elif "gaze_state" in att.columns:
-        # Convention: ON_PHONE = 0 (distracted -> 1.0), ON_ROAD = 1 (attentive -> 0.0)
         att["_distraction_val"] = (att["gaze_state"].astype(float) == 0.0).astype(float)
     elif "attention" in att.columns:
         att["_distraction_val"] = 1.0 - att["attention"].astype(float)
@@ -128,7 +146,7 @@ def _extract_distraction_level(
         raise PedPyValueError("Expected 'attention_df' to contain one of {'distracted', 'gaze_state', 'attention'}.")
 
     merged = kin_df[join_keys].merge(
-        att[join_keys + ["_distraction_val"]].drop_duplicates(subset=join_keys),
+        att[[*join_keys, "_distraction_val"]].drop_duplicates(subset=join_keys),
         on=join_keys,
         how="left",
     )
@@ -144,7 +162,7 @@ def compute_anisotropic_personal_space(
     delta_a_distracted: float = 0.22,
     b0: float = 0.28,
     delta_b_distracted: float = 0.16,
-    attention_df: pd.DataFrame | None = None,
+    attention_df: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     r"""Compute velocity- and attention-modulated elliptical personal space metrics.
 
@@ -188,43 +206,37 @@ def compute_anisotropic_personal_space(
         ``a_m``, ``b_m``, ``a_b_ratio``, ``ellipse_area_m2``, and ``min_d_eff``.
     """
     _check_trajectory_data(traj_data, param_name="traj_data")
-    if a0 <= 0 or b0 <= 0:
+    if a0 <= 0.0 or b0 <= 0.0:
         raise PedPyValueError("Baseline semi-axes 'a0' and 'b0' must be strictly positive.")
-    if tau_stride < 0 or delta_a_distracted < 0 or delta_b_distracted < 0:
+    if tau_stride < 0.0 or delta_a_distracted < 0.0 or delta_b_distracted < 0.0:
         raise PedPyValueError("'tau_stride', 'delta_a_distracted', and 'delta_b_distracted' must be non-negative.")
 
+    out_cols = [
+        ID_COL,
+        FRAME_COL,
+        SPEED_COL,
+        "heading_rad",
+        "a_m",
+        "b_m",
+        "a_b_ratio",
+        "ellipse_area_m2",
+        "min_d_eff",
+    ]
     kin = _estimate_agent_kinematics(traj_data.data, traj_data.frame_rate)
     if kin.empty:
-        return pd.DataFrame(
-            columns=[
-                ID_COL,
-                FRAME_COL,
-                SPEED_COL,
-                "heading_rad",
-                "a_m",
-                "b_m",
-                "a_b_ratio",
-                "ellipse_area_m2",
-                "min_d_eff",
-            ]
-        )
+        return pd.DataFrame(columns=out_cols)
 
     distraction = _extract_distraction_level(kin, attention_df)
     speeds = kin[SPEED_COL].to_numpy(dtype=float)
-    headings = kin["heading_rad"].to_numpy(dtype=float)
 
     a_m = a0 + tau_stride * speeds + delta_a_distracted * distraction
     b_m = b0 + delta_b_distracted * distraction
-    a_b_ratio = a_m / b_m
-    ellipse_area_m2 = math.pi * a_m * b_m
-
     kin["a_m"] = a_m
     kin["b_m"] = b_m
-    kin["a_b_ratio"] = a_b_ratio
-    kin["ellipse_area_m2"] = ellipse_area_m2
+    kin["a_b_ratio"] = a_m / b_m
+    kin["ellipse_area_m2"] = math.pi * a_m * b_m
 
     min_d_eff = np.full(len(kin), np.inf, dtype=float)
-    # Group by frame to compute vectorized pairwise elliptical neighbor distances
     for _, group in kin.groupby(FRAME_COL, sort=False):
         idx = group.index.to_numpy()
         if len(idx) < 2:
@@ -235,38 +247,47 @@ def compute_anisotropic_personal_space(
         gb = group["b_m"].to_numpy(dtype=float)
         gh = group["heading_rad"].to_numpy(dtype=float)
 
-        # dx[i, j] = x_j - x_i, dy[i, j] = y_j - y_i
         dx = gx[np.newaxis, :] - gx[:, np.newaxis]
         dy = gy[np.newaxis, :] - gy[:, np.newaxis]
-
         cos_h = np.cos(gh)[:, np.newaxis]
         sin_h = np.sin(gh)[:, np.newaxis]
 
         d_par = dx * cos_h + dy * sin_h
         d_perp = -dx * sin_h + dy * cos_h
-
         d_eff_mat = np.hypot(d_par / ga[:, np.newaxis], d_perp / gb[:, np.newaxis])
         np.fill_diagonal(d_eff_mat, np.inf)
         min_d_eff[idx] = np.min(d_eff_mat, axis=1)
 
     kin["min_d_eff"] = min_d_eff
-    return (
-        kin[
-            [
-                ID_COL,
-                FRAME_COL,
-                SPEED_COL,
-                "heading_rad",
-                "a_m",
-                "b_m",
-                "a_b_ratio",
-                "ellipse_area_m2",
-                "min_d_eff",
-            ]
-        ]
-        .sort_values([FRAME_COL, ID_COL])
-        .reset_index(drop=True)
-    )
+    return kin[out_cols].sort_values([FRAME_COL, ID_COL]).reset_index(drop=True)
+
+
+def _summarize_cohesive_dyads(
+    cohesive_pairs: pd.DataFrame,
+    min_shared_frames: int,
+    out_cols: list[str],
+) -> pd.DataFrame:
+    """Aggregate frame-level cohesive pairs into persistent dyad records."""
+    records = []
+    for (id1, id2), grp in cohesive_pairs.groupby([f"{ID_COL}_1", f"{ID_COL}_2"], sort=True):
+        n_frames = len(grp)
+        if n_frames < min_shared_frames:
+            continue
+        mean_angle = float(grp["phi_deg"].mean())
+        records.append(
+            {
+                "ped_id_1": id1,
+                "ped_id_2": id2,
+                "shared_frames": n_frames,
+                "mean_distance_m": float(grp["dist"].mean()),
+                "mean_speed_diff_mps": float(grp["speed_diff"].mean()),
+                "formation_angle_deg": mean_angle,
+                "formation": "abreast" if mean_angle >= _ABREAST_ANGLE_DEG else "single_file",
+            }
+        )
+    if not records:
+        return pd.DataFrame(columns=out_cols)
+    return pd.DataFrame(records, columns=out_cols)
 
 
 def detect_social_dyads(
@@ -300,9 +321,9 @@ def detect_social_dyads(
         and ``formation``.
     """
     _check_trajectory_data(traj_data, param_name="traj_data")
-    if max_distance <= 0:
+    if max_distance <= 0.0:
         raise PedPyValueError("'max_distance' must be strictly positive.")
-    if max_speed_diff < 0:
+    if max_speed_diff < 0.0:
         raise PedPyValueError("'max_speed_diff' must be non-negative.")
     if min_shared_frames < 1:
         raise PedPyValueError("'min_shared_frames' must be at least 1.")
@@ -316,12 +337,10 @@ def detect_social_dyads(
         "formation_angle_deg",
         "formation",
     ]
-
     kin = _estimate_agent_kinematics(traj_data.data, traj_data.frame_rate)
     if kin.empty or kin[ID_COL].nunique() < 2:
         return pd.DataFrame(columns=out_cols)
 
-    # Self-join within each frame for unordered pairs ped_id_1 < ped_id_2
     pairs = kin.merge(kin, on=FRAME_COL, suffixes=("_1", "_2"))
     pairs = pairs[pairs[f"{ID_COL}_1"] < pairs[f"{ID_COL}_2"]].copy()
     if pairs.empty:
@@ -340,65 +359,35 @@ def detect_social_dyads(
     vx2 = pairs[f"{V_X_COL}_2"].to_numpy(dtype=float)
     vy2 = pairs[f"{V_Y_COL}_2"].to_numpy(dtype=float)
 
-    # Co-directional check when both agents are moving (excludes counter-flow passings)
-    both_moving = (v1 > 0.05) & (v2 > 0.05)
+    both_moving = (v1 > _MOVING_SPEED_MIN) & (v2 > _MOVING_SPEED_MIN)
     cos_heading_diff = np.ones(len(pairs), dtype=float)
     cos_heading_diff[both_moving] = (vx1[both_moving] * vx2[both_moving] + vy1[both_moving] * vy2[both_moving]) / (
         v1[both_moving] * v2[both_moving]
     )
 
-    cohesive = (dist <= max_distance) & (speed_diff <= max_speed_diff) & (cos_heading_diff >= 0.5)
+    cohesive = (dist <= max_distance) & (speed_diff <= max_speed_diff) & (cos_heading_diff >= _CODIR_COS_MIN)
     cohesive_pairs = pairs.loc[cohesive, [f"{ID_COL}_1", f"{ID_COL}_2"]].copy()
     if cohesive_pairs.empty:
         return pd.DataFrame(columns=out_cols)
 
-    dx_c = dx[cohesive]
-    dy_c = dy[cohesive]
-    dist_c = dist[cohesive]
-    sdiff_c = speed_diff[cohesive]
-
     mean_vx = 0.5 * (vx1[cohesive] + vx2[cohesive])
     mean_vy = 0.5 * (vy1[cohesive] + vy2[cohesive])
     mean_v_norm = np.hypot(mean_vx, mean_vy)
+    dist_c = dist[cohesive]
 
-    # Acute angle between separation vector r_12 and group motion direction u_group:
-    # 0 deg = single-file (collinear with motion), 90 deg = abreast (orthogonal to motion)
-    valid_geom = (dist_c > 1e-9) & (mean_v_norm > 1e-6)
+    valid_geom = (dist_c > _DIST_EPS) & (mean_v_norm > _SPEED_EPS)
     abs_cos_phi = np.zeros(len(cohesive_pairs), dtype=float)
     abs_cos_phi[valid_geom] = np.clip(
-        np.abs(dx_c[valid_geom] * mean_vx[valid_geom] + dy_c[valid_geom] * mean_vy[valid_geom])
+        np.abs(dx[cohesive][valid_geom] * mean_vx[valid_geom] + dy[cohesive][valid_geom] * mean_vy[valid_geom])
         / (dist_c[valid_geom] * mean_v_norm[valid_geom]),
         0.0,
         1.0,
     )
-    phi_deg = np.degrees(np.arccos(abs_cos_phi))
 
     cohesive_pairs["dist"] = dist_c
-    cohesive_pairs["speed_diff"] = sdiff_c
-    cohesive_pairs["phi_deg"] = phi_deg
-
-    records = []
-    for (id1, id2), grp in cohesive_pairs.groupby([f"{ID_COL}_1", f"{ID_COL}_2"], sort=True):
-        n_frames = len(grp)
-        if n_frames < min_shared_frames:
-            continue
-        mean_angle = float(grp["phi_deg"].mean())
-        formation = "abreast" if mean_angle >= 45.0 else "single_file"
-        records.append(
-            {
-                "ped_id_1": id1,
-                "ped_id_2": id2,
-                "shared_frames": n_frames,
-                "mean_distance_m": float(grp["dist"].mean()),
-                "mean_speed_diff_mps": float(grp["speed_diff"].mean()),
-                "formation_angle_deg": mean_angle,
-                "formation": formation,
-            }
-        )
-
-    if not records:
-        return pd.DataFrame(columns=out_cols)
-    return pd.DataFrame(records, columns=out_cols)
+    cohesive_pairs["speed_diff"] = speed_diff[cohesive]
+    cohesive_pairs["phi_deg"] = np.degrees(np.arccos(abs_cos_phi))
+    return _summarize_cohesive_dyads(cohesive_pairs, min_shared_frames, out_cols)
 
 
 def compute_shared_space_cpa(
@@ -416,7 +405,9 @@ def compute_shared_space_cpa(
 
     .. math::
 
-        \tau_{\mathrm{CPA}} = \max\!\left(0, -\frac{\Delta \mathbf{r} \cdot \Delta \mathbf{v}}{\|\Delta \mathbf{v}\|_2^2}\right),
+        \tau_{\mathrm{CPA}} = \max\!\left(
+            0, -\frac{\Delta \mathbf{r} \cdot \Delta \mathbf{v}}{\|\Delta \mathbf{v}\|_2^2}
+        \right),
         \qquad
         d_{\mathrm{CPA}} = \|\Delta \mathbf{r} + \tau_{\mathrm{CPA}} \Delta \mathbf{v}\|_2.
 
@@ -436,20 +427,16 @@ def compute_shared_space_cpa(
         raise PedPyTypeError(
             f"Expected 'wheeler_df' to be a pandas DataFrame, got {type(wheeler_df).__name__!r} instead."
         )
-    if d_min <= 0:
+    if d_min <= 0.0:
         raise PedPyValueError("'d_min' must be strictly positive.")
 
-    required_cols = {ID_COL, FRAME_COL, X_COL, Y_COL}
-    missing = required_cols - set(wheeler_df.columns)
+    missing = {ID_COL, FRAME_COL, X_COL, Y_COL} - set(wheeler_df.columns)
     if missing:
         raise PedPyValueError(f"Missing required columns in 'wheeler_df': {sorted(missing)}.")
 
-    type_col = None
-    if "wheeler_type" in wheeler_df.columns:
-        type_col = "wheeler_type"
-    elif "type" in wheeler_df.columns:
-        type_col = "type"
-
+    type_col = (
+        "wheeler_type" if "wheeler_type" in wheeler_df.columns else ("type" if "type" in wheeler_df.columns else None)
+    )
     base_cols = [
         FRAME_COL,
         "ped_id",
@@ -486,16 +473,13 @@ def compute_shared_space_cpa(
     dr_dot_dv = dr_x * dv_x + dr_y * dv_y
 
     tau_cpa = np.zeros(len(merged), dtype=float)
-    moving_rel = dv_sq > 1e-12
+    moving_rel = dv_sq > _REL_VEL_SQ_EPS
     tau_cpa[moving_rel] = np.maximum(0.0, -dr_dot_dv[moving_rel] / dv_sq[moving_rel])
-
-    cpa_x = dr_x + tau_cpa * dv_x
-    cpa_y = dr_y + tau_cpa * dv_y
-    d_cpa = np.hypot(cpa_x, cpa_y)
+    d_cpa = np.hypot(dr_x + tau_cpa * dv_x, dr_y + tau_cpa * dv_y)
 
     closing_speed = np.where(
-        curr_dist > 1e-9,
-        np.maximum(0.0, -dr_dot_dv / np.maximum(curr_dist, 1e-9)),
+        curr_dist > _DIST_EPS,
+        np.maximum(0.0, -dr_dot_dv / np.maximum(curr_dist, _DIST_EPS)),
         0.0,
     )
 
@@ -517,64 +501,42 @@ def compute_shared_space_cpa(
     return out.sort_values([FRAME_COL, "ped_id", "wheeler_id"]).reset_index(drop=True)
 
 
-def _classify_single_coco17_pose(
+def _estimate_head_pitch_deg(
     kp: npt.NDArray[np.float64],
     sc: npt.NDArray[np.float64],
-    min_confidence: float = 0.30,
-) -> dict[str, float | bool | int | str]:
-    """Classify a single (17, 2) MS-COCO skeleton into smartphone distraction posture."""
-    # Required torso landmarks: shoulders (5, 6) and hips (11, 12)
-    torso_idxs = [5, 6, 11, 12]
-    if np.any(sc[torso_idxs] < min_confidence):
-        return {
-            "distracted": False,
-            "distraction_score": 0.0,
-            "posture_class": "low_confidence",
-            "head_pitch_deg": 0.0,
-            "elbow_angle_deg": 180.0,
-            "gaze_state": 1,
-        }
-
-    mid_shoulder = 0.5 * (kp[5] + kp[6])
-    mid_hip = 0.5 * (kp[11] + kp[12])
-    trunk_vec = mid_shoulder - mid_hip
-    torso_len = float(np.linalg.norm(trunk_vec))
-    if torso_len < 1e-6:
-        return {
-            "distracted": False,
-            "distraction_score": 0.0,
-            "posture_class": "low_confidence",
-            "head_pitch_deg": 0.0,
-            "elbow_angle_deg": 180.0,
-            "gaze_state": 1,
-        }
-
-    # Coordinate-system-invariant cranial unit vector (hip -> shoulder)
-    trunk_up = trunk_vec / torso_len
-
-    # 1. Head pitch estimation from nose (0) and ears (3, 4)
-    nose_ok = sc[0] >= min_confidence
+    mid_shoulder: npt.NDArray[np.float64],
+    trunk_up: npt.NDArray[np.float64],
+    torso_len: float,
+    min_confidence: float,
+) -> float:
+    """Estimate torso-normalized downward head pitch in degrees from nose/ears."""
+    if sc[0] < min_confidence:
+        return 0.0
+    neck_proj = float(np.dot(kp[0] - mid_shoulder, trunk_up)) / torso_len
+    pitch_neck = float(np.clip((_NECK_REF_PROJ - neck_proj) * _NECK_PITCH_SCALE, 0.0, _MAX_NECK_PITCH_DEG))
     ears_ok = [idx for idx in (3, 4) if sc[idx] >= min_confidence]
-    head_pitch_deg = 0.0
-    if nose_ok:
-        neck_proj = float(np.dot(kp[0] - mid_shoulder, trunk_up)) / torso_len
-        pitch_neck = float(np.clip((0.36 - neck_proj) * 185.0, 0.0, 65.0))
-        if ears_ok:
-            ear_mid = np.mean(kp[ears_ok], axis=0)
-            ear_to_nose = kp[0] - ear_mid
-            en_dist = float(np.linalg.norm(ear_to_nose))
-            if en_dist > 1e-6:
-                sag = -float(np.dot(ear_to_nose, trunk_up)) / en_dist
-                pitch_ear = math.degrees(math.asin(float(np.clip(sag, -1.0, 1.0))))
-                head_pitch_deg = max(0.0, 0.65 * max(0.0, pitch_ear) + 0.35 * pitch_neck)
-            else:
-                head_pitch_deg = pitch_neck
-        else:
-            head_pitch_deg = pitch_neck
+    if not ears_ok:
+        return pitch_neck
 
-    # 2. Bilateral elbow interior angle & hand-in-phone-zone geometry
-    # Left arm: (5, 7, 9), Right arm: (6, 8, 10)
-    min_elbow_deg = 180.0
+    ear_to_nose = kp[0] - np.mean(kp[ears_ok], axis=0)
+    en_dist = float(np.linalg.norm(ear_to_nose))
+    if en_dist <= _SPEED_EPS:
+        return pitch_neck
+    sag = -float(np.dot(ear_to_nose, trunk_up)) / en_dist
+    pitch_ear = math.degrees(math.asin(float(np.clip(sag, -1.0, 1.0))))
+    return max(0.0, _EAR_PITCH_WEIGHT * max(0.0, pitch_ear) + _NECK_PITCH_WEIGHT * pitch_neck)
+
+
+def _evaluate_arm_zones(
+    kp: npt.NDArray[np.float64],
+    sc: npt.NDArray[np.float64],
+    mid_hip: npt.NDArray[np.float64],
+    trunk_up: npt.NDArray[np.float64],
+    torso_len: float,
+    min_confidence: float,
+) -> Tuple[float, bool, bool]:
+    """Compute minimum elbow angle and chest/ear wrist-zone flags."""
+    min_elbow_deg = _STRAIGHT_ELBOW_DEG
     hand_at_chest = False
     hand_at_ear = False
 
@@ -585,26 +547,62 @@ def _classify_single_coco17_pose(
         u_fore = kp[wr_i] - kp[el_i]
         nu = float(np.linalg.norm(u_up))
         nf = float(np.linalg.norm(u_fore))
-        if nu < 1e-6 or nf < 1e-6:
+        if nu < _SPEED_EPS or nf < _SPEED_EPS:
             continue
         cos_ang = float(np.clip(np.dot(u_up, u_fore) / (nu * nf), -1.0, 1.0))
         ang_deg = math.degrees(math.acos(cos_ang))
         min_elbow_deg = min(min_elbow_deg, ang_deg)
 
-        # Wrist height along trunk from hip (0 = hip, 1 = shoulder, >1 = head)
         wr_rel_hip = kp[wr_i] - mid_hip
         wr_h = float(np.dot(wr_rel_hip, trunk_up)) / torso_len
         wr_lat = float(np.linalg.norm(wr_rel_hip - float(np.dot(wr_rel_hip, trunk_up)) * trunk_up)) / torso_len
 
-        if ang_deg <= 120.0 and (0.35 <= wr_h <= 1.05) and (wr_lat <= 0.70):
+        if (
+            ang_deg <= _CHEST_MAX_ELBOW_DEG
+            and (_CHEST_MIN_WRIST_H <= wr_h <= _CHEST_MAX_WRIST_H)
+            and (wr_lat <= _CHEST_MAX_WRIST_LAT)
+        ):
             hand_at_chest = True
-        if ang_deg <= 95.0 and (wr_h > 1.02) and (wr_lat <= 0.65):
+        if ang_deg <= _EAR_MAX_ELBOW_DEG and (wr_h > _EAR_MIN_WRIST_H) and (wr_lat <= _EAR_MAX_WRIST_LAT):
             hand_at_ear = True
 
-    pitch_score = float(np.clip((head_pitch_deg - 18.0) / 22.0, 0.0, 1.0))
-    flex_score = float(np.clip((135.0 - min_elbow_deg) / 55.0, 0.0, 1.0))
+    return min_elbow_deg, hand_at_chest, hand_at_ear
 
-    if hand_at_chest and head_pitch_deg >= 24.0:
+
+def _classify_single_coco17_pose(
+    kp: npt.NDArray[np.float64],
+    sc: npt.NDArray[np.float64],
+    min_confidence: float = 0.30,
+) -> dict[str, Union[float, bool, int, str]]:
+    """Classify a single (17, 2) MS-COCO skeleton into smartphone distraction posture."""
+    low_conf_res: dict[str, Union[float, bool, int, str]] = {
+        "distracted": False,
+        "distraction_score": 0.0,
+        "posture_class": "low_confidence",
+        "head_pitch_deg": 0.0,
+        "elbow_angle_deg": _STRAIGHT_ELBOW_DEG,
+        "gaze_state": 1,
+    }
+    if np.any(sc[[5, 6, 11, 12]] < min_confidence):
+        return low_conf_res
+
+    mid_shoulder = 0.5 * (kp[5] + kp[6])
+    mid_hip = 0.5 * (kp[11] + kp[12])
+    trunk_vec = mid_shoulder - mid_hip
+    torso_len = float(np.linalg.norm(trunk_vec))
+    if torso_len < _SPEED_EPS:
+        return low_conf_res
+
+    trunk_up = trunk_vec / torso_len
+    head_pitch_deg = _estimate_head_pitch_deg(kp, sc, mid_shoulder, trunk_up, torso_len, min_confidence)
+    min_elbow_deg, hand_at_chest, hand_at_ear = _evaluate_arm_zones(
+        kp, sc, mid_hip, trunk_up, torso_len, min_confidence
+    )
+
+    pitch_score = float(np.clip((head_pitch_deg - _PITCH_SCORE_OFFSET_DEG) / _PITCH_SCORE_SPAN_DEG, 0.0, 1.0))
+    flex_score = float(np.clip((_FLEX_SCORE_REF_DEG - min_elbow_deg) / _FLEX_SCORE_SPAN_DEG, 0.0, 1.0))
+
+    if hand_at_chest and head_pitch_deg >= _PHONE_VIEW_MIN_PITCH_DEG:
         score = float(np.clip(0.55 * pitch_score + 0.45 * flex_score + 0.25, 0.0, 1.0))
         return {
             "distracted": True,
@@ -624,7 +622,7 @@ def _classify_single_coco17_pose(
             "elbow_angle_deg": min_elbow_deg,
             "gaze_state": 1,
         }
-    if head_pitch_deg >= 35.0:
+    if head_pitch_deg >= _DOWNWARD_GAZE_MIN_PITCH_DEG:
         return {
             "distracted": True,
             "distraction_score": pitch_score,
@@ -637,7 +635,7 @@ def _classify_single_coco17_pose(
     att_score = 0.5 * pitch_score + 0.2 * flex_score
     return {
         "distracted": False,
-        "distraction_score": float(min(0.45, att_score)),
+        "distraction_score": float(min(_ATTENTIVE_SCORE_CAP, att_score)),
         "posture_class": "attentive",
         "head_pitch_deg": head_pitch_deg,
         "elbow_angle_deg": min_elbow_deg,
@@ -647,9 +645,9 @@ def _classify_single_coco17_pose(
 
 def classify_pose_distraction_coco17(
     keypoints_17x2: npt.ArrayLike,
-    scores_17: npt.ArrayLike | None = None,
+    scores_17: Optional[npt.ArrayLike] = None,
     min_confidence: float = 0.30,
-) -> dict[str, float | bool | int | str] | pd.DataFrame:
+) -> Union[dict[str, Union[float, bool, int, str]], pd.DataFrame]:
     """Classify pedestrian smartphone distraction from MS-COCO 17-keypoint 2D skeletons.
 
     Evaluates torso-normalized downward head pitch (nose-to-ear sag and neck
