@@ -28,12 +28,12 @@ dependencies = [
     "h5py~=3.13,<4.0",
 ]
 
+requires-python = ">=3.11"
+
 [project.optional-dependencies]
 notebook = [
     "ipython>=8.0",
 ]
-
-requires-python = ">=3.11"
 
 [project.urls]
 homepage = "https://pedpy.readthedocs.io/"

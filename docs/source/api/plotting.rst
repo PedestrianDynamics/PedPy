@@ -14,4 +14,3 @@ Animations
     :members:
     :no-private-members:
     :no-special-members:
-
