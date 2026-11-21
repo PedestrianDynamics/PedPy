@@ -1,7 +1,7 @@
 """Load trajectories to the internal trajectory data format."""
 
 import pathlib
-from typing import Optional
+from typing import Mapping, Optional, Sequence, Union
 
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.io.helper import TrajectoryUnit
@@ -13,6 +13,7 @@ def load_trajectory(
     trajectory_file: pathlib.Path,
     default_frame_rate: Optional[float] = None,
     default_unit: Optional[TrajectoryUnit] = None,
+    extra_columns: Optional[Union[Sequence[str], Mapping[int, str]]] = None,
 ) -> TrajectoryData:
     """Loads the trajectory file in the internal :class:`~trajectory_data.TrajectoryData` format.
 
@@ -26,6 +27,8 @@ def load_trajectory(
             from file is used
         default_unit: unit in which the coordinates are stored
                 in the file, None if unit should be parsed from the file
+        extra_columns: optional extra columns beyond ``id``, ``frame``, ``x``,
+            ``y`` (0-based indices ``>= 4``) to preserve on ``traj.data``
 
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData`
@@ -35,4 +38,5 @@ def load_trajectory(
         trajectory_file=trajectory_file,
         default_frame_rate=default_frame_rate,
         default_unit=default_unit,
+        extra_columns=extra_columns,
     )

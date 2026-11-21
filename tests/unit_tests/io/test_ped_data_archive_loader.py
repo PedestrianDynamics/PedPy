@@ -737,3 +737,49 @@ def test_load_walkable_area_from_ped_data_archive_hdf5_non_file(tmp_path):
         load_walkable_area_from_ped_data_archive_hdf5(trajectory_file=tmp_path)
 
     assert "is not a file" in str(error_info.value)
+
+
+def test_load_trajectory_from_txt_preserve_extra_columns(tmp_path: pathlib.Path) -> None:
+    from pedpy.errors import PedPyTypeError, PedPyValueError
+    from pedpy.io.trajectory_loader import load_trajectory
+
+    traj_txt = tmp_path / "extra_cols.txt"
+    traj_txt.write_text(
+        "#framerate: 10.0\n# id frame x/m y/m z/m group marker_id\n1 0 1.5 2.5 1.72 10 101\n2 1 3.0 4.0 1.65 20 202\n",
+        encoding="utf-8",
+    )
+
+    # Default drops extra columns
+    traj_default = load_trajectory_from_txt(trajectory_file=traj_txt)
+    assert "z" not in traj_default.data.columns
+    assert "marker_id" not in traj_default.data.columns
+
+    # Sequence of extra column names (columns 4, 5, 6)
+    traj_seq = load_trajectory_from_txt(
+        trajectory_file=traj_txt,
+        extra_columns=["z", "group", "marker_id"],
+    )
+    assert list(traj_seq.data["z"]) == pytest.approx([1.72, 1.65])
+    assert list(traj_seq.data["group"]) == [10, 20]
+    assert list(traj_seq.data["marker_id"]) == [101, 202]
+
+    # Mapping of unsorted 0-based indices >= 4 via load_trajectory
+    traj_map = load_trajectory(
+        trajectory_file=traj_txt,
+        extra_columns={6: "marker_id", 4: "z"},
+    )
+    assert list(traj_map.data["z"]) == pytest.approx([1.72, 1.65])
+    assert list(traj_map.data["marker_id"]) == [101, 202]
+    assert "group" not in traj_map.data.columns
+
+    # Invalid inputs raise appropriate PedPy errors
+    with pytest.raises(PedPyTypeError):
+        load_trajectory_from_txt(trajectory_file=traj_txt, extra_columns="z")
+    with pytest.raises(PedPyValueError, match=">= 4"):
+        load_trajectory_from_txt(trajectory_file=traj_txt, extra_columns={2: "bad"})
+    with pytest.raises(PedPyValueError, match="reserved"):
+        load_trajectory_from_txt(trajectory_file=traj_txt, extra_columns=["x"])
+    with pytest.raises(PedPyValueError, match="Duplicate"):
+        load_trajectory_from_txt(trajectory_file=traj_txt, extra_columns=["z", "z"])
+    with pytest.raises(PedPyValueError, match="could not be parsed"):
+        load_trajectory_from_txt(trajectory_file=traj_txt, extra_columns={9: "missing"})
