@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2026 Forschungszentrum Jülich GmbH, IAS-7
+# SPDX-FileCopyrightText: 2024-2026 Tobias Schrödter
+# SPDX-License-Identifier: MIT
+
 name: pedpy-ci
 
 on:
@@ -55,6 +59,15 @@ jobs:
       - name: Check format, docstring style, typing, linting
         run: |
           ${{github.workspace}}/scripts/ci.sh
+
+  spdx-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v7
+
+      - name: Check SPDX / REUSE compliance
+        uses: fsfe/reuse-action@v6
 
 
   build:

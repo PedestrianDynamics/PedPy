@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2026 Forschungszentrum Jülich GmbH, IAS-7
+# SPDX-FileCopyrightText: 2024-2026 Tobias Schrödter
+# SPDX-License-Identifier: MIT
+
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.3
@@ -60,3 +64,10 @@ repos:
       - id: destroyed-symlinks
       - id: mixed-line-ending
         args: ['--fix=lf']
+
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.2.0
+    hooks:
+      - id: reuse
+        name: Check SPDX headers (reuse)
+        additional_dependencies: ["charset-normalizer"]

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2022-2026 Forschungszentrum Jülich GmbH, IAS-7
+# SPDX-FileCopyrightText: 2024-2026 Tobias Schrödter
+# SPDX-License-Identifier: MIT
+
 import pandas as pd
 
 from pedpy.column_identifier import *
