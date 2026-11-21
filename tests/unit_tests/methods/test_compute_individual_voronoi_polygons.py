@@ -326,27 +326,17 @@ class TestCutoff:
 
 
 # ===========================================================================
-# 8. Blind points behavior (use_blind_points) – deprecated parameter
+# 8. Deprecated parameter: use_blind_points
 # ===========================================================================
-class TestBlindPoints:
-    """Test that use_blind_points is deprecated and has no effect.
+class TestBlindPointsDeprecation:
+    """Verify passing use_blind_points (any value) emits DeprecationWarning."""
 
-    The parameter is kept for backwards compatibility only. All behavioral
-    correctness for various pedestrian counts is covered by the other test
-    classes (TestSinglePedestrian, TestSymmetricPlacement, etc.).
-    """
-
-    def test_passing_true_emits_deprecation_warning(self, single_ped_one_frame):
-        """Passing use_blind_points=True must emit a DeprecationWarning."""
+    @pytest.mark.parametrize("value", [True, False, None])
+    def test_passing_use_blind_points_emits_deprecation_warning(self, single_ped_one_frame, value):
+        """Passing any value for use_blind_points must emit a DeprecationWarning."""
         traj, wa = single_ped_one_frame
         with pytest.warns(DeprecationWarning, match="use_blind_points"):
-            compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=True)
-
-    def test_passing_false_emits_deprecation_warning(self, single_ped_one_frame):
-        """Passing use_blind_points=False must emit a DeprecationWarning."""
-        traj, wa = single_ped_one_frame
-        with pytest.warns(DeprecationWarning, match="use_blind_points"):
-            compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=False)
+            compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa, use_blind_points=value)
 
     def test_omitting_parameter_emits_no_warning(self, single_ped_one_frame):
         """Not passing use_blind_points must not emit any DeprecationWarning."""
@@ -354,32 +344,6 @@ class TestBlindPoints:
         with warnings.catch_warnings():
             warnings.simplefilter("error", DeprecationWarning)
             compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
-
-    def test_parameter_is_noop_true_vs_omitted(self, single_ped_one_frame):
-        """use_blind_points=True must produce the same result as omitting it."""
-        traj, wa = single_ped_one_frame
-        result_default = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
-        with pytest.warns(DeprecationWarning):
-            result_explicit = compute_individual_voronoi_polygons(
-                traj_data=traj, walkable_area=wa, use_blind_points=True
-            )
-        pd.testing.assert_frame_equal(
-            result_default.reset_index(drop=True),
-            result_explicit.reset_index(drop=True),
-        )
-
-    def test_parameter_is_noop_false_vs_omitted(self, four_peds_one_frame):
-        """use_blind_points=False must produce the same result as omitting it."""
-        traj, wa = four_peds_one_frame
-        result_default = compute_individual_voronoi_polygons(traj_data=traj, walkable_area=wa)
-        with pytest.warns(DeprecationWarning):
-            result_explicit = compute_individual_voronoi_polygons(
-                traj_data=traj, walkable_area=wa, use_blind_points=False
-            )
-        pd.testing.assert_frame_equal(
-            result_default.sort_values([ID_COL, FRAME_COL]).reset_index(drop=True),
-            result_explicit.sort_values([ID_COL, FRAME_COL]).reset_index(drop=True),
-        )
 
 
 # ===========================================================================

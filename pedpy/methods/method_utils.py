@@ -6,7 +6,7 @@ import logging
 import warnings
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Callable, Final, Optional, Tuple, TypeAlias
+from typing import Any, Callable, Final, Optional, Tuple, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -475,12 +475,15 @@ def compute_time_distance_line(*, traj_data: TrajectoryData, measurement_line: M
     return df_distance_time.loc[:, [ID_COL, FRAME_COL, DISTANCE_COL, TIME_COL]]
 
 
+_UNSET: Final[Any] = object()
+
+
 def compute_individual_voronoi_polygons(
     *,
     traj_data: TrajectoryData,
     walkable_area: WalkableArea,
     cut_off: Optional[Cutoff] = None,
-    use_blind_points: Optional[bool] = None,
+    use_blind_points: Optional[bool] = _UNSET,
 ) -> pd.DataFrame:
     """Compute the individual Voronoi polygon for each person and frame.
 
@@ -536,7 +539,7 @@ def compute_individual_voronoi_polygons(
         :class:`shapely.Polygon`), and 'density' in :math:`1/m^2`.
     """
     _check_trajectory_data(traj_data)
-    if use_blind_points is not None:
+    if use_blind_points is not _UNSET:
         warnings.warn(
             "The parameter 'use_blind_points' is deprecated and has no "
             "effect. It will be removed in a future version. The underlying "

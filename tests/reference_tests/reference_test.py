@@ -183,7 +183,6 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory,
         walkable_area=walkable_area,
-        use_blind_points=False,
     )
     result, _ = compute_voronoi_density(
         individual_voronoi_data=individual_voronoi,
@@ -195,138 +194,6 @@ def test_voronoi_density(walkable_area_polygon, measurement_area, folder):
     peds_per_frame = trajectory.data.groupby(FRAME_COL).size()
     frames_with_enough_peds = peds_per_frame[peds_per_frame >= 4].index
     result = result[result[FRAME_COL].isin(frames_with_enough_peds)]
-
-    # in JPSreport not all frames are written to the result (e.g., when not
-    # enough peds inside ma), hence only compare these who are in reference
-    # frame and check if the rest is zero
-    assert np.isin(reference_result.index.values, result.frame.values).all()
-    assert np.isclose(
-        result[result.frame.isin(reference_result.index)][DENSITY_COL],
-        reference_result[DENSITY_COL],
-        atol=TOLERANCE,
-    ).all()
-    assert (result.loc[~result.frame.isin(reference_result.index)].values == 0).all()
-
-
-@pytest.mark.parametrize(
-    "walkable_area_polygon, measurement_area, folder",
-    [
-        (
-            shapely.from_wkt(
-                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
-                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
-                "-2.25 0.53, -2.25 6.25, 4 6.25))"
-            ),
-            MeasurementArea("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
-            ROOT_DIR / pathlib.Path("data/bottleneck"),
-        ),
-        (
-            shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
-            ROOT_DIR / pathlib.Path("data/corridor"),
-        ),
-        (
-            shapely.from_wkt("POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"),
-            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
-            ROOT_DIR / pathlib.Path("data/corner"),
-        ),
-    ],
-)
-def test_voronoi_density_blind_points(walkable_area_polygon, measurement_area, folder):
-    reference_result = pd.read_csv(
-        next(
-            folder.glob(
-                "results/Fundamental_Diagram/Classical_Voronoi/rho_v_Voronoi_Voronoi_traj.txt_id_1_blind_points.dat"
-            )
-        ),
-        sep="\t",
-        comment="#",
-        names=[FRAME_COL, DENSITY_COL],
-        index_col=0,
-        usecols=[FRAME_COL, DENSITY_COL],
-    )
-
-    trajectory = load_trajectory(trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER)
-    walkable_area = WalkableArea(walkable_area_polygon)
-
-    individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory,
-        walkable_area=walkable_area,
-        use_blind_points=True,
-    )
-    result, _ = compute_voronoi_density(
-        individual_voronoi_data=individual_voronoi,
-        measurement_area=measurement_area,
-    )
-    # as there is a bug in the blind point computation in JPSreport in the
-    # bottleneck test case ignore the last 20 frames.
-    if folder.name == "bottleneck":
-        result = result[result.index < 930]
-        reference_result = reference_result[reference_result.index < 930]
-
-    # in JPSreport not all frames are written to the result (e.g., when not
-    # enough peds inside ma), hence only compare these who are in reference
-    # frame and check if the rest is zero
-    assert np.isin(reference_result.index.values, result.frame.values).all()
-    assert np.isclose(
-        result[result.frame.isin(reference_result.index)][DENSITY_COL],
-        reference_result[DENSITY_COL],
-        atol=TOLERANCE,
-    ).all()
-    assert (result.loc[~result.frame.isin(reference_result.index)].values == 0).all()
-
-
-@pytest.mark.parametrize(
-    "walkable_area_polygon, measurement_area, folder",
-    [
-        (
-            shapely.from_wkt(
-                "POLYGON ((4 6.25, 4 0.53, 2.4 0.53, 2.4 -0.53, 4 -0.53, "
-                "4 -8.5, -2.25 -8.5, -2.25 -0.53, -0.6 -0.53, -0.6 0.53, "
-                "-2.25 0.53, -2.25 6.25, 4 6.25))"
-            ),
-            MeasurementArea("POLYGON((2.4 0.53, 2.4 -0.53, -0.6 -0.53, -0.6 0.53, 2.4 0.53))"),
-            ROOT_DIR / pathlib.Path("data/bottleneck"),
-        ),
-        (
-            shapely.from_wkt("POLYGON ((-10 0, -10 5, 10 5, 10 0, -10 0))"),
-            MeasurementArea("POLYGON ((-1.5 0, -1.5 5, 1.5 5, 1.5 0, -1.5 0))"),
-            ROOT_DIR / pathlib.Path("data/corridor"),
-        ),
-        (
-            shapely.from_wkt("POLYGON ((0 0, 0 5, -3 5, -3 -3, 5 -3, 5 0, 0 0))"),
-            MeasurementArea("POLYGON ((0 0, -3 0, -3 2, 0 2, 0 0))"),
-            ROOT_DIR / pathlib.Path("data/corner"),
-        ),
-    ],
-)
-def test_voronoi_density_blind_points_cutoff(walkable_area_polygon, measurement_area, folder):
-    reference_result = pd.read_csv(
-        next(
-            folder.glob(
-                "results/Fundamental_Diagram/Classical_Voronoi/"
-                "rho_v_Voronoi_Voronoi_traj.txt_id_1_blind_points_cut_off.dat"
-            )
-        ),
-        sep="\t",
-        comment="#",
-        names=[FRAME_COL, DENSITY_COL],
-        index_col=0,
-        usecols=[FRAME_COL, DENSITY_COL],
-    )
-
-    trajectory = load_trajectory(trajectory_file=folder / "traj.txt", default_unit=TrajectoryUnit.METER)
-    walkable_area = WalkableArea(walkable_area_polygon)
-    individual_voronoi = compute_individual_voronoi_polygons(
-        traj_data=trajectory,
-        walkable_area=walkable_area,
-        use_blind_points=True,
-        cut_off=Cutoff(radius=0.8, quad_segments=3),
-    )
-    result, _ = compute_voronoi_density(
-        individual_voronoi_data=individual_voronoi,
-        measurement_area=measurement_area,
-    )
 
     # in JPSreport not all frames are written to the result (e.g., when not
     # enough peds inside ma), hence only compare these who are in reference
@@ -389,7 +256,6 @@ def test_voronoi_speed(walkable_area_polygon, measurement_area, folder, velocity
     individual_voronoi = compute_individual_voronoi_polygons(
         traj_data=trajectory,
         walkable_area=walkable_area,
-        use_blind_points=False,
     )
 
     intersecting_voronoi = compute_intersecting_polygons(
@@ -779,7 +645,6 @@ def test_profiles(
         traj_data=trajectory,
         walkable_area=walkable_area,
         cut_off=Cutoff(radius=cut_off_radius, quad_segments=quad_segments),
-        use_blind_points=False,
     )
     individual_speed = compute_individual_speed(
         traj_data=trajectory,
