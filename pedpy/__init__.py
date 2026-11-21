@@ -126,6 +126,10 @@ from .methods.speed_calculator import (
     compute_species,
     compute_voronoi_speed,
 )
+from .plotting.animation import (
+    animate_trajectories,
+    animate_voronoi_cells,
+)
 from .plotting.plotting import (
     PEDPY_BLUE,
     PEDPY_GREEN,
@@ -241,6 +245,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "plot_voronoi_cells",
     "plot_walkable_area",
     "plot_acceleration",
+    "animate_trajectories",
+    "animate_voronoi_cells",
     "ID_COL",
     "FRAME_COL",
     "X_COL",

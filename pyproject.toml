@@ -30,6 +30,11 @@ dependencies = [
 
 requires-python = ">=3.11"
 
+[project.optional-dependencies]
+notebook = [
+    "ipython>=8.0",
+]
+
 [project.urls]
 homepage = "https://pedpy.readthedocs.io/"
 
@@ -204,6 +209,7 @@ exclude = "^(helper|docs|scripts|tests)(/|$)"
 
 [[tool.mypy.overrides]]
 module = [
+    "IPython.*",
     "matplotlib.*",
     "mpl_toolkits.*",
     "pandas.*",
