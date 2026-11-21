@@ -117,7 +117,11 @@ from .methods.profile_calculator import (
     compute_speed_profile,
     get_grid_cells,
 )
-from .methods.spatial_analysis import compute_pair_distribution_function
+from .methods.spatial_analysis import (
+    PairNormalizationMethod,
+    compute_approach_rate_pair_distribution,
+    compute_pair_distribution_function,
+)
 from .methods.speed_calculator import (
     compute_individual_speed,
     compute_line_speed,
@@ -194,6 +198,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "is_individual_speed_valid",
     "is_species_valid",
     "is_trajectory_valid",
+    "PairNormalizationMethod",
+    "compute_approach_rate_pair_distribution",
     "compute_pair_distribution_function",
     "DensityMethod",
     "RsetMethod",
