@@ -28,6 +28,11 @@ dependencies = [
     "h5py~=3.13,<4.0",
 ]
 
+[project.optional-dependencies]
+notebook = [
+    "ipython>=8.0",
+]
+
 requires-python = ">=3.11"
 
 [project.urls]
@@ -204,6 +209,7 @@ exclude = "^(helper|docs|scripts|tests)(/|$)"
 
 [[tool.mypy.overrides]]
 module = [
+    "IPython.*",
     "matplotlib.*",
     "mpl_toolkits.*",
     "pandas.*",
