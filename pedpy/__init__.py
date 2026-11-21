@@ -93,6 +93,7 @@ from .methods.flow_calculator import (
 )
 from .methods.method_utils import (
     AccelerationCalculation,
+    BorderFillMethod,
     Cutoff,
     SpeedCalculation,
     compute_frame_range_in_area,
@@ -205,6 +206,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_speed_profile",
     "get_grid_cells",
     "SpeedCalculation",
+    "BorderFillMethod",
     "compute_individual_speed",
     "compute_line_speed",
     "compute_mean_speed_per_frame",

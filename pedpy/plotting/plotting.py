@@ -631,16 +631,18 @@ def _plot_violin_xy(
     y_label = kwargs.pop("y_label", "")
 
     axes.set_title(title)
-    violin_parts = axes.violinplot(
-        data,
-        showmeans=True,
-        showextrema=True,
-        showmedians=True,
-        **kwargs,
-    )
-    for parts in violin_parts["bodies"]:  # type: ignore[attr-defined]
-        parts.set_facecolor(facecolor)
-        parts.set_edgecolor(edgecolor)
+    clean_data = data.dropna()
+    if not clean_data.empty:
+        violin_parts = axes.violinplot(
+            clean_data,
+            showmeans=True,
+            showextrema=True,
+            showmedians=True,
+            **kwargs,
+        )
+        for parts in violin_parts["bodies"]:  # type: ignore[attr-defined]
+            parts.set_facecolor(facecolor)
+            parts.set_edgecolor(edgecolor)
 
     axes.set_xlabel(x_label)
     axes.set_ylabel(y_label)

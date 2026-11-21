@@ -20,10 +20,12 @@ from pedpy.column_identifier import (
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError, SpeedError
+from pedpy.errors import InputError, PedPyValueError, SpeedError
 from pedpy.methods.method_utils import (
+    BorderFillMethod,
     DataValidationStatus,
     SpeedCalculation,
+    _apply_border_fill,
     _apply_lambda_for_intersecting_frames,
     _check_trajectory_data,
     _compute_individual_movement,
@@ -40,6 +42,7 @@ def compute_individual_speed(
     movement_direction: Optional[npt.NDArray[np.float64]] = None,
     compute_velocity: bool = False,
     speed_calculation: SpeedCalculation = SpeedCalculation.BORDER_EXCLUDE,
+    border_fill: BorderFillMethod = BorderFillMethod.NONE,
 ) -> pd.DataFrame:
     r"""Compute the individual speed for each pedestrian.
 
@@ -167,6 +170,19 @@ def compute_individual_speed(
 
     If :code:`compute_velocity` is `True` also :math:`\bar{X}` is returned.
 
+    **Filling border frames:**
+
+    When using :attr:`~method_utils.SpeedCalculation.BORDER_EXCLUDE` or
+    :attr:`~method_utils.SpeedCalculation.BORDER_ADAPTIVE`, border frames where
+    the window cannot be formed are dropped by default
+    (:attr:`~method_utils.BorderFillMethod.NONE`). Setting ``border_fill`` to
+    :attr:`~method_utils.BorderFillMethod.NAN` or
+    :attr:`~method_utils.BorderFillMethod.LAST_VALUE` preserves a 1:1 row
+    alignment with ``traj_data.data`` by inserting ``NaN`` or forward-/backward-
+    filling from the nearest valid value of the same pedestrian. ``border_fill``
+    has no effect when :attr:`~method_utils.SpeedCalculation.BORDER_SINGLE_SIDED`
+    is used.
+
     Args:
         traj_data (TrajectoryData): trajectory data
         frame_step (int): gives the size of time interval for calculating the
@@ -177,6 +193,9 @@ def compute_individual_speed(
         compute_velocity (bool): compute the x and y components of the velocity
         speed_calculation (method_utils.SpeedCalculation): method used to
             compute the speed at the borders of the individual trajectories
+        border_fill (method_utils.BorderFillMethod): strategy used to fill
+            dropped border frames so the output has the same length as
+            ``traj_data.data`` (default: ``BorderFillMethod.NONE``)
 
     Returns:
         DataFrame containing the columns 'id', 'frame', and 'speed' in m/s,
@@ -184,6 +203,9 @@ def compute_individual_speed(
         :code:`compute_velocity` is True
     """
     _check_trajectory_data(traj_data)
+    if not isinstance(border_fill, BorderFillMethod):
+        raise PedPyValueError(f"border fill method not accepted: {border_fill!r}")
+
     df_movement = _compute_individual_movement(
         traj_data=traj_data,
         frame_step=frame_step,
@@ -195,6 +217,13 @@ def compute_individual_speed(
         movement_direction=movement_direction,
         compute_velocity=compute_velocity,
     )
+
+    if speed_calculation != SpeedCalculation.BORDER_SINGLE_SIDED:
+        df_speed = _apply_border_fill(
+            result_df=df_speed,
+            traj_data=traj_data,
+            border_fill=border_fill,
+        )
 
     return df_speed
 
