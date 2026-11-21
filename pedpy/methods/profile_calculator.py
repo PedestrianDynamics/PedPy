@@ -259,6 +259,15 @@ def compute_profiles(  # noqa: D417
     density_profiles: list[npt.NDArray[np.float64]] = []
     speed_profiles: list[npt.NDArray[np.float64]] = []
 
+    active_indices: Optional[npt.NDArray[np.intp]] = None
+    active_cells: Optional[npt.NDArray[shapely.Polygon]] = None
+    cell_tree: Optional[shapely.STRtree] = None
+    if needs_intersection:
+        active_indices, cell_tree, active_cells = _prepare_active_grid_tree(
+            grid_cells=grid_cells,
+            walkable_area=walkable_area,
+        )
+
     for _, frame_data in data.groupby(FRAME_COL):
         # Precompute intersection once; shared by density and speed when both
         # need it, avoiding a redundant shapely intersection call per frame.
@@ -267,6 +276,9 @@ def compute_profiles(  # noqa: D417
             grid_intersections_area_frame = _compute_frame_grid_intersection(
                 frame_data=frame_data,
                 grid_cells=grid_cells,
+                active_indices=active_indices,
+                cell_tree=cell_tree,
+                active_cells=active_cells,
             )
 
         density = _compute_density_for_frame(
@@ -395,12 +407,30 @@ def compute_density_profile(
     if density_method == DensityMethod.GAUSSIAN and gaussian_width is None:
         raise PedPyValueError("Computing a Gaussian density profile needs a parameter 'gaussian_width'.")
 
+    active_indices: Optional[npt.NDArray[np.intp]] = None
+    active_cells: Optional[npt.NDArray[shapely.Polygon]] = None
+    cell_tree: Optional[shapely.STRtree] = None
+    if density_method == DensityMethod.VORONOI:
+        active_indices, cell_tree, active_cells = _prepare_active_grid_tree(
+            grid_cells=grid_cells,
+            walkable_area=walkable_area,
+        )
+
     density_profiles = []
     for _, frame_data in data_grouped_by_frame:
+        grid_intersections_area_frame = None
+        if density_method == DensityMethod.VORONOI:
+            grid_intersections_area_frame = _compute_frame_grid_intersection(
+                frame_data=frame_data,
+                grid_cells=grid_cells,
+                active_indices=active_indices,
+                cell_tree=cell_tree,
+                active_cells=active_cells,
+            )
         density = _compute_density_for_frame(
             frame_data=frame_data,
             density_method=density_method,
-            grid_intersections_area_frame=None,
+            grid_intersections_area_frame=grid_intersections_area_frame,
             grid_cells=grid_cells,
             bounds=bounds,
             x_center=x_center,
@@ -700,11 +730,23 @@ def compute_speed_profile(
     if speed_method == SpeedMethod.GAUSSIAN and gaussian_width is None:
         raise PedPyValueError("Computing a Gaussian speed profile needs a parameter 'gaussian_width'.")
 
+    needs_on_the_fly = grid_intersections_area is None and speed_method in (
+        SpeedMethod.VORONOI,
+        SpeedMethod.ARITHMETIC,
+    )
+    active_indices: Optional[npt.NDArray[np.intp]] = None
+    active_cells: Optional[npt.NDArray[shapely.Polygon]] = None
+    cell_tree: Optional[shapely.STRtree] = None
+    if needs_on_the_fly:
+        active_indices, cell_tree, active_cells = _prepare_active_grid_tree(
+            grid_cells=grid_cells,
+            walkable_area=walkable_area,
+        )
+
     speed_profiles = []
     for frame, frame_data in data_grouped_by_frame:
         # Resolve the frame-level intersection from the global matrix when the
-        # caller pre-computed it; otherwise pass None and let the helper
-        # compute it on-the-fly.
+        # caller pre-computed it; otherwise compute using the pre-filtered STRtree.
         grid_intersections_area_frame = None
         if grid_intersections_area is not None and speed_method in (
             SpeedMethod.VORONOI,
@@ -714,6 +756,14 @@ def compute_speed_profile(
                 :,
                 data_grouped_by_frame.indices[frame],
             ]
+        elif needs_on_the_fly:
+            grid_intersections_area_frame = _compute_frame_grid_intersection(
+                frame_data=frame_data,
+                grid_cells=grid_cells,
+                active_indices=active_indices,
+                cell_tree=cell_tree,
+                active_cells=active_cells,
+            )
 
         speed = _compute_speed_for_frame(
             frame_data=frame_data,
@@ -1070,6 +1120,7 @@ def compute_grid_cell_polygon_intersection_area(
     *,
     data: pd.DataFrame,
     grid_cells: npt.NDArray[shapely.Polygon],
+    walkable_area: Optional[WalkableArea] = None,
 ) -> Tuple[
     npt.NDArray[np.float64],
     pd.DataFrame,
@@ -1100,6 +1151,8 @@ def compute_grid_cell_polygon_intersection_area(
             :func:`~method_utils.compute_individual_voronoi_polygons`)
         grid_cells: Grid cells used for computing the profiles, e.g., result
             from :func:`get_grid_cells`
+        walkable_area (WalkableArea, optional): If provided, grid cells outside
+            ``walkable_area`` are skipped prior to polygon intersection checks.
 
     Returns:
         Tuple containing first the grid cell-polygon intersection areas, and
@@ -1112,6 +1165,7 @@ def compute_grid_cell_polygon_intersection_area(
     ) = _compute_grid_polygon_intersection(
         data=data,
         grid_cells=grid_cells,
+        walkable_area=walkable_area,
     )
     return (
         grid_intersections_area,
@@ -1119,48 +1173,104 @@ def compute_grid_cell_polygon_intersection_area(
     )
 
 
+def _prepare_active_grid_tree(
+    *,
+    grid_cells: npt.NDArray[shapely.Polygon],
+    walkable_area: Optional[WalkableArea] = None,
+) -> Tuple[npt.NDArray[np.intp], shapely.STRtree, npt.NDArray[shapely.Polygon]]:
+    """Filter grid cells overlapping ``walkable_area`` and build an ``STRtree``."""
+    cells_array = np.asarray(grid_cells)
+    if walkable_area is not None:
+        poly = walkable_area.polygon
+        shapely.prepare(poly)
+        active_mask = shapely.intersects(poly, cells_array) & ~shapely.touches(poly, cells_array)
+        active_indices = np.flatnonzero(active_mask)
+    else:
+        active_indices = np.arange(len(cells_array), dtype=np.intp)
+
+    active_cells = cells_array[active_indices]
+    return active_indices, shapely.STRtree(active_cells), active_cells
+
+
 def _compute_frame_grid_intersection(
     *,
     frame_data: pd.DataFrame,
     grid_cells: npt.NDArray[shapely.Polygon],
+    active_indices: Optional[npt.NDArray[np.intp]] = None,
+    cell_tree: Optional[shapely.STRtree] = None,
+    active_cells: Optional[npt.NDArray[shapely.Polygon]] = None,
 ) -> npt.NDArray[np.float64]:
     """Compute grid cell-polygon intersection areas for a single frame.
+
+    Uses a spatial index (:class:`shapely.STRtree`) over active grid cells so
+    cells outside ``walkable_area`` and non-overlapping cell-polygon pairs are
+    never intersected.
 
     Args:
         frame_data: DataFrame for a single frame containing a 'polygon' column.
         grid_cells: Grid cells used for computing the profiles.
+        active_indices: Optional indices of ``grid_cells`` overlapping
+            ``walkable_area``.
+        cell_tree: Optional pre-built ``STRtree`` over ``active_cells``.
+        active_cells: Optional subset of ``grid_cells`` indexed by ``cell_tree``.
 
     Returns:
         Intersection areas with shape (num_grid_cells, num_pedestrians_in_frame).
     """
-    return shapely.area(
-        shapely.intersection(
-            np.asarray(grid_cells)[:, np.newaxis],
-            np.asarray(frame_data.polygon)[np.newaxis, :],
+    cells_array = np.asarray(grid_cells)
+    ped_polys = np.asarray(frame_data.polygon)
+    result = np.zeros((len(cells_array), len(ped_polys)), dtype=np.float64)
+    if len(cells_array) == 0 or len(ped_polys) == 0:
+        return result
+
+    if active_indices is None or cell_tree is None or active_cells is None:
+        active_indices, cell_tree, active_cells = _prepare_active_grid_tree(grid_cells=cells_array)
+
+    if len(active_cells) == 0:
+        return result
+
+    ped_idx, local_cell_idx = cell_tree.query(ped_polys, predicate="intersects")
+    if len(ped_idx) > 0:
+        areas = shapely.area(
+            shapely.intersection(
+                active_cells[local_cell_idx],
+                ped_polys[ped_idx],
+            )
         )
-    )
+        result[active_indices[local_cell_idx], ped_idx] = areas
+
+    return result
 
 
 def _compute_grid_polygon_intersection(
     *,
     data: pd.DataFrame,
     grid_cells: npt.NDArray[shapely.Polygon],
+    walkable_area: Optional[WalkableArea] = None,
 ) -> Tuple[npt.NDArray[np.float64], pd.DataFrame]:
     internal_data = data.copy(deep=True)
     internal_data = internal_data.sort_values(by=FRAME_COL)
     internal_data = internal_data.reset_index(drop=True)
 
-    # Process frame-by-frame to avoid materializing a
-    # (num_grid_cells x num_total_rows) array of Shapely geometries,
-    # which causes excessive memory usage for large datasets.
-    # Preallocate the output array and fill it frame-by-frame to avoid
-    # doubling peak memory usage from concatenation.
     num_rows = len(internal_data)
-    grid_intersections_area = np.empty((len(grid_cells), num_rows), dtype=np.float64)
+    grid_intersections_area = np.zeros((len(grid_cells), num_rows), dtype=np.float64)
+    if num_rows == 0 or len(grid_cells) == 0:
+        return grid_intersections_area, internal_data
+
+    active_indices, cell_tree, active_cells = _prepare_active_grid_tree(
+        grid_cells=grid_cells,
+        walkable_area=walkable_area,
+    )
 
     col_offset = 0
     for _, frame_data in internal_data.groupby(FRAME_COL):
-        frame_result = _compute_frame_grid_intersection(frame_data=frame_data, grid_cells=grid_cells)
+        frame_result = _compute_frame_grid_intersection(
+            frame_data=frame_data,
+            grid_cells=grid_cells,
+            active_indices=active_indices,
+            cell_tree=cell_tree,
+            active_cells=active_cells,
+        )
         frame_size = frame_result.shape[1]
         grid_intersections_area[:, col_offset : col_offset + frame_size] = frame_result
         col_offset += frame_size
@@ -1249,19 +1359,17 @@ def get_grid_cells(
         -grid_size,
     )
 
-    grid_cells = []
-    for j in range(len(y_coords) - 1):
-        for i in range(len(x_coords) - 1):
-            grid_cell = shapely.box(
-                x_coords[i],
-                y_coords[j],
-                x_coords[i + 1],
-                y_coords[j + 1],
-            )
-            grid_cells.append(grid_cell)
+    xx_min, yy_max = np.meshgrid(x_coords[:-1], y_coords[:-1])
+    xx_max, yy_min = np.meshgrid(x_coords[1:], y_coords[1:])
+    grid_cells = shapely.box(
+        xx_min.ravel(),
+        yy_min.ravel(),
+        xx_max.ravel(),
+        yy_max.ravel(),
+    )
 
     return (
-        np.array(grid_cells),
+        np.asarray(grid_cells),
         len(y_coords) - 1,
         len(x_coords) - 1,
     )

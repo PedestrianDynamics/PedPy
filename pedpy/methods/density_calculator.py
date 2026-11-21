@@ -1,8 +1,10 @@
 """Module containing functions to compute densities."""
 
-from typing import Tuple
+from enum import Enum, auto
+from typing import Final, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import shapely
 
@@ -13,11 +15,14 @@ from pedpy.column_identifier import (
     DENSITY_SP2_COL,
     FRAME_COL,
     ID_COL,
+    POINT_COL,
     POLYGON_COL,
+    X_COL,
+    Y_COL,
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError
+from pedpy.errors import InputError, PedPyTypeError, PedPyValueError
 from pedpy.methods.method_utils import (
     _apply_lambda_for_intersecting_frames,
     _check_trajectory_data,
@@ -290,3 +295,224 @@ def compute_line_density(
 
     result[DENSITY_COL] = result[DENSITY_SP1_COL].fillna(0) + result[DENSITY_SP2_COL].fillna(0)
     return result
+
+
+_MIN_SPACING_THRESHOLD: Final = 1e-12
+_HALF_FACTOR: Final = 0.5
+
+
+class SingleFileMethod(Enum):  # pylint: disable=too-few-public-methods
+    r"""1D individual density definition for single-file trajectories.
+
+    Attributes:
+        VORONOI: 1D Voronoi cell width :math:`d_k = (s_{k+1} - s_{k-1}) / 2`,
+            yielding individual density :math:`\rho_k = 1 / d_k`.
+        HEADWAY: Forward headway :math:`h_k = s_{k+1} - s_{k}`, yielding
+            individual density :math:`\rho_k = 1 / h_k`.
+    """
+
+    VORONOI = auto()
+    HEADWAY = auto()
+
+
+def _project_single_file_positions(
+    df: pd.DataFrame,
+    centerline: Optional[shapely.LineString],
+    axis: str,
+    closed: bool,
+    track_length: Optional[float],
+) -> Tuple[npt.NDArray[np.float64], Optional[float]]:
+    """Project pedestrian positions onto a 1D coordinate and resolve loop length."""
+    if centerline is not None:
+        if not isinstance(centerline, shapely.LineString):
+            raise PedPyTypeError(
+                f"Expected 'centerline' to be a shapely.LineString, got {type(centerline).__name__!r} instead."
+            )
+        s_coords = np.asarray(shapely.line_locate_point(centerline, df[POINT_COL].to_numpy()), dtype=np.float64)
+        resolved_length = track_length if track_length is not None else (float(centerline.length) if closed else None)
+    else:
+        if axis not in (X_COL, Y_COL):
+            raise PedPyValueError(f"'axis' must be '{X_COL}' or '{Y_COL}', got {axis!r}.")
+        s_coords = df[axis].to_numpy(dtype=np.float64)
+        resolved_length = track_length
+
+    if closed:
+        if resolved_length is None or resolved_length <= 0.0:
+            raise PedPyValueError("A positive 'track_length' (or non-empty 'centerline') is required when closed=True.")
+        s_coords = np.mod(s_coords, resolved_length)
+
+    return s_coords, resolved_length
+
+
+def _compute_single_file_frame_cells(
+    s_sorted: npt.NDArray[np.float64],
+    closed: bool,
+    loop_length: Optional[float],
+    method: SingleFileMethod,
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    """Compute ``(spacing, left_edge, right_edge)`` for sorted 1D coordinates."""
+    n_peds = len(s_sorted)
+    spacing = np.full(n_peds, np.nan, dtype=np.float64)
+    left_edge = np.full(n_peds, np.nan, dtype=np.float64)
+    right_edge = np.full(n_peds, np.nan, dtype=np.float64)
+
+    if n_peds < 2:
+        return spacing, left_edge, right_edge
+
+    if closed:
+        assert loop_length is not None
+        forward_gaps = np.empty(n_peds, dtype=np.float64)
+        forward_gaps[:-1] = s_sorted[1:] - s_sorted[:-1]
+        forward_gaps[-1] = (s_sorted[0] + loop_length) - s_sorted[-1]
+        backward_gaps = np.roll(forward_gaps, 1)
+
+        if method == SingleFileMethod.HEADWAY:
+            spacing = forward_gaps
+            left_edge = s_sorted
+            right_edge = s_sorted + forward_gaps
+        else:
+            spacing = _HALF_FACTOR * (backward_gaps + forward_gaps)
+            left_edge = s_sorted - _HALF_FACTOR * backward_gaps
+            right_edge = s_sorted + _HALF_FACTOR * forward_gaps
+        return spacing, left_edge, right_edge
+
+    if method == SingleFileMethod.HEADWAY:
+        spacing[:-1] = s_sorted[1:] - s_sorted[:-1]
+        left_edge[:-1] = s_sorted[:-1]
+        right_edge[:-1] = s_sorted[1:]
+    elif n_peds >= 3:
+        midpoints = _HALF_FACTOR * (s_sorted[:-1] + s_sorted[1:])
+        left_edge[1:-1] = midpoints[:-1]
+        right_edge[1:-1] = midpoints[1:]
+        spacing[1:-1] = right_edge[1:-1] - left_edge[1:-1]
+
+    return spacing, left_edge, right_edge
+
+
+def _interval_overlap_length(
+    left_edge: npt.NDArray[np.float64],
+    right_edge: npt.NDArray[np.float64],
+    s_min: float,
+    s_max: float,
+    closed: bool,
+    loop_length: Optional[float],
+) -> npt.NDArray[np.float64]:
+    """Compute 1D overlap of ``[left_edge, right_edge]`` with ``[s_min, s_max]``."""
+    valid = np.isfinite(left_edge) & np.isfinite(right_edge)
+    overlap = np.zeros_like(left_edge, dtype=np.float64)
+    if not np.any(valid):
+        return overlap
+
+    l_v = left_edge[valid]
+    r_v = right_edge[valid]
+    seg_overlap = np.maximum(0.0, np.minimum(r_v, s_max) - np.maximum(l_v, s_min))
+    if closed and loop_length is not None:
+        seg_overlap += np.maximum(0.0, np.minimum(r_v + loop_length, s_max) - np.maximum(l_v + loop_length, s_min))
+        seg_overlap += np.maximum(0.0, np.minimum(r_v - loop_length, s_max) - np.maximum(l_v - loop_length, s_min))
+    overlap[valid] = seg_overlap
+    return overlap
+
+
+def compute_single_file_density(
+    *,
+    traj_data: TrajectoryData,
+    centerline: Optional[shapely.LineString] = None,
+    axis: str = X_COL,
+    closed: bool = False,
+    track_length: Optional[float] = None,
+    method: SingleFileMethod = SingleFileMethod.VORONOI,
+    measurement_interval: Optional[Tuple[float, float]] = None,
+) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
+    r"""Compute 1D individual (and optional interval) densities for single-file trajectories.
+
+    Projects pedestrian positions onto a 1D coordinate :math:`s_k(t)` (either
+    arc length along ``centerline`` or coordinate ``axis``) and evaluates
+    individual 1D densities in :math:`1/\mathrm{m}`:
+
+    - :attr:`SingleFileMethod.VORONOI`: 1D Voronoi cell width
+      :math:`d_k = (s_{k+1} - s_{k-1}) / 2` and :math:`\rho_k = 1 / d_k`.
+    - :attr:`SingleFileMethod.HEADWAY`: forward headway
+      :math:`h_k = s_{k+1} - s_k` and :math:`\rho_k = 1 / h_k`.
+
+    When ``closed=True`` (e.g. oval or circular single-file tracks of
+    circumference ``track_length``), wrap-around neighbors are used so every
+    pedestrian receives a finite cell width summing to ``track_length``.
+
+    Args:
+        traj_data (TrajectoryData): Trajectory data to analyze.
+        centerline (shapely.LineString, optional): Optional 1D reference path
+            onto which pedestrian positions are projected via arc length.
+        axis (str): Coordinate column (``"x"`` or ``"y"``) used when
+            ``centerline`` is ``None`` (default: ``"x"``).
+        closed (bool): Treat the 1D domain as periodic with circumference
+            ``track_length`` (default: ``False``).
+        track_length (float, optional): Periodic track circumference in meters
+            when ``closed=True`` (defaults to ``centerline.length`` when
+            ``centerline`` is provided).
+        method (SingleFileMethod): 1D cell definition (default:
+            ``SingleFileMethod.VORONOI``).
+        measurement_interval (Tuple[float, float], optional): Optional 1D
+            measurement section ``(s_min, s_max)``. When provided, returns a
+            2-tuple ``(frame_density_df, individual_df)`` analogous to
+            :func:`compute_voronoi_density`.
+
+    Returns:
+        DataFrame with columns ``id``, ``frame``, ``arc_length``, ``spacing``,
+        and ``density`` (in :math:`1/\mathrm{m}`) when ``measurement_interval``
+        is ``None``; otherwise ``(frame_density_df, individual_df)``.
+    """
+    _check_trajectory_data(traj_data)
+    if not isinstance(method, SingleFileMethod):
+        raise PedPyValueError(f"Unsupported single-file density method: {method!r}.")
+    if measurement_interval is not None and measurement_interval[1] <= measurement_interval[0]:
+        raise PedPyValueError("'measurement_interval' must satisfy s_max > s_min.")
+
+    work_df = traj_data.data[[ID_COL, FRAME_COL, X_COL, Y_COL, POINT_COL]].copy()
+    work_df["_orig_order"] = np.arange(len(work_df))
+    s_coords, resolved_length = _project_single_file_positions(work_df, centerline, axis, closed, track_length)
+    work_df["arc_length"] = s_coords
+
+    per_frame_chunks: list[pd.DataFrame] = []
+    frame_densities: dict[int, float] = {}
+
+    for frame_val, group in work_df.groupby(FRAME_COL):
+        sorted_group = group.sort_values(by=["arc_length", ID_COL]).copy()
+        s_sorted = sorted_group["arc_length"].to_numpy(dtype=np.float64)
+        spacing, left_e, right_e = _compute_single_file_frame_cells(s_sorted, closed, resolved_length, method)
+        density = np.where(
+            np.isfinite(spacing) & (spacing > _MIN_SPACING_THRESHOLD),
+            np.divide(1.0, spacing, out=np.full_like(spacing, np.nan), where=spacing > _MIN_SPACING_THRESHOLD),
+            np.nan,
+        )
+        sorted_group["spacing"] = spacing
+        sorted_group[DENSITY_COL] = density
+        per_frame_chunks.append(sorted_group)
+
+        if measurement_interval is not None:
+            s_min, s_max = float(measurement_interval[0]), float(measurement_interval[1])
+            interval_len = s_max - s_min
+            if method == SingleFileMethod.VORONOI:
+                overlaps = _interval_overlap_length(left_e, right_e, s_min, s_max, closed, resolved_length)
+                valid = (overlaps > 0.0) & np.isfinite(spacing) & (spacing > _MIN_SPACING_THRESHOLD)
+                frame_densities[int(frame_val)] = float(np.sum(overlaps[valid] / spacing[valid]) / interval_len)
+            else:
+                in_sec = (s_sorted >= s_min) & (s_sorted <= s_max)
+                frame_densities[int(frame_val)] = float(np.count_nonzero(in_sec) / interval_len)
+
+    if per_frame_chunks:
+        combined = pd.concat(per_frame_chunks, ignore_index=True).sort_values("_orig_order")
+    else:
+        combined = pd.DataFrame(columns=[ID_COL, FRAME_COL, "arc_length", "spacing", DENSITY_COL])
+    individual_df = combined[[ID_COL, FRAME_COL, "arc_length", "spacing", DENSITY_COL]].reset_index(drop=True)
+
+    if measurement_interval is None:
+        return individual_df
+
+    if traj_data.data.empty:
+        return pd.DataFrame(columns=[FRAME_COL, DENSITY_COL]), individual_df
+
+    full_frames = list(range(int(traj_data.data[FRAME_COL].min()), int(traj_data.data[FRAME_COL].max()) + 1))
+    frame_series = pd.Series(frame_densities, dtype=float).reindex(full_frames, fill_value=0.0)
+    frame_df = frame_series.reset_index()
+    frame_df.columns = [FRAME_COL, DENSITY_COL]
+    return frame_df, individual_df

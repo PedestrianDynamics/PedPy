@@ -1,18 +1,20 @@
 import numpy as np
 import pandas as pd
 import pytest
-from shapely import Polygon
+from shapely import LineString, Polygon
 from shapely.geometry import Point
 from tests.utils.utils import get_trajectory, get_trajectory_data
 
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError
+from pedpy.errors import InputError, PedPyTypeError, PedPyValueError
 from pedpy.methods.density_calculator import (
+    SingleFileMethod,
     _get_num_peds_per_frame,
     compute_classic_density,
     compute_line_density,
+    compute_single_file_density,
 )
 
 
@@ -148,3 +150,83 @@ def test_compute_line_density_invalid_species(example_data):
             measurement_line=line,
             species=invalid_species,
         )
+
+
+def test_compute_single_file_density_open_line_voronoi_and_headway():
+    # Positions at x = 0, 2, 5, 9 -> interior Voronoi widths: (5-0)/2=2.5, (9-2)/2=3.5
+    traj_df = pd.DataFrame(
+        {
+            ID_COL: [10, 20, 30, 40],
+            FRAME_COL: [0, 0, 0, 0],
+            X_COL: [0.0, 2.0, 5.0, 9.0],
+            Y_COL: [0.0, 0.0, 0.0, 0.0],
+        }
+    )
+    traj = TrajectoryData(data=traj_df, frame_rate=10.0)
+
+    voronoi_df = compute_single_file_density(
+        traj_data=traj,
+        axis=X_COL,
+        closed=False,
+        method=SingleFileMethod.VORONOI,
+    )
+    assert np.isnan(voronoi_df.iloc[0][DENSITY_COL])
+    assert np.isnan(voronoi_df.iloc[3][DENSITY_COL])
+    assert np.isclose(voronoi_df.iloc[1]["spacing"], 2.5)
+    assert np.isclose(voronoi_df.iloc[1][DENSITY_COL], 1.0 / 2.5)
+    assert np.isclose(voronoi_df.iloc[2]["spacing"], 3.5)
+    assert np.isclose(voronoi_df.iloc[2][DENSITY_COL], 1.0 / 3.5)
+
+    headway_df = compute_single_file_density(
+        traj_data=traj,
+        axis=X_COL,
+        closed=False,
+        method=SingleFileMethod.HEADWAY,
+    )
+    assert np.allclose(headway_df.iloc[:3]["spacing"], [2.0, 3.0, 4.0])
+    assert np.allclose(headway_df.iloc[:3][DENSITY_COL], [0.5, 1.0 / 3.0, 0.25])
+    assert np.isnan(headway_df.iloc[3][DENSITY_COL])
+
+
+def test_compute_single_file_density_closed_loop_and_centerline_interval():
+    # Closed square centerline of perimeter 16 m with 4 evenly spaced pedestrians (spacing = 4 m, density = 0.25 1/m)
+    ring = LineString([(0.0, 0.0), (4.0, 0.0), (4.0, 4.0), (0.0, 4.0), (0.0, 0.0)])
+    traj_df = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 4],
+            FRAME_COL: [0, 0, 0, 0],
+            X_COL: [1.0, 4.0, 3.0, 0.0],
+            Y_COL: [0.0, 1.0, 4.0, 3.0],
+        }
+    )
+    traj = TrajectoryData(data=traj_df, frame_rate=10.0)
+
+    frame_df, ind_df = compute_single_file_density(
+        traj_data=traj,
+        centerline=ring,
+        closed=True,
+        method=SingleFileMethod.VORONOI,
+        measurement_interval=(0.0, 8.0),
+    )
+
+    assert np.isclose(ind_df["spacing"].sum(), 16.0)
+    assert np.allclose(ind_df["spacing"], 4.0)
+    assert np.allclose(ind_df[DENSITY_COL], 0.25)
+    assert np.allclose(frame_df[DENSITY_COL], [0.25])
+
+
+def test_compute_single_file_density_validation_errors():
+    traj_df = pd.DataFrame({ID_COL: [1, 2], FRAME_COL: [0, 0], X_COL: [0.0, 1.0], Y_COL: [0.0, 0.0]})
+    traj = TrajectoryData(data=traj_df, frame_rate=1.0)
+
+    with pytest.raises(PedPyValueError, match="axis"):
+        compute_single_file_density(traj_data=traj, axis="z")
+
+    with pytest.raises(PedPyValueError, match="track_length"):
+        compute_single_file_density(traj_data=traj, closed=True)
+
+    with pytest.raises(PedPyTypeError, match="LineString"):
+        compute_single_file_density(traj_data=traj, centerline="not_a_line")  # type: ignore[arg-type]
+
+    with pytest.raises(PedPyValueError, match="measurement_interval"):
+        compute_single_file_density(traj_data=traj, measurement_interval=(5.0, 2.0))

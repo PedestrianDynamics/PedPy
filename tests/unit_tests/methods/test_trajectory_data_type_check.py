@@ -9,7 +9,10 @@ from pedpy.methods.acceleration_calculator import (
     compute_mean_acceleration_per_frame,
     compute_voronoi_acceleration,
 )
-from pedpy.methods.density_calculator import compute_classic_density
+from pedpy.methods.density_calculator import (
+    compute_classic_density,
+    compute_single_file_density,
+)
 from pedpy.methods.flow_calculator import compute_n_t
 from pedpy.methods.method_utils import (
     compute_crossing_frames,
@@ -69,6 +72,7 @@ _DF = pd.DataFrame()
         pytest.param(
             compute_classic_density, dict(traj_data=_BAD, measurement_area=None), id="compute_classic_density"
         ),
+        pytest.param(compute_single_file_density, dict(traj_data=_BAD), id="compute_single_file_density"),
         pytest.param(compute_n_t, dict(traj_data=_BAD, measurement_line=None), id="compute_n_t"),
         pytest.param(is_trajectory_valid, dict(traj_data=_BAD, walkable_area=None), id="is_trajectory_valid"),
         pytest.param(get_invalid_trajectory, dict(traj_data=_BAD, walkable_area=None), id="get_invalid_trajectory"),
