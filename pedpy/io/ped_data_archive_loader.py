@@ -36,7 +36,8 @@ def _resolve_extra_columns(
                 )
             if idx < _FIRST_EXTRA_COL_IDX:
                 raise PedPyValueError(
-                    f"Extra column index must be >= {_FIRST_EXTRA_COL_IDX} (columns 0..3 are id, frame, x, y), got {idx}."
+                    f"Extra column index must be >= {_FIRST_EXTRA_COL_IDX} "
+                    f"(columns 0..3 are id, frame, x, y), got {idx}."
                 )
             if not isinstance(col_name, str) or not col_name.strip():
                 raise PedPyValueError("Extra column names must be non-empty strings.")
@@ -49,7 +50,8 @@ def _resolve_extra_columns(
             pairs.append((_FIRST_EXTRA_COL_IDX + offset, col_name))
     else:
         raise PedPyTypeError(
-            f"extra_columns must be a sequence of column names or a mapping from column index to name, got {type(extra_columns).__name__}."
+            "extra_columns must be a sequence of column names or a mapping "
+            f"from column index to name, got {type(extra_columns).__name__}."
         )
 
     seen: set[str] = set()
