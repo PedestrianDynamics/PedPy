@@ -1,16 +1,68 @@
 """Load trajectories from the Pedestrian Dynamics Data Archive to the internal trajectory data format."""
 
 import pathlib
-from typing import Any, Optional, Tuple
+from typing import Any, Final, Mapping, Optional, Sequence, Tuple, Union
 
 import h5py
 import pandas as pd
 
-from pedpy.column_identifier import FRAME_COL, ID_COL, X_COL, Y_COL
+from pedpy.column_identifier import FRAME_COL, ID_COL, POINT_COL, X_COL, Y_COL
 from pedpy.data.geometry import WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import LoadTrajectoryError, PedPyValueError
+from pedpy.errors import LoadTrajectoryError, PedPyTypeError, PedPyValueError
 from pedpy.io.helper import TrajectoryUnit, _validate_is_file
+
+_FIRST_EXTRA_COL_IDX: Final = 4
+_RESERVED_COLS: Final = frozenset({ID_COL, FRAME_COL, X_COL, Y_COL, POINT_COL})
+
+
+def _resolve_extra_columns(
+    extra_columns: Optional[Union[Sequence[str], Mapping[int, str]]],
+) -> Tuple[list[int], list[str]]:
+    """Validate and normalize optional extra column specifications."""
+    if extra_columns is None:
+        return [], []
+    if isinstance(extra_columns, (str, bytes)):
+        raise PedPyTypeError(
+            "extra_columns must be a sequence of column names or a mapping from column index (>= 4) to name, not str."
+        )
+
+    pairs: list[Tuple[int, str]] = []
+    if isinstance(extra_columns, Mapping):
+        for idx, col_name in extra_columns.items():
+            if not isinstance(idx, int) or isinstance(idx, bool):
+                raise PedPyTypeError(
+                    f"Extra column index must be an int >= {_FIRST_EXTRA_COL_IDX}, got {type(idx).__name__}."
+                )
+            if idx < _FIRST_EXTRA_COL_IDX:
+                raise PedPyValueError(
+                    f"Extra column index must be >= {_FIRST_EXTRA_COL_IDX} "
+                    f"(columns 0..3 are id, frame, x, y), got {idx}."
+                )
+            if not isinstance(col_name, str) or not col_name.strip():
+                raise PedPyValueError("Extra column names must be non-empty strings.")
+            pairs.append((idx, col_name))
+        pairs.sort(key=lambda item: item[0])
+    elif isinstance(extra_columns, Sequence):
+        for offset, col_name in enumerate(extra_columns):
+            if not isinstance(col_name, str) or not col_name.strip():
+                raise PedPyValueError("Extra column names must be non-empty strings.")
+            pairs.append((_FIRST_EXTRA_COL_IDX + offset, col_name))
+    else:
+        raise PedPyTypeError(
+            "extra_columns must be a sequence of column names or a mapping "
+            f"from column index to name, got {type(extra_columns).__name__}."
+        )
+
+    seen: set[str] = set()
+    for _, name in pairs:
+        if name in _RESERVED_COLS:
+            raise PedPyValueError(f"Extra column name '{name}' conflicts with reserved TrajectoryData column.")
+        if name in seen:
+            raise PedPyValueError(f"Duplicate extra column name '{name}'.")
+        seen.add(name)
+
+    return [idx for idx, _ in pairs], [name for _, name in pairs]
 
 
 def load_trajectory_from_txt(
@@ -18,6 +70,7 @@ def load_trajectory_from_txt(
     trajectory_file: pathlib.Path,
     default_frame_rate: Optional[float] = None,
     default_unit: Optional[TrajectoryUnit] = None,
+    extra_columns: Optional[Union[Sequence[str], Mapping[int, str]]] = None,
 ) -> TrajectoryData:
     """Loads the trajectory file in the internal :class:`~trajectory_data.TrajectoryData` format.
 
@@ -31,6 +84,12 @@ def load_trajectory_from_txt(
             from file is used
         default_unit: unit in which the coordinates are stored
                 in the file, None if unit should be parsed from the file
+        extra_columns: optional extra columns beyond ``id``, ``frame``, ``x``,
+            ``y`` (0-based indices ``>= 4``) to preserve on ``traj.data``.
+            Pass a sequence of names (e.g. ``["z", "marker_id"]`` for columns
+            4 and 5) or a mapping from 0-based column index to name (e.g.
+            ``{4: "z", 6: "marker_id"}``). When ``None`` (default), columns
+            past the first four are dropped.
 
     Returns:
         TrajectoryData: :class:`~trajectory_data.TrajectoryData`
@@ -43,30 +102,43 @@ def load_trajectory_from_txt(
         default_frame_rate=default_frame_rate,
         default_unit=default_unit,
     )
-    traj_dataframe = _load_trajectory_data_from_txt(trajectory_file=trajectory_file, unit=traj_unit)
+    traj_dataframe = _load_trajectory_data_from_txt(
+        trajectory_file=trajectory_file,
+        unit=traj_unit,
+        extra_columns=extra_columns,
+    )
 
     return TrajectoryData(data=traj_dataframe, frame_rate=traj_frame_rate)
 
 
-def _load_trajectory_data_from_txt(*, trajectory_file: pathlib.Path, unit: TrajectoryUnit) -> pd.DataFrame:
+def _load_trajectory_data_from_txt(
+    *,
+    trajectory_file: pathlib.Path,
+    unit: TrajectoryUnit,
+    extra_columns: Optional[Union[Sequence[str], Mapping[int, str]]] = None,
+) -> pd.DataFrame:
     """Parse the trajectory file for trajectory data.
 
     Args:
         trajectory_file: file containing the trajectory
         unit: unit in which the coordinates are stored in the file, None if unit should be parsed from the file
+        extra_columns: optional sequence of names or index-to-name mapping for columns >= 4
 
     Returns:
         The trajectory data as :class:`DataFrame`, the coordinates are
         converted to meter (m).
     """
+    extra_indices, extra_names = _resolve_extra_columns(extra_columns)
+    usecols = [0, 1, 2, 3, *extra_indices]
+    col_names = [ID_COL, FRAME_COL, X_COL, Y_COL, *extra_names]
     try:
         data = pd.read_csv(
             trajectory_file,
             sep=r"\s+",
             comment="#",
             header=None,
-            names=[ID_COL, FRAME_COL, X_COL, Y_COL],
-            usecols=[0, 1, 2, 3],
+            names=col_names,
+            usecols=usecols,
             dtype={
                 ID_COL: "int64",
                 FRAME_COL: "int64",
@@ -89,7 +161,9 @@ def _load_trajectory_data_from_txt(*, trajectory_file: pathlib.Path, unit: Traje
             data.y = data.y.div(100)
 
         return data
-    except pd.errors.ParserError as exc:
+    except (pd.errors.ParserError, ValueError) as exc:
+        if isinstance(exc, PedPyValueError):
+            raise
         raise PedPyValueError(
             "The given trajectory file could not be parsed. It should "
             "contain at least 5 columns: ID, frame, X, Y, Z. The values "
