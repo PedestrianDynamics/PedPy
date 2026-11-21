@@ -20,7 +20,10 @@ from pedpy.methods.method_utils import (
     get_invalid_trajectory,
     is_trajectory_valid,
 )
-from pedpy.methods.spatial_analysis import compute_pair_distribution_function
+from pedpy.methods.spatial_analysis import (
+    compute_approach_rate_pair_distribution,
+    compute_pair_distribution_function,
+)
 from pedpy.methods.speed_calculator import (
     compute_individual_speed,
     compute_mean_speed_per_frame,
@@ -93,6 +96,11 @@ _DF = pd.DataFrame()
             compute_pair_distribution_function,
             dict(traj_data=_BAD, radius_bin_size=0.1),
             id="compute_pair_distribution_function",
+        ),
+        pytest.param(
+            compute_approach_rate_pair_distribution,
+            dict(traj_data=_BAD, individual_speed=_DF, approach_rate_bin_size=0.2),
+            id="compute_approach_rate_pair_distribution",
         ),
     ],
 )
