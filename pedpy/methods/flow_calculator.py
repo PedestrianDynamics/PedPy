@@ -1,24 +1,27 @@
 """Module containing functions to compute flows."""
 
-from typing import Tuple
+from typing import Any, Optional, Tuple
 
 import pandas as pd
 
 from pedpy.column_identifier import (
     CUMULATED_COL,
     DENSITY_COL,
+    FIRST_FRAME_COL,
     FLOW_COL,
     FLOW_SP1_COL,
     FLOW_SP2_COL,
     FRAME_COL,
     ID_COL,
+    LAST_FRAME_COL,
     MEAN_SPEED_COL,
     SPEED_COL,
     TIME_COL,
 )
-from pedpy.data.geometry import MeasurementLine
+from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
 from pedpy.errors import InputError
+from pedpy.methods.density_calculator import compute_classic_density
 from pedpy.methods.method_utils import (
     DataValidationStatus,
     _apply_lambda_for_intersecting_frames,
@@ -83,11 +86,11 @@ def compute_flow(
     *,
     nt: pd.DataFrame,
     crossing_frames: pd.DataFrame,
-    individual_speed: pd.DataFrame,
+    individual_speed: Optional[pd.DataFrame] = None,
     delta_frame: int,
     frame_rate: float,
 ) -> pd.DataFrame:
-    r"""Compute the flow for the given the frame window from the nt information.
+    r"""Compute the flow for the given frame window from the nt information.
 
     Computes the flow :math:`J` in a frame interval of length
     :data:`delta_frame` (:math:`\Delta frame`). The first intervals starts,
@@ -127,8 +130,8 @@ def compute_flow(
         :align: center
         :width: 60 %
 
-    At the same time also the mean speed of the pedestrian when crossing the
-    line is computed from :data:`individual_speed`.
+    When :data:`individual_speed` is provided, the mean speed of the
+    pedestrians when crossing the line is also computed:
 
     .. math::
 
@@ -139,44 +142,141 @@ def compute_flow(
             'cumulative_pedestrians', and 'time' (see result from
             :func:`~flow_calculator.compute_n_t`)
         crossing_frames (pd.DataFrame): DataFrame containing the columns
-            'ID',  and 'frame' (see result from
+            'ID', and 'frame' (see result from
             :func:`~flow_calculator.compute_n_t`)
-        individual_speed (pd.DataFrame): DataFrame containing the columns
-            'ID', 'frame', and 'speed'
+        individual_speed (Optional[pd.DataFrame]): Optional DataFrame
+            containing the columns 'ID', 'frame', and 'speed'. When ``None``,
+            only ``flow`` is computed and ``mean_speed`` is omitted.
         delta_frame (int): size of the frame interval to compute the flow
         frame_rate (float): frame rate of the trajectories
 
     Returns:
-        DataFrame containing the columns 'flow' in 1/s, and 'mean_speed' in m/s.
+        DataFrame containing the column 'flow' in 1/s (and 'mean_speed' in
+        m/s when ``individual_speed`` is provided).
     """
-    crossing_speeds = crossing_frames.merge(individual_speed, on=[ID_COL, FRAME_COL])
+    crossing_speeds: Optional[pd.DataFrame] = None
+    if individual_speed is not None:
+        crossing_speeds = crossing_frames.merge(individual_speed, on=[ID_COL, FRAME_COL])
+
+    if nt[nt[CUMULATED_COL] > 0].empty:
+        cols = [FLOW_COL, MEAN_SPEED_COL] if individual_speed is not None else [FLOW_COL]
+        return pd.DataFrame(columns=cols)
 
     # Get frame where the first person passes the line
     num_passed_before = 0
-    passed_frame_before = nt[nt[CUMULATED_COL] > 0].frame.min()
+    passed_frame_before = int(nt[nt[CUMULATED_COL] > 0].frame.min())
 
-    rows = []
+    rows: list[dict[str, Any]] = []
 
-    for frame in range(passed_frame_before + delta_frame, nt.frame.max(), delta_frame):
-        passed_num_peds = nt[CUMULATED_COL][nt[FRAME_COL] == frame].to_numpy()[0]
-        passed_frame = nt[nt[CUMULATED_COL] == passed_num_peds].frame.min() + 1
+    for frame in range(passed_frame_before + delta_frame, int(nt.frame.max()), delta_frame):
+        passed_num_peds = int(nt[CUMULATED_COL][nt[FRAME_COL] == frame].to_numpy()[0])
+        passed_frame = int(nt[nt[CUMULATED_COL] == passed_num_peds].frame.min()) + 1
 
         if passed_num_peds != num_passed_before:
             num_passing_peds = passed_num_peds - num_passed_before
             time_range = passed_frame - passed_frame_before
 
             flow_rate = num_passing_peds / time_range * frame_rate
-            velocity = crossing_speeds[
-                crossing_speeds.frame.between(passed_frame_before, passed_frame, inclusive="both")
-            ][SPEED_COL].mean()
+            row: dict[str, Any] = {FLOW_COL: flow_rate}
+            if crossing_speeds is not None:
+                velocity = crossing_speeds[
+                    crossing_speeds.frame.between(passed_frame_before, passed_frame, inclusive="both")
+                ][SPEED_COL].mean()
+                row[MEAN_SPEED_COL] = velocity
 
             num_passed_before = passed_num_peds
             passed_frame_before = passed_frame
 
-            rows.append(
-                {FLOW_COL: flow_rate, MEAN_SPEED_COL: velocity},
-            )
+            rows.append(row)
 
+    if not rows:
+        cols = [FLOW_COL, MEAN_SPEED_COL] if individual_speed is not None else [FLOW_COL]
+        return pd.DataFrame(columns=cols)
+    return pd.DataFrame(rows)
+
+
+def compute_classic_fundamental_diagram(
+    *,
+    traj_data: TrajectoryData,
+    measurement_area: MeasurementArea,
+    measurement_line: MeasurementLine,
+    delta_frame: int,
+    individual_speed: Optional[pd.DataFrame] = None,
+) -> pd.DataFrame:
+    r"""Compute aligned classical density and flow intervals for a Fundamental Diagram.
+
+    Pairs the flow :math:`J` across ``measurement_line`` (in ``1/s``) over each
+    crossing interval ``[first_frame, last_frame]`` of width ``delta_frame``
+    with the mean classical density :math:`\rho_{classic}` inside
+    ``measurement_area`` (in ``1/m^2``) over that exact same frame interval.
+
+    Args:
+        traj_data: Trajectory data to analyze.
+        measurement_area: Measurement area used for :func:`compute_classic_density`.
+        measurement_line: Measurement line used for :func:`compute_n_t` and flow.
+        delta_frame: Frame window size for flow aggregation.
+        individual_speed: Optional DataFrame with columns ``id``, ``frame``,
+            and ``speed``; if provided, ``mean_speed`` (in ``m/s``) at the line
+            is included as well.
+
+    Returns:
+        DataFrame with columns ``first_frame``, ``last_frame``, ``density``
+        (in ``1/m^2``), and ``flow`` (in ``1/s``), plus ``mean_speed`` (in
+        ``m/s``) when ``individual_speed`` is given.
+    """
+    classic_density = compute_classic_density(
+        traj_data=traj_data,
+        measurement_area=measurement_area,
+    )
+    nt, crossing_frames = compute_n_t(
+        traj_data=traj_data,
+        measurement_line=measurement_line,
+    )
+    crossing_speeds: Optional[pd.DataFrame] = None
+    if individual_speed is not None:
+        crossing_speeds = crossing_frames.merge(individual_speed, on=[ID_COL, FRAME_COL])
+
+    base_cols = [FIRST_FRAME_COL, LAST_FRAME_COL, DENSITY_COL, FLOW_COL]
+    if individual_speed is not None:
+        base_cols.append(MEAN_SPEED_COL)
+
+    if nt[nt[CUMULATED_COL] > 0].empty:
+        return pd.DataFrame(columns=base_cols)
+
+    num_passed_before = 0
+    passed_frame_before = int(nt[nt[CUMULATED_COL] > 0].frame.min())
+    rows: list[dict[str, Any]] = []
+
+    for frame in range(passed_frame_before + delta_frame, int(nt.frame.max()), delta_frame):
+        passed_num_peds = int(nt[CUMULATED_COL][nt[FRAME_COL] == frame].to_numpy()[0])
+        passed_frame = int(nt[nt[CUMULATED_COL] == passed_num_peds].frame.min()) + 1
+
+        if passed_num_peds != num_passed_before:
+            num_passing_peds = passed_num_peds - num_passed_before
+            time_range = passed_frame - passed_frame_before
+            flow_rate = num_passing_peds / time_range * traj_data.frame_rate
+            mean_density = float(
+                classic_density[
+                    classic_density[FRAME_COL].between(passed_frame_before, passed_frame, inclusive="both")
+                ][DENSITY_COL].mean()
+            )
+            row: dict[str, Any] = {
+                FIRST_FRAME_COL: passed_frame_before,
+                LAST_FRAME_COL: passed_frame,
+                DENSITY_COL: mean_density,
+                FLOW_COL: flow_rate,
+            }
+            if crossing_speeds is not None:
+                row[MEAN_SPEED_COL] = crossing_speeds[
+                    crossing_speeds.frame.between(passed_frame_before, passed_frame, inclusive="both")
+                ][SPEED_COL].mean()
+
+            num_passed_before = passed_num_peds
+            passed_frame_before = passed_frame
+            rows.append(row)
+
+    if not rows:
+        return pd.DataFrame(columns=base_cols)
     return pd.DataFrame(rows)
 
 
@@ -291,10 +391,11 @@ def compute_line_flow(
             species of every pedestrian intersecting the line,
             result from :func:`~speed_calculator.compute_species`
     Returns:
-        Dataframe containing columns 'frame', 'j_sp+1' which contains the flow
-        in :math:`1/s` for species +1, 'j_sp-1' which contains the flow
-        in :math:`1/s` for species -1, 'flow' which contains the total flow at
-        the line in :math:`1/s`.
+        Dataframe containing columns 'frame', 'j_sp+1' which contains the
+        specific flow in :math:`1/(m \cdot s)` for species +1, 'j_sp-1' which
+        contains the specific flow in :math:`1/(m \cdot s)` for species -1, and
+        'flow' which contains the total specific flow at the line in
+        :math:`1/(m \cdot s)`.
     """
     _validate_inputs(individual_voronoi_polygons, measurement_line, individual_speed, species)
     result = _apply_lambda_for_intersecting_frames(

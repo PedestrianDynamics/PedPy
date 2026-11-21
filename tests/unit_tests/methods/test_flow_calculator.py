@@ -102,3 +102,94 @@ def test_compute_line_flow_missing_velocity_columns(example_data):
             individual_voronoi_polygons=voronoi,
             measurement_line=line,
         )
+
+
+def test_compute_flow_without_individual_speed_and_classic_fd():
+    from tests.utils.utils import make_traj
+
+    from pedpy.data.geometry import MeasurementArea
+    from pedpy.methods.flow_calculator import (
+        compute_classic_fundamental_diagram,
+        compute_flow,
+        compute_n_t,
+    )
+    from pedpy.methods.speed_calculator import (
+        SpeedCalculation,
+        compute_individual_speed,
+    )
+    from pedpy.plotting.plotting import plot_flow_at_line
+
+    # Three pedestrians walking along +x at 1 m/s across line x=2.0 inside [0,4]x[0,2]
+    ids, frames, xs, ys = [], [], [], []
+    for pid, offset in enumerate([1.5, 0.5, -0.5]):
+        for f in range(10):
+            ids.append(pid)
+            frames.append(f)
+            xs.append(offset + 0.5 * f)
+            ys.append(1.0)
+    traj = make_traj(ids=ids, frames=frames, xs=xs, ys=ys, frame_rate=2.0)
+    line = MeasurementLine([(2.0, 0.0), (2.0, 2.0)])
+    area = MeasurementArea([(0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0)])
+
+    nt, crossing = compute_n_t(traj_data=traj, measurement_line=line)
+    speed = compute_individual_speed(
+        traj_data=traj,
+        frame_step=1,
+        speed_calculation=SpeedCalculation.BORDER_SINGLE_SIDED,
+    )
+
+    flow_only = compute_flow(
+        nt=nt,
+        crossing_frames=crossing,
+        delta_frame=3,
+        frame_rate=traj.frame_rate,
+    )
+    flow_with_speed = compute_flow(
+        nt=nt,
+        crossing_frames=crossing,
+        individual_speed=speed,
+        delta_frame=3,
+        frame_rate=traj.frame_rate,
+    )
+    assert list(flow_only.columns) == [FLOW_COL]
+    assert list(flow_with_speed.columns) == [FLOW_COL, MEAN_SPEED_COL]
+    np.testing.assert_allclose(flow_only[FLOW_COL], flow_with_speed[FLOW_COL])
+
+    fd = compute_classic_fundamental_diagram(
+        traj_data=traj,
+        measurement_area=area,
+        measurement_line=line,
+        delta_frame=3,
+    )
+    assert list(fd.columns) == [
+        FIRST_FRAME_COL,
+        LAST_FRAME_COL,
+        DENSITY_COL,
+        FLOW_COL,
+    ]
+    np.testing.assert_allclose(fd[FLOW_COL], flow_only[FLOW_COL])
+    assert (fd[DENSITY_COL] > 0.0).all()
+
+    fd_speed = compute_classic_fundamental_diagram(
+        traj_data=traj,
+        measurement_area=area,
+        measurement_line=line,
+        delta_frame=3,
+        individual_speed=speed,
+    )
+    assert MEAN_SPEED_COL in fd_speed.columns
+
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots()
+    sample_line_flow = pd.DataFrame(
+        {
+            FRAME_COL: [0, 1],
+            FLOW_SP1_COL: [0.5, 0.6],
+            FLOW_SP2_COL: [0.0, 0.0],
+            FLOW_COL: [0.5, 0.6],
+        }
+    )
+    plot_flow_at_line(flow_at_line=sample_line_flow, axes=ax)
+    assert "1/(m" in ax.get_ylabel()
+    plt.close(fig)

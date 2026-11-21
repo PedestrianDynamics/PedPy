@@ -397,7 +397,7 @@ def plot_flow_at_line(
     color_total = kwargs.get("color_total", PEDPY_GREEN)
     title = kwargs.get("title", "")
     x_axis = kwargs.pop("x_axis", "frame")
-    y_label = kwargs.get("y_label", "J / 1/s")
+    y_label = kwargs.get("y_label", "j / 1/(m·s)")
     label_sp1 = kwargs.get("lable_species1", "species 1")
     label_sp2 = kwargs.get("lable_species2", "species 2")
     label_total = kwargs.get("lable_total", "total")
