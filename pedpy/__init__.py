@@ -12,6 +12,7 @@ except ImportError:
 
 from .column_identifier import (
     ACC_COL,
+    ALIGNMENT_COL,
     A_X_COL,
     A_Y_COL,
     COUNT_COL,
@@ -119,6 +120,8 @@ from .methods.profile_calculator import (
 )
 from .methods.spatial_analysis import compute_pair_distribution_function
 from .methods.speed_calculator import (
+    compute_alignment_parameter,
+    compute_arithmetic_voronoi_speed,
     compute_individual_speed,
     compute_line_speed,
     compute_mean_speed_per_frame,
@@ -205,6 +208,8 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_speed_profile",
     "get_grid_cells",
     "SpeedCalculation",
+    "compute_alignment_parameter",
+    "compute_arithmetic_voronoi_speed",
     "compute_individual_speed",
     "compute_line_speed",
     "compute_mean_speed_per_frame",
@@ -258,6 +263,7 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "FLOW_COL",
     "MEAN_SPEED_COL",
     "ACC_COL",
+    "ALIGNMENT_COL",
     "A_X_COL",
     "A_Y_COL",
     "FIRST_FRAME_COL",

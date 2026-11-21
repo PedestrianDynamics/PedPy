@@ -1,6 +1,6 @@
 """Module containing functions to compute velocities."""
 
-from typing import Optional
+from typing import Final, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -8,8 +8,11 @@ import pandas as pd
 import shapely
 
 from pedpy.column_identifier import (
+    ALIGNMENT_COL,
     FRAME_COL,
     ID_COL,
+    INTERSECTION_COL,
+    POINT_COL,
     POLYGON_COL,
     SPECIES_COL,
     SPEED_COL,
@@ -17,10 +20,12 @@ from pedpy.column_identifier import (
     SPEED_SP2_COL,
     V_X_COL,
     V_Y_COL,
+    X_COL,
+    Y_COL,
 )
 from pedpy.data.geometry import MeasurementArea, MeasurementLine
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError, SpeedError
+from pedpy.errors import InputError, PedPyValueError, SpeedError
 from pedpy.methods.method_utils import (
     DataValidationStatus,
     SpeedCalculation,
@@ -31,6 +36,9 @@ from pedpy.methods.method_utils import (
     is_individual_speed_valid,
     is_species_valid,
 )
+
+_INTERSECTION_AREA_THRESHOLD: Final = 1e-16
+_VECTOR_NORM_THRESHOLD: Final = 1e-12
 
 
 def compute_individual_speed(
@@ -336,6 +344,216 @@ def compute_voronoi_speed(
     df_voronoi_speed = df_voronoi_speed.reset_index()
     df_voronoi_speed.columns = [FRAME_COL, SPEED_COL]
     return pd.DataFrame(df_voronoi_speed)
+
+
+def compute_arithmetic_voronoi_speed(
+    *,
+    traj_data: TrajectoryData,
+    individual_speed: pd.DataFrame,
+    individual_voronoi_intersection: pd.DataFrame,
+    measurement_area: Optional[MeasurementArea] = None,
+) -> pd.DataFrame:
+    r"""Compute the arithmetic Voronoi speed per frame in a measurement area.
+
+    Calculates the unweighted arithmetic mean speed :math:`v_{arithmetic}(t)`
+    over all pedestrians :math:`P_M(t)` whose Voronoi cell :math:`V_i(t)`
+    intersects the measurement area :math:`M` with positive area
+    (:math:`A(V_i(t) \cap M) > 0`):
+
+    .. math::
+
+        v_{arithmetic}(t) = \frac{1}{|P_M(t)|} \sum_{i \in P_M(t)} v_i(t).
+
+    Frames in which no Voronoi cell intersects the measurement area receive a
+    speed of ``0.0``.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        individual_speed (pandas.DataFrame): individual speed data from
+            :func:`~speed_calculator.compute_individual_speed`
+        individual_voronoi_intersection (pandas.DataFrame): intersections of
+            individual Voronoi cells with the measurement area from
+            :func:`~method_utils.compute_intersecting_polygons` (or Voronoi
+            polygon data when ``measurement_area`` is also passed)
+        measurement_area (MeasurementArea, optional): measurement area used to
+            compute intersections when ``individual_voronoi_intersection``
+            contains ``polygon`` instead of ``intersection``
+
+    Returns:
+        DataFrame containing the columns ``frame`` and ``speed`` in m/s
+    """
+    _check_trajectory_data(traj_data)
+    if len(individual_speed.index) < len(individual_voronoi_intersection.index):
+        raise SpeedError(
+            f"Can not compute the arithmetic Voronoi speed, as there are less speed "
+            f"data (rows={len(individual_speed)}) than Voronoi intersection "
+            f"data (rows={len(individual_voronoi_intersection.index)}). This "
+            f"means a person occupies space but has no speed at some frames. "
+            f"To resolve this either edit your Voronoi intersection data, "
+            f"s.th. it only contains the data that is also contained in the "
+            f"speed data. Or use a different speed border method when "
+            f"computing the individual speed."
+        )
+
+    df_voronoi = individual_voronoi_intersection.merge(
+        individual_speed,
+        on=[ID_COL, FRAME_COL],
+    )
+
+    if INTERSECTION_COL in df_voronoi.columns:
+        intersections = df_voronoi[INTERSECTION_COL]
+    elif POLYGON_COL in df_voronoi.columns and measurement_area is not None:
+        intersections = shapely.intersection(df_voronoi[POLYGON_COL], measurement_area.polygon)
+    else:
+        raise InputError(
+            f"Expected column '{INTERSECTION_COL}' in 'individual_voronoi_intersection' "
+            f"(or '{POLYGON_COL}' together with 'measurement_area')."
+        )
+
+    intersecting = df_voronoi[shapely.area(intersections) > _INTERSECTION_AREA_THRESHOLD]
+    df_arithmetic_speed = intersecting.groupby(by=FRAME_COL)[SPEED_COL].mean()
+    df_arithmetic_speed = df_arithmetic_speed.reindex(
+        list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
+        fill_value=0.0,
+    )
+    df_arithmetic_speed = df_arithmetic_speed.reset_index()
+    df_arithmetic_speed.columns = [FRAME_COL, SPEED_COL]
+    return pd.DataFrame(df_arithmetic_speed)
+
+
+def _resolve_desired_unit_vectors(
+    combined: pd.DataFrame,
+    target_point: Optional[npt.ArrayLike],
+    desired_direction: Optional[Union[npt.ArrayLike, pd.DataFrame]],
+) -> npt.NDArray[np.float64]:
+    """Compute per-row unit desired direction vectors ``(u_x, u_y)``."""
+    if (target_point is None) == (desired_direction is None):
+        raise PedPyValueError("Provide exactly one of 'target_point' or 'desired_direction'.")
+
+    if target_point is not None:
+        target = np.asarray(target_point, dtype=np.float64)
+        if target.shape != (2,):
+            raise PedPyValueError(f"'target_point' must have shape (2,), got {target.shape}.")
+        raw_u = target[None, :] - combined[[X_COL, Y_COL]].to_numpy(dtype=np.float64)
+    elif isinstance(desired_direction, pd.DataFrame):
+        if not {"u_x", "u_y"}.issubset(desired_direction.columns):
+            raise PedPyValueError("DataFrame 'desired_direction' must contain 'u_x' and 'u_y' columns.")
+        join_cols = [col for col in (ID_COL, FRAME_COL) if col in desired_direction.columns]
+        if not join_cols:
+            raise PedPyValueError(
+                f"DataFrame 'desired_direction' must contain '{ID_COL}' (and optionally '{FRAME_COL}')."
+            )
+        aligned = combined[[ID_COL, FRAME_COL]].merge(
+            desired_direction[[*join_cols, "u_x", "u_y"]],
+            on=join_cols,
+            how="left",
+        )
+        raw_u = aligned[["u_x", "u_y"]].to_numpy(dtype=np.float64)
+    else:
+        vec = np.asarray(desired_direction, dtype=np.float64)
+        if vec.shape != (2,):
+            raise PedPyValueError(f"'desired_direction' must have shape (2,), got {vec.shape}.")
+        vec_norm = float(np.linalg.norm(vec))
+        if vec_norm <= _VECTOR_NORM_THRESHOLD:
+            raise PedPyValueError("'desired_direction' must be a non-zero 2D vector.")
+        return np.broadcast_to(vec / vec_norm, (len(combined), 2)).copy()
+
+    norms = np.linalg.norm(raw_u, axis=1, keepdims=True)
+    return np.divide(raw_u, norms, out=np.zeros_like(raw_u), where=norms > _VECTOR_NORM_THRESHOLD)
+
+
+def compute_alignment_parameter(
+    *,
+    traj_data: TrajectoryData,
+    individual_speed: pd.DataFrame,
+    target_point: Optional[npt.ArrayLike] = None,
+    desired_direction: Optional[Union[npt.ArrayLike, pd.DataFrame]] = None,
+    measurement_area: Optional[MeasurementArea] = None,
+) -> pd.DataFrame:
+    r"""Compute the per-frame alignment parameter :math:`\phi_d(t)`.
+
+    Quantifies how closely pedestrian velocities align with their desired
+    direction of motion (e.g. toward an exit door or along a corridor),
+    following Feliciani et al. (2020), *Scientific Reports*, 10, 15947
+    (``doi:10.1038/s41598-020-72733-w``):
+
+    .. math::
+
+        \phi_d(t) = \frac{1}{N(t)} \sum_{n=1}^{N(t)}
+        \frac{\vec{v}_t^n \cdot \vec{u}_t^n}{\|\vec{v}_t^n\|},
+
+    where :math:`\vec{v}_t^n` is the velocity vector of pedestrian :math:`n` at
+    frame :math:`t`, :math:`\vec{u}_t^n` is their unit desired direction of
+    motion, and :math:`N(t)` is the number of pedestrians considered at frame
+    :math:`t`. Values near ``+1`` indicate organized movement toward the
+    desired target/direction, ``0`` indicates perpendicular/azimuthal motion
+    (or stationary pedestrians), and ``-1`` indicates motion in the opposite
+    direction.
+
+    Args:
+        traj_data (TrajectoryData): trajectory data
+        individual_speed (pandas.DataFrame): individual velocity data from
+            :func:`~speed_calculator.compute_individual_speed` computed with
+            ``compute_velocity=True``
+        target_point (array-like, optional): 2D coordinates ``(x, y)`` of a
+            target point (such as an exit center) toward which each
+            pedestrian's desired unit vector points. Mutually exclusive with
+            ``desired_direction``.
+        desired_direction (array-like or pandas.DataFrame, optional): either a
+            constant 2D direction vector ``(u_x, u_y)`` or a DataFrame mapping
+            ``id`` (and optionally ``frame``) to ``u_x`` and ``u_y``. Mutually
+            exclusive with ``target_point``.
+        measurement_area (MeasurementArea, optional): if provided, restricts
+            the evaluation to pedestrians inside ``measurement_area``
+
+    Returns:
+        DataFrame containing the columns ``frame`` and ``alignment``
+    """
+    _check_trajectory_data(traj_data)
+    if not {ID_COL, FRAME_COL, V_X_COL, V_Y_COL}.issubset(individual_speed.columns):
+        raise SpeedError(
+            "Required velocity columns ('v_x', 'v_y') are missing from 'individual_speed'. "
+            "Compute individual speed with `compute_velocity=True`."
+        )
+
+    if measurement_area is not None and len(individual_speed.index) < len(traj_data.data.index):
+        raise SpeedError(
+            f"Can not compute the alignment parameter inside a measurement area, as "
+            f"there are less speed data (rows={len(individual_speed)}) than trajectory "
+            f"data (rows={len(traj_data.data.index)})."
+        )
+
+    combined = traj_data.data.merge(
+        individual_speed[[ID_COL, FRAME_COL, V_X_COL, V_Y_COL]],
+        on=[ID_COL, FRAME_COL],
+    )
+    if measurement_area is not None:
+        combined = combined[shapely.within(combined[POINT_COL], measurement_area.polygon)].copy()
+
+    unit_u = _resolve_desired_unit_vectors(
+        combined=combined,
+        target_point=target_point,
+        desired_direction=desired_direction,
+    )
+    velocities = combined[[V_X_COL, V_Y_COL]].to_numpy(dtype=np.float64)
+    v_norms = np.linalg.norm(velocities, axis=1)
+    dots = np.sum(velocities * unit_u, axis=1)
+    combined = combined.copy()
+    combined[ALIGNMENT_COL] = np.divide(
+        dots,
+        v_norms,
+        out=np.zeros_like(dots),
+        where=v_norms > _VECTOR_NORM_THRESHOLD,
+    )
+
+    df_alignment = combined.groupby(by=FRAME_COL)[ALIGNMENT_COL].mean()
+    df_alignment = df_alignment.reindex(
+        list(range(traj_data.data.frame.min(), traj_data.data.frame.max() + 1)),
+        fill_value=0.0,
+    )
+    df_alignment = df_alignment.reset_index()
+    df_alignment.columns = [FRAME_COL, ALIGNMENT_COL]
+    return pd.DataFrame(df_alignment)
 
 
 def compute_passing_speed(*, frames_in_area: pd.DataFrame, frame_rate: float, distance: float) -> pd.DataFrame:
