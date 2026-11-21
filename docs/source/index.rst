@@ -19,6 +19,7 @@ PedPy: Pedestrian Trajectory Analyzer
 **Useful links**:
 `Python Packages <https://pypi.org/project/pedpy>`__ |
 `Source Repository <https://github.com/PedestrianDynamics/pedpy>`__ |
+`Helmholtz RSD <https://helmholtz.software/software/pedpy>`__ |
 `Issues <https://github.com/PedestrianDynamics/pedpy/issues>`__ |
 `Discussions <https://github.com/PedestrianDynamics/pedpy/discussions>`__
 
@@ -87,3 +88,14 @@ Cite PedPy
 
         Want to help improving *PedPy*?
         The developer guides explains, how you can help us to make *PedPy* better.
+
+
+Software Ecosystem & Tools Using PedPy
+======================================
+
+*PedPy* is cataloged in the `Helmholtz Research Software Directory <https://helmholtz.software/software/pedpy>`__ and integrates directly with pedestrian dynamics simulation, tracking, and archival tools:
+
+- `JuPedSim <https://www.jupedsim.org/>`__ (`GitHub <https://github.com/PedestrianDynamics/jupedsim>`__): Uses *PedPy* for trajectory post-processing, fundamental diagram analysis, and model comparison notebooks.
+- `PeTrack <https://jugit.fz-juelich.de/ped-dyn-emp/petrack>`__: Extracts experimental pedestrian trajectories from video recordings for quantitative analysis with *PedPy*.
+- `Pedestrian Dynamics Data Archive <https://ped.fz-juelich.de/da/doku.php>`__: Open experimental trajectory datasets in HDF5 and text formats supported natively by *PedPy*.
+- Interoperable simulation loaders for `Crowd:it <https://www.accu-rate.de/en/software/crowdit/>`__, `Vadere <https://www.vadere.org/>`__, `PTV Viswalk <https://www.ptvgroup.com/en/products/ptv-viswalk>`__, and `Pathfinder <https://www.thunderheadeng.com/pathfinder/>`__.

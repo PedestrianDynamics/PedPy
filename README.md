@@ -15,6 +15,7 @@
 [![Documentation Status](https://readthedocs.org/projects/pedpy/badge/?version=latest)](http://pedpy.readthedocs.io/?badge=latest)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7046/badge)](https://bestpractices.coreinfrastructure.org/projects/7046)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F-green)](https://fair-software.eu)
+[![Helmholtz RSD](https://img.shields.io/badge/RSD-PedPy-005AA0)](https://helmholtz.software/software/pedpy)
 [![JuRSE Code Pick – July 2025](https://img.shields.io/badge/JuRSE_Code_Pick-Jul_2025-blue)](https://www.fz-juelich.de/en/rse/jurse-community/jurse-code-of-the-month/july-2025)
 
 </div>
@@ -124,6 +125,17 @@ PedPy is designed to be used in scripts or interactive Jupyter notebooks.
 - [Getting Started Guide](https://pedpy.readthedocs.io/stable/getting_started.html)
 - [Extensive User Guide](https://pedpy.readthedocs.io/stable/user_guide.html)
 - [API Reference](https://pedpy.readthedocs.io/stable/api/index.html)
+- [Helmholtz Research Software Directory (RSD)](https://helmholtz.software/software/pedpy)
+
+
+## Software Ecosystem & Tools Using PedPy
+
+**PedPy** is listed in the [Helmholtz Research Software Directory](https://helmholtz.software/software/pedpy) and is used across open-source pedestrian simulation, video tracking, and empirical data workflows:
+
+- **[JuPedSim](https://www.jupedsim.org/) ([GitHub](https://github.com/PedestrianDynamics/jupedsim)):** Uses **PedPy** for post-processing, model benchmarking, and interactive tutorial notebooks (`load_trajectory_from_jupedsim_sqlite`, `load_walkable_area_from_jupedsim_sqlite`).
+- **[PeTrack](https://jugit.fz-juelich.de/ped-dyn-emp/petrack):** Extracts high-precision pedestrian trajectories from experimental video recordings that can be analyzed directly with **PedPy**.
+- **[Pedestrian Dynamics Data Archive](https://ped.fz-juelich.de/da/doku.php):** Publishes open experimental crowd datasets in HDF5 and text formats supported natively by **PedPy** (`load_trajectory_from_ped_data_archive_hdf5`, `load_trajectory_from_txt`).
+- **Interoperable Simulation Frameworks:** Built-in loaders enable direct analysis and cross-comparison of trajectories from [Crowd:it](https://www.accu-rate.de/en/software/crowdit/), [Vadere](https://www.vadere.org/), [PTV Viswalk](https://www.ptvgroup.com/en/products/ptv-viswalk), and [Pathfinder](https://www.thunderheadeng.com/pathfinder/).
 
 
 ## Citation
