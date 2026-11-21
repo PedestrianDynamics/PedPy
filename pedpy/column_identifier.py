@@ -24,6 +24,7 @@ MEAN_SPEED_COL: Final = "mean_speed"
 ACC_COL: Final = "acceleration"
 A_X_COL: Final = "a_x"
 A_Y_COL: Final = "a_y"
+ALIGNMENT_COL: Final = "alignment"
 
 FIRST_FRAME_COL: Final = "entering_frame"
 MID_FRAME_COL: Final = "mid_frame"

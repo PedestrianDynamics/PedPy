@@ -7,7 +7,7 @@ from tests.utils.utils import get_trajectory
 from pedpy.column_identifier import *
 from pedpy.data.geometry import MeasurementArea, MeasurementLine, WalkableArea
 from pedpy.data.trajectory_data import TrajectoryData
-from pedpy.errors import InputError, SpeedError
+from pedpy.errors import InputError, PedPyValueError, SpeedError
 from pedpy.methods.method_utils import (
     Cutoff,
     SpeedCalculation,
@@ -15,6 +15,8 @@ from pedpy.methods.method_utils import (
     compute_intersecting_polygons,
 )
 from pedpy.methods.speed_calculator import (
+    compute_alignment_parameter,
+    compute_arithmetic_voronoi_speed,
     compute_individual_speed,
     compute_line_speed,
     compute_mean_speed_per_frame,
@@ -388,4 +390,157 @@ def test_compute_line_speed_missing_velocity_columns(example_data):
             species=species,
             individual_voronoi_polygons=voronoi,
             measurement_line=line,
+        )
+
+
+def test_compute_arithmetic_voronoi_speed_unweighted_mean_and_empty_frames():
+    traj_df = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 1],
+            FRAME_COL: [0, 0, 0, 1],
+            X_COL: [0.5, 3.5, 9.0, 9.0],
+            Y_COL: [1.0, 1.0, 1.0, 1.0],
+        }
+    )
+    traj_data = TrajectoryData(data=traj_df, frame_rate=1.0)
+    measurement_area = MeasurementArea([(0.0, 0.0), (4.0, 0.0), (4.0, 2.0), (0.0, 2.0)])
+
+    # Ped 1 covers 3/4 of M (x in [0, 3]), Ped 2 covers 1/4 of M (x in [3, 4]), Ped 3 is outside M
+    poly_1 = Polygon([(0.0, 0.0), (3.0, 0.0), (3.0, 2.0), (0.0, 2.0)])
+    poly_2 = Polygon([(3.0, 0.0), (5.0, 0.0), (5.0, 2.0), (3.0, 2.0)])
+    poly_out = Polygon([(8.0, 0.0), (10.0, 0.0), (10.0, 2.0), (8.0, 2.0)])
+
+    voronoi_df = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 1],
+            FRAME_COL: [0, 0, 0, 1],
+            POLYGON_COL: [poly_1, poly_2, poly_out, poly_out],
+        }
+    )
+    intersection_df = compute_intersecting_polygons(
+        individual_voronoi_data=voronoi_df,
+        measurement_area=measurement_area,
+    )
+    speed_df = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 3, 1],
+            FRAME_COL: [0, 0, 0, 1],
+            SPEED_COL: [1.0, 3.0, 10.0, 2.0],
+        }
+    )
+
+    voronoi_speed = compute_voronoi_speed(
+        traj_data=traj_data,
+        individual_speed=speed_df,
+        individual_voronoi_intersection=intersection_df,
+        measurement_area=measurement_area,
+    )
+    arithmetic_speed = compute_arithmetic_voronoi_speed(
+        traj_data=traj_data,
+        individual_speed=speed_df,
+        individual_voronoi_intersection=intersection_df,
+    )
+    arithmetic_from_polys = compute_arithmetic_voronoi_speed(
+        traj_data=traj_data,
+        individual_speed=speed_df,
+        individual_voronoi_intersection=voronoi_df,
+        measurement_area=measurement_area,
+    )
+
+    # Area-weighted Voronoi speed at frame 0: 0.75 * 1.0 + 0.25 * 3.0 = 1.5
+    assert np.isclose(voronoi_speed.loc[voronoi_speed[FRAME_COL] == 0, SPEED_COL].iloc[0], 1.5)
+    # Unweighted arithmetic Voronoi speed at frame 0: (1.0 + 3.0) / 2 = 2.0; frame 1 empty -> 0.0
+    assert np.allclose(arithmetic_speed[SPEED_COL].to_numpy(), [2.0, 0.0])
+    pd.testing.assert_frame_equal(arithmetic_speed, arithmetic_from_polys)
+
+    with pytest.raises(SpeedError, match="arithmetic Voronoi speed"):
+        compute_arithmetic_voronoi_speed(
+            traj_data=traj_data,
+            individual_speed=speed_df.iloc[:2],
+            individual_voronoi_intersection=intersection_df,
+        )
+
+
+def test_compute_alignment_parameter_target_and_directions():
+    # Target door at (10, 0):
+    # Frame 0: Ped 1 at (0, 0) moves +x toward door (+1.0), Ped 2 at (0, 2) moves +x
+    # Frame 1: Ped 1 at (1, 0) moves -x away from door (-1.0), Ped 2 at (0, 2) stationary (0.0)
+    # Frame 2: Ped 1 at (0, 0) moves +y perpendicular to door (0.0)
+    traj_df = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 1, 2, 1],
+            FRAME_COL: [0, 0, 1, 1, 2],
+            X_COL: [0.0, 0.0, 1.0, 0.0, 0.0],
+            Y_COL: [0.0, 0.0, 0.0, 2.0, 0.0],
+        }
+    )
+    traj_data = TrajectoryData(data=traj_df, frame_rate=1.0)
+    speed_df = pd.DataFrame(
+        {
+            ID_COL: [1, 2, 1, 2, 1],
+            FRAME_COL: [0, 0, 1, 1, 2],
+            SPEED_COL: [2.0, 1.0, 2.0, 0.0, 1.5],
+            V_X_COL: [2.0, 1.0, -2.0, 0.0, 0.0],
+            V_Y_COL: [0.0, 0.0, 0.0, 0.0, 1.5],
+        }
+    )
+
+    res_target = compute_alignment_parameter(
+        traj_data=traj_data,
+        individual_speed=speed_df,
+        target_point=(10.0, 0.0),
+    )
+    assert list(res_target.columns) == [FRAME_COL, ALIGNMENT_COL]
+    assert np.allclose(res_target[ALIGNMENT_COL].to_numpy(), [1.0, -0.5, 0.0])
+
+    # Constant desired direction (2, 0) (non-unit vector normalized internally)
+    res_dir = compute_alignment_parameter(
+        traj_data=traj_data,
+        individual_speed=speed_df,
+        desired_direction=(2.0, 0.0),
+    )
+    assert np.allclose(res_dir[ALIGNMENT_COL].to_numpy(), [1.0, -0.5, 0.0])
+
+    # Per-pedestrian desired direction DataFrame
+    dir_df = pd.DataFrame({ID_COL: [1, 2], "u_x": [1.0, -1.0], "u_y": [0.0, 0.0]})
+    res_df_dir = compute_alignment_parameter(
+        traj_data=traj_data,
+        individual_speed=speed_df,
+        desired_direction=dir_df,
+    )
+    # Frame 0: Ped 1 has +1, Ped 2 has -1 -> mean 0.0
+    assert np.allclose(res_df_dir[ALIGNMENT_COL].to_numpy(), [0.0, -0.5, 0.0])
+
+    # Measurement area filtering (only around y == 2, so Frame 0 and 2 have 0 peds -> 0.0)
+    ma = MeasurementArea([(-1.0, 1.5), (2.0, 1.5), (2.0, 3.0), (-1.0, 3.0)])
+    res_ma = compute_alignment_parameter(
+        traj_data=traj_data,
+        individual_speed=speed_df,
+        desired_direction=(1.0, 0.0),
+        measurement_area=ma,
+    )
+    assert np.allclose(res_ma[ALIGNMENT_COL].to_numpy(), [0.0, 0.0, 0.0])
+
+
+def test_compute_alignment_parameter_validation_errors():
+    traj_df = pd.DataFrame({ID_COL: [1], FRAME_COL: [0], X_COL: [0.0], Y_COL: [0.0]})
+    traj_data = TrajectoryData(data=traj_df, frame_rate=1.0)
+    speed_no_vel = pd.DataFrame({ID_COL: [1], FRAME_COL: [0], SPEED_COL: [1.0]})
+    speed_vel = pd.DataFrame({ID_COL: [1], FRAME_COL: [0], SPEED_COL: [1.0], V_X_COL: [1.0], V_Y_COL: [0.0]})
+
+    with pytest.raises(SpeedError, match="compute_velocity=True"):
+        compute_alignment_parameter(
+            traj_data=traj_data,
+            individual_speed=speed_no_vel,
+            desired_direction=(1.0, 0.0),
+        )
+
+    with pytest.raises(PedPyValueError, match="exactly one"):
+        compute_alignment_parameter(traj_data=traj_data, individual_speed=speed_vel)
+
+    with pytest.raises(PedPyValueError, match="non-zero"):
+        compute_alignment_parameter(
+            traj_data=traj_data,
+            individual_speed=speed_vel,
+            desired_direction=(0.0, 0.0),
         )
