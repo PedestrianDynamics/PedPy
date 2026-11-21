@@ -154,6 +154,11 @@ from .plotting.plotting import (
 )
 from .preprocessing.trajectory_outlier_detection import detect_anomalies_in_trajectories
 from .preprocessing.trajectory_projector import correct_invalid_trajectories
+from .preprocessing.trajectory_smoother import (
+    SmoothingBorderMethod,
+    moving_average_filter,
+    savitzky_golay_filter,
+)
 
 __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "AxisAlignedMeasurementArea",
@@ -217,6 +222,9 @@ __all__ = [  # noqa: RUF022 disable sorting of __all__ for better maintenance
     "compute_voronoi_acceleration",
     "correct_invalid_trajectories",
     "detect_anomalies_in_trajectories",
+    "SmoothingBorderMethod",
+    "moving_average_filter",
+    "savitzky_golay_filter",
     "PEDPY_BLUE",
     "PEDPY_GREEN",
     "PEDPY_GREY",
