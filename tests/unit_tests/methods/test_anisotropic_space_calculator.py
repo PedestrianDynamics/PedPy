@@ -277,3 +277,203 @@ class TestPoseDistractionCOCO17:
 
         with pytest.raises(PedPyValueError):
             classify_pose_distraction_coco17(np.zeros((10, 2)))
+
+
+class TestEdgeCasesAndBranchCoverage:
+    """Comprehensive edge-case and error-branch coverage for anisotropic space helpers."""
+
+    def test_kinematics_edge_cases_and_precomputed_velocities(self):
+        from pedpy.column_identifier import FRAME_COL, ID_COL, V_X_COL, V_Y_COL, X_COL, Y_COL
+        from pedpy.methods.anisotropic_space_calculator import _estimate_agent_kinematics
+
+        empty_df = pd.DataFrame(
+            {
+                ID_COL: pd.Series(dtype=int),
+                FRAME_COL: pd.Series(dtype=int),
+                X_COL: pd.Series(dtype=float),
+                Y_COL: pd.Series(dtype=float),
+            }
+        )
+        empty_kin = _estimate_agent_kinematics(empty_df, frame_rate=10.0)
+        assert empty_kin.empty
+        assert {"v_x", "v_y", "speed", "heading_rad"}.issubset(empty_kin.columns)
+
+        with pytest.raises(PedPyValueError, match="positive frame_rate"):
+            _estimate_agent_kinematics(empty_df, frame_rate=0.0)
+
+        # Single-frame agent produces zero velocity and triggers len(idx) < 2 branch
+        single_traj = TrajectoryData(
+            data=pd.DataFrame([{ID_COL: 1, FRAME_COL: 0, X_COL: 0.0, Y_COL: 0.0}]),
+            frame_rate=10.0,
+        )
+        res_single = compute_anisotropic_personal_space(traj_data=single_traj)
+        assert len(res_single) == 1
+        assert res_single["speed"].iloc[0] == 0.0
+        assert np.isinf(res_single["min_d_eff"].iloc[0])
+
+        # Empty TrajectoryData returns empty DataFrame with expected columns
+        empty_traj = TrajectoryData(data=empty_df, frame_rate=10.0)
+        assert compute_anisotropic_personal_space(traj_data=empty_traj).empty
+
+        # Pre-supplied v_x / v_y columns bypass finite differences
+        vel_df = pd.DataFrame(
+            [
+                {ID_COL: 1, FRAME_COL: 0, X_COL: 0.0, Y_COL: 0.0, V_X_COL: 2.0, V_Y_COL: 0.0},
+                {ID_COL: 1, FRAME_COL: 1, X_COL: 0.2, Y_COL: 0.0, V_X_COL: 2.0, V_Y_COL: 0.0},
+            ]
+        )
+        vel_kin = _estimate_agent_kinematics(vel_df, frame_rate=10.0)
+        assert np.allclose(vel_kin["speed"], 2.0)
+
+    def test_attention_df_variants_and_validation_errors(self):
+        traj = _make_linear_traj([(1, 0.0, 0.0, 1.2, 0.0)], n_frames=4, fps=10.0)
+
+        # 'distracted' column keyed by (id, frame)
+        att_distracted = pd.DataFrame({"id": [1, 1], "frame": [0, 1], "distracted": [0.0, 1.0]})
+        res_d = compute_anisotropic_personal_space(traj_data=traj, attention_df=att_distracted)
+        assert res_d["a_m"].iloc[1] > res_d["a_m"].iloc[0]
+
+        # 'attention' column (1 - attention == distraction)
+        att_attention = pd.DataFrame({"id": [1], "attention": [0.0]})
+        res_a = compute_anisotropic_personal_space(traj_data=traj, attention_df=att_attention)
+        assert math.isclose(res_a["b_m"].iloc[0], 0.28 + 0.16, rel_tol=1e-9)
+
+        with pytest.raises(PedPyValueError, match="non-negative"):
+            compute_anisotropic_personal_space(traj_data=traj, tau_stride=-0.1)
+
+        with pytest.raises(PedPyTypeError, match="attention_df"):
+            compute_anisotropic_personal_space(traj_data=traj, attention_df="bad")  # type: ignore[arg-type]
+
+        with pytest.raises(PedPyValueError, match="Expected column 'id'"):
+            compute_anisotropic_personal_space(traj_data=traj, attention_df=pd.DataFrame({"frame": [0]}))
+
+        with pytest.raises(PedPyValueError, match="gaze_state"):
+            compute_anisotropic_personal_space(traj_data=traj, attention_df=pd.DataFrame({"id": [1], "other": [0.5]}))
+
+    def test_social_dyads_validation_and_empty_branches(self):
+        traj1 = _make_linear_traj([(1, 0.0, 0.0, 1.2, 0.0)], n_frames=5)
+        assert detect_social_dyads(traj_data=traj1).empty
+
+        # Disjoint frames -> no shared frame pairs
+        disjoint = TrajectoryData(
+            data=pd.DataFrame(
+                [
+                    {"id": 1, "frame": 0, "x": 0.0, "y": 0.0},
+                    {"id": 2, "frame": 1, "x": 0.5, "y": 0.0},
+                ]
+            ),
+            frame_rate=10.0,
+        )
+        assert detect_social_dyads(traj_data=disjoint).empty
+
+        # Counterflow or far apart -> cohesive_pairs.empty
+        far_traj = _make_linear_traj([(1, 0.0, 0.0, 1.0, 0.0), (2, 10.0, 0.0, 1.0, 0.0)], n_frames=5)
+        assert detect_social_dyads(traj_data=far_traj, max_distance=1.0).empty
+
+        # Fewer cohesive frames than min_shared_frames -> _summarize_cohesive_dyads returns empty
+        short_dyad = _make_linear_traj([(1, 0.0, 0.0, 1.0, 0.0), (2, 0.0, 0.6, 1.0, 0.0)], n_frames=3)
+        assert detect_social_dyads(traj_data=short_dyad, min_shared_frames=5).empty
+
+        with pytest.raises(PedPyValueError, match="max_distance"):
+            detect_social_dyads(traj_data=traj1, max_distance=0.0)
+        with pytest.raises(PedPyValueError, match="max_speed_diff"):
+            detect_social_dyads(traj_data=traj1, max_speed_diff=-0.1)
+        with pytest.raises(PedPyValueError, match="min_shared_frames"):
+            detect_social_dyads(traj_data=traj1, min_shared_frames=0)
+
+    def test_shared_space_cpa_edge_cases(self):
+        ped_traj = _make_linear_traj([(1, 0.0, 0.0, 1.0, 0.0)], n_frames=3, fps=10.0)
+        empty_ped = TrajectoryData(
+            data=pd.DataFrame(
+                {
+                    "id": pd.Series(dtype=int),
+                    "frame": pd.Series(dtype=int),
+                    "x": pd.Series(dtype=float),
+                    "y": pd.Series(dtype=float),
+                }
+            ),
+            frame_rate=10.0,
+        )
+        empty_whl = pd.DataFrame(columns=["id", "frame", "x", "y"])
+
+        assert compute_shared_space_cpa(ped_traj=empty_ped, wheeler_df=empty_whl).empty
+        assert compute_shared_space_cpa(ped_traj=ped_traj, wheeler_df=empty_whl).empty
+
+        # Disjoint frames yield empty CPA result
+        disjoint_whl = pd.DataFrame([{"id": 10, "frame": 99, "x": 1.0, "y": 0.0}])
+        assert compute_shared_space_cpa(ped_traj=ped_traj, wheeler_df=disjoint_whl).empty
+
+        # 'type' alias column works cleanly
+        typed_whl = pd.DataFrame(
+            [
+                {"id": 10, "frame": 0, "x": -2.0, "y": 0.2, "type": "bicycle"},
+                {"id": 10, "frame": 1, "x": -1.5, "y": 0.2, "type": "bicycle"},
+            ]
+        )
+        res_typed = compute_shared_space_cpa(ped_traj=ped_traj, wheeler_df=typed_whl)
+        assert "wheeler_type" in res_typed.columns
+        assert res_typed["wheeler_type"].iloc[0] == "bicycle"
+
+        with pytest.raises(PedPyTypeError, match="wheeler_df"):
+            compute_shared_space_cpa(ped_traj=ped_traj, wheeler_df=[])  # type: ignore[arg-type]
+        with pytest.raises(PedPyValueError, match="d_min"):
+            compute_shared_space_cpa(ped_traj=ped_traj, wheeler_df=typed_whl, d_min=0.0)
+
+    def test_pose_distraction_branches_and_validation(self):
+        from pedpy import classify_pose_distraction_coco17
+
+        # Phone call (right hand raised to ear level, bent elbow)
+        kp_call = TestPoseDistractionCOCO17._make_coco17_skeleton(phone_viewing=False)
+        kp_call[8] = [125.0, 235.0]   # elbow raised slightly out
+        kp_call[10] = [115.0, 165.0]  # wrist at ear height (wr_h > 1.02) -> tight flexion
+        res_call = classify_pose_distraction_coco17(kp_call)
+        assert res_call["posture_class"] == "phone_call"
+        assert res_call["distracted"] is True
+
+        # Downward gaze with relaxed straight arms (head pitch >= 35 deg, hands at hips)
+        kp_down = TestPoseDistractionCOCO17._make_coco17_skeleton(phone_viewing=False)
+        kp_down[0] = [100.0, 198.0]  # nose strongly below ears & near shoulders
+        res_down = classify_pose_distraction_coco17(kp_down)
+        assert res_down["posture_class"] == "downward_gaze"
+        assert res_down["distracted"] is True
+        assert res_down["gaze_state"] == 0
+
+        # Missing nose confidence / missing ears / coincident nose-ear / zero torso / low arm confidence
+        sc_no_nose = np.ones(17, dtype=float)
+        sc_no_nose[0] = 0.0
+        assert classify_pose_distraction_coco17(kp_call, scores_17=sc_no_nose)["head_pitch_deg"] == 0.0
+
+        sc_no_ears = np.ones(17, dtype=float)
+        sc_no_ears[3] = 0.0
+        sc_no_ears[4] = 0.0
+        assert classify_pose_distraction_coco17(kp_down, scores_17=sc_no_ears)["head_pitch_deg"] >= 0.0
+
+        kp_coinc = TestPoseDistractionCOCO17._make_coco17_skeleton(phone_viewing=False)
+        kp_coinc[0] = 0.5 * (kp_coinc[3] + kp_coinc[4])
+        assert classify_pose_distraction_coco17(kp_coinc)["head_pitch_deg"] >= 0.0
+
+        kp_zero_arm = TestPoseDistractionCOCO17._make_coco17_skeleton(phone_viewing=False)
+        kp_zero_arm[7] = kp_zero_arm[5]
+        kp_zero_arm[8] = kp_zero_arm[6]
+        assert classify_pose_distraction_coco17(kp_zero_arm)["elbow_angle_deg"] == 180.0
+
+        sc_low_arm = np.ones(17, dtype=float)
+        sc_low_arm[[7, 8, 9, 10]] = 0.0
+        assert classify_pose_distraction_coco17(kp_call, scores_17=sc_low_arm)["posture_class"] == "attentive"
+
+        kp_zero_torso = kp_call.copy()
+        kp_zero_torso[5] = kp_zero_torso[11]
+        kp_zero_torso[6] = kp_zero_torso[12]
+        assert classify_pose_distraction_coco17(kp_zero_torso)["posture_class"] == "low_confidence"
+
+        # Batch with explicit scores_17 + invalid input shapes
+        batch_kp = np.stack([kp_call, kp_down], axis=0)
+        batch_res = classify_pose_distraction_coco17(batch_kp, scores_17=np.ones((2, 17)))
+        assert list(batch_res["posture_class"]) == ["phone_call", "downward_gaze"]
+
+        with pytest.raises(PedPyValueError, match="scores_17 shape"):
+            classify_pose_distraction_coco17(kp_call, scores_17=np.ones(5))
+        with pytest.raises(PedPyValueError, match="batch scores_17 shape"):
+            classify_pose_distraction_coco17(batch_kp, scores_17=np.ones((2, 5)))
+        with pytest.raises(PedPyValueError, match="Expected 'keypoints_17x2'"):
+            classify_pose_distraction_coco17(np.zeros((17,)))
