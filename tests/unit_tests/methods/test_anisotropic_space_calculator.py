@@ -11,10 +11,13 @@ from pedpy import (
     PedPyTypeError,
     PedPyValueError,
     TrajectoryData,
+    classify_pose_distraction_coco17,
     compute_anisotropic_personal_space,
     compute_shared_space_cpa,
     detect_social_dyads,
 )
+from pedpy.column_identifier import FRAME_COL, ID_COL, V_X_COL, V_Y_COL, X_COL, Y_COL
+from pedpy.methods.anisotropic_space_calculator import _estimate_agent_kinematics
 
 
 def _make_linear_traj(
@@ -238,8 +241,6 @@ class TestPoseDistractionCOCO17:
         return kp
 
     def test_single_and_batch_coco17_classification_and_attention_enrichment(self):
-        from pedpy import classify_pose_distraction_coco17
-
         kp_att = self._make_coco17_skeleton(phone_viewing=False)
         kp_ph = self._make_coco17_skeleton(phone_viewing=True)
 
@@ -283,9 +284,6 @@ class TestEdgeCasesAndBranchCoverage:
     """Comprehensive edge-case and error-branch coverage for anisotropic space helpers."""
 
     def test_kinematics_edge_cases_and_precomputed_velocities(self):
-        from pedpy.column_identifier import FRAME_COL, ID_COL, V_X_COL, V_Y_COL, X_COL, Y_COL
-        from pedpy.methods.anisotropic_space_calculator import _estimate_agent_kinematics
-
         empty_df = pd.DataFrame(
             {
                 ID_COL: pd.Series(dtype=int),
@@ -420,11 +418,9 @@ class TestEdgeCasesAndBranchCoverage:
             compute_shared_space_cpa(ped_traj=ped_traj, wheeler_df=typed_whl, d_min=0.0)
 
     def test_pose_distraction_branches_and_validation(self):
-        from pedpy import classify_pose_distraction_coco17
-
         # Phone call (right hand raised to ear level, bent elbow)
         kp_call = TestPoseDistractionCOCO17._make_coco17_skeleton(phone_viewing=False)
-        kp_call[8] = [125.0, 235.0]   # elbow raised slightly out
+        kp_call[8] = [125.0, 235.0]  # elbow raised slightly out
         kp_call[10] = [115.0, 165.0]  # wrist at ear height (wr_h > 1.02) -> tight flexion
         res_call = classify_pose_distraction_coco17(kp_call)
         assert res_call["posture_class"] == "phone_call"
