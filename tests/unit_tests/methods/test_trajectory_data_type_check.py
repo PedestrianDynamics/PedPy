@@ -9,6 +9,11 @@ from pedpy.methods.acceleration_calculator import (
     compute_mean_acceleration_per_frame,
     compute_voronoi_acceleration,
 )
+from pedpy.methods.anisotropic_space_calculator import (
+    compute_anisotropic_personal_space,
+    compute_shared_space_cpa,
+    detect_social_dyads,
+)
 from pedpy.methods.density_calculator import compute_classic_density
 from pedpy.methods.flow_calculator import compute_n_t
 from pedpy.methods.method_utils import (
@@ -93,6 +98,21 @@ _DF = pd.DataFrame()
             compute_pair_distribution_function,
             dict(traj_data=_BAD, radius_bin_size=0.1),
             id="compute_pair_distribution_function",
+        ),
+        pytest.param(
+            compute_anisotropic_personal_space,
+            dict(traj_data=_BAD),
+            id="compute_anisotropic_personal_space",
+        ),
+        pytest.param(
+            detect_social_dyads,
+            dict(traj_data=_BAD),
+            id="detect_social_dyads",
+        ),
+        pytest.param(
+            compute_shared_space_cpa,
+            dict(ped_traj=_BAD, wheeler_df=_DF),
+            id="compute_shared_space_cpa",
         ),
     ],
 )
